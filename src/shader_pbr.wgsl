@@ -107,6 +107,11 @@ fn vs_tex(@location(0) pos: vec3f, @location(1) uv: vec2f) -> Vout {
     return vertex_common(pos, draw.const_nrm.xyz, vec3f(1.0), uv);
 }
 
+@vertex
+fn vs_map(@location(0) pos: vec3f, @location(1) nrm: vec3f, @location(2) col: vec3f, @location(3) uv: vec2f) -> Vout {
+    return vertex_common(pos, nrm, col, uv);
+}
+
 // ---------------------------------------------------------------------
 // packing.glsl.js: unpackRGBAToDepth over the sampled (nearest) texel.
 // ---------------------------------------------------------------------
@@ -348,9 +353,11 @@ fn fs_main(in: Vout) -> @location(0) vec4f {
     let view_dir = normalize(frame.cam_pos.xyz - in.world_pos);
 
     // lights_physical_fragment: material setup.
+    // map_fragment: diffuseColor *= texture — the vertex colour is
+    // the material colour, so mapped surfaces multiply the two.
     var diffuse = in.albedo;
     if (draw.mat_params.w > 0.5) {
-        diffuse = textureSample(map_tex, map_smp, in.uv).rgb;
+        diffuse *= textureSample(map_tex, map_smp, in.uv).rgb;
     }
     let metalness = draw.mat_params.y;
     let diffuse_color = diffuse * (1.0 - metalness);

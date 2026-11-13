@@ -278,6 +278,77 @@ pub(crate) fn disc_geo(r: f32, seg: u32, col: [f32; 3]) -> Geo {
     g
 }
 
+/// Mapped standard-material geometry (pos, normal, colour, uv —
+/// 11 f32 per vertex): the diffuse is vertex colour x map, three.js's
+/// `color * map` law. First consumer: the hills, whose material is
+/// mat({ color: shade(col), map: grass(col, [6,3]) }) in world.ts.
+#[derive(Clone)]
+pub(crate) struct MapGeo {
+    pub(crate) verts: Vec<f32>,
+    pub(crate) idx: Vec<u32>,
+}
+
+/// UV sphere with three.js SphereGeometry's uv layout (u = ix/ws
+/// around the equator, v = 1 - iy/hs so v = 1 at the top pole),
+/// scaled by `uv_scale` (the texture repeat, baked in like the
+/// ground disc's). Normals = positions normalised, as sphere_geo.
+pub(crate) fn sphere_map_geo(r: f32, ws: u32, hs: u32, col: [f32; 3], uv_scale: [f32; 2]) -> MapGeo {
+    let mut g = MapGeo { verts: Vec::new(), idx: Vec::new() };
+    let mut vert = |p: [f32; 3], n: [f32; 3], uv: [f32; 2]| -> u32 {
+        g.verts.extend_from_slice(&p);
+        g.verts.extend_from_slice(&n);
+        g.verts.extend_from_slice(&col);
+        g.verts.extend_from_slice(&uv);
+        (g.verts.len() / 11 - 1) as u32
+    };
+    let mut ids: Vec<Vec<u32>> = Vec::new();
+    for iy in 0..=hs {
+        let th = (iy as f32 / hs as f32) * std::f32::consts::PI;
+        let (st, ct) = th.sin_cos();
+        let mut row = Vec::new();
+        for ix in 0..=ws {
+            let ph = (ix as f32 / ws as f32) * std::f32::consts::TAU;
+            let (sp, cp) = ph.sin_cos();
+            let p = [r * st * cp, r * ct, r * st * sp];
+            let uv = [
+                (ix as f32 / ws as f32) * uv_scale[0],
+                (1.0 - iy as f32 / hs as f32) * uv_scale[1],
+            ];
+            row.push(vert(p, [st * cp, ct, st * sp], uv));
+        }
+        ids.push(row);
+    }
+    // Same winding fix as Geo::fix_winding (outward build).
+    let mut idx: Vec<u32> = Vec::new();
+    for iy in 0..hs {
+        for ix in 0..ws {
+            let (a, b) = (ids[iy as usize][ix as usize], ids[iy as usize][ix as usize + 1]);
+            let (c, d) = (ids[iy as usize + 1][ix as usize + 1], ids[iy as usize + 1][ix as usize]);
+            idx.extend_from_slice(&[a, b, d, b, c, d]);
+        }
+    }
+    for t in idx.chunks_exact_mut(3) {
+        let p = |k: usize| -> [f32; 3] {
+            let o = (t[k] as usize) * 11;
+            [g.verts[o], g.verts[o + 1], g.verts[o + 2]]
+        };
+        let (a, b, c) = (p(0), p(1), p(2));
+        let u = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
+        let v = [c[0] - a[0], c[1] - a[1], c[2] - a[2]];
+        let n = [
+            u[1] * v[2] - u[2] * v[1],
+            u[2] * v[0] - u[0] * v[2],
+            u[0] * v[1] - u[1] * v[0],
+        ];
+        let cen = [(a[0] + b[0] + c[0]) / 3.0, (a[1] + b[1] + c[1]) / 3.0, (a[2] + b[2] + c[2]) / 3.0];
+        if n[0] * cen[0] + n[1] * cen[1] + n[2] * cen[2] < 0.0 {
+            t.swap(1, 2);
+        }
+    }
+    g.idx = idx;
+    g
+}
+
 // ---------------------------------------------------------------------
 // Textured geometry (pos + uv).
 // ---------------------------------------------------------------------

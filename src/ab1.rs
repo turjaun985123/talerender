@@ -27,7 +27,7 @@ use crate::composer::{self, BloomParams, GradeParams, PostChain};
 use crate::scene::{
     box_geo, cone_geo, cross3, cyl_geo, disc_geo, flat_quad_geo, ground_disc_geo, hex_lin, norm3,
     paint_blob, paint_cloud, paint_grass, paint_sky, quad_geo, rnd, shade_lin, sky_sphere_geo,
-    sphere_geo, sub3, ColourDraw, Geo, TexDraw, TexGeo,
+    sphere_geo, sphere_map_geo, sub3, ColourDraw, Geo, MapGeo, TexDraw, TexGeo,
 };
 
 // ---------------------------------------------------------------------
@@ -66,7 +66,10 @@ const TEX_GRASS: usize = 1;
 const TEX_CLOUD: usize = 2;
 const TEX_BLOB: usize = 3;
 const TEX_CARD: usize = 4;
-const TEX_CAPTION: usize = 5;
+const TEX_HILLGRASS: usize = 5;
+// The caption strip is uploaded separately (raw Unorm — it composites
+// after GRADE); this index only labels the draw.
+const TEX_CAPTION: usize = 6;
 
 // Camera at t = 1.50 (camK smootherstep k = 0.05228 through the S01
 // push-in; fov 44 from G.jungle spread in the shoot() call).
@@ -101,8 +104,18 @@ pub(crate) struct StdDraw {
     pub receive: bool,
 }
 
+/// A mapped standard-material draw (diffuse = colour x map).
+pub(crate) struct MapDraw {
+    pub geo: MapGeo,
+    pub model: Mat4,
+    pub mat: StdMat,
+    pub cast: bool,
+    pub receive: bool,
+}
+
 struct Scene {
     std: Vec<StdDraw>,
+    mapped: Vec<MapDraw>,
     sky: TexDraw,
     grass: TexDraw,
     blob: TexDraw,
@@ -113,6 +126,7 @@ struct Scene {
 
 fn build_scene() -> Scene {
     let mut std: Vec<StdDraw> = Vec::new();
+    let mut mapped: Vec<MapDraw> = Vec::new();
     let add = |draws: &mut Vec<StdDraw>, geo: Geo, model: Mat4, mat: StdMat, cast: bool, receive: bool| {
         draws.push(StdDraw { geo, model, mat, cast, receive });
     };
@@ -134,9 +148,19 @@ fn build_scene() -> Scene {
     for (i, &(hx, hz, r, h)) in hills.iter().enumerate() {
         let col = shade_lin("#5E8F52", (0.92 + rnd(i as f64) * 0.16) as f32);
         let model = math::mul(&t3(hx, -h * 0.25, hz), &math::scale(r, h, r * 0.6));
-        // Hill meshes never touch shadows (world.ts hills(): neither
-        // flag is set on the sphere).
-        add(&mut std, sphere_geo(1.0, 24, 16, col), model, def(), false, false);
+        // world.ts hills(): mat({ color: shade(col, ...), map:
+        // T.grass(col, [6, 3]) }) — colour x grass map, repeat [6, 3]
+        // baked into the uvs. Hill meshes never touch shadows
+        // (neither flag is set on the sphere). SphereGeometry in
+        // three is 32x16 (the §28 build used 24x16 flat — the mapped
+        // build follows three's tessellation).
+        mapped.push(MapDraw {
+            geo: sphere_map_geo(1.0, 32, 16, col, [6.0, 3.0]),
+            model,
+            mat: def(),
+            cast: false,
+            receive: false,
+        });
         // 6 small trees per hill (hills() forces castShadow = false on
         // the whole subtree; receiveShadow keeps its builder value).
         for k in 0..6 {
@@ -329,7 +353,7 @@ fn build_scene() -> Scene {
     // as a camera-facing quad 2 m ahead (see README.md).
     let caption = build_caption_draw();
 
-    Scene { std, sky, grass, blob, clouds, card, caption }
+    Scene { std, mapped, sky, grass, blob, clouds, card, caption }
 }
 
 /// canopies are approximated by spheres (gaps.md).
@@ -659,12 +683,15 @@ pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str, pos
         .unwrap_or_else(|e| panic!("cannot load caption strip {caption_path}: {e}"))
         .to_rgba8();
     let (cap_w, cap_h) = caption_img.dimensions();
-    let textures_px: [(Vec<u8>, u32, u32); 5] = [
+    let textures_px: [(Vec<u8>, u32, u32); 6] = [
         paint_sky("#6E9CC0", "#D8E8DA"),
         paint_grass("#5B9A48"),
         paint_cloud(),
         paint_blob(),
         paint_onoda(),
+        // The hills' map: T.grass('#5E8F52', [6, 3]) — the grass
+        // painter with the hills' own base colour.
+        paint_grass("#5E8F52"),
     ];
     let upload = |px: &[u8], w: u32, h: u32, format: wgpu::TextureFormat| -> wgpu::Texture {
         let tex = device.create_texture(&wgpu::TextureDescriptor {
@@ -911,6 +938,13 @@ pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str, pos
     };
     let pbr_pipeline = make_pbr("vs_colour", &[wgpu::VertexBufferLayout { array_stride: 36, step_mode: wgpu::VertexStepMode::Vertex, attributes: &colour_attrs }]);
     let pbr_tex_pipeline = make_pbr("vs_tex", &[wgpu::VertexBufferLayout { array_stride: 20, step_mode: wgpu::VertexStepMode::Vertex, attributes: &tex_attrs }]);
+    let map_attrs = [
+        wgpu::VertexAttribute { format: wgpu::VertexFormat::Float32x3, offset: 0, shader_location: 0 },
+        wgpu::VertexAttribute { format: wgpu::VertexFormat::Float32x3, offset: 12, shader_location: 1 },
+        wgpu::VertexAttribute { format: wgpu::VertexFormat::Float32x3, offset: 24, shader_location: 2 },
+        wgpu::VertexAttribute { format: wgpu::VertexFormat::Float32x2, offset: 36, shader_location: 3 },
+    ];
+    let pbr_map_pipeline = make_pbr("vs_map", &[wgpu::VertexBufferLayout { array_stride: 44, step_mode: wgpu::VertexStepMode::Vertex, attributes: &map_attrs }]);
 
     // Basic (unlit) pipelines.
     let shader_basic = module("basic shader", include_str!("shader_basic.wgsl"));
@@ -972,6 +1006,7 @@ pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str, pos
         })
     };
     let prepass_geo = make_depth(&shader_depth_pos, &[wgpu::VertexBufferLayout { array_stride: 36, step_mode: wgpu::VertexStepMode::Vertex, attributes: &pos36_attrs }], depth_format, &depth_layout);
+    let prepass_map = make_depth(&shader_depth_pos, &[wgpu::VertexBufferLayout { array_stride: 44, step_mode: wgpu::VertexStepMode::Vertex, attributes: &pos36_attrs }], depth_format, &depth_layout);
     let prepass_tex = make_depth(&shader_depth, &[wgpu::VertexBufferLayout { array_stride: 20, step_mode: wgpu::VertexStepMode::Vertex, attributes: &tex_attrs }], depth_format, &depth_layout);
     let shadow_geo = make_depth(&shader_depth_pos, &[wgpu::VertexBufferLayout { array_stride: 36, step_mode: wgpu::VertexStepMode::Vertex, attributes: &pos36_attrs }], wgpu::TextureFormat::Rgba8Unorm, &depth_layout);
     let shadow_card_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
@@ -1088,6 +1123,7 @@ pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str, pos
     };
     let pbr_bg_std = pbr_tex_bg(&dummy_view, &sampler_clamp);
     let pbr_bg_ground = pbr_tex_bg(&tex_views[TEX_GRASS], &sampler_repeat);
+    let pbr_bg_hill = pbr_tex_bg(&tex_views[TEX_HILLGRASS], &sampler_repeat);
 
     struct PreparedStd {
         vb: wgpu::Buffer,
@@ -1142,6 +1178,48 @@ pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str, pos
             None
         };
         std_prepared.push(PreparedStd { vb, ib, n, bg0, prepass_bg, shadow_bg, _ubs: ubs });
+    }
+
+    // Mapped draws (the hills): same uniform shape, has_map = 1.
+    struct PreparedMap {
+        vb: wgpu::Buffer,
+        ib: wgpu::Buffer,
+        n: u32,
+        bg0: wgpu::BindGroup,
+        prepass_bg: wgpu::BindGroup,
+        _ubs: Vec<wgpu::Buffer>,
+    }
+    let mut mapped_prepared: Vec<PreparedMap> = Vec::new();
+    for d in &scene.mapped {
+        let (vb, ib, n) = make_vb(&d.geo.verts, &d.geo.idx);
+        let mut draw_bytes: Vec<u8> = Vec::with_capacity(176);
+        draw_bytes.extend_from_slice(&mat_bytes(&d.model));
+        draw_bytes.extend_from_slice(&mat_bytes(&math::normal_matrix(&d.model)));
+        for v in [
+            [d.mat.rough, d.mat.metal, if d.receive { 1.0 } else { 0.0 }, 1.0],
+            [d.mat.emissive[0], d.mat.emissive[1], d.mat.emissive[2], 0.0],
+            [0.0, 1.0, 0.0, 0.0],
+        ] {
+            for x in v {
+                draw_bytes.extend_from_slice(&x.to_ne_bytes());
+            }
+        }
+        let draw_ub = make_ub(&draw_bytes, "mapped draw uniforms");
+        let bg0 = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("mapped uniforms bind group"),
+            layout: &pbr_bgl0,
+            entries: &[
+                wgpu::BindGroupEntry { binding: 0, resource: frame_ub.as_entire_binding() },
+                wgpu::BindGroupEntry { binding: 1, resource: draw_ub.as_entire_binding() },
+            ],
+        });
+        let pre_ub = depth_ub(&math::mul(&vp, &d.model), &d.model);
+        let prepass_bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("mapped prepass bind group"),
+            layout: &bgl_unif,
+            entries: &[wgpu::BindGroupEntry { binding: 0, resource: pre_ub.as_entire_binding() }],
+        });
+        mapped_prepared.push(PreparedMap { vb, ib, n, bg0, prepass_bg, _ubs: vec![draw_ub, pre_ub] });
     }
 
     // Ground: the one textured standard surface (grass map, +Y
@@ -1315,6 +1393,13 @@ pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str, pos
             pass.set_index_buffer(p.ib.slice(..), wgpu::IndexFormat::Uint32);
             pass.draw_indexed(0..p.n, 0, 0..1);
         }
+        pass.set_pipeline(&prepass_map);
+        for p in &mapped_prepared {
+            pass.set_bind_group(0, &p.prepass_bg, &[]);
+            pass.set_vertex_buffer(0, p.vb.slice(..));
+            pass.set_index_buffer(p.ib.slice(..), wgpu::IndexFormat::Uint32);
+            pass.draw_indexed(0..p.n, 0, 0..1);
+        }
         pass.set_pipeline(&prepass_tex);
         pass.set_bind_group(0, &ground_prepared.prepass_bg, &[]);
         pass.set_vertex_buffer(0, ground_prepared.vb.slice(..));
@@ -1359,6 +1444,14 @@ pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str, pos
         pass.set_pipeline(&pbr_pipeline);
         pass.set_bind_group(1, &pbr_bg_std, &[]);
         for p in &std_prepared {
+            pass.set_bind_group(0, &p.bg0, &[]);
+            pass.set_vertex_buffer(0, p.vb.slice(..));
+            pass.set_index_buffer(p.ib.slice(..), wgpu::IndexFormat::Uint32);
+            pass.draw_indexed(0..p.n, 0, 0..1);
+        }
+        pass.set_pipeline(&pbr_map_pipeline);
+        pass.set_bind_group(1, &pbr_bg_hill, &[]);
+        for p in &mapped_prepared {
             pass.set_bind_group(0, &p.bg0, &[]);
             pass.set_vertex_buffer(0, p.vb.slice(..));
             pass.set_index_buffer(p.ib.slice(..), wgpu::IndexFormat::Uint32);
