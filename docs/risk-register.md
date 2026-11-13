@@ -2,7 +2,7 @@
 
 Ranked by expected damage to parity × likelihood, from the Milestone 0
 audit evidence ([docs/audit/](audit/)). Each risk names its mitigation
-and where it is enforced ([ADR-001](ADR-001-talepender-architecture.md),
+and where it is enforced ([ADR-001](ADR-001-talerender-architecture.md),
 [compatibility-contract.md](compatibility-contract.md)). Status is as of
 the M0 gate (2026-11-13): no mitigations are complete yet; several tests
 are scheduled as milestone gates.

@@ -25,7 +25,7 @@ replaces the 2D characters with modelled 3D characters.
 | M7 | Full project integration | Not started |
 | M8 | Production hardening & release | Not started |
 
-Architecture record: [docs/audit/](docs/audit/) (M0 findings) · [docs/ADR-001-talepender-architecture.md](docs/ADR-001-talepender-architecture.md) · [docs/compatibility-contract.md](docs/compatibility-contract.md) · [docs/risk-register.md](docs/risk-register.md)
+Architecture record: [docs/audit/](docs/audit/) (M0 findings) · [docs/ADR-001-talerender-architecture.md](docs/ADR-001-talerender-architecture.md) · [docs/compatibility-contract.md](docs/compatibility-contract.md) · [docs/risk-register.md](docs/risk-register.md)
 
 What exists today is the Milestone 1 smoke frame: wgpu initialises on the Vulkan
 backend, renders one 1080×1920 frame to an offscreen texture and writes a PNG.

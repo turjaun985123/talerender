@@ -5,7 +5,7 @@ Six read-only audit seats inventoried the shipped Tall Tale Shorts skill
 The findings files in this directory are the original reports, archived
 verbatim; this index states what each one established and the conclusions
 that cut across all six. The decisions taken from them live in
-[ADR-001](../ADR-001-talepender-architecture.md), the testable contract in
+[ADR-001](../ADR-001-talerender-architecture.md), the testable contract in
 [compatibility-contract.md](../compatibility-contract.md), and the ranked
 risks in [risk-register.md](../risk-register.md).
 
