@@ -95,6 +95,59 @@ pub fn perspective(fov_y_rad: f32, aspect: f32, near: f32, far: f32) -> Mat4 {
     m
 }
 
+/// Orthographic projection for wgpu clip space (z in [0, 1]): the
+/// GL-style three.js OrthographicCamera matrix with the z row folded
+/// through z_wgpu = 0.5 * z_gl + 0.5, so a view-space point at the
+/// near plane maps to 0 and at the far plane to 1 — exactly the
+/// fragCoordZ three.js packs into shadow maps.
+pub fn orthographic(left: f32, right: f32, bottom: f32, top: f32, near: f32, far: f32) -> Mat4 {
+    let mut m = [[0.0f32; 4]; 4];
+    m[0][0] = 2.0 / (right - left);
+    m[1][1] = 2.0 / (top - bottom);
+    m[2][2] = -1.0 / (far - near);
+    m[3][0] = -(right + left) / (right - left);
+    m[3][1] = -(top + bottom) / (top - bottom);
+    m[3][2] = -near / (far - near);
+    m[3][3] = 1.0;
+    m
+}
+
+/// The 3x3 normal matrix: inverse-transpose of the model's upper 3x3,
+/// returned as a Mat4 with the linear part in the upper block. three.js
+/// transforms normals by the inverse-transpose (its `normalMatrix` is
+/// the view-space form; composed with the view transform the net
+/// world-space effect is this matrix).
+pub fn normal_matrix(m: &Mat4) -> Mat4 {
+    // M[r][c] = m[c][r]
+    let mm = |r: usize, c: usize| m[c][r];
+    let c00 = mm(1, 1) * mm(2, 2) - mm(1, 2) * mm(2, 1);
+    let c01 = -(mm(1, 0) * mm(2, 2) - mm(1, 2) * mm(2, 0));
+    let c02 = mm(1, 0) * mm(2, 1) - mm(1, 1) * mm(2, 0);
+    let det = mm(0, 0) * c00 + mm(0, 1) * c01 + mm(0, 2) * c02;
+    let inv_det = if det != 0.0 { 1.0 / det } else { 0.0 };
+    // (A^-1)^T [r][c] = cofactor[r][c] / det; storage out[c][r].
+    let cof = [
+        [c00, c01, c02],
+        [
+            -(mm(0, 1) * mm(2, 2) - mm(0, 2) * mm(2, 1)),
+            mm(0, 0) * mm(2, 2) - mm(0, 2) * mm(2, 0),
+            -(mm(0, 0) * mm(2, 1) - mm(0, 1) * mm(2, 0)),
+        ],
+        [
+            mm(0, 1) * mm(1, 2) - mm(0, 2) * mm(1, 1),
+            -(mm(0, 0) * mm(1, 2) - mm(0, 2) * mm(1, 0)),
+            mm(0, 0) * mm(1, 1) - mm(0, 1) * mm(1, 0),
+        ],
+    ];
+    let mut out = identity();
+    for r in 0..3 {
+        for c in 0..3 {
+            out[c][r] = cof[r][c] * inv_det;
+        }
+    }
+    out
+}
+
 fn sub3(a: [f32; 3], b: [f32; 3]) -> [f32; 3] {
     [a[0] - b[0], a[1] - b[1], a[2] - b[2]]
 }
@@ -197,6 +250,42 @@ mod tests {
         let m = euler_xyz(std::f32::consts::FRAC_PI_2, 0.0, std::f32::consts::FRAC_PI_2);
         let p = mul_vec4(&m, [1.0, 0.0, 0.0, 1.0]);
         assert!(approx(p[0], 0.0) && approx(p[1], 0.0) && approx(p[2], 1.0), "{p:?}");
+    }
+
+    #[test]
+    fn orthographic_maps_box_corners() {
+        // three.js DirectionalLightShadow camera for the ab1 rig:
+        // +-17, near 0.1, far 80 (world.ts/engine.ts).
+        let p = orthographic(-17.0, 17.0, -17.0, 17.0, 0.1, 80.0);
+        let near = mul_vec4(&p, [0.0, 0.0, -0.1, 1.0]);
+        assert!(approx(near[2], 0.0), "near: {}", near[2]);
+        let far = mul_vec4(&p, [0.0, 0.0, -80.0, 1.0]);
+        assert!(approx(far[2], 1.0), "far: {}", far[2]);
+        let corner = mul_vec4(&p, [-17.0, 17.0, -40.0, 1.0]);
+        assert!(approx(corner[0], -1.0) && approx(corner[1], 1.0));
+        assert!(approx(corner[2], (40.0 - 0.1) / 79.9));
+    }
+
+    #[test]
+    fn normal_matrix_undoes_nonuniform_scale() {
+        // Scale (2, 1, 1): normals must shrink along x — a normal of
+        // (1, 1, 0)/sqrt(2) maps to direction (0.5, 1, 0).
+        let m = mul(&translate(5.0, 0.0, 0.0), &scale(2.0, 1.0, 1.0));
+        let nm = normal_matrix(&m);
+        let n = mul_vec4(&nm, [0.70710678, 0.70710678, 0.0, 0.0]);
+        let expect = [0.35355339, 0.70710678, 0.0];
+        assert!(
+            approx(n[0], expect[0]) && approx(n[1], expect[1]) && approx(n[2], expect[2]),
+            "{n:?}"
+        );
+        // Rotation only: normal matrix equals the rotation.
+        let r = rotate_y(0.7);
+        let nm2 = normal_matrix(&r);
+        for c in 0..3 {
+            for row in 0..3 {
+                assert!(approx(nm2[c][row], r[c][row]), "nm2[{c}][{row}]");
+            }
+        }
     }
 
     #[test]

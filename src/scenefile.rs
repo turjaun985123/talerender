@@ -10,7 +10,11 @@
 //! - **composer** (`post.bokeh` present): the dof-chart chain —
 //!   HalfFloat MSAA-4x scene target, packed-depth prepass, the
 //!   transcribed r170 bokeh composite, Neutral + sRGB output stage
-//!   (the dof.rs shaders, unchanged).
+//!   (the dof.rs shaders, unchanged). Since M5 the chain also runs
+//!   the optional `post.bloom` (UnrealBloomPass) between bokeh and
+//!   output and the optional `post.grade` (the engine's GRADE shader)
+//!   after output, both from src/composer.rs; absent fields leave
+//!   the chain byte-identical to the M2/M3 form.
 //!
 //! Nodes draw in document order in both paths; group transforms
 //! accumulate down the tree. The `code-ref` node type is the format's
@@ -47,6 +51,26 @@ struct Bokeh {
     maxblur: f32,
 }
 
+/// UnrealBloomPass settings (M5). Field defaults mirror the engine's
+/// per-frame application (engine.ts): threshold ?? 0.85, radius
+/// ?? 0.6; strength defaults to 0, so an empty block is inert.
+struct BloomCfg {
+    threshold: f32,
+    strength: f32,
+    radius: f32,
+}
+
+/// The engine's GRADE settings (M5). Defaults mirror engine.ts's
+/// per-frame fallbacks: vignette 0.18, grain 0.008, warm 0.02,
+/// sat 1.12, uTime = t ?? 0.
+struct GradeCfg {
+    vignette: f32,
+    grain: f32,
+    warm: f32,
+    sat: f32,
+    time: f32,
+}
+
 enum Draw {
     Colour(ColourDraw),
     Tex(TexDraw),
@@ -61,6 +85,8 @@ struct Loaded {
     textures: Vec<(Vec<u8>, u32, u32)>,
     draws: Vec<Draw>,
     bokeh: Option<Bokeh>,
+    bloom: Option<BloomCfg>,
+    grade: Option<GradeCfg>,
 }
 
 // ---------------------------------------------------------------------
@@ -85,6 +111,15 @@ fn num_field(v: &Value, key: &str, ctx: &str) -> Result<f64, String> {
 
 fn f32_field(v: &Value, key: &str, ctx: &str) -> Result<f32, String> {
     Ok(num_field(v, key, ctx)? as f32)
+}
+
+/// An optional f32 field with a documented default (the post.bloom /
+/// post.grade blocks carry engine-mirroring defaults per field).
+fn f32_field_or(v: &Value, key: &str, ctx: &str, default: f32) -> Result<f32, String> {
+    match v.get(key) {
+        Some(x) => Ok(num(x, &format!("{ctx}.{key}"))? as f32),
+        None => Ok(default),
+    }
 }
 
 fn u32_field(v: &Value, key: &str, ctx: &str) -> Result<u32, String> {
@@ -544,8 +579,32 @@ fn load(path: &str) -> Result<Loaded, String> {
         },
         None => None,
     };
+    let bloom = match root.get("post").and_then(|p| p.get("bloom")) {
+        Some(b) => Some(BloomCfg {
+            threshold: f32_field_or(b, "threshold", "scene.post.bloom", 0.85)?,
+            strength: f32_field_or(b, "strength", "scene.post.bloom", 0.0)?,
+            radius: f32_field_or(b, "radius", "scene.post.bloom", 0.6)?,
+        }),
+        None => None,
+    };
+    let grade = match root.get("post").and_then(|p| p.get("grade")) {
+        Some(g) => Some(GradeCfg {
+            vignette: f32_field_or(g, "vignette", "scene.post.grade", 0.18)?,
+            grain: f32_field_or(g, "grain", "scene.post.grade", 0.008)?,
+            warm: f32_field_or(g, "warm", "scene.post.grade", 0.02)?,
+            sat: f32_field_or(g, "sat", "scene.post.grade", 1.12)?,
+            time: f32_field_or(g, "time", "scene.post.grade", 0.0)?,
+        }),
+        None => None,
+    };
+    // Format v1 enters the composer path through post.bokeh (the
+    // chain's anchor); bloom/grade ride that path, so a file naming
+    // them without bokeh is rejected rather than silently dropped.
+    if bokeh.is_none() && (bloom.is_some() || grade.is_some()) {
+        return Err(err("scene.post", "post.bloom / post.grade require post.bokeh (format v1 enters the composer path via bokeh)"));
+    }
 
-    Ok(Loaded { name, camera, clear, light_dir, ambient, textures, draws, bokeh })
+    Ok(Loaded { name, camera, clear, light_dir, ambient, textures, draws, bokeh, bloom, grade })
 }
 
 // ---------------------------------------------------------------------
@@ -1455,6 +1514,16 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded) {
         });
     }
 
+    // ---- M5 post stages (created only when the file asks) ----
+    let post_chain = if scene.bloom.is_some() || scene.grade.is_some() {
+        Some(crate::composer::PostChain::new(&device))
+    } else {
+        None
+    };
+    let grade_tex = scene.grade.as_ref().map(|_| {
+        make_target(&device, width, height, wgpu::TextureFormat::Rgba8Unorm, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING, "composer-grade-src")
+    });
+
     // ---- passes (dof.rs's order) ----
     let clear = scene.clear.unwrap_or([0.0, 0.0, 0.0]);
     let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
@@ -1549,12 +1618,31 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded) {
         pass.set_bind_group(0, &bokeh_bg, &[]);
         pass.draw(0..3, 0..1);
     }
+    // M5: UnrealBloomPass between bokeh and output (additively over
+    // the bokeh result, which is the pass's read buffer).
+    if let (Some(chain), Some(b)) = (&post_chain, &scene.bloom) {
+        chain.bloom(
+            &device,
+            &queue,
+            &mut encoder,
+            &bokeh_view,
+            &bokeh_view,
+            width,
+            height,
+            &crate::composer::BloomParams { threshold: b.threshold, strength: b.strength, radius: b.radius },
+        );
+    }
     {
-        let final_view = final_tex.create_view(&wgpu::TextureViewDescriptor::default());
+        // With GRADE present the output stage lands in the grade
+        // input; otherwise it is the final image, as before.
+        let out_view = match &grade_tex {
+            Some(t) => t.create_view(&wgpu::TextureViewDescriptor::default()),
+            None => final_tex.create_view(&wgpu::TextureViewDescriptor::default()),
+        };
         let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("composer output pass"),
             color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                view: &final_view,
+                view: &out_view,
                 resolve_target: None,
                 ops: wgpu::Operations {
                     load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
@@ -1568,6 +1656,19 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded) {
         pass.set_pipeline(&output_pipeline);
         pass.set_bind_group(0, &output_bg, &[]);
         pass.draw(0..3, 0..1);
+    }
+    // M5: GRADE after output (sRGB space), into the final target.
+    if let (Some(chain), Some(g), Some(t)) = (&post_chain, &scene.grade, &grade_tex) {
+        let src_view = t.create_view(&wgpu::TextureViewDescriptor::default());
+        let dst_view = final_tex.create_view(&wgpu::TextureViewDescriptor::default());
+        chain.grade(
+            &device,
+            &queue,
+            &mut encoder,
+            &src_view,
+            &dst_view,
+            &crate::composer::GradeParams { vignette: g.vignette, grain: g.grain, warm: g.warm, sat: g.sat, time: g.time },
+        );
     }
 
     let padded = math::padded_row_bytes(width);

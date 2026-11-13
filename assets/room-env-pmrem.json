@@ -1,0 +1,10 @@
+{
+  "width": 768,
+  "height": 1024,
+  "maxMip": 8,
+  "encoding": "float16 RGBA, WebGL readback row order (row 0 = bottom of the CubeUV image)",
+  "sigma": 0.04,
+  "source": "PMREMGenerator.fromScene(new RoomEnvironment(), 0.04), three.js r170 vendored build",
+  "maxValue": 56.3125,
+  "meanG": 0.677130492850362
+}

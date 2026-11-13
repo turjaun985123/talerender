@@ -19,6 +19,7 @@
 
 mod ab1;
 mod battery;
+mod composer;
 mod dof;
 mod math;
 mod scene;
@@ -35,6 +36,10 @@ fn main() {
     let mut scene = String::from("m1");
     let mut caption = String::from("docs/ab/onoda-s01-t150/assets/caption.png");
     let mut scene_file: Option<String> = None;
+    // M5 ablation control for --scene ab1: how much of the composer
+    // chain runs (lighting | bloom | grade). Default is the full
+    // chain, matching production.
+    let mut post_stage = String::from("grade");
     let mut i = 1;
     while i < args.len() {
         match args[i].as_str() {
@@ -62,6 +67,10 @@ fn main() {
                 i += 1;
                 caption = args.get(i).expect("missing value for --caption").clone();
             }
+            "--post-stage" => {
+                i += 1;
+                post_stage = args.get(i).expect("missing value for --post-stage").clone();
+            }
             other => {
                 eprintln!("unknown argument: {other}");
                 std::process::exit(2);
@@ -77,7 +86,18 @@ fn main() {
     }
     match scene.as_str() {
         "m1" => pollster::block_on(run(width, height, &out)),
-        "ab1" => pollster::block_on(ab1::run_ab1(width, height, &out, &caption)),
+        "ab1" => {
+            let stage = match post_stage.as_str() {
+                "lighting" => 1,
+                "bloom" => 2,
+                "grade" => 3,
+                other => {
+                    eprintln!("unknown --post-stage: {other} (expected lighting, bloom or grade)");
+                    std::process::exit(2);
+                }
+            };
+            pollster::block_on(ab1::run_ab1(width, height, &out, &caption, stage))
+        }
         "dof-chart" => pollster::block_on(dof::run_dof(width, height, &out)),
         "stroke-battery" => battery::run_battery(&out),
         other => {

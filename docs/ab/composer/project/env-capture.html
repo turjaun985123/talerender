@@ -1,0 +1,63 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>RoomEnvironment PMREM capture</title>
+<script type="importmap">
+{ "imports": { "three": "./vendor/three.module.js" } }
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { RoomEnvironment } from './addons/RoomEnvironment.js';
+
+async function post(name, body) {
+  await fetch('/save/' + name, { method: 'POST', body });
+}
+
+try {
+  const renderer = new THREE.WebGLRenderer({ antialias: false });
+  renderer.setSize(64, 64);
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  // engine.ts:33 -- pmrem.fromScene(new RoomEnvironment(), 0.04)
+  const envRT = pmrem.fromScene(new RoomEnvironment(), 0.04);
+  const W = envRT.texture.image.width;
+  const H = envRT.texture.image.height;
+  const buf = new Uint16Array(W * H * 4);
+  renderer.readRenderTargetPixels(envRT, 0, 0, W, H, buf);
+  await post('room-env-pmrem.f16', buf.buffer);
+
+  // Statistics for the capture log + a log-scaled preview PNG.
+  let maxV = 0, sumY = 0;
+  const img = new ImageData(W, H);
+  const logDenom = Math.log(1 + 120);
+  for (let i = 0; i < W * H; i++) {
+    const r = THREE.DataUtils.fromHalfFloat(buf[i * 4]);
+    const g = THREE.DataUtils.fromHalfFloat(buf[i * 4 + 1]);
+    const b = THREE.DataUtils.fromHalfFloat(buf[i * 4 + 2]);
+    maxV = Math.max(maxV, r, g, b);
+    sumY += g;
+    const enc = (v) => Math.max(0, Math.min(255, Math.round(Math.log(1 + Math.max(0, v)) / logDenom * 255)));
+    // GL readback row 0 is the BOTTOM of the image; canvas row 0 is the
+    // top, so flip rows for a human-viewable preview.
+    const row = H - 1 - Math.floor(i / W);
+    const k = (row * W + (i % W)) * 4;
+    img.data[k] = enc(r); img.data[k + 1] = enc(g); img.data[k + 2] = enc(b); img.data[k + 3] = 255;
+  }
+  const cv = document.createElement('canvas');
+  cv.width = W; cv.height = H;
+  cv.getContext('2d').putImageData(img, 0, 0);
+  const blob = await new Promise((res) => cv.toBlob(res, 'image/png'));
+  await post('room-env-preview.png', blob);
+
+  const info = {
+    width: W, height: H, maxMip: 8,
+    encoding: 'float16 RGBA, WebGL readback row order (row 0 = bottom of the CubeUV image)',
+    sigma: 0.04,
+    source: 'PMREMGenerator.fromScene(new RoomEnvironment(), 0.04), three.js r170 vendored build',
+    maxValue: maxV, meanG: sumY / (W * H)
+  };
+  await post('room-env-pmrem.json', JSON.stringify(info, null, 2));
+  await post('done', 'ok');
+} catch (e) {
+  await post('error.txt', String((e && e.stack) || e));
+  await post('done', 'error');
+}
+</script>
