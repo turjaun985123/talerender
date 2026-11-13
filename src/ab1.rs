@@ -1377,7 +1377,11 @@ pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str) {
             &wgpu::DeviceDescriptor {
                 label: Some("talerender device"),
                 required_features: wgpu::Features::empty(),
-                required_limits: wgpu::Limits::downlevel_defaults(),
+                // NOT downlevel_defaults: those cap textures at 2048,
+                // but the real character canvas is 2560x2816 (res 2).
+                // Standard WebGPU limits (8192) are what the scene
+                // needs; lavapipe admits them.
+                required_limits: wgpu::Limits::default(),
             },
             None,
         )
