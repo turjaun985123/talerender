@@ -519,6 +519,9 @@ impl Painter {
             let (ax, ay) = seg[0];
             let (bx, by) = seg[1];
             let (sx0, sy0, sx1, sy1) = self.bbox(ax.min(bx) - hw - 2.0, ay.min(by) - hw - 2.0, ax.max(bx) + hw + 2.0, ay.max(by) + hw + 2.0);
+            // Clamp to the union buffer (stamp padding hw+2 is
+            // wider than the buffer's hw+1).
+            let (sx0, sy0, sx1, sy1) = (sx0.max(x0), sy0.max(y0), sx1.min(x1), sy1.min(y1));
             for y in sy0..=sy1 {
                 for x in sx0..=sx1 {
                     let d = seg_dist(x as f32 + 0.5, y as f32 + 0.5, ax, ay, bx, by);
