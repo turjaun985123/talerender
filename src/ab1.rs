@@ -169,38 +169,37 @@ fn box_geo(w: f32, h: f32, d: f32, col: [f32; 3]) -> Geo {
 
 /// Cylinder along Y, centred (three.js CylinderGeometry layout):
 /// radius_top, radius_bottom, height, radial segments, with caps.
+fn cyl_ring(g: &mut Geo, y: f32, r: f32, seg: u32, cap: bool, col: [f32; 3]) -> Vec<u32> {
+    let mut ids = Vec::new();
+    for i in 0..seg {
+        let a = (i as f32 / seg as f32) * std::f32::consts::TAU;
+        let (s, c) = a.sin_cos();
+        let n = if cap {
+            [0.0, if y > 0.0 { 1.0 } else { -1.0 }, 0.0]
+        } else {
+            [c, 0.0, s]
+        };
+        ids.push(g.vert([r * c, y, r * s], n, col));
+    }
+    ids
+}
+
 fn cyl_geo(rt: f32, rb: f32, h: f32, seg: u32, col: [f32; 3]) -> Geo {
     let mut g = Geo::new();
     let hh = h / 2.0;
-    let mut ring = |y: f32, r: f32, nrm_y: f32| -> Vec<u32> {
-        let mut ids = Vec::new();
-        for i in 0..seg {
-            let a = (i as f32 / seg as f32) * std::f32::consts::TAU;
-            let (s, c) = a.sin_cos();
-            let n = if nrm_y == 0.0 { [c, 0.0, s] } else { [0.0, nrm_y, 0.0] };
-            ids.push(g.vert([r * c, y, r * s], n, col));
-        }
-        ids
-    };
-    let bot = ring(-hh, rb, 0.0);
-    let top = ring(hh, rt, 0.0);
-    for i in 0..seg {
-        let j = (i + 1) % seg;
-        g.tri(bot[i as usize], top[j as usize], bot[j as usize]);
-        g.tri(bot[i as usize], top[i as usize], top[j as usize]);
-    }
-    // Caps: fans around a centre vertex.
+    let bot = cyl_ring(&mut g, -hh, rb, seg, false, col);
+    let top = cyl_ring(&mut g, hh, rt, seg, false, col);
+    let bot_cap = cyl_ring(&mut g, -hh, rb, seg, true, col);
+    let top_cap = cyl_ring(&mut g, hh, rt, seg, true, col);
     let cb = g.vert([0.0, -hh, 0.0], [0.0, -1.0, 0.0], col);
-    let bot_cap = ring(-hh, rb, -1.0);
-    for i in 0..seg {
-        let j = (i + 1) % seg;
-        g.tri(cb, bot_cap[j as usize], bot_cap[i as usize]);
-    }
     let ct = g.vert([0.0, hh, 0.0], [0.0, 1.0, 0.0], col);
-    let top_cap = ring(hh, rt, 1.0);
     for i in 0..seg {
         let j = (i + 1) % seg;
-        g.tri(ct, top_cap[i as usize], top_cap[j as usize]);
+        let (i, j) = (i as usize, j as usize);
+        g.tri(bot[i], top[j], bot[j]);
+        g.tri(bot[i], top[i], top[j]);
+        g.tri(cb, bot_cap[j], bot_cap[i]);
+        g.tri(ct, top_cap[i], top_cap[j]);
     }
     g.fix_winding(true);
     g
@@ -420,8 +419,9 @@ impl Painter {
         if oa <= 0.0 {
             return;
         }
+        let src_rgb = [src.0, src.1, src.2];
         for c in 0..3 {
-            let s = src[c] as f32 / 255.0;
+            let s = src_rgb[c] as f32 / 255.0;
             let d = self.px[k + c] as f32 / 255.0;
             self.px[k + c] = (((s * sa + d * da * (1.0 - sa)) / oa) * 255.0).round() as u8;
         }
