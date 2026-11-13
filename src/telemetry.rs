@@ -1185,12 +1185,12 @@ fn ab1_camera() -> ProjCamera {
     }
 }
 
-fn cutout_from(px: &[u8], w: u32, h: u32, model: &M4, cam: &ProjCamera) -> Cutout {
+fn cutout_from(px: &[u8], w: u32, h: u32, model: &M4, cam: &ProjCamera, pose: &PoseState) -> Cutout {
     let look = onoda_look();
     Cutout {
         id: "onoda".to_string(),
         desc: describe(&look),
-        pose: pose_summary(&onoda_pose()),
+        pose: pose_summary(pose),
         overflow: Some(scan_canvas_overflow(px, w as usize, h as usize, 2.0)),
         box_: Some(project_box(model, cam, 1.75)),
         sig: look_signature(&look),
@@ -1205,7 +1205,7 @@ pub(crate) fn ab1_cutout() -> Cutout {
     let (px, w, h) = crate::ab1::paint_onoda();
     let (card, _rifle) = crate::ab1::onoda_card_and_rifle();
     let model = model_from_f32(&card.model);
-    cutout_from(&px, w, h, &model, &ab1_camera())
+    cutout_from(&px, w, h, &model, &ab1_camera(), &onoda_pose())
 }
 
 /// ab1, scene-file form: the camera parsed from
@@ -1250,7 +1250,7 @@ pub(crate) fn ab1_file_cutout(path: &str) -> Result<Cutout, String> {
     let (px, w, h) = crate::ab1::paint_onoda();
     let (card, _rifle) = crate::ab1::onoda_card_and_rifle();
     let model = model_from_f32(&card.model);
-    Ok(cutout_from(&px, w, h, &model, &cam))
+    Ok(cutout_from(&px, w, h, &model, &cam, &onoda_pose()))
 }
 
 /// The deliberately-overflowing variant: the same Onoda, the same
@@ -1282,7 +1282,12 @@ pub(crate) fn ab1_variant_cutout() -> Cutout {
     };
     let (px, w, h) = crate::scene::paint_toon(&spec);
     let model = toon_model(VARIANT_POS, yaw, pitch);
-    cutout_from(&px, w, h, &model, &cam)
+    // The variant's poseSummary carries the literal headTurn its
+    // set() passes (-0.025), not S01's poseTrack value — the real
+    // harness page prints exactly that (docs/ab/telemetry/).
+    let mut pose = onoda_pose();
+    pose.head_turn = -0.025;
+    cutout_from(&px, w, h, &model, &cam, &pose)
 }
 
 // ---------------------------------------------------------------------
