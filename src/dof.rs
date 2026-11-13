@@ -295,7 +295,7 @@ pub async fn run_dof(width: u32, height: u32, out: &str) {
     let scene_depth = make_target(&device, width, height, wgpu::TextureFormat::Depth32Float, 4, wgpu::TextureUsages::RENDER_ATTACHMENT, "dof-scene-depth");
     // Packed-depth prepass target: HalfFloat, single-sample, cleared to
     // white (BokehPass renders its depth target with a white clear).
-    let packed_depth = make_target(&device, width, height, wgpu::TextureFormat::Rgba16Float, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING, "dof-packed-depth");
+    let packed_depth = make_target(&device, width, height, wgpu::TextureFormat::Rgba16Float, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_SRC, "dof-packed-depth");
     let prepass_depth = make_target(&device, width, height, wgpu::TextureFormat::Depth32Float, 1, wgpu::TextureUsages::RENDER_ATTACHMENT, "dof-prepass-depth");
     let bokeh_out = make_target(&device, width, height, wgpu::TextureFormat::Rgba16Float, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING, "dof-bokeh-out");
     let final_tex = make_target(&device, width, height, wgpu::TextureFormat::Rgba8Unorm, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC, "dof-final");
@@ -362,7 +362,17 @@ pub async fn run_dof(width: u32, height: u32, out: &str) {
     });
 
     // WGSL BokehUniforms layout: six f32 fields + two padding slots.
-    let bokeh_uniform_data: [f32; 8] = [FOCUS, aspect, APERTURE, MAXBLUR, NEAR, FAR, 0.0, 0.0];
+    // Debug knobs for the gate investigation (not part of the chart
+    // spec): TALERENDER_DOF_APERTURE overrides the aperture uniform —
+    // 0 makes the gather an exact identity, isolating the pre-bokeh
+    // scene pass; TALERENDER_DOF_DUMP_DEPTH=1 reads the packed-depth
+    // target back and prints the recovered viewZ per panel centre.
+    let aperture = std::env::var("TALERENDER_DOF_APERTURE")
+        .ok()
+        .and_then(|v| v.parse::<f32>().ok())
+        .unwrap_or(APERTURE);
+    let dump_depth = std::env::var("TALERENDER_DOF_DUMP_DEPTH").is_ok_and(|v| v == "1");
+    let bokeh_uniform_data: [f32; 8] = [FOCUS, aspect, aperture, MAXBLUR, NEAR, FAR, 0.0, 0.0];
     let bokeh_uniform_buf = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("dof-bokeh-uniforms"),
         size: 32,
@@ -562,9 +572,89 @@ pub async fn run_dof(width: u32, height: u32, out: &str) {
     drop(mapped);
     out_buf.unmap();
     image::save_buffer(out, &rgba, width, height, image::ColorType::Rgba8).expect("write PNG");
+
+    if dump_depth {
+        dump_packed_depth(&device, &queue, &packed_depth, width, height, aspect);
+    }
+
     println!(
         "wrote {out} ({width}x{height}) — scene dof-chart: panels at 2..30 m, focus {FOCUS} m, aperture {APERTURE}, maxblur {MAXBLUR}; chain: HalfFloat MSAA-4x scene -> packed-depth prepass -> transcribed r170 bokeh -> Neutral+sRGB output"
     );
+}
+
+/// Debug: read the packed-depth target back and print the recovered
+/// viewZ at each panel centre (the number the bokeh shader sees).
+fn dump_packed_depth(
+    device: &wgpu::Device,
+    queue: &wgpu::Queue,
+    tex: &wgpu::Texture,
+    width: u32,
+    height: u32,
+    aspect: f32,
+) {
+    fn f16_to_f32(h: u16) -> f32 {
+        let sign = ((h >> 15) & 1) as u32;
+        let exp = ((h >> 10) & 0x1f) as i32;
+        let frac = (h & 0x3ff) as u32;
+        let bits = if exp == 0 {
+            if frac == 0 {
+                sign << 31
+            } else {
+                // subnormal: normalise
+                let mut e = -14i32;
+                let mut f = frac;
+                while f & 0x400 == 0 {
+                    f <<= 1;
+                    e -= 1;
+                }
+                (sign << 31) | (((e + 127) as u32) << 23) | ((f & 0x3ff) << 13)
+            }
+        } else if exp == 31 {
+            (sign << 31) | (0xff << 23) | (frac << 13)
+        } else {
+            (sign << 31) | (((exp - 15 + 127) as u32) << 23) | (frac << 13)
+        };
+        f32::from_bits(bits)
+    }
+    let unpadded = (width * 8) as usize; // Rgba16Float = 8 bytes/px
+    let align = wgpu::COPY_BYTES_PER_ROW_ALIGNMENT as usize;
+    let padded = unpadded.div_ceil(align) * align;
+    let buf = device.create_buffer(&wgpu::BufferDescriptor {
+        label: Some("dof-depth-readback"),
+        size: (padded * height as usize) as u64,
+        usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
+        mapped_at_creation: false,
+    });
+    let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("dof-depth-copy") });
+    encoder.copy_texture_to_buffer(
+        wgpu::ImageCopyTexture { texture: tex, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
+        wgpu::ImageCopyBuffer { buffer: &buf, layout: wgpu::ImageDataLayout { offset: 0, bytes_per_row: Some(padded as u32), rows_per_image: Some(height) } },
+        wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
+    );
+    queue.submit(Some(encoder.finish()));
+    let slice = buf.slice(..);
+    let (tx, rx) = std::sync::mpsc::channel();
+    slice.map_async(wgpu::MapMode::Read, move |r| {
+        let _ = tx.send(r);
+    });
+    device.poll(wgpu::Maintain::Wait);
+    rx.recv().expect("map channel").expect("map depth readback");
+    let mapped = slice.get_mapped_range();
+    println!("packed-depth dump (panel centres):");
+    for &(nx, ny, d) in PANELS.iter() {
+        let px = (((nx + 1.0) / 2.0) * width as f32) as usize;
+        let py = ((1.0 - (ny + 1.0) / 2.0) * height as f32) as usize;
+        let off = py * padded + px * 8;
+        let mut ch = [0.0f32; 4];
+        for (i, c) in ch.iter_mut().enumerate() {
+            *c = f16_to_f32(u16::from_le_bytes([mapped[off + i * 2], mapped[off + i * 2 + 1]]));
+        }
+        let view_z = depth_to_view_z(unpack_rgba_depth(ch), NEAR, FAR);
+        println!("  panel d={d:>5} m @({px},{py}): packed={ch:?} -> viewZ {view_z:.4} (expect {})", -d);
+    }
+    let _ = aspect;
+    drop(mapped);
+    buf.unmap();
 }
 
 // ---- CPU mirrors of the packing arithmetic (transcription tests) ----
@@ -592,14 +682,12 @@ fn pack_depth_rgba(v: f32) -> [f32; 4] {
 }
 
 /// unpackRGBAToDepth, f32 mirror of shader_bokeh.wgsl.
-#[cfg(test)]
 fn unpack_rgba_depth(v: [f32; 4]) -> f32 {
     let downscale = 255.0f32 / 256.0;
     v[0] * (downscale / 1.0) + v[1] * (downscale / 256.0) + v[2] * (downscale / 65536.0) + v[3] * (1.0 / 16777216.0)
 }
 
 /// perspectiveDepthToViewZ.
-#[cfg(test)]
 fn depth_to_view_z(depth: f32, near: f32, far: f32) -> f32 {
     (near * far) / ((far - near) * depth - far)
 }
