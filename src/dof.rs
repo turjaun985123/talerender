@@ -295,7 +295,7 @@ pub async fn run_dof(width: u32, height: u32, out: &str) {
     let scene_depth = make_target(&device, width, height, wgpu::TextureFormat::Depth32Float, 4, wgpu::TextureUsages::RENDER_ATTACHMENT, "dof-scene-depth");
     // Packed-depth prepass target: HalfFloat, single-sample, cleared to
     // white (BokehPass renders its depth target with a white clear).
-    let packed_depth = make_target(&device, width, height, wgpu::TextureFormat::Rgba16Float, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_SRC, "dof-packed-depth");
+    let packed_depth = make_target(&device, width, height, depth_format, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_SRC, "dof-packed-depth");
     let prepass_depth = make_target(&device, width, height, wgpu::TextureFormat::Depth32Float, 1, wgpu::TextureUsages::RENDER_ATTACHMENT, "dof-prepass-depth");
     let bokeh_out = make_target(&device, width, height, wgpu::TextureFormat::Rgba16Float, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING, "dof-bokeh-out");
     let final_tex = make_target(&device, width, height, wgpu::TextureFormat::Rgba8Unorm, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC, "dof-final");
@@ -352,7 +352,7 @@ pub async fn run_dof(width: u32, height: u32, out: &str) {
         fragment: Some(wgpu::FragmentState {
             module: &depth_module,
             entry_point: "fs_main",
-            targets: &[Some(wgpu::ColorTargetState { format: wgpu::TextureFormat::Rgba16Float, blend: Some(wgpu::BlendState::REPLACE), write_mask: wgpu::ColorWrites::ALL })],
+            targets: &[Some(wgpu::ColorTargetState { format: depth_format, blend: Some(wgpu::BlendState::REPLACE), write_mask: wgpu::ColorWrites::ALL })],
             compilation_options: Default::default(),
         }),
         primitive: wgpu::PrimitiveState { cull_mode: None, ..Default::default() },
@@ -372,6 +372,15 @@ pub async fn run_dof(width: u32, height: u32, out: &str) {
         .and_then(|v| v.parse::<f32>().ok())
         .unwrap_or(APERTURE);
     let dump_depth = std::env::var("TALERENDER_DOF_DUMP_DEPTH").is_ok_and(|v| v == "1");
+    // Control experiment for the fp16-store question (see
+    // docs/ab/dof-chart/gaps.md): TALERENDER_DOF_DEPTH_FORMAT=rgba8
+    // stores the packed depth in a byte target, which is lossless for
+    // a byte packing; the default stays BokehPass's HalfFloat.
+    let depth_format = if std::env::var("TALERENDER_DOF_DEPTH_FORMAT").is_ok_and(|v| v == "rgba8") {
+        wgpu::TextureFormat::Rgba8Unorm
+    } else {
+        wgpu::TextureFormat::Rgba16Float
+    };
     let bokeh_uniform_data: [f32; 8] = [FOCUS, aspect, aperture, MAXBLUR, NEAR, FAR, 0.0, 0.0];
     let bokeh_uniform_buf = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("dof-bokeh-uniforms"),
@@ -574,7 +583,7 @@ pub async fn run_dof(width: u32, height: u32, out: &str) {
     image::save_buffer(out, &rgba, width, height, image::ColorType::Rgba8).expect("write PNG");
 
     if dump_depth {
-        dump_packed_depth(&device, &queue, &packed_depth, width, height, aspect);
+        dump_packed_depth(&device, &queue, &packed_depth, width, height, depth_format);
     }
 
     println!(
@@ -590,8 +599,9 @@ fn dump_packed_depth(
     tex: &wgpu::Texture,
     width: u32,
     height: u32,
-    aspect: f32,
+    format: wgpu::TextureFormat,
 ) {
+    let bytes_per_px: usize = if format == wgpu::TextureFormat::Rgba8Unorm { 4 } else { 8 };
     fn f16_to_f32(h: u16) -> f32 {
         let sign = ((h >> 15) & 1) as u32;
         let exp = ((h >> 10) & 0x1f) as i32;
@@ -616,7 +626,7 @@ fn dump_packed_depth(
         };
         f32::from_bits(bits)
     }
-    let unpadded = (width * 8) as usize; // Rgba16Float = 8 bytes/px
+    let unpadded = width as usize * bytes_per_px;
     let align = wgpu::COPY_BYTES_PER_ROW_ALIGNMENT as usize;
     let padded = unpadded.div_ceil(align) * align;
     let buf = device.create_buffer(&wgpu::BufferDescriptor {
@@ -644,15 +654,18 @@ fn dump_packed_depth(
     for &(nx, ny, d) in PANELS.iter() {
         let px = (((nx + 1.0) / 2.0) * width as f32) as usize;
         let py = ((1.0 - (ny + 1.0) / 2.0) * height as f32) as usize;
-        let off = py * padded + px * 8;
+        let off = py * padded + px * bytes_per_px;
         let mut ch = [0.0f32; 4];
         for (i, c) in ch.iter_mut().enumerate() {
-            *c = f16_to_f32(u16::from_le_bytes([mapped[off + i * 2], mapped[off + i * 2 + 1]]));
+            *c = if bytes_per_px == 4 {
+                mapped[off + i] as f32 / 255.0
+            } else {
+                f16_to_f32(u16::from_le_bytes([mapped[off + i * 2], mapped[off + i * 2 + 1]]))
+            };
         }
         let view_z = depth_to_view_z(unpack_rgba_depth(ch), NEAR, FAR);
         println!("  panel d={d:>5} m @({px},{py}): packed={ch:?} -> viewZ {view_z:.4} (expect {})", -d);
     }
-    let _ = aspect;
     drop(mapped);
     buf.unmap();
 }
