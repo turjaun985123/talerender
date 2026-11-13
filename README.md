@@ -15,8 +15,8 @@ replaces the 2D characters with modelled 3D characters.
 
 | Milestone | Scope | State |
 |---|---|---|
-| M0 | Repository audit of Tall Tale Shorts (API / browser / shader inventory) | In progress |
-| M1 | Native wgpu prototype: offscreen render → PNG, headless | **Started** — smoke frame |
+| M0 | Repository audit of Tall Tale Shorts (API / browser / shader inventory) | **Complete** — 6 audit findings + ADR-001 + compatibility contract + risk register (see docs/) |
+| M1 | Native wgpu prototype: offscreen render → PNG, headless | In progress — smoke frame + first real 3D scene (perspective camera, lit cube, textured character card) rendered and verified in CI; the §28 reproduction of a real Tall Tale scene with A/B evidence is the remaining step |
 | M2 | Core Three.js compatibility (Scene/Object3D/Mesh/Camera/…) | Not started |
 | M3 | One real Tall Tale scene migrated + visual A/B vs Chrome | Not started |
 | M4 | Animation & character parity | Not started |
@@ -24,6 +24,8 @@ replaces the 2D characters with modelled 3D characters.
 | M6 | Native production capture + FFmpeg integration | Not started |
 | M7 | Full project integration | Not started |
 | M8 | Production hardening & release | Not started |
+
+Architecture record: [docs/audit/](docs/audit/) (M0 findings) · [docs/ADR-001-talepender-architecture.md](docs/ADR-001-talepender-architecture.md) · [docs/compatibility-contract.md](docs/compatibility-contract.md) · [docs/risk-register.md](docs/risk-register.md)
 
 What exists today is the Milestone 1 smoke frame: wgpu initialises on the Vulkan
 backend, renders one 1080×1920 frame to an offscreen texture and writes a PNG.
