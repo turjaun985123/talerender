@@ -533,13 +533,41 @@ impl Painter {
             }
         }
         // Pass 2: blend once per pixel from the union distance,
-        // area-refined in the AA band (cov_area).
-        let dist = |qx: f32, qy: f32| {
-            let mut d = f32::MAX;
-            for seg in pts.windows(2) {
-                d = d.min(seg_dist(qx, qy, seg[0].0, seg[0].1, seg[1].0, seg[1].1));
+        // area-refined in the AA band (cov_area). Round caps at
+        // open ends are Skia's flattened arcs, not exact discs
+        // (see CapFan); closed loops have no caps.
+        let nseg = pts.len() - 1;
+        let closed = pts.len() > 2 && (pts[0].0 - pts[nseg].0).hypot(pts[0].1 - pts[nseg].1) < 0.05;
+        let mk_fan = |vi: usize, ni: usize| -> Option<CapFan> {
+            if closed {
+                return None;
             }
-            d - hw
+            let (ax, ay) = pts[vi];
+            let (bx, by) = pts[ni];
+            let (dx, dy) = (ax - bx, ay - by); // outward: neighbour -> vertex
+            let l = dx.hypot(dy);
+            if l < 1e-6 {
+                None
+            } else {
+                Some(cap_fan((ax, ay), (dx / l, dy / l), hw))
+            }
+        };
+        let fan_start = mk_fan(0, 1);
+        let fan_end = mk_fan(nseg, nseg - 1);
+        let dist = |qx: f32, qy: f32| {
+            let mut sd = f32::MAX;
+            for (i, seg) in pts.windows(2).enumerate() {
+                let (dd, t) = seg_dist_t(qx, qy, seg[0].0, seg[0].1, seg[1].0, seg[1].1);
+                let s = if i == 0 && t == 0.0 {
+                    fan_start.as_ref().map_or(dd - hw, |f| fan_sd(f, qx, qy))
+                } else if i == nseg - 1 && t == 1.0 {
+                    fan_end.as_ref().map_or(dd - hw, |f| fan_sd(f, qx, qy))
+                } else {
+                    dd - hw
+                };
+                sd = sd.min(s);
+            }
+            sd
         };
         for y in y0..=y1 {
             for x in x0..=x1 {
@@ -547,6 +575,17 @@ impl Painter {
                 if d0 >= 1.0 {
                     continue; // beyond the AA band: coverage 0
                 }
+                // The fans shift the distance by up to the sagitta
+                // (0.25 px) near terminal vertices; recompute the
+                // centre distance with the fan-aware closure inside
+                // a margin of the band. (Pass 1 stamps plain disc
+                // distances; deeper inside, both models agree the
+                // coverage is 1.)
+                let d0 = if d0 > -1.5 {
+                    dist(x as f32 + 0.5, y as f32 + 0.5)
+                } else {
+                    d0
+                };
                 let cov = cov_area0(&dist, x as f32 + 0.5, y as f32 + 0.5, d0);
                 if cov > 0.0 {
                     self.blend_cov(x, y, col, cov);
@@ -692,6 +731,12 @@ pub(crate) fn ellipse_sd(cx: f32, cy: f32, rx: f32, ry: f32, rot: f32, x: f32, y
 
 /// Distance from a point to a segment.
 pub(crate) fn seg_dist(px: f32, py: f32, ax: f32, ay: f32, bx: f32, by: f32) -> f32 {
+    seg_dist_t(px, py, ax, ay, bx, by).0
+}
+
+/// Distance from a point to a segment, plus the clamped parameter
+/// t of the closest point (0 at a, 1 at b).
+pub(crate) fn seg_dist_t(px: f32, py: f32, ax: f32, ay: f32, bx: f32, by: f32) -> (f32, f32) {
     let (dx, dy) = (bx - ax, by - ay);
     let len2 = dx * dx + dy * dy;
     let t = if len2 > 0.0 {
@@ -699,7 +744,59 @@ pub(crate) fn seg_dist(px: f32, py: f32, ax: f32, ay: f32, bx: f32, by: f32) -> 
     } else {
         0.0
     };
-    (px - (ax + dx * t)).hypot(py - (ay + dy * t))
+    ((px - (ax + dx * t)).hypot(py - (ay + dy * t)), t)
+}
+
+/// A round line cap the way Skia actually draws it: the cap arc
+/// is flattened into equal chords whose sagitta stays within the
+/// rasteriser's flattening tolerance (0.25 device px), laid from
+/// the arc's start at the +normal vertex. At R = 15 device px
+/// that is 9 chords and the tip chord sits at R·cos(10°) ≈ 0.23 px
+/// inside the true semicircle — the stroke battery's cap-end
+/// class measures exactly this (reference axial edge 14.33 px at
+/// R 15, where the exact semicircle gives 14.5). An exact-disc
+/// cap is therefore measurably wrong against Skia, by ~0.3 px at
+/// the tip.
+pub(crate) struct CapFan {
+    c: (f32, f32),    // cap centre (the terminal vertex)
+    axis: (f32, f32), // unit outward direction
+    r: f32,           // cap radius (= half the stroke width)
+    n: usize,         // chord count over the semicircle
+    cos_half: f32,    // cos(pi / (2n))
+}
+
+pub(crate) fn cap_fan(c: (f32, f32), axis: (f32, f32), r: f32) -> CapFan {
+    let cos_max = (1.0f32 - 0.25 / r).clamp(-1.0, 1.0);
+    let n = ((std::f32::consts::PI / (2.0 * cos_max.acos())).ceil() as usize).max(1);
+    CapFan {
+        c,
+        axis,
+        r,
+        n,
+        cos_half: (std::f32::consts::PI / (2.0 * n as f32)).cos(),
+    }
+}
+
+/// Signed distance to the flattened cap boundary (radial model:
+/// exact at chord vertices and chord midpoints, within ~0.05 px
+/// elsewhere at production radii).
+pub(crate) fn fan_sd(f: &CapFan, qx: f32, qy: f32) -> f32 {
+    let (vx, vy) = (qx - f.c.0, qy - f.c.1);
+    let r = vx.hypot(vy);
+    if r < 1e-6 {
+        return -f.r * f.cos_half;
+    }
+    let cosang = ((vx * f.axis.0 + vy * f.axis.1) / r).clamp(-1.0, 1.0);
+    if cosang < 0.0 {
+        return r - f.r; // behind the cap plane: the plain disc term
+    }
+    let phi = cosang.acos(); // 0..=pi/2 from the outward axis
+    let dth = std::f32::consts::PI / f.n as f32;
+    // Vertices at phi_k = pi/2 - k*dth, laid from the arc start.
+    let k = (((std::f32::consts::FRAC_PI_2 - phi) / dth).floor() as i32).clamp(0, f.n as i32 - 1) as usize;
+    let phi_mid = std::f32::consts::FRAC_PI_2 - (k as f32 + 0.5) * dth;
+    let rb = f.r * f.cos_half / (phi - phi_mid).cos();
+    r - rb
 }
 
 /// Area coverage of a pixel from a signed-distance closure.
