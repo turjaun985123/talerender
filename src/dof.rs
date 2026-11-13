@@ -1,0 +1,640 @@
+//! Milestone 3 gate scene: the DoF chart (compatibility contract §1).
+//!
+//! A controlled chart — textured panels at known depths, fixed camera,
+//! focus 10 m, production bokeh defaults (aperture 0.0015, maxblur 0.006)
+//! — rendered through the native transcription of three.js r170's
+//! BokehPass so the blur-vs-depth curve can be measured against the real
+//! engine (docs/ab/dof-chart/).
+//!
+//! Pass chain (mirrors the production composer chain for the parts the
+//! chart's look does not neutralise):
+//!   1. scene colour -> Rgba16Float, MSAA 4x, resolved
+//!      (engine.ts: EffectComposer over a HalfFloatType RT, samples = 4)
+//!   2. depth prepass -> Rgba16Float packed target, cleared to white;
+//!      MeshDepthMaterial + RGBADepthPacking equivalent
+//!      (shader_depth.wgsl), single-sample, NearestFilter on read —
+//!      BokehPass.js's depth render target configuration exactly.
+//!   3. bokeh composite (shader_bokeh.wgsl) -> Rgba16Float
+//!   4. output stage (shader_output.wgsl): NeutralToneMapping at
+//!      exposure 1 + sRGB OETF — the OutputPass steps. Bloom (strength 0)
+//!      and GRADE (vignette/grain/warm 0, sat 1) are exact identities for
+//!      this look, so they are not reproduced.
+//!
+//! The chart spec constants below are shared verbatim with the reference
+//! project's src/shots.ts; both sides derive geometry and texture from
+//! them, never by eyeballing.
+
+use crate::math;
+
+pub const FOCUS: f32 = 10.0;
+pub const APERTURE: f32 = 0.0015;
+pub const MAXBLUR: f32 = 0.006;
+pub const NEAR: f32 = 0.05;
+pub const FAR: f32 = 800.0;
+pub const FOV_Y_DEG: f32 = 30.0;
+/// (ndc_x, ndc_y, depth_m), ndc_y up. The 2 m panel overlaps the bottom
+/// of the 10 m focal panel on purpose (foreground-bleed test case).
+pub const PANELS: [(f32, f32, f32); 10] = [
+    (-0.62, 0.66, 30.0),
+    (0.0, 0.66, 14.0),
+    (0.62, 0.66, 11.0),
+    (-0.62, 0.0, 12.0),
+    (0.0, 0.0, 10.0),
+    (0.62, 0.0, 8.0),
+    (-0.62, -0.66, 7.0),
+    (0.0, -0.66, 5.0),
+    (0.62, -0.66, 3.5),
+    (0.0, -0.30, 2.0),
+];
+pub const PANEL_NDC_W: f32 = 0.56;
+pub const PANEL_NDC_H: f32 = 0.36;
+pub const BLEED_NDC_H: f32 = 0.30;
+pub const TEX_SIZE: u32 = 512;
+
+const SHADER_TEX: &str = include_str!("shader_tex.wgsl");
+const SHADER_DEPTH: &str = include_str!("shader_depth.wgsl");
+const SHADER_BOKEH: &str = include_str!("shader_bokeh.wgsl");
+const SHADER_OUTPUT: &str = include_str!("shader_output.wgsl");
+
+/// The chart pattern, as a function of (u, w): u rightward, w DOWNWARD
+/// from the panel's top edge. Identical formula to the reference
+/// project's `pattern()` (f64 math both sides so texel bytes agree
+/// exactly, including at cell boundaries).
+fn pattern(u: f64, w: f64) -> (u8, u8, u8) {
+    if u < 0.015 || u > 0.985 || w < 0.015 || w > 0.985 {
+        return (255, 255, 255);
+    }
+    if u < 0.5 {
+        let p = ((u * 10.0).floor() as i32 + (w * 10.0).floor() as i32) % 2;
+        return if p == 0 { (238, 238, 238) } else { (20, 20, 20) };
+    }
+    if u < 0.58 {
+        return (128, 128, 128);
+    }
+    if u < 0.79 {
+        (20, 20, 20)
+    } else {
+        (238, 238, 238)
+    }
+}
+
+fn chart_texture_rgba() -> Vec<u8> {
+    let s = TEX_SIZE as usize;
+    let mut data = vec![0u8; s * s * 4];
+    for y in 0..s {
+        for x in 0..s {
+            let (r, g, b) = pattern((x as f64 + 0.5) / s as f64, (y as f64 + 0.5) / s as f64);
+            let k = (y * s + x) * 4;
+            data[k] = r;
+            data[k + 1] = g;
+            data[k + 2] = b;
+            data[k + 3] = 255;
+        }
+    }
+    data
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
+struct Uniforms {
+    mvp: [[f32; 4]; 4],
+    model: [[f32; 4]; 4],
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
+struct BokehUniforms {
+    focus: f32,
+    aspect: f32,
+    aperture: f32,
+    maxblur: f32,
+    near_clip: f32,
+    far_clip: f32,
+    _pad0: f32,
+    _pad1: f32,
+}
+
+/// All panels in one vertex/index set (pos xyz + uv), camera at the
+/// origin looking down -Z, so model = view = identity and mvp = proj.
+fn panel_geometry(aspect: f32) -> (Vec<[f32; 5]>, Vec<u32>) {
+    let tan_h = (FOV_Y_DEG * 0.5).to_radians().tan();
+    let mut verts: Vec<[f32; 5]> = Vec::new();
+    let mut idx: Vec<u32> = Vec::new();
+    for &(nx, ny, d) in PANELS.iter() {
+        let hh = d * tan_h;
+        let hw = hh * aspect;
+        let h_ndc = if d == 2.0 { BLEED_NDC_H } else { PANEL_NDC_H };
+        let w = PANEL_NDC_W * hw;
+        let h = h_ndc * hh;
+        let cx = nx * hw;
+        let cy = ny * hh;
+        let z = -d;
+        let base = verts.len() as u32;
+        // BL, BR, TR, TL — uv.y picks the pattern row the same way
+        // three's flipY CanvasTexture + PlaneGeometry uvs do: panel top
+        // samples pattern w ~ 0 (buffer row 0).
+        verts.push([cx - w / 2.0, cy - h / 2.0, z, 0.0, 1.0]);
+        verts.push([cx + w / 2.0, cy - h / 2.0, z, 1.0, 1.0]);
+        verts.push([cx + w / 2.0, cy + h / 2.0, z, 1.0, 0.0]);
+        verts.push([cx - w / 2.0, cy + h / 2.0, z, 0.0, 0.0]);
+        idx.extend_from_slice(&[base, base + 1, base + 2, base, base + 2, base + 3]);
+    }
+    (verts, idx)
+}
+
+fn make_target(
+    device: &wgpu::Device,
+    w: u32,
+    h: u32,
+    format: wgpu::TextureFormat,
+    samples: u32,
+    usage: wgpu::TextureUsages,
+    label: &str,
+) -> wgpu::Texture {
+    device.create_texture(&wgpu::TextureDescriptor {
+        label: Some(label),
+        size: wgpu::Extent3d { width: w, height: h, depth_or_array_layers: 1 },
+        mip_level_count: 1,
+        sample_count: samples,
+        dimension: wgpu::TextureDimension::D2,
+        format,
+        usage,
+        view_formats: &[],
+    })
+}
+
+pub async fn run_dof(width: u32, height: u32, out: &str) {
+    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+        backends: wgpu::Backends::VULKAN,
+        ..Default::default()
+    });
+    let adapter = crate::request_adapter(&instance).await;
+    let info = adapter.get_info();
+    println!(
+        "adapter: {} ({:?}, driver {}) — software rasteriser, no performance claim",
+        info.name, info.backend, info.driver
+    );
+    let (device, queue) = adapter
+        .request_device(
+            &wgpu::DeviceDescriptor {
+                label: Some("talerender-dof-device"),
+                required_features: wgpu::Features::empty(),
+                required_limits: wgpu::Limits::default(),
+                ..Default::default()
+            },
+            None,
+        )
+        .await
+        .expect("request device");
+
+    let aspect = width as f32 / height as f32;
+    let proj = math::perspective(FOV_Y_DEG.to_radians(), aspect, NEAR, FAR);
+    let uniforms = Uniforms { mvp: proj, model: math::MAT4_IDENTITY };
+    let uniform_buf = device.create_buffer(&wgpu::BufferDescriptor {
+        label: Some("dof-uniforms"),
+        size: std::mem::size_of::<Uniforms>() as u64,
+        usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        mapped_at_creation: false,
+    });
+    queue.write_buffer(&uniform_buf, 0, bytemuck::bytes_of(&uniforms));
+
+    // ---- chart texture (sRGB, single level, linear sampling) ----
+    let tex_data = chart_texture_rgba();
+    let chart_tex = device.create_texture_with_data(
+        &queue,
+        &wgpu::TextureDescriptor {
+            label: Some("dof-chart-texture"),
+            size: wgpu::Extent3d { width: TEX_SIZE, height: TEX_SIZE, depth_or_array_layers: 1 },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            view_formats: &[],
+        },
+        wgpu::util::TextureDataOrder::LayerMajor,
+        &tex_data,
+    );
+    let chart_view = chart_tex.create_view(&wgpu::TextureViewDescriptor::default());
+    let linear_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+        label: Some("dof-linear-sampler"),
+        mag_filter: wgpu::FilterMode::Linear,
+        min_filter: wgpu::FilterMode::Linear,
+        mipmap_filter: wgpu::FilterMode::Nearest,
+        address_mode_u: wgpu::AddressMode::ClampToEdge,
+        address_mode_v: wgpu::AddressMode::ClampToEdge,
+        address_mode_w: wgpu::AddressMode::ClampToEdge,
+        ..Default::default()
+    });
+    let nearest_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+        label: Some("dof-nearest-sampler"),
+        mag_filter: wgpu::FilterMode::Nearest,
+        min_filter: wgpu::FilterMode::Nearest,
+        mipmap_filter: wgpu::FilterMode::Nearest,
+        address_mode_u: wgpu::AddressMode::ClampToEdge,
+        address_mode_v: wgpu::AddressMode::ClampToEdge,
+        address_mode_w: wgpu::AddressMode::ClampToEdge,
+        ..Default::default()
+    });
+
+    // ---- geometry ----
+    let (verts, idx) = panel_geometry(aspect);
+    let vb = device.create_buffer(&wgpu::BufferDescriptor {
+        label: Some("dof-panels-vb"),
+        size: (verts.len() * std::mem::size_of::<[f32; 5]>()) as u64,
+        usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
+        mapped_at_creation: false,
+    });
+    queue.write_buffer(&vb, 0, bytemuck::cast_slice(&verts));
+    let ib = device.create_buffer(&wgpu::BufferDescriptor {
+        label: Some("dof-panels-ib"),
+        size: (idx.len() * 4) as u64,
+        usage: wgpu::BufferUsages::INDEX | wgpu::BufferUsages::COPY_DST,
+        mapped_at_creation: false,
+    });
+    queue.write_buffer(&ib, 0, bytemuck::cast_slice(&idx));
+    let index_count = idx.len() as u32;
+    let vlayout = wgpu::VertexBufferLayout {
+        array_stride: 20,
+        step_mode: wgpu::VertexStepMode::Vertex,
+        attributes: &[
+            wgpu::VertexAttribute { offset: 0, shader_location: 0, format: wgpu::VertexFormat::Float32x3 },
+            wgpu::VertexAttribute { offset: 12, shader_location: 1, format: wgpu::VertexFormat::Float32x2 },
+        ],
+    };
+
+    // ---- targets ----
+    // Scene colour: HalfFloat + MSAA 4x (the composer's render target).
+    let scene_msaa = make_target(&device, width, height, wgpu::TextureFormat::Rgba16Float, 4, wgpu::TextureUsages::RENDER_ATTACHMENT, "dof-scene-msaa");
+    let scene_resolved = make_target(&device, width, height, wgpu::TextureFormat::Rgba16Float, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING, "dof-scene-resolved");
+    let scene_depth = make_target(&device, width, height, wgpu::TextureFormat::Depth32Float, 4, wgpu::TextureUsages::RENDER_ATTACHMENT, "dof-scene-depth");
+    // Packed-depth prepass target: HalfFloat, single-sample, cleared to
+    // white (BokehPass renders its depth target with a white clear).
+    let packed_depth = make_target(&device, width, height, wgpu::TextureFormat::Rgba16Float, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING, "dof-packed-depth");
+    let prepass_depth = make_target(&device, width, height, wgpu::TextureFormat::Depth32Float, 1, wgpu::TextureUsages::RENDER_ATTACHMENT, "dof-prepass-depth");
+    let bokeh_out = make_target(&device, width, height, wgpu::TextureFormat::Rgba16Float, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING, "dof-bokeh-out");
+    let final_tex = make_target(&device, width, height, wgpu::TextureFormat::Rgba8Unorm, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC, "dof-final");
+
+    // ---- pipelines ----
+    let tex_module = device.create_shader_module(wgpu::ShaderModuleDescriptor { label: Some("dof-shader-tex"), source: wgpu::ShaderSource::Wgsl(SHADER_TEX.into()) });
+    let tex_bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+        label: Some("dof-tex-bgl"),
+        entries: &[
+            wgpu::BindGroupLayoutEntry { binding: 0, visibility: wgpu::ShaderStages::VERTEX, ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Uniform, has_dynamic_offset: false, min_binding_size: None }, count: None },
+            wgpu::BindGroupLayoutEntry { binding: 1, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Texture { sample_type: wgpu::TextureSampleType::Float { filterable: true }, view_dimension: wgpu::TextureViewDimension::D2, multisampled: false }, count: None },
+            wgpu::BindGroupLayoutEntry { binding: 2, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering), count: None },
+        ],
+    });
+    let tex_bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        label: Some("dof-tex-bg"),
+        layout: &tex_bgl,
+        entries: &[
+            wgpu::BindGroupEntry { binding: 0, resource: uniform_buf.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::TextureView(&chart_view) },
+            wgpu::BindGroupEntry { binding: 2, resource: wgpu::BindingResource::Sampler(&linear_sampler) },
+        ],
+    });
+    let scene_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        label: Some("dof-scene-pipeline"),
+        layout: Some(&device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("dof-scene-layout"), bind_group_layouts: &[&tex_bgl], push_constant_ranges: &[] })),
+        vertex: wgpu::VertexState { module: &tex_module, entry_point: Some("vs_main"), buffers: &[vlayout.clone()], compilation_options: Default::default() },
+        fragment: Some(wgpu::FragmentState {
+            module: &tex_module,
+            entry_point: Some("fs_main"),
+            targets: &[Some(wgpu::ColorTargetState { format: wgpu::TextureFormat::Rgba16Float, blend: Some(wgpu::BlendState::REPLACE), write_mask: wgpu::ColorWrites::ALL })],
+            compilation_options: Default::default(),
+        }),
+        primitive: wgpu::PrimitiveState { cull_mode: None, ..Default::default() },
+        depth_stencil: Some(wgpu::DepthStencilState { format: wgpu::TextureFormat::Depth32Float, depth_write_enabled: true, depth_compare: wgpu::CompareFunction::Less, stencil: Default::default(), bias: Default::default() }),
+        multisample: wgpu::MultisampleState { count: 4, ..Default::default() },
+        multiview: None,
+        cache: None,
+    });
+
+    let depth_module = device.create_shader_module(wgpu::ShaderModuleDescriptor { label: Some("dof-shader-depth"), source: wgpu::ShaderSource::Wgsl(SHADER_DEPTH.into()) });
+    let depth_bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+        label: Some("dof-depth-bgl"),
+        entries: &[wgpu::BindGroupLayoutEntry { binding: 0, visibility: wgpu::ShaderStages::VERTEX, ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Uniform, has_dynamic_offset: false, min_binding_size: None }, count: None }],
+    });
+    let depth_bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        label: Some("dof-depth-bg"),
+        layout: &depth_bgl,
+        entries: &[wgpu::BindGroupEntry { binding: 0, resource: uniform_buf.as_entire_binding() }],
+    });
+    let depth_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        label: Some("dof-depth-pipeline"),
+        layout: Some(&device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("dof-depth-layout"), bind_group_layouts: &[&depth_bgl], push_constant_ranges: &[] })),
+        vertex: wgpu::VertexState { module: &depth_module, entry_point: Some("vs_main"), buffers: &[vlayout], compilation_options: Default::default() },
+        fragment: Some(wgpu::FragmentState {
+            module: &depth_module,
+            entry_point: Some("fs_main"),
+            targets: &[Some(wgpu::ColorTargetState { format: wgpu::TextureFormat::Rgba16Float, blend: Some(wgpu::BlendState::REPLACE), write_mask: wgpu::ColorWrites::ALL })],
+            compilation_options: Default::default(),
+        }),
+        primitive: wgpu::PrimitiveState { cull_mode: None, ..Default::default() },
+        depth_stencil: Some(wgpu::DepthStencilState { format: wgpu::TextureFormat::Depth32Float, depth_write_enabled: true, depth_compare: wgpu::CompareFunction::Less, stencil: Default::default(), bias: Default::default() }),
+        multisample: wgpu::MultisampleState::default(),
+        multiview: None,
+        cache: None,
+    });
+
+    let bokeh_uniforms = BokehUniforms { focus: FOCUS, aspect, aperture: APERTURE, maxblur: MAXBLUR, near_clip: NEAR, far_clip: FAR, _pad0: 0.0, _pad1: 0.0 };
+    let bokeh_uniform_buf = device.create_buffer(&wgpu::BufferDescriptor {
+        label: Some("dof-bokeh-uniforms"),
+        size: std::mem::size_of::<BokehUniforms>() as u64,
+        usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+        mapped_at_creation: false,
+    });
+    queue.write_buffer(&bokeh_uniform_buf, 0, bytemuck::bytes_of(&bokeh_uniforms));
+    let bokeh_module = device.create_shader_module(wgpu::ShaderModuleDescriptor { label: Some("dof-shader-bokeh"), source: wgpu::ShaderSource::Wgsl(SHADER_BOKEH.into()) });
+    let bokeh_bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+        label: Some("dof-bokeh-bgl"),
+        entries: &[
+            wgpu::BindGroupLayoutEntry { binding: 0, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Uniform, has_dynamic_offset: false, min_binding_size: None }, count: None },
+            wgpu::BindGroupLayoutEntry { binding: 1, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Texture { sample_type: wgpu::TextureSampleType::Float { filterable: true }, view_dimension: wgpu::TextureViewDimension::D2, multisampled: false }, count: None },
+            wgpu::BindGroupLayoutEntry { binding: 2, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering), count: None },
+            wgpu::BindGroupLayoutEntry { binding: 3, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Texture { sample_type: wgpu::TextureSampleType::Float { filterable: true }, view_dimension: wgpu::TextureViewDimension::D2, multisampled: false }, count: None },
+            wgpu::BindGroupLayoutEntry { binding: 4, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering), count: None },
+        ],
+    });
+    let scene_view = scene_resolved.create_view(&wgpu::TextureViewDescriptor::default());
+    let packed_view = packed_depth.create_view(&wgpu::TextureViewDescriptor::default());
+    let bokeh_bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        label: Some("dof-bokeh-bg"),
+        layout: &bokeh_bgl,
+        entries: &[
+            wgpu::BindGroupEntry { binding: 0, resource: bokeh_uniform_buf.as_entire_binding() },
+            wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::TextureView(&scene_view) },
+            wgpu::BindGroupEntry { binding: 2, resource: wgpu::BindingResource::Sampler(&linear_sampler) },
+            wgpu::BindGroupEntry { binding: 3, resource: wgpu::BindingResource::TextureView(&packed_view) },
+            wgpu::BindGroupEntry { binding: 4, resource: wgpu::BindingResource::Sampler(&nearest_sampler) },
+        ],
+    });
+    let bokeh_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        label: Some("dof-bokeh-pipeline"),
+        layout: Some(&device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("dof-bokeh-layout"), bind_group_layouts: &[&bokeh_bgl], push_constant_ranges: &[] })),
+        vertex: wgpu::VertexState { module: &bokeh_module, entry_point: Some("vs_main"), buffers: &[], compilation_options: Default::default() },
+        fragment: Some(wgpu::FragmentState {
+            module: &bokeh_module,
+            entry_point: Some("fs_main"),
+            targets: &[Some(wgpu::ColorTargetState { format: wgpu::TextureFormat::Rgba16Float, blend: Some(wgpu::BlendState::REPLACE), write_mask: wgpu::ColorWrites::ALL })],
+            compilation_options: Default::default(),
+        }),
+        primitive: wgpu::PrimitiveState::default(),
+        depth_stencil: None,
+        multisample: wgpu::MultisampleState::default(),
+        multiview: None,
+        cache: None,
+    });
+
+    let output_module = device.create_shader_module(wgpu::ShaderModuleDescriptor { label: Some("dof-shader-output"), source: wgpu::ShaderSource::Wgsl(SHADER_OUTPUT.into()) });
+    let output_bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+        label: Some("dof-output-bgl"),
+        entries: &[
+            wgpu::BindGroupLayoutEntry { binding: 0, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Texture { sample_type: wgpu::TextureSampleType::Float { filterable: true }, view_dimension: wgpu::TextureViewDimension::D2, multisampled: false }, count: None },
+            wgpu::BindGroupLayoutEntry { binding: 1, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering), count: None },
+        ],
+    });
+    let bokeh_view = bokeh_out.create_view(&wgpu::TextureViewDescriptor::default());
+    let output_bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
+        label: Some("dof-output-bg"),
+        layout: &output_bgl,
+        entries: &[
+            wgpu::BindGroupEntry { binding: 0, resource: wgpu::BindingResource::TextureView(&bokeh_view) },
+            wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::Sampler(&linear_sampler) },
+        ],
+    });
+    let output_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        label: Some("dof-output-pipeline"),
+        layout: Some(&device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("dof-output-layout"), bind_group_layouts: &[&output_bgl], push_constant_ranges: &[] })),
+        vertex: wgpu::VertexState { module: &output_module, entry_point: Some("vs_main"), buffers: &[], compilation_options: Default::default() },
+        fragment: Some(wgpu::FragmentState {
+            module: &output_module,
+            entry_point: Some("fs_main"),
+            targets: &[Some(wgpu::ColorTargetState { format: wgpu::TextureFormat::Rgba8Unorm, blend: Some(wgpu::BlendState::REPLACE), write_mask: wgpu::ColorWrites::ALL })],
+            compilation_options: Default::default(),
+        }),
+        primitive: wgpu::PrimitiveState::default(),
+        depth_stencil: None,
+        multisample: wgpu::MultisampleState::default(),
+        multiview: None,
+        cache: None,
+    });
+
+    // ---- render ----
+    let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("dof-encoder") });
+    {
+        let msaa_view = scene_msaa.create_view(&wgpu::TextureViewDescriptor::default());
+        let sdepth_view = scene_depth.create_view(&wgpu::TextureViewDescriptor::default());
+        let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: Some("dof-scene-pass"),
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                view: &msaa_view,
+                resolve_target: Some(&scene_view),
+                ops: wgpu::Operations { load: wgpu::LoadOp::Clear(wgpu::Color { r: 0.0, g: 0.0, b: 0.0, a: 1.0 }), store: wgpu::StoreOp::Store },
+                depth_slice: None,
+            })],
+            depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                view: &sdepth_view,
+                depth_ops: Some(wgpu::Operations { load: wgpu::LoadOp::Clear(1.0), store: wgpu::StoreOp::Store }),
+                stencil_ops: None,
+            }),
+            timestamp_writes: None,
+            occlusion_query_set: None,
+        });
+        pass.set_pipeline(&scene_pipeline);
+        pass.set_bind_group(0, &tex_bg, &[]);
+        pass.set_vertex_buffer(0, vb.slice(..));
+        pass.set_index_buffer(ib.slice(..), wgpu::IndexFormat::Uint32);
+        pass.draw_indexed(0..index_count, 0, 0..1);
+    }
+    {
+        let packed_v = packed_depth.create_view(&wgpu::TextureViewDescriptor::default());
+        let pdepth_view = prepass_depth.create_view(&wgpu::TextureViewDescriptor::default());
+        let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: Some("dof-depth-prepass"),
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                view: &packed_v,
+                resolve_target: None,
+                // BokehPass clears its depth target to WHITE before the
+                // override render; background pixels then unpack to ~far.
+                ops: wgpu::Operations { load: wgpu::LoadOp::Clear(wgpu::Color { r: 1.0, g: 1.0, b: 1.0, a: 1.0 }), store: wgpu::StoreOp::Store },
+                depth_slice: None,
+            })],
+            depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
+                view: &pdepth_view,
+                depth_ops: Some(wgpu::Operations { load: wgpu::LoadOp::Clear(1.0), store: wgpu::StoreOp::Store }),
+                stencil_ops: None,
+            }),
+            timestamp_writes: None,
+            occlusion_query_set: None,
+        });
+        pass.set_pipeline(&depth_pipeline);
+        pass.set_bind_group(0, &depth_bg, &[]);
+        pass.set_vertex_buffer(0, vb.slice(..));
+        pass.set_index_buffer(ib.slice(..), wgpu::IndexFormat::Uint32);
+        pass.draw_indexed(0..index_count, 0, 0..1);
+    }
+    {
+        let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: Some("dof-bokeh-pass"),
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                view: &bokeh_view,
+                resolve_target: None,
+                ops: wgpu::Operations { load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT), store: wgpu::StoreOp::Store },
+                depth_slice: None,
+            })],
+            depth_stencil_attachment: None,
+            timestamp_writes: None,
+            occlusion_query_set: None,
+        });
+        pass.set_pipeline(&bokeh_pipeline);
+        pass.set_bind_group(0, &bokeh_bg, &[]);
+        pass.draw(0..3, 0..1);
+    }
+    {
+        let final_view = final_tex.create_view(&wgpu::TextureViewDescriptor::default());
+        let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: Some("dof-output-pass"),
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                view: &final_view,
+                resolve_target: None,
+                ops: wgpu::Operations { load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT), store: wgpu::StoreOp::Store },
+                depth_slice: None,
+            })],
+            depth_stencil_attachment: None,
+            timestamp_writes: None,
+            occlusion_query_set: None,
+        });
+        pass.set_pipeline(&output_pipeline);
+        pass.set_bind_group(0, &output_bg, &[]);
+        pass.draw(0..3, 0..1);
+    }
+
+    let unpadded = (width * 4) as usize;
+    let align = wgpu::COPY_BYTES_PER_ROW_ALIGNMENT as usize;
+    let padded = unpadded.div_ceil(align) * align;
+    let out_buf = device.create_buffer(&wgpu::BufferDescriptor {
+        label: Some("dof-readback"),
+        size: (padded * height as usize) as u64,
+        usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
+        mapped_at_creation: false,
+    });
+    encoder.copy_texture_to_buffer(
+        wgpu::TexelCopyTextureInfo { texture: &final_tex, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
+        wgpu::TexelCopyBufferInfo { buffer: &out_buf, layout: wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(padded as u32), rows_per_image: Some(height) } },
+        wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
+    );
+    queue.submit(Some(encoder.finish()));
+
+    let slice = out_buf.slice(..);
+    let (tx, rx) = std::sync::mpsc::channel();
+    slice.map_async(wgpu::MapMode::Read, move |r| {
+        let _ = tx.send(r);
+    });
+    device.poll(wgpu::Maintain::Wait);
+    rx.recv().expect("map channel").expect("map readback");
+    let mapped = slice.get_mapped_range();
+    let mut rgba = vec![0u8; unpadded * height as usize];
+    for y in 0..height as usize {
+        let src = y * padded;
+        let dst = y * unpadded;
+        rgba[dst..dst + unpadded].copy_from_slice(&mapped[src..src + unpadded]);
+    }
+    drop(mapped);
+    out_buf.unmap();
+    image::save_buffer(out, width, height, &rgba, image::ColorType::Rgba8).expect("write PNG");
+    println!(
+        "wrote {out} ({width}x{height}) — scene dof-chart: panels at 2..30 m, focus {FOCUS} m, aperture {APERTURE}, maxblur {MAXBLUR}; chain: HalfFloat MSAA-4x scene -> packed-depth prepass -> transcribed r170 bokeh -> Neutral+sRGB output"
+    );
+}
+
+// ---- CPU mirrors of the packing arithmetic (transcription tests) ----
+
+fn modf_pos(x: f32) -> (f32, f32) {
+    let w = x.floor();
+    (x - w, w)
+}
+
+/// packDepthToRGBA, f32 mirror of shader_depth.wgsl.
+#[cfg(test)]
+fn pack_depth_rgba(v: f32) -> [f32; 4] {
+    if v <= 0.0 {
+        return [0.0; 4];
+    }
+    if v >= 1.0 {
+        return [1.0; 4];
+    }
+    let (af, mut vuf) = modf_pos(v * 16777216.0);
+    let (bf, vuf2) = modf_pos(vuf * (1.0 / 256.0));
+    vuf = vuf2;
+    let (gf, vuf3) = modf_pos(vuf * (1.0 / 256.0));
+    vuf = vuf3;
+    [vuf * (1.0 / 255.0), gf * (256.0 / 255.0), bf * (256.0 / 255.0), af]
+}
+
+/// unpackRGBAToDepth, f32 mirror of shader_bokeh.wgsl.
+#[cfg(test)]
+fn unpack_rgba_depth(v: [f32; 4]) -> f32 {
+    let downscale = 255.0f32 / 256.0;
+    v[0] * (downscale / 1.0) + v[1] * (downscale / 256.0) + v[2] * (downscale / 65536.0) + v[3] * (1.0 / 16777216.0)
+}
+
+/// perspectiveDepthToViewZ.
+#[cfg(test)]
+fn depth_to_view_z(depth: f32, near: f32, far: f32) -> f32 {
+    (near * far) / ((far - near) * depth - far)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn frag_z_at(distance: f32) -> f32 {
+        let proj = math::perspective(FOV_Y_DEG.to_radians(), 1080.0 / 1920.0, NEAR, FAR);
+        let clip = math::mat_vec_mul(proj, [0.0, 0.0, -distance, 1.0]);
+        // math::perspective is the wgpu-style projection: clip z/w is
+        // already in [0, 1]. three's fragCoordZ is 0.5*ndc+0.5 of the GL
+        // [-1, 1] value — algebraically the same number (both equal
+        // far*(d-near) / ((far-near)*d)).
+        clip[2] / clip[3]
+    }
+
+    #[test]
+    fn pack_unpack_round_trip_recovers_chart_depths() {
+        for &d in &[2.0f32, 3.5, 5.0, 7.0, 8.0, 10.0, 11.0, 12.0, 14.0, 30.0] {
+            let packed = pack_depth_rgba(frag_z_at(d));
+            let view_z = depth_to_view_z(unpack_rgba_depth(packed), NEAR, FAR);
+            let err = (view_z + d).abs();
+            assert!(err < 0.05, "depth {d} m recovered as {} m (err {err})", -view_z);
+        }
+        // Endpoints of the packing contract.
+        assert_eq!(pack_depth_rgba(0.0), [0.0; 4]);
+        assert_eq!(pack_depth_rgba(1.0), [1.0; 4]);
+        // Background clear (1,1,1,1) unpacks to ~far, not to an error.
+        let bg = depth_to_view_z(unpack_rgba_depth([1.0; 4]), NEAR, FAR);
+        assert!(bg < -799.0, "white clear should read as far plane, got {bg}");
+    }
+
+    #[test]
+    fn dofblur_curve_matches_shader_formula() {
+        // factor = focus + viewZ; dofblur = clamp(factor * aperture, +-maxblur)
+        let cases: [(f32, f32); 10] = [
+            (2.0, 0.006),
+            (3.5, 0.006),
+            (5.0, 0.006),
+            (7.0, 0.0045),
+            (8.0, 0.003),
+            (10.0, 0.0),
+            (11.0, -0.0015),
+            (12.0, -0.003),
+            (14.0, -0.006),
+            (30.0, -0.006),
+        ];
+        for (d, expect) in cases {
+            let view_z = depth_to_view_z(unpack_rgba_depth(pack_depth_rgba(frag_z_at(d))), NEAR, FAR);
+            let blur = ((FOCUS + view_z) * APERTURE).clamp(-MAXBLUR, MAXBLUR);
+            assert!((blur - expect).abs() < 0.0004, "depth {d}: dofblur {blur}, expected ~{expect}");
+        }
+    }
+}

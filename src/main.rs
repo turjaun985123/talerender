@@ -13,9 +13,10 @@
 //! log says so. Nothing here claims GPU acceleration it cannot prove.
 //!
 //! Usage: talerender [--width 1080] [--height 1920] [--out frame.png]
-//!        [--scene m1|ab1] [--caption <caption-strip.png>]
+//!        [--scene m1|ab1|dof-chart] [--caption <caption-strip.png>]
 
 mod ab1;
+mod dof;
 mod math;
 
 use math::Mat4;
@@ -61,8 +62,9 @@ fn main() {
     match scene.as_str() {
         "m1" => pollster::block_on(run(width, height, &out)),
         "ab1" => pollster::block_on(ab1::run_ab1(width, height, &out, &caption)),
+        "dof-chart" => pollster::block_on(dof::run_dof(width, height, &out)),
         other => {
-            eprintln!("unknown scene: {other} (expected m1 or ab1)");
+            eprintln!("unknown scene: {other} (expected m1, ab1 or dof-chart)");
             std::process::exit(2);
         }
     }
