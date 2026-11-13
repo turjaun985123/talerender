@@ -1,0 +1,4 @@
+/target
+frame.png
+*.png
+!docs/**/*.png

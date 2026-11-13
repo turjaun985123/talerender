@@ -1,0 +1,14 @@
+[package]
+name = "talerender"
+version = "0.1.0"
+edition = "2021"
+description = "TaleRender — native Rust + wgpu renderer for Tall Tale Shorts (no browser, no Chrome)"
+license = "MIT"
+
+[dependencies]
+wgpu = "0.20"
+pollster = "0.3"
+image = "0.25"
+
+[profile.release]
+debug = false
