@@ -10,10 +10,14 @@
 //! chart's look does not neutralise):
 //!   1. scene colour -> Rgba16Float, MSAA 4x, resolved
 //!      (engine.ts: EffectComposer over a HalfFloatType RT, samples = 4)
-//!   2. depth prepass -> Rgba16Float packed target, cleared to white;
+//!   2. depth prepass -> packed-depth target, cleared to white;
 //!      MeshDepthMaterial + RGBADepthPacking equivalent
-//!      (shader_depth.wgsl), single-sample, NearestFilter on read —
-//!      BokehPass.js's depth render target configuration exactly.
+//!      (shader_depth.wgsl), single-sample, NearestFilter on read.
+//!      Storage is Rgba8Unorm (lossless for a byte packing on every
+//!      driver) rather than BokehPass's HalfFloat — a deliberate,
+//!      measured deviation documented in docs/ab/dof-chart/gaps.md;
+//!      TALERENDER_DOF_DEPTH_FORMAT=halffloat restores the exact
+//!      BokehPass target configuration.
 //!   3. bokeh composite (shader_bokeh.wgsl) -> Rgba16Float
 //!   4. output stage (shader_output.wgsl): NeutralToneMapping at
 //!      exposure 1 + sRGB OETF — the OutputPass steps. Bloom (strength 0)
@@ -212,14 +216,20 @@ pub async fn run_dof(width: u32, height: u32, out: &str) {
         .expect("request device");
 
     let aspect = width as f32 / height as f32;
-    // Control experiment for the fp16-store question (see
-    // docs/ab/dof-chart/gaps.md): TALERENDER_DOF_DEPTH_FORMAT=rgba8
-    // stores the packed depth in a byte target, which is lossless for
-    // a byte packing; the default stays BokehPass's HalfFloat.
-    let depth_format = if std::env::var("TALERENDER_DOF_DEPTH_FORMAT").is_ok_and(|v| v == "rgba8") {
-        wgpu::TextureFormat::Rgba8Unorm
-    } else {
+    // Packed-depth storage format. The pack is a BYTE packing, so a
+    // byte target stores it losslessly and identically on every
+    // driver. BokehPass itself uses a HalfFloat target, whose
+    // fp32->fp16 store conversion is driver-dependent: on this VM's
+    // llvmpipe it truncates, costing up to 1 fp16 ulp on the top byte
+    // (~0.9 m of viewZ error at the 10 m focal plane — measured in
+    // docs/ab/dof-chart/). The native default is therefore
+    // Rgba8Unorm; TALERENDER_DOF_DEPTH_FORMAT=halffloat reproduces
+    // BokehPass's exact target configuration for comparison. The
+    // packing/unpacking ARITHMETIC is identical either way.
+    let depth_format = if std::env::var("TALERENDER_DOF_DEPTH_FORMAT").is_ok_and(|v| v == "halffloat") {
         wgpu::TextureFormat::Rgba16Float
+    } else {
+        wgpu::TextureFormat::Rgba8Unorm
     };
     let proj = math::perspective(FOV_Y_DEG.to_radians(), aspect, NEAR, FAR);
     let uniforms = Uniforms { mvp: proj, model: math::identity() };
