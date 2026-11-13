@@ -741,7 +741,9 @@ pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str, pos
         if with_uniform {
             entries.push(wgpu::BindGroupLayoutEntry {
                 binding: 0,
-                visibility: wgpu::ShaderStages::VERTEX,
+                // shader_basic reads its uniform in both stages (mvp in
+                // the vertex, tint/alphaTest in the fragment).
+                visibility: wgpu::ShaderStages::VERTEX | wgpu::ShaderStages::FRAGMENT,
                 ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Uniform, has_dynamic_offset: false, min_binding_size: None },
                 count: None,
             });
