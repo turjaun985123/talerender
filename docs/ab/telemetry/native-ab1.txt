@@ -1,0 +1,15 @@
+TELEMETRY: ab1 (hand-authored staging, S01 @ t=1.50)
+telemetry source: native painter canvas 2560x2816 (res 2) + scene-graph box projection (three.js arithmetic, f64)
+CANVAS OVERFLOW: none
+EDGE TOUCH: none
+CONTINUITY: clean (1 named characters tracked)
+COMPOSITION: 0 findings (caption-zone 0, safe-area 0, thirds 0, framing 0, edge-touch 0)
+CAPTION AUDIT: 66 chunks, 12/12 lines authored, min fit 0.92, max rendered width 960 px
+CAPTION WIDTH WARN: line 2 chunk "was a Japanese soldier" renders 960 px (> 850) at t=6.69s — the width floor wins (the per-word time floor is advisory); split the chunk
+CAPTION WIDTH WARN: line 5 chunk "Planes dropped leaflets" renders 960 px (> 850) at t=21.61s — the width floor wins (the per-word time floor is advisory); split the chunk
+CAPTION WIDTH WARN: line 7 chunk "surviving on coconuts" renders 960 px (> 850) at t=31.55s — the width floor wins (the per-word time floor is advisory); split the chunk
+CAPTION WIDTH WARN: line 8 chunk "named Norio Suzuki" renders 884 px (> 850) at t=37.13s — the width floor wins (the per-word time floor is advisory); split the chunk
+CAPTION WIDTH WARN: line 9 chunk "commander ordered it." renders 960 px (> 850) at t=44.01s — the width floor wins (the per-word time floor is advisory); split the chunk
+CAPTION WIDTH WARN: line 10 chunk "his old commander," renders 867 px (> 850) at t=46.39s — the width floor wins (the per-word time floor is advisory); split the chunk
+CAPTION WIDTH WARN: line 11 chunk "and Onoda surrendered" renders 960 px (> 850) at t=52.07s — the width floor wins (the per-word time floor is advisory); split the chunk
+CHECK OK

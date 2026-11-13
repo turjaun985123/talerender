@@ -1,0 +1,27 @@
+{
+ "source": "docs/ab/composer/native.png (M5 full-chain native frame, clean PNG master, 1080x1920)",
+ "encoder": "Chromium canvas.toDataURL('image/jpeg', 0.93) \u2014 the capture pipeline's own encoder/settings (canvas.toDataURL in headless Chrome 157, SwiftShader host)",
+ "clean_to_gen1": {
+  "psnr_db": 42.307,
+  "mean_abs_delta": 1.225,
+  "pct_px_max_delta_gt_10": 0.786,
+  "pct_px_any_delta": 94.47,
+  "max_delta": 48
+ },
+ "clean_to_gen2": {
+  "psnr_db": 42.042,
+  "mean_abs_delta": 1.247,
+  "pct_px_max_delta_gt_10": 0.933,
+  "pct_px_any_delta": 94.58,
+  "max_delta": 48
+ },
+ "gen1_to_gen2": {
+  "psnr_db": 56.1,
+  "mean_abs_delta": 0.082,
+  "pct_px_max_delta_gt_10": 0.002,
+  "pct_px_any_delta": 8.8,
+  "max_delta": 14
+ },
+ "gen1_bytes": 319946,
+ "gen2_bytes": 320597
+}

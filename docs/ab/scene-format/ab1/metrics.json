@@ -3,12 +3,12 @@
     1080,
     1920
   ],
-  "psnr_db": 95.17,
-  "mean_abs_delta_per_channel": 2e-05,
-  "pct_pixels_max_channel_delta_gt_10": 0.0,
-  "pct_pixels_any_channel_delta_gt_0": 0.00304,
-  "max_abs_delta": 1,
-  "original": "hand-authored scene: talerender --scene ab1 (binary from CI run 43484074039, commit 9398540) on lavapipe llvmpipe (LLVM 20.1.2), lossless PNG",
-  "native": "scene-format render: talerender --scene-file scenes/ab1.scene.json (same binary, same adapter), lossless PNG",
+  "psnr_db": 21.82,
+  "mean_abs_delta_per_channel": 15.96009,
+  "pct_pixels_max_channel_delta_gt_10": 78.7447,
+  "pct_pixels_any_channel_delta_gt_0": 98.45809,
+  "max_abs_delta": 157,
+  "original": "hand-authored scene: talerender --scene ab1 (binary from CI run 43509408546, commit b4f9fff) on lavapipe llvmpipe (LLVM 20.1.2), lossless PNG \u2014 M5 composer path (PBR light rig, shadows, GRADE)",
+  "native": "scene-format render: talerender --scene-file scenes/ab1.scene.json (same binary, same adapter), lossless PNG \u2014 format v1 direct path (no composer; v1 cannot express the M5 light rig, docs/scene-format.md \u00a712)",
   "diff_amplification": 4
 }

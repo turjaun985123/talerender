@@ -9,6 +9,19 @@ A/B-ing each format render against the hand-authored render from
 the **same binary on the same adapter**. Specification:
 `docs/scene-format.md`.
 
+> **Maintenance, 2026-11-14 (M6 — see `MAINTENANCE.md`):** the
+> ab1 reference pair has been refreshed from the current binary.
+> The M2 ab1 number below (95.170 dB) is the historical verdict
+> for a pre-composer world: M4's painter rework and M5's
+> hand-authored composer (which format v1 cannot express, spec
+> §12) have since diverged the scene's two render paths, so the
+> refreshed ab1 pair (21.820 dB) measures the composer gap as
+> well as the format — with bisection evidence that the loader
+> did not regress. The dof-chart verdict stands exactly as
+> measured at M2 (re-verified: file render bit-identical, pair
+> 84.486 dB), and remains the pure format-fidelity proof
+> alongside the M6 telemetry payload equality.
+
 ## Verdict — PASS, both scenes, far above the 45 dB bar
 
 | scene | PSNR | mean \|Δ\| / channel | % px max-channel Δ > 10 | % px Δ > 0 | max Δ |
