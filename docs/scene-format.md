@@ -293,6 +293,26 @@ on both paths' loaders exactly as in the hand-authored chart
 (`TALERENDER_DOF_DEPTH_FORMAT=halffloat` restores the literal
 BokehPass target; see the M3 package for why).
 
+Since M5 the composer path also accepts two optional blocks
+(inside `post`, alongside `bokeh` — both require `post.bokeh`,
+because the composer is entered through it):
+
+```jsonc
+"bloom": { "threshold": 0.85, "strength": 0.0, "radius": 0.6 },
+"grade": { "vignette": 0.18, "grain": 0.008, "warm": 0.02, "saturation": 1.12, "time": 0.0 }
+```
+
+`post.bloom` runs the transcribed UnrealBloomPass between bokeh
+and output; per-field defaults mirror the engine's fallbacks
+(threshold 0.85, radius 0.6, strength 0 — an empty block is
+inert). `post.grade` runs the engine's GRADE shader after output;
+defaults mirror engine.ts (vignette 0.18, grain 0.008, warm 0.02,
+saturation 1.12, time 0). Absent blocks are skipped entirely:
+the chain stays byte-identical to the M2/M3 form (proven — the
+dof-chart as-data render is bit-identical to its committed
+reference, and an identity bloom/grade variant renders
+bit-identical to the plain chain; see docs/ab/composer/).
+
 ## 10. Versioning rule
 
 - `version` is a required integer. The v1 loader accepts **only**
@@ -326,9 +346,11 @@ existing staging must honour the law.
 2. **Roughness is carried, not consumed** (§4.1) — no PBR in v1.
 3. **One light**: the single house directional (§3). The camp
    fire's point light, hemisphere/PMREM IBL and shadow maps from
-   the source engine are absent — they were already absent from
-   the hand-authored scenes (the §28 gap list), so the format
-   loses nothing the scenes had.
+   the source engine are absent from the *format* — the
+   hand-authored ab1 path gained the full rig at M5 (see
+   docs/ab/composer/), so this is now a real format gap: a v1
+   file cannot express the production light rig. Closing it is
+   a schema question for a future version, not a silent field.
 4. **Scatter is annulus-only and colour-only** (§4.3) — the one
    placement law the scenes use.
 5. **Textures are a named-painter registry or files** (§8) — no
