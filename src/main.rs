@@ -236,8 +236,13 @@ async fn run(width: u32, height: u32, out: &str) {
     // ---- camera & transforms -------------------------------------------
     let aspect = width as f32 / height as f32;
     let proj = math::perspective(36f32.to_radians(), aspect, 0.1, 100.0);
-    let eye = [3.4, 2.3, 6.8];
-    let view = math::look_at(eye, [0.2, 0.95, 0.0], [0.0, 1.0, 0.0]);
+    // Portrait framing check: at 36 deg vertical FOV and aspect 0.5625,
+    // the horizontal half-angle only fits ~0.183 x distance of half-width,
+    // so the staging (cube left edge ~ -1.9, card right edge ~ +2.2 in
+    // world units) needs ~11 m of camera distance. The first CI frame
+    // (eye z 6.8) clipped both subjects — measured, not guessed.
+    let eye = [3.4, 2.4, 11.0];
+    let view = math::look_at(eye, [0.2, 0.9, 0.0], [0.0, 1.0, 0.0]);
     let vp = math::mul(&proj, &view);
 
     let cube_model = math::mul(
