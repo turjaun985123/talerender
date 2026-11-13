@@ -18,6 +18,7 @@
 mod ab1;
 mod dof;
 mod math;
+mod scene;
 
 use math::Mat4;
 use std::borrow::Cow;

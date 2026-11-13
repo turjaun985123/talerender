@@ -60,44 +60,6 @@ const SHADER_DEPTH: &str = include_str!("shader_depth.wgsl");
 const SHADER_BOKEH: &str = include_str!("shader_bokeh.wgsl");
 const SHADER_OUTPUT: &str = include_str!("shader_output.wgsl");
 
-/// The chart pattern, as a function of (u, w): u rightward, w DOWNWARD
-/// from the panel's top edge. Identical formula to the reference
-/// project's `pattern()` (f64 math both sides so texel bytes agree
-/// exactly, including at cell boundaries).
-fn pattern(u: f64, w: f64) -> (u8, u8, u8) {
-    if u < 0.015 || u > 0.985 || w < 0.015 || w > 0.985 {
-        return (255, 255, 255);
-    }
-    if u < 0.5 {
-        let p = ((u * 10.0).floor() as i32 + (w * 10.0).floor() as i32) % 2;
-        return if p == 0 { (238, 238, 238) } else { (20, 20, 20) };
-    }
-    if u < 0.58 {
-        return (128, 128, 128);
-    }
-    if u < 0.79 {
-        (20, 20, 20)
-    } else {
-        (238, 238, 238)
-    }
-}
-
-fn chart_texture_rgba() -> Vec<u8> {
-    let s = TEX_SIZE as usize;
-    let mut data = vec![0u8; s * s * 4];
-    for y in 0..s {
-        for x in 0..s {
-            let (r, g, b) = pattern((x as f64 + 0.5) / s as f64, (y as f64 + 0.5) / s as f64);
-            let k = (y * s + x) * 4;
-            data[k] = r;
-            data[k + 1] = g;
-            data[k + 2] = b;
-            data[k + 3] = 255;
-        }
-    }
-    data
-}
-
 struct Uniforms {
     mvp: math::Mat4,
     model: math::Mat4,
@@ -242,7 +204,7 @@ pub async fn run_dof(width: u32, height: u32, out: &str) {
     queue.write_buffer(&uniform_buf, 0, &uniform_bytes(&uniforms));
 
     // ---- chart texture (sRGB, single level, linear sampling) ----
-    let tex_data = chart_texture_rgba();
+    let tex_data = crate::scene::chart_texture_rgba(TEX_SIZE);
     let chart_tex = device.create_texture(&wgpu::TextureDescriptor {
         label: Some("dof-chart-texture"),
         size: wgpu::Extent3d { width: TEX_SIZE, height: TEX_SIZE, depth_or_array_layers: 1 },
