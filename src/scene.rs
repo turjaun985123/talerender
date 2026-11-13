@@ -534,6 +534,25 @@ impl Painter {
         }
         m
     }
+    /// Boolean mask of an ellipse (for canvas clip() regions that are
+    /// elliptical — the open-mouth clip in drawFace).
+    pub(crate) fn ellipse_mask(&self, cx: f32, cy: f32, rx: f32, ry: f32, rot: f32) -> Vec<bool> {
+        let mut m = vec![false; self.w * self.h];
+        let ex = (rx * rot.cos()).abs() + (ry * rot.sin()).abs();
+        let ey = (rx * rot.sin()).abs() + (ry * rot.cos()).abs();
+        let (x0, y0, x1, y1) = self.bbox(cx - ex, cy - ey, cx + ex, cy + ey);
+        let (s, c) = rot.sin_cos();
+        for y in y0..=y1 {
+            for x in x0..=x1 {
+                let (dx, dy) = (x as f32 + 0.5 - cx, y as f32 + 0.5 - cy);
+                let (lx, ly) = (dx * c + dy * s, -dx * s + dy * c);
+                if (lx / rx).powi(2) + (ly / ry).powi(2) <= 1.0 {
+                    m[y as usize * self.w + x as usize] = true;
+                }
+            }
+        }
+        m
+    }
     pub(crate) fn fill_ellipse_masked(&mut self, cx: f32, cy: f32, rx: f32, ry: f32, rot: f32, col: Rgba, mask: &[bool]) {
         let ex = (rx * rot.cos()).abs() + (ry * rot.sin()).abs();
         let ey = (rx * rot.sin()).abs() + (ry * rot.cos()).abs();
@@ -602,6 +621,353 @@ pub(crate) fn flatten_cubic(p0: (f32, f32), p1: (f32, f32), p2: (f32, f32), p3: 
             )
         })
         .collect()
+}
+
+
+// ---------------------------------------------------------------------
+// The character painter: drawToon re-implemented over the CPU
+// Painter for the look/state subset the A/B work exercises. This
+// began as §28's paint_onoda (the Onoda S01 card, hard-coded) and is
+// generalised here for the M4 stroke battery: same geometry code,
+// parameters instead of constants, and the drawFace mood branches the
+// battery's face set needs (toon.ts drawFace / eye / openMouth).
+// Stage space is 512x1024 with the figure's feet at stage y = 1000;
+// the canvas is 1280x1408 with the stage at offset (384, 256),
+// painted at res 2 — the production canvas (a3 §2).
+// ---------------------------------------------------------------------
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub(crate) enum ToonMood {
+    Neutral,
+    Determined,
+    Angry,
+    Laugh,
+    Shock,
+}
+
+pub(crate) struct ToonSpec {
+    pub(crate) body: &'static str,
+    pub(crate) head: &'static str,
+    /// look.shade; None = shadeOf(body, 0.8), as in drawToonLayer.
+    pub(crate) shade: Option<&'static str>,
+    /// hatCol when the look wears the newsboy cap; None = hat 'none'.
+    pub(crate) cap: Option<&'static str>,
+    pub(crate) mood: ToonMood,
+    pub(crate) arm_l: (f32, f32),
+    pub(crate) arm_r: (f32, f32),
+    pub(crate) lean_deg: f32,
+    pub(crate) head_turn: f32,
+    pub(crate) cam_pitch: f32,
+}
+
+/// Rounded-rect outline points (stage space), corners flattened with
+/// `seg` segments each — the native stand-in for ctx.roundRect.
+fn rounded_rect_pts(x: f32, y: f32, w: f32, h: f32, r: f32, seg: usize) -> Vec<(f32, f32)> {
+    let mut pts: Vec<(f32, f32)> = Vec::new();
+    let corners = [
+        (x + w - r, y + r, -std::f32::consts::FRAC_PI_2),
+        (x + w - r, y + h - r, 0.0),
+        (x + r, y + h - r, std::f32::consts::FRAC_PI_2),
+        (x + r, y + r, std::f32::consts::PI),
+    ];
+    for (cx, cy, a0) in corners {
+        for i in 0..=seg {
+            let a = a0 + (i as f32 / seg as f32) * std::f32::consts::FRAC_PI_2;
+            pts.push((cx + r * a.cos(), cy + r * a.sin()));
+        }
+    }
+    pts
+}
+
+pub(crate) fn paint_toon(spec: &ToonSpec) -> (Vec<u8>, u32, u32) {
+    let res = 2.0f32;
+    let (cw, ch) = (1280usize * 2, 1408usize * 2);
+    let mut p = Painter::new(cw, ch);
+    // Stage -> canvas pixels: translate by (OX, OY), scale by res,
+    // after the whole-figure lean rotation about the feet (256, 1000)
+    // that drawToonLayer applies (rotate(+lean deg), canvas space).
+    let th = spec.lean_deg.to_radians();
+    let (sth, cth) = th.sin_cos();
+    let lean = |x: f32, y: f32| -> (f32, f32) {
+        let (dx, dy) = (x - 256.0, y - 1000.0);
+        (256.0 + dx * cth - dy * sth, 1000.0 + dx * sth + dy * cth)
+    };
+    let px = |x: f32, y: f32| -> (f32, f32) {
+        let (lx, ly) = lean(x, y);
+        ((lx + 384.0) * res, (ly + 256.0) * res)
+    };
+    let ink = rgba_of("#1F1C33");
+    let lw = |w: f32| w * res;
+
+    // ---- legs (stand), behind the body ----
+    let (bx, top, bot, bw) = (256.0f32, 330.0f32, 600.0f32, 92.0f32);
+    let hip_y = bot - 26.0;
+    for (sx, side) in [(bx - 42.0, -1.0f32), (bx + 42.0, 1.0f32)] {
+        let knee = (sx + side * 4.0, hip_y + 210.0);
+        let foot = (sx + side * 10.0, 1000.0);
+        let pts = flatten_quad(px(sx, hip_y), px(knee.0, knee.1), px(foot.0, foot.1), 20);
+        // NOTE: px() applied per point bends the quad slightly under
+        // the lean rotation — exactly what the canvas transform does.
+        p.stroke_polyline(&pts, lw(15.0), ink);
+        let (fxp, fyp) = px(foot.0 + side * 10.0, foot.1 - 4.0);
+        p.fill_ellipse(fxp, fyp, 20.0 * res, 10.0 * res, th, ink);
+    }
+
+    // ---- body bean ----
+    let mut bean: Vec<(f32, f32)> = Vec::new();
+    let mut seg = |pts: Vec<(f32, f32)>| {
+        if bean.is_empty() {
+            bean.extend_from_slice(&pts);
+        } else {
+            bean.extend_from_slice(&pts[1..]);
+        }
+    };
+    seg(flatten_cubic(px(bx - 58.0, top + 10.0), px(bx - 80.0, top + 40.0), px(bx - bw - 6.0, bot - 120.0), px(bx - bw, bot - 50.0), 28));
+    seg(flatten_cubic(px(bx - bw, bot - 50.0), px(bx - bw + 4.0, bot + 6.0), px(bx + bw - 4.0, bot + 6.0), px(bx + bw, bot - 50.0), 28));
+    seg(flatten_cubic(px(bx + bw, bot - 50.0), px(bx + bw + 6.0, bot - 120.0), px(bx + 80.0, top + 40.0), px(bx + 58.0, top + 10.0), 28));
+    seg(flatten_cubic(px(bx + 58.0, top + 10.0), px(bx + 30.0, top - 8.0), px(bx - 30.0, top - 8.0), px(bx - 58.0, top + 10.0), 28));
+    p.fill_polygon(&bean, rgba_of(spec.body));
+    let mask = p.polygon_mask(&bean);
+    // Clipped shade (look.shade, alpha 0.85) + highlight.
+    let (shx, shy) = px(bx + bw + 40.0, (top + bot) / 2.0 + 20.0);
+    let (sr, sg, sb) = match spec.shade {
+        Some(s) => hex_rgb(s),
+        None => shade_rgb(spec.body, 0.8),
+    };
+    p.fill_ellipse_masked(shx, shy, 70.0 * res, 260.0 * res, th, (sr, sg, sb, (0.85 * 255.0) as u8), &mask);
+    let (hix, hiy) = px(bx - 50.0, top + 90.0);
+    p.fill_ellipse_masked(hix, hiy, 16.0 * res, 60.0 * res, 0.2 + th, (255, 255, 255, (0.25 * 255.0) as u8), &mask);
+    p.stroke_polyline(&bean, lw(9.0), ink);
+
+    // ---- arms ----
+    // arm FK identical to drawToon: shoulder (bx +/- 66, top + 46),
+    // upper 118, fore 112, angles in degrees from hanging-down.
+    let arm = |p: &mut Painter, side: f32, a: f32, e: f32| -> (f32, f32) {
+        let (sx, sy) = (bx + side * 66.0, top + 46.0);
+        let a1 = (a as f64).to_radians();
+        let a2 = ((a + e) as f64).to_radians();
+        let ex = sx + side * (a1.sin() as f32) * 118.0;
+        let ey = sy + (a1.cos() as f32) * 118.0;
+        let hx = ex + side * (a2.sin() as f32) * 112.0;
+        let hy = ey + (a2.cos() as f32) * 112.0;
+        let pts = flatten_quad(px(sx, sy), px(ex, ey), px(hx, hy), 20);
+        p.stroke_polyline(&pts, lw(14.0), ink);
+        let (hxp, hyp) = px(hx, hy);
+        p.fill_ellipse(hxp, hyp, 15.0 * res, 17.0 * res, th, ink);
+        (hx, hy)
+    };
+    arm(&mut p, -1.0, spec.arm_l.0, spec.arm_l.1);
+    arm(&mut p, 1.0, spec.arm_r.0, spec.arm_r.1);
+
+    // ---- head ----
+    let (hx, hy, r) = (256.0f32, 178.0f32, 138.0f32);
+    let rp = r * (1.0 + 0.04 * spec.cam_pitch);
+    let (hxp, hyp) = px(hx, hy);
+    p.fill_ellipse(hxp, hyp, rp * res, rp * 0.97 * res, th, rgba_of(spec.head));
+    // Even-odd shade: head area NOT covered by the offset circle.
+    {
+        let (ccx, ccy) = (hx + 52.0 + spec.head_turn * 30.0, hy + 44.0);
+        let (ccxp, ccyp) = px(ccx, ccy);
+        let shade = shade_rgb(spec.head, 0.9);
+        let col = (shade.0, shade.1, shade.2, 255u8);
+        let (x0, y0, x1, y1) = p.bbox(hxp - rp * res, hyp - rp * res, hxp + rp * res, hyp + rp * res);
+        let (s2, c2) = th.sin_cos();
+        for y in y0..=y1 {
+            for x in x0..=x1 {
+                let (dx, dy) = (x as f32 + 0.5 - hxp, y as f32 + 0.5 - hyp);
+                let (lx, ly) = (dx * c2 + dy * s2, -dx * s2 + dy * c2);
+                if (lx / (rp * res)).powi(2) + (ly / (rp * 0.97 * res)).powi(2) > 1.0 {
+                    continue;
+                }
+                let (dcx, dcy) = (x as f32 + 0.5 - ccxp, y as f32 + 0.5 - ccyp);
+                if (dcx * dcx + dcy * dcy) < (rp * res).powi(2) {
+                    continue; // inside the offset circle: unshaded
+                }
+                p.blend(x, y, col);
+            }
+        }
+    }
+    p.stroke_ellipse(hxp, hyp, rp * res, rp * 0.97 * res, th, lw(10.0), ink);
+
+    // ---- face (drawFace subset: the battery's five moods) ----
+    let fx = hx + spec.head_turn * 30.0;
+    let ex = 46.0 * (1.0 - 0.18 * spec.head_turn.abs());
+    let ey = hy + 4.0 + spec.cam_pitch * 8.0;
+    // Brow table [lift, tilt] per mood (toon.ts drawFace); tilt is
+    // signed by side in the loop.
+    let (lift, tilt_mag) = match spec.mood {
+        ToonMood::Neutral => (4.0f32, 0.0f32),
+        ToonMood::Determined => (-4.0, 16.0),
+        ToonMood::Angry => (-10.0, 22.0),
+        ToonMood::Laugh => (10.0, 0.0),
+        ToonMood::Shock => (24.0, 0.0),
+    };
+    for s in [-1.0f32, 1.0] {
+        let tilt = tilt_mag * s;
+        let y = ey - 44.0 - lift;
+        p.stroke_quad(
+            px(fx + s * (ex - 26.0), y + tilt * 0.5),
+            px(fx + s * ex, y - 7.0),
+            px(fx + s * (ex + 26.0), y - tilt * 0.5),
+            lw(12.0),
+            ink,
+        );
+    }
+    // Eyes (toon.ts eye()).
+    for s in [-1.0f32, 1.0] {
+        let x = fx + s * ex;
+        match spec.mood {
+            ToonMood::Laugh => {
+                // Happy/laugh eye: arc(x, y+10, 20, 1.15pi, 1.85pi),
+                // lineWidth 10 — flattened here, stroked as polyline.
+                let pts: Vec<(f32, f32)> = (0..=24)
+                    .map(|i| {
+                        let a = std::f32::consts::PI * 1.15
+                            + (i as f32 / 24.0) * std::f32::consts::PI * 0.7;
+                        px(x + 20.0 * a.cos(), ey + 10.0 + 20.0 * a.sin())
+                    })
+                    .collect();
+                p.stroke_polyline(&pts, lw(10.0), ink);
+            }
+            ToonMood::Shock => {
+                let (exp, eyp) = px(x, ey);
+                p.fill_ellipse(exp, eyp, 26.0 * res, 30.0 * res, th, rgba_of("#FFFFFF"));
+                p.stroke_ellipse(exp, eyp, 26.0 * res, 30.0 * res, th, lw(6.0), ink);
+                p.fill_ellipse(exp, eyp, 7.0 * res, 7.0 * res, th, ink);
+            }
+            _ => {
+                let (exp, eyp) = px(x, ey);
+                p.fill_ellipse(exp, eyp, 13.0 * res, 17.0 * res, th, ink);
+                if spec.mood == ToonMood::Determined {
+                    // Heavy lid: head-colour rect + lid line (width 7).
+                    let (rx0, ry0) = px(x - 24.0, ey - 28.0);
+                    p.fill_rect(rx0, ry0, 48.0 * res, 26.0 * res, rgba_of(spec.head));
+                    p.stroke_polyline(&[px(x - 20.0, ey - 2.0), px(x + 20.0, ey - 2.0)], lw(7.0), ink);
+                }
+            }
+        }
+    }
+    if spec.mood == ToonMood::Laugh {
+        // Blush: rgba(240,120,130,0.35) ellipses 22x12 at fx+/-78.
+        let blush = (240u8, 120u8, 130u8, (0.35 * 255.0) as u8);
+        for s in [-1.0f32, 1.0] {
+            let (bxp, byp) = px(fx + s * 78.0, ey + 40.0);
+            p.fill_ellipse(bxp, byp, 22.0 * res, 12.0 * res, th, blush);
+        }
+    }
+    // Mouth (my = ey + 62; lineWidth 8 unless a branch says otherwise).
+    let my = ey + 62.0;
+    match spec.mood {
+        ToonMood::Determined => {
+            p.stroke_polyline(&[px(fx - 24.0, my + 5.0), px(fx + 24.0, my + 1.0)], lw(8.0), ink);
+        }
+        ToonMood::Neutral => {
+            p.stroke_quad(px(fx - 20.0, my + 2.0), px(fx, my + 14.0), px(fx + 20.0, my + 2.0), lw(8.0), ink);
+        }
+        ToonMood::Angry => {
+            p.stroke_quad(px(fx - 30.0, my + 12.0), px(fx, my - 8.0), px(fx + 30.0, my + 12.0), lw(8.0), ink);
+            // Teeth: roundRect(fx-24, my-2, 48, 14, 6), white fill +
+            // ink stroke at lineWidth 5.
+            let pts: Vec<(f32, f32)> = rounded_rect_pts(fx - 24.0, my - 2.0, 48.0, 14.0, 6.0, 6)
+                .iter()
+                .map(|&(x, y)| px(x, y))
+                .collect();
+            p.fill_polygon(&pts, rgba_of("#FFFFFF"));
+            let mut ring = pts.clone();
+            ring.push(pts[0]);
+            p.stroke_polyline(&ring, lw(5.0), ink);
+        }
+        ToonMood::Laugh => {
+            // Closed laugh path: three quads (toon.ts drawFace).
+            let mut pts: Vec<(f32, f32)> = Vec::new();
+            let mut chain = |qs: Vec<(f32, f32)>| {
+                if pts.is_empty() {
+                    pts.extend_from_slice(&qs);
+                } else {
+                    pts.extend_from_slice(&qs[1..]);
+                }
+            };
+            chain(flatten_quad(px(fx - 40.0, my - 6.0), px(fx, my - 2.0), px(fx + 40.0, my - 6.0), 24));
+            chain(flatten_quad(px(fx + 40.0, my - 6.0), px(fx + 34.0, my + 52.0), px(fx, my + 52.0), 24));
+            chain(flatten_quad(px(fx, my + 52.0), px(fx - 34.0, my + 52.0), px(fx - 40.0, my - 6.0), 24));
+            p.fill_polygon(&pts, rgba_of("#3A1A2A"));
+            let m = p.polygon_mask(&pts);
+            // Tongue, clipped to the mouth: ellipse(fx, my+50, 24, 18).
+            let (txp, typ) = px(fx, my + 50.0);
+            p.fill_ellipse_masked(txp, typ, 24.0 * res, 18.0 * res, th, rgba_of("#E2697A"), &m);
+            // Teeth: fillRect(fx-40, my-10, 80, 12) white, same clip.
+            // (Axis-aligned in device space: exact at lean 0, which is
+            // the battery's face configuration.)
+            let (ax, ay) = px(fx - 40.0, my - 10.0);
+            let (bxp, byp) = px(fx + 40.0, my + 2.0);
+            let (x0, y0, x1, y1) = p.bbox(ax.min(bxp), ay.min(byp), ax.max(bxp), ay.max(byp));
+            for yy in y0..=y1 {
+                for xx in x0..=x1 {
+                    if m[yy as usize * p.w + xx as usize] {
+                        p.blend(xx, yy, rgba_of("#FFFFFF"));
+                    }
+                }
+            }
+            let mut ring = pts.clone();
+            ring.push(pts[0]);
+            p.stroke_polyline(&ring, lw(8.0), ink);
+        }
+        ToonMood::Shock => {
+            // openMouth(16, 20): ellipse(fx, my + h*0.3, w, h) filled
+            // #3A1A2A and stroked; tongue clipped inside (h > 12).
+            let (mxp, myp) = px(fx, my + 6.0);
+            p.fill_ellipse(mxp, myp, 16.0 * res, 20.0 * res, th, rgba_of("#3A1A2A"));
+            p.stroke_ellipse(mxp, myp, 16.0 * res, 20.0 * res, th, lw(8.0), ink);
+            let m = p.ellipse_mask(mxp, myp, 16.0 * res, 20.0 * res, th);
+            let (txp, typ) = px(fx, my + 22.0);
+            p.fill_ellipse_masked(txp, typ, 11.2 * res, 12.0 * res, th, rgba_of("#E2697A"), &m);
+        }
+    }
+
+    // ---- cap ('cap'), hat centre lags turn*18 ----
+    if let Some(cap_hex) = spec.cap {
+        let hatx = hx + spec.head_turn * 18.0;
+        let htop = hy - rp * 0.97;
+        let cap = rgba_of(cap_hex);
+        // Crown: upper half of the rotated ellipse, closed by its chord.
+        {
+            let (ccx, ccy) = px(hatx + 6.0, htop + 34.0);
+            let (rx, ry, rot) = (rp * 0.98 * res, 62.0 * res, -0.05 + th);
+            let (s3, c3) = rot.sin_cos();
+            let mut pts: Vec<(f32, f32)> = Vec::new();
+            for i in 0..=48 {
+                let a = std::f32::consts::PI + (i as f32 / 48.0) * std::f32::consts::PI;
+                let (lx, ly) = (rx * a.cos(), ry * a.sin());
+                pts.push((ccx + lx * c3 - ly * s3, ccy + lx * s3 + ly * c3));
+            }
+            p.fill_polygon(&pts, cap);
+            p.stroke_polyline(&pts, lw(9.0), ink);
+        }
+        // Brim band: lower half ellipse, shadeOf(cap, 0.75).
+        {
+            let (bcx, bcy) = px(hatx - 24.0, htop + 40.0);
+            let (rx, ry, rot) = (rp * 0.78 * res, 22.0 * res, 0.05 + th);
+            let (s3, c3) = rot.sin_cos();
+            let mut pts: Vec<(f32, f32)> = Vec::new();
+            for i in 0..=48 {
+                let a = (i as f32 / 48.0) * std::f32::consts::PI;
+                let (lx, ly) = (rx * a.cos(), ry * a.sin());
+                pts.push((bcx + lx * c3 - ly * s3, bcy + lx * s3 + ly * c3));
+            }
+            let sh = shade_rgb(cap_hex, 0.75);
+            p.fill_polygon(&pts, (sh.0, sh.1, sh.2, 255));
+            p.stroke_polyline(&pts, lw(9.0), ink);
+        }
+        // Button: shadeOf(cap, 1.15).
+        {
+            let (bcx, bcy) = px(hatx + 6.0, htop - 26.0);
+            let sh = shade_rgb(cap_hex, 1.15);
+            p.fill_ellipse(bcx, bcy, 12.0 * res, 12.0 * res, 0.0, (sh.0, sh.1, sh.2, 255));
+            p.stroke_ellipse(bcx, bcy, 12.0 * res, 12.0 * res, 0.0, lw(9.0), ink);
+        }
+    }
+
+    (p.px, cw as u32, ch as u32)
 }
 
 // ---------------------------------------------------------------------

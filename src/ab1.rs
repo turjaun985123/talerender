@@ -33,188 +33,22 @@ use crate::scene::{
 // 1280x1408 with the stage at offset (384, 256), painted at res 2.
 // ---------------------------------------------------------------------
 
-const CAM_PITCH: f64 = 0.28747; // camPitchOf(jgOnoda, camPos) at t=1.50
-const HEAD_TURN: f64 = -0.025; // poseTrack sweep value at lt=1.50
-const LEAN_DEG: f64 = 1.0;
-
+/// The Onoda card: scene::paint_toon with exactly the look/state
+/// S01 produces at t = 1.50 (camPitchOf(jgOnoda, camPos) = 0.28747,
+/// poseTrack sweep headTurn = -0.025, lean 1 — see README.md).
 pub(crate) fn paint_onoda() -> (Vec<u8>, u32, u32) {
-    let res = 2.0f32;
-    let (cw, ch) = (1280usize * 2, 1408usize * 2);
-    let mut p = Painter::new(cw, ch);
-    // Stage -> canvas pixels: translate by (OX, OY), scale by res,
-    // after the whole-figure lean rotation about the feet (256, 1000)
-    // that drawToonLayer applies (rotate(+lean deg), canvas space).
-    let th = (LEAN_DEG as f32).to_radians();
-    let (sth, cth) = th.sin_cos();
-    let lean = |x: f32, y: f32| -> (f32, f32) {
-        let (dx, dy) = (x - 256.0, y - 1000.0);
-        (256.0 + dx * cth - dy * sth, 1000.0 + dx * sth + dy * cth)
-    };
-    let px = |x: f32, y: f32| -> (f32, f32) {
-        let (lx, ly) = lean(x, y);
-        ((lx + 384.0) * res, (ly + 256.0) * res)
-    };
-    let ink = rgba_of("#1F1C33");
-    let lw = |w: f32| w * res;
-
-    // ---- legs (stand), behind the body ----
-    let (bx, top, bot, bw) = (256.0f32, 330.0f32, 600.0f32, 92.0f32);
-    let hip_y = bot - 26.0;
-    for (sx, side) in [(bx - 42.0, -1.0f32), (bx + 42.0, 1.0f32)] {
-        let knee = (sx + side * 4.0, hip_y + 210.0);
-        let foot = (sx + side * 10.0, 1000.0);
-        let pts = flatten_quad(px(sx, hip_y), px(knee.0, knee.1), px(foot.0, foot.1), 20);
-        // NOTE: px() applied per point bends the quad slightly under
-        // the lean rotation — exactly what the canvas transform does.
-        p.stroke_polyline(&pts, lw(15.0), ink);
-        let (fxp, fyp) = px(foot.0 + side * 10.0, foot.1 - 4.0);
-        p.fill_ellipse(fxp, fyp, 20.0 * res, 10.0 * res, th, ink);
-    }
-
-    // ---- body bean ----
-    let mut bean: Vec<(f32, f32)> = Vec::new();
-    let mut seg = |pts: Vec<(f32, f32)>| {
-        if bean.is_empty() {
-            bean.extend_from_slice(&pts);
-        } else {
-            bean.extend_from_slice(&pts[1..]);
-        }
-    };
-    seg(flatten_cubic(px(bx - 58.0, top + 10.0), px(bx - 80.0, top + 40.0), px(bx - bw - 6.0, bot - 120.0), px(bx - bw, bot - 50.0), 28));
-    seg(flatten_cubic(px(bx - bw, bot - 50.0), px(bx - bw + 4.0, bot + 6.0), px(bx + bw - 4.0, bot + 6.0), px(bx + bw, bot - 50.0), 28));
-    seg(flatten_cubic(px(bx + bw, bot - 50.0), px(bx + bw + 6.0, bot - 120.0), px(bx + 80.0, top + 40.0), px(bx + 58.0, top + 10.0), 28));
-    seg(flatten_cubic(px(bx + 58.0, top + 10.0), px(bx + 30.0, top - 8.0), px(bx - 30.0, top - 8.0), px(bx - 58.0, top + 10.0), 28));
-    p.fill_polygon(&bean, rgba_of("#5C6644"));
-    let mask = p.polygon_mask(&bean);
-    // Clipped shade (look.shade '#878E6E', alpha 0.85) + highlight.
-    let (shx, shy) = px(bx + bw + 40.0, (top + bot) / 2.0 + 20.0);
-    let (sr, sg, sb) = hex_rgb("#878E6E");
-    p.fill_ellipse_masked(shx, shy, 70.0 * res, 260.0 * res, th, (sr, sg, sb, (0.85 * 255.0) as u8), &mask);
-    let (hix, hiy) = px(bx - 50.0, top + 90.0);
-    p.fill_ellipse_masked(hix, hiy, 16.0 * res, 60.0 * res, 0.2 + th, (255, 255, 255, (0.25 * 255.0) as u8), &mask);
-    p.stroke_polyline(&bean, lw(9.0), ink);
-
-    // ---- arms ----
-    // arm FK identical to drawToon: shoulder (bx +/- 66, top + 46),
-    // upper 118, fore 112, angles in degrees from hanging-down.
-    let arm = |p: &mut Painter, side: f32, a: f32, e: f32| -> (f32, f32) {
-        let (sx, sy) = (bx + side * 66.0, top + 46.0);
-        let a1 = (a as f64).to_radians();
-        let a2 = ((a + e) as f64).to_radians();
-        let ex = sx + side * (a1.sin() as f32) * 118.0;
-        let ey = sy + (a1.cos() as f32) * 118.0;
-        let hx = ex + side * (a2.sin() as f32) * 112.0;
-        let hy = ey + (a2.cos() as f32) * 112.0;
-        let pts = flatten_quad(px(sx, sy), px(ex, ey), px(hx, hy), 20);
-        p.stroke_polyline(&pts, lw(14.0), ink);
-        let (hxp, hyp) = px(hx, hy);
-        p.fill_ellipse(hxp, hyp, 15.0 * res, 17.0 * res, th, ink);
-        (hx, hy)
-    };
-    arm(&mut p, -1.0, 10.0, 6.0); // armL [10, 6]
-    arm(&mut p, 1.0, 16.0, -6.0); // armR [16, -6]
-
-    // ---- head ----
-    let (hx, hy, r) = (256.0f32, 178.0f32, 138.0f32);
-    let rp = r * (1.0 + 0.04 * CAM_PITCH as f32);
-    let (hxp, hyp) = px(hx, hy);
-    p.fill_ellipse(hxp, hyp, rp * res, rp * 0.97 * res, th, rgba_of("#F7F7FA"));
-    // Even-odd shade: head area NOT covered by the offset circle.
-    {
-        let (ccx, ccy) = (hx + 52.0 + HEAD_TURN as f32 * 30.0, hy + 44.0);
-        let (ccxp, ccyp) = px(ccx, ccy);
-        let shade = shade_rgb("#F7F7FA", 0.9);
-        let col = (shade.0, shade.1, shade.2, 255u8);
-        let (x0, y0, x1, y1) = p.bbox(hxp - rp * res, hyp - rp * res, hxp + rp * res, hyp + rp * res);
-        let (s2, c2) = th.sin_cos();
-        for y in y0..=y1 {
-            for x in x0..=x1 {
-                let (dx, dy) = (x as f32 + 0.5 - hxp, y as f32 + 0.5 - hyp);
-                let (lx, ly) = (dx * c2 + dy * s2, -dx * s2 + dy * c2);
-                if (lx / (rp * res)).powi(2) + (ly / (rp * 0.97 * res)).powi(2) > 1.0 {
-                    continue;
-                }
-                let (dcx, dcy) = (x as f32 + 0.5 - ccxp, y as f32 + 0.5 - ccyp);
-                if (dcx * dcx + dcy * dcy) < (rp * res).powi(2) {
-                    continue; // inside the offset circle: unshaded
-                }
-                p.blend(x, y, col);
-            }
-        }
-    }
-    p.stroke_ellipse(hxp, hyp, rp * res, rp * 0.97 * res, th, lw(10.0), ink);
-
-    // ---- face ('determined') ----
-    let fx = hx + HEAD_TURN as f32 * 30.0;
-    let ex = 46.0 * (1.0 - 0.18 * (HEAD_TURN as f32).abs());
-    let ey = hy + 4.0 + CAM_PITCH as f32 * 8.0;
-    // Brows: [lift -4, tilt 16]; per side s: tilt signed by s.
-    for s in [-1.0f32, 1.0] {
-        let (lift, tilt) = (-4.0f32, 16.0f32 * s);
-        let y = ey - 44.0 - lift;
-        p.stroke_quad(
-            px(fx + s * (ex - 26.0), y + tilt * 0.5),
-            px(fx + s * ex, y - 7.0),
-            px(fx + s * (ex + 26.0), y - tilt * 0.5),
-            lw(12.0),
-            ink,
-        );
-    }
-    // Eyes: pupil ellipse + heavy lid (head-colour rect + lid line).
-    for s in [-1.0f32, 1.0] {
-        let x = fx + s * ex;
-        let (exp, eyp) = px(x, ey);
-        p.fill_ellipse(exp, eyp, 13.0 * res, 17.0 * res, th, ink);
-        let (rx0, ry0) = px(x - 24.0, ey - 28.0);
-        p.fill_rect(rx0, ry0, 48.0 * res, 26.0 * res, rgba_of("#F7F7FA"));
-        p.stroke_polyline(&[px(x - 20.0, ey - 2.0), px(x + 20.0, ey - 2.0)], lw(7.0), ink);
-    }
-    // Mouth: straight line, my = ey + 62.
-    let my = ey + 62.0;
-    p.stroke_polyline(&[px(fx - 24.0, my + 5.0), px(fx + 24.0, my + 1.0)], lw(8.0), ink);
-
-    // ---- cap ('cap', hatCol '#4C5638'), hat centre lags turn*18 ----
-    let hatx = hx + HEAD_TURN as f32 * 18.0;
-    let htop = hy - rp * 0.97;
-    let cap = rgba_of("#4C5638");
-    // Crown: upper half of the rotated ellipse, closed by its chord.
-    {
-        let (ccx, ccy) = px(hatx + 6.0, htop + 34.0);
-        let (rx, ry, rot) = (rp * 0.98 * res, 62.0 * res, -0.05 + th);
-        let (s3, c3) = rot.sin_cos();
-        let mut pts: Vec<(f32, f32)> = Vec::new();
-        for i in 0..=48 {
-            let a = std::f32::consts::PI + (i as f32 / 48.0) * std::f32::consts::PI;
-            let (lx, ly) = (rx * a.cos(), ry * a.sin());
-            pts.push((ccx + lx * c3 - ly * s3, ccy + lx * s3 + ly * c3));
-        }
-        p.fill_polygon(&pts, cap);
-        p.stroke_polyline(&pts, lw(9.0), ink);
-    }
-    // Brim band: lower half ellipse, shadeOf(cap, 0.75).
-    {
-        let (bcx, bcy) = px(hatx - 24.0, htop + 40.0);
-        let (rx, ry, rot) = (rp * 0.78 * res, 22.0 * res, 0.05 + th);
-        let (s3, c3) = rot.sin_cos();
-        let mut pts: Vec<(f32, f32)> = Vec::new();
-        for i in 0..=48 {
-            let a = (i as f32 / 48.0) * std::f32::consts::PI;
-            let (lx, ly) = (rx * a.cos(), ry * a.sin());
-            pts.push((bcx + lx * c3 - ly * s3, bcy + lx * s3 + ly * c3));
-        }
-        let sh = shade_rgb("#4C5638", 0.75);
-        p.fill_polygon(&pts, (sh.0, sh.1, sh.2, 255));
-        p.stroke_polyline(&pts, lw(9.0), ink);
-    }
-    // Button: shadeOf(cap, 1.15).
-    {
-        let (bcx, bcy) = px(hatx + 6.0, htop - 26.0);
-        let sh = shade_rgb("#4C5638", 1.15);
-        p.fill_ellipse(bcx, bcy, 12.0 * res, 12.0 * res, 0.0, (sh.0, sh.1, sh.2, 255));
-        p.stroke_ellipse(bcx, bcy, 12.0 * res, 12.0 * res, 0.0, lw(9.0), ink);
-    }
-
-    (p.px, cw as u32, ch as u32)
+    crate::scene::paint_toon(&crate::scene::ToonSpec {
+        body: "#5C6644",
+        head: "#F7F7FA",
+        shade: Some("#878E6E"),
+        cap: Some("#4C5638"),
+        mood: crate::scene::ToonMood::Determined,
+        arm_l: (10.0, 6.0),
+        arm_r: (16.0, -6.0),
+        lean_deg: 1.0,
+        head_turn: -0.025,
+        cam_pitch: 0.28747,
+    })
 }
 
 // ---------------------------------------------------------------------

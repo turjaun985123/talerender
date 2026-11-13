@@ -15,8 +15,10 @@
 //! Usage: talerender [--width 1080] [--height 1920] [--out frame.png]
 //!        [--scene m1|ab1|dof-chart] [--caption <caption-strip.png>]
 //!        [--scene-file <scene.json>]
+//!        [--scene stroke-battery] [--out <dir>]  (M4 battery cards)
 
 mod ab1;
+mod battery;
 mod dof;
 mod math;
 mod scene;
@@ -77,8 +79,9 @@ fn main() {
         "m1" => pollster::block_on(run(width, height, &out)),
         "ab1" => pollster::block_on(ab1::run_ab1(width, height, &out, &caption)),
         "dof-chart" => pollster::block_on(dof::run_dof(width, height, &out)),
+        "stroke-battery" => battery::run_battery(&out),
         other => {
-            eprintln!("unknown scene: {other} (expected m1, ab1 or dof-chart)");
+            eprintln!("unknown scene: {other} (expected m1, ab1, dof-chart or stroke-battery)");
             std::process::exit(2);
         }
     }
