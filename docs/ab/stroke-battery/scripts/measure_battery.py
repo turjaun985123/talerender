@@ -2,9 +2,11 @@
 """M4 stroke battery measurement (compatibility contract SS2).
 
 Compares the Chrome/Skia reference cards against the native CPU
-painter cards, per primitive class, on the ALPHA channel (coverage).
-Colour is not measured: the contract binds at stroke edges, and alpha
-is the coverage signal both rasterisers produce.
+painter cards, per primitive class. Silhouette classes are measured
+on the ALPHA channel (coverage). Interior face features — ink
+painted inside the opaque head fill, where alpha is 1.0 everywhere —
+are measured on ink darkness (composited-over-white luminance),
+which is the coverage signal for those strokes.
 
 TOLERANCES — stated before any measurement was taken (see the package
 README, committed with this script before the first run):
@@ -49,6 +51,47 @@ STEP = 0.1  # profile sampling step, device px
 
 def load_alpha(path):
     return np.asarray(Image.open(path).convert("RGBA"), dtype=np.float64)[:, :, 3] / 255.0
+
+
+def load_grey(path):
+    """RGBA composited over white, as luminance 0..1.
+
+    Interior face features (brows, eyes, mouth) are ink painted
+    INSIDE the opaque head fill: their alpha is 1.0 everywhere, so
+    alpha cannot see them. On the composited grey, ink coverage is
+    the darkness signal — the measurable surface for those classes.
+    """
+    rgba = np.asarray(Image.open(path).convert("RGBA"), dtype=np.float64) / 255.0
+    a = rgba[:, :, 3:4]
+    rgb = rgba[:, :, :3] * a + (1.0 - a)
+    return 0.299 * rgb[:, :, 0] + 0.587 * rgb[:, :, 1] + 0.114 * rgb[:, :, 2]
+
+
+def grey_crop_metrics(g_ref, g_nat, a_ref, a_nat, box):
+    """Band = fractional alpha OR a strong grey gradient (ink edge
+    inside an opaque region), dilated 2 px. Metrics on grey diff."""
+    x0, y0, x1, y1 = box
+    r = g_ref[y0:y1, x0:x1]
+    n = g_nat[y0:y1, x0:x1]
+    ar = a_ref[y0:y1, x0:x1]
+    an = a_nat[y0:y1, x0:x1]
+
+    def grad(g):
+        gx = np.abs(np.diff(g, axis=1, prepend=g[:, :1]))
+        gy = np.abs(np.diff(g, axis=0, prepend=g[:1, :]))
+        return np.maximum(gx, gy)
+
+    band = dilate(
+        ((ar > 0.002) & (ar < 0.998)) | ((an > 0.002) & (an < 0.998)) | (grad(r) > 0.25) | (grad(n) > 0.25),
+        2,
+    )
+    diff = np.abs(r - n)
+    return {
+        "band_px": int(band.sum()),
+        "band_rmse": round(float(np.sqrt(np.mean(diff[band] ** 2))), 4) if band.sum() else 0.0,
+        "disagree_frac": round(float((diff[band] > 0.25).mean()), 4) if band.sum() else 0.0,
+        "crop_rmse": round(float(np.sqrt(np.mean(diff**2))), 4),
+    }
 
 
 def bilinear(a, x, y):
@@ -174,6 +217,8 @@ def crop_metrics(a_ref, a_nat, box):
 
 
 def judge_profile(name, kind, ref_m, nat_m, rmse):
+    if ref_m is None or nat_m is None:
+        return {"kind": kind, "note": "degenerate profile (crossings not found)", "verdict": "FAIL"}
     dw = abs(nat_m["width"] - ref_m["width"]) if "width" in ref_m else abs(nat_m["edge"] - ref_m["edge"])
     dr = abs(nat_m["ramp"] - ref_m["ramp"])
     tol_w = TOL["width_abs_px"] if "width" in ref_m else TOL["edge_abs_px"]
@@ -223,10 +268,12 @@ def main():
             _, vn = seg_profile(prims_nat, p0, p1, hw)
             classes[name] = judge_profile(name, "segment", stroke_metrics(dr_, vr), stroke_metrics(dr_, vn), profile_rmse(vr, vn))
         # quad apex: C = .25 P0 + .5 Pc + .25 P2, tangent horizontal
+        # there -> profile along the vertical through the apex (a
+        # horizontal sampling segment gives a vertical profile).
         name = f"quad-{w}"
         apex = (D(1035), D(y - 2.5))
-        dr_, vr = seg_profile(prims_ref, (apex[0], apex[1] - 30), (apex[0], apex[1] + 30), hw, stations=(0.5,))
-        _, vn = seg_profile(prims_nat, (apex[0], apex[1] - 30), (apex[0], apex[1] + 30), hw, stations=(0.5,))
+        dr_, vr = seg_profile(prims_ref, (apex[0] - 30, apex[1]), (apex[0] + 30, apex[1]), hw, stations=(0.5,))
+        _, vn = seg_profile(prims_nat, (apex[0] - 30, apex[1]), (apex[0] + 30, apex[1]), hw, stations=(0.5,))
         classes[name] = judge_profile(name, "quad", stroke_metrics(dr_, vr), stroke_metrics(dr_, vn), profile_rmse(vr, vn))
 
     # ---- row 6: ellipses, arcs, fills ----
@@ -264,16 +311,19 @@ def main():
     d2 = d - D(29)
     outer_r = fill_metrics(d2, vr)
     outer_n = fill_metrics(d2, vn)
-    ring = {
-        "kind": "ring-outer-edge",
-        "ref": {k: round(v, 3) for k, v in outer_r.items()},
-        "native": {k: round(v, 3) for k, v in outer_n.items()},
-        "delta_width_or_edge_px": round(abs(outer_n["edge"] - outer_r["edge"]), 3),
-        "delta_ramp_px": round(abs(outer_n["ramp"] - outer_r["ramp"]), 3),
-        "profile_rmse": round(profile_rmse(vr, vn), 4),
-    }
-    ring["verdict"] = "PASS" if ring["delta_width_or_edge_px"] <= TOL["edge_abs_px"] and ring["delta_ramp_px"] <= TOL["ramp_abs_px"] and ring["profile_rmse"] <= TOL["profile_rmse"] else "FAIL"
-    classes["eye-ring"] = ring
+    if outer_r is None or outer_n is None:
+        classes["eye-ring"] = {"kind": "ring-outer-edge", "note": "degenerate profile", "verdict": "FAIL"}
+    else:
+        ring = {
+            "kind": "ring-outer-edge",
+            "ref": {k: round(v, 3) for k, v in outer_r.items()},
+            "native": {k: round(v, 3) for k, v in outer_n.items()},
+            "delta_width_or_edge_px": round(abs(outer_n["edge"] - outer_r["edge"]), 3),
+            "delta_ramp_px": round(abs(outer_n["ramp"] - outer_r["ramp"]), 3),
+            "profile_rmse": round(profile_rmse(vr, vn), 4),
+        }
+        ring["verdict"] = "PASS" if ring["delta_width_or_edge_px"] <= TOL["edge_abs_px"] and ring["delta_ramp_px"] <= TOL["ramp_abs_px"] and ring["profile_rmse"] <= TOL["profile_rmse"] else "FAIL"
+        classes["eye-ring"] = ring
 
     # cap end: axial profile through the right cap of the short segment
     d = np.arange(-D(10), D(10) + STEP, STEP)
@@ -296,27 +346,37 @@ def main():
         classes[name] = judge_crop(name, crop_metrics(prims_ref, prims_nat, (D(x0), D(y0), D(x1), D(y1))))
 
     # ---- faces: head crop + brow profile per mood ----
+    # Interior features are measured on ink darkness (1 - grey): see
+    # load_grey. Brow profiles are normalised by their own plateau
+    # (ink darkness ~0.88, over a shade-crescent floor on some moods).
     lifts = {"neutral": 4, "determined": -4, "angry": -10, "laugh": 10, "shock": 24}
     for mood in spec["faces"]["moods"]:
         a_ref = load_alpha(f"{args.ref}/face-{mood}.png")
         a_nat = load_alpha(f"{args.native}/face-{mood}.png")
-        classes[f"face-{mood}"] = judge_crop(f"face-{mood}", crop_metrics(a_ref, a_nat, (D(470), D(260), D(830), D(600))))
+        g_ref = load_grey(f"{args.ref}/face-{mood}.png")
+        g_nat = load_grey(f"{args.native}/face-{mood}.png")
+        classes[f"face-{mood}"] = judge_crop(f"face-{mood}", grey_crop_metrics(g_ref, g_nat, a_ref, a_nat, (D(470), D(260), D(830), D(600))))
         # brow: vertical profile through the right brow apex.
         # stage: brow base y = (182 - 44 - lift), apex dips 3.5 lower;
         # canvas device x = (384 + 256 + 46) * res, y likewise (+256).
         brow_cx = (384 + 302) * res
         brow_cy = (256 + (182 - 44 - lifts[mood]) - 3.5) * res
         d = np.arange(-26, 26 + STEP, STEP)
-        vr = np.array([bilinear(a_ref, brow_cx, brow_cy + dd) for dd in d])
-        vn = np.array([bilinear(a_nat, brow_cx, brow_cy + dd) for dd in d])
+        vr = np.array([1.0 - bilinear(g_ref, brow_cx, brow_cy + dd) for dd in d])
+        vn = np.array([1.0 - bilinear(g_nat, brow_cx, brow_cy + dd) for dd in d])
+        vr = vr / max(vr.max(), 1e-9)
+        vn = vn / max(vn.max(), 1e-9)
         classes[f"brow-{mood}"] = judge_profile(f"brow-{mood}", "brow", stroke_metrics(d, vr), stroke_metrics(d, vn), profile_rmse(vr, vn))
 
     # ---- toon card: global + in-situ leg width ----
     t_ref = load_alpha(f"{args.ref}/toon.png")
     t_nat = load_alpha(f"{args.native}/toon.png")
+    tg_ref = load_grey(f"{args.ref}/toon.png")
+    tg_nat = load_grey(f"{args.native}/toon.png")
     diff = t_ref - t_nat
     mse = float(np.mean(diff**2))
     band = dilate(((t_ref > 0.002) & (t_ref < 0.998)) | ((t_nat > 0.002) & (t_nat < 0.998)), 2)
+    gm = grey_crop_metrics(tg_ref, tg_nat, t_ref, t_nat, (0, 0, t_ref.shape[1], t_ref.shape[0]))
     toon = {
         "kind": "full-character",
         "alpha_psnr_db": round(float(10 * np.log10(1.0 / mse)), 3) if mse > 0 else float("inf"),
@@ -324,9 +384,22 @@ def main():
         "band_px": int(band.sum()),
         "band_rmse": round(float(np.sqrt(np.mean(diff[band] ** 2))), 4) if band.sum() else 0.0,
         "disagree_frac": round(float((np.abs(diff[band]) > 0.25).mean()), 4) if band.sum() else 0.0,
+        "grey_band_rmse": gm["band_rmse"],
+        "grey_disagree_frac": gm["disagree_frac"],
     }
-    toon["verdict"] = "PASS" if toon["band_rmse"] <= TOL["crop_band_rmse"] and toon["disagree_frac"] <= TOL["crop_disagree_frac"] else "FAIL"
+    toon["verdict"] = "PASS" if toon["band_rmse"] <= TOL["crop_band_rmse"] and toon["disagree_frac"] <= TOL["crop_disagree_frac"] and gm["band_rmse"] <= TOL["crop_band_rmse"] and gm["disagree_frac"] <= TOL["crop_disagree_frac"] else "FAIL"
     classes["toon-card"] = toon
+    # in-situ head outline: the toon head is lean-rotated (1 deg) and
+    # camPitch-scaled (rp = 138 * 1.0115 stage units), so its edges
+    # sit at fractional device coords — the honest curved-stroke
+    # case. Centre: stage (256,178) lean-rotated about (256,1000)
+    # -> canvas logical (654.35, 434.13) -> device (1308.7, 868.3).
+    # The 1-degree ellipse rotation is ignored (cos error ~0.02%).
+    head_c = (1308.7, 868.3)
+    rp_dev = 138 * (1 + 0.04 * 0.28747) * res
+    dr_, vr = radial_profile(t_ref, head_c, ellipse_r(rp_dev, rp_dev * 0.97), D(10) / 2, angs)
+    _, vn = radial_profile(t_nat, head_c, ellipse_r(rp_dev, rp_dev * 0.97), D(10) / 2, angs)
+    classes["toon-head-outline"] = judge_profile("toon-head-outline", "ellipse-stroke-in-situ", stroke_metrics(dr_, vr), stroke_metrics(dr_, vn), profile_rmse(vr, vn))
     # leg: horizontal profile at stage y=787 across the left leg
     xs = np.arange(D(560), D(680) + 0.5, 0.5)
     vr = np.array([bilinear(t_ref, xx, D(1043)) for xx in xs])
