@@ -1,0 +1,676 @@
+{
+  "tolerances": {
+    "width_abs_px": 0.5,
+    "edge_abs_px": 0.5,
+    "ramp_abs_px": 0.5,
+    "profile_rmse": 0.1,
+    "crop_band_rmse": 0.12,
+    "crop_disagree_frac": 0.05
+  },
+  "renderer_ref": "Chrome headless (SwiftShader) Canvas2D/Skia \u2014 see provenance.json beside the reference cards",
+  "renderer_native": "TaleRender CPU painter (src/scene.rs)",
+  "classes": {
+    "seg-h-15": {
+      "kind": "segment",
+      "ref": {
+        "width": 30.0,
+        "ramp": 0.8
+      },
+      "native": {
+        "width": 30.0,
+        "ramp": 0.8
+      },
+      "delta_width_or_edge_px": 0.0,
+      "delta_ramp_px": 0.0,
+      "profile_rmse": 0.0,
+      "verdict": "PASS"
+    },
+    "seg-v-15": {
+      "kind": "segment",
+      "ref": {
+        "width": 30.0,
+        "ramp": 0.8
+      },
+      "native": {
+        "width": 30.0,
+        "ramp": 0.8
+      },
+      "delta_width_or_edge_px": 0.0,
+      "delta_ramp_px": 0.0,
+      "profile_rmse": 0.0,
+      "verdict": "PASS"
+    },
+    "seg-diag-15": {
+      "kind": "segment",
+      "ref": {
+        "width": 29.922,
+        "ramp": 1.21
+      },
+      "native": {
+        "width": 29.956,
+        "ramp": 1.278
+      },
+      "delta_width_or_edge_px": 0.035,
+      "delta_ramp_px": 0.068,
+      "profile_rmse": 0.0046,
+      "verdict": "PASS"
+    },
+    "quad-15": {
+      "kind": "quad",
+      "ref": {
+        "width": 30.0,
+        "ramp": 0.8
+      },
+      "native": {
+        "width": 30.0,
+        "ramp": 0.8
+      },
+      "delta_width_or_edge_px": 0.0,
+      "delta_ramp_px": 0.0,
+      "profile_rmse": 0.0,
+      "verdict": "PASS"
+    },
+    "seg-h-14": {
+      "kind": "segment",
+      "ref": {
+        "width": 28.0,
+        "ramp": 0.8
+      },
+      "native": {
+        "width": 28.0,
+        "ramp": 0.8
+      },
+      "delta_width_or_edge_px": 0.0,
+      "delta_ramp_px": 0.0,
+      "profile_rmse": 0.0,
+      "verdict": "PASS"
+    },
+    "seg-v-14": {
+      "kind": "segment",
+      "ref": {
+        "width": 28.0,
+        "ramp": 0.8
+      },
+      "native": {
+        "width": 28.0,
+        "ramp": 0.8
+      },
+      "delta_width_or_edge_px": 0.0,
+      "delta_ramp_px": 0.0,
+      "profile_rmse": 0.0,
+      "verdict": "PASS"
+    },
+    "seg-diag-14": {
+      "kind": "segment",
+      "ref": {
+        "width": 27.962,
+        "ramp": 1.346
+      },
+      "native": {
+        "width": 27.97,
+        "ramp": 1.395
+      },
+      "delta_width_or_edge_px": 0.008,
+      "delta_ramp_px": 0.05,
+      "profile_rmse": 0.0029,
+      "verdict": "PASS"
+    },
+    "quad-14": {
+      "kind": "quad",
+      "ref": {
+        "width": 28.0,
+        "ramp": 0.8
+      },
+      "native": {
+        "width": 28.0,
+        "ramp": 0.8
+      },
+      "delta_width_or_edge_px": 0.0,
+      "delta_ramp_px": 0.0,
+      "profile_rmse": 0.0,
+      "verdict": "PASS"
+    },
+    "seg-h-12": {
+      "kind": "segment",
+      "ref": {
+        "width": 24.0,
+        "ramp": 0.8
+      },
+      "native": {
+        "width": 24.0,
+        "ramp": 0.8
+      },
+      "delta_width_or_edge_px": 0.0,
+      "delta_ramp_px": 0.0,
+      "profile_rmse": 0.0,
+      "verdict": "PASS"
+    },
+    "seg-v-12": {
+      "kind": "segment",
+      "ref": {
+        "width": 24.0,
+        "ramp": 0.8
+      },
+      "native": {
+        "width": 24.0,
+        "ramp": 0.8
+      },
+      "delta_width_or_edge_px": 0.0,
+      "delta_ramp_px": 0.0,
+      "profile_rmse": 0.0,
+      "verdict": "PASS"
+    },
+    "seg-diag-12": {
+      "kind": "segment",
+      "ref": {
+        "width": 24.053,
+        "ramp": 1.448
+      },
+      "native": {
+        "width": 24.047,
+        "ramp": 1.426
+      },
+      "delta_width_or_edge_px": 0.005,
+      "delta_ramp_px": 0.022,
+      "profile_rmse": 0.0025,
+      "verdict": "PASS"
+    },
+    "quad-12": {
+      "kind": "quad",
+      "ref": {
+        "width": 24.0,
+        "ramp": 0.8
+      },
+      "native": {
+        "width": 24.0,
+        "ramp": 0.8
+      },
+      "delta_width_or_edge_px": 0.0,
+      "delta_ramp_px": 0.0,
+      "profile_rmse": 0.0,
+      "verdict": "PASS"
+    },
+    "seg-h-10": {
+      "kind": "segment",
+      "ref": {
+        "width": 20.0,
+        "ramp": 0.8
+      },
+      "native": {
+        "width": 20.0,
+        "ramp": 0.8
+      },
+      "delta_width_or_edge_px": 0.0,
+      "delta_ramp_px": 0.0,
+      "profile_rmse": 0.0,
+      "verdict": "PASS"
+    },
+    "seg-v-10": {
+      "kind": "segment",
+      "ref": {
+        "width": 20.0,
+        "ramp": 0.8
+      },
+      "native": {
+        "width": 20.0,
+        "ramp": 0.8
+      },
+      "delta_width_or_edge_px": 0.0,
+      "delta_ramp_px": 0.0,
+      "profile_rmse": 0.0,
+      "verdict": "PASS"
+    },
+    "seg-diag-10": {
+      "kind": "segment",
+      "ref": {
+        "width": 20.14,
+        "ramp": 1.163
+      },
+      "native": {
+        "width": 20.068,
+        "ramp": 1.244
+      },
+      "delta_width_or_edge_px": 0.072,
+      "delta_ramp_px": 0.081,
+      "profile_rmse": 0.0096,
+      "verdict": "PASS"
+    },
+    "quad-10": {
+      "kind": "quad",
+      "ref": {
+        "width": 20.0,
+        "ramp": 0.8
+      },
+      "native": {
+        "width": 20.0,
+        "ramp": 0.8
+      },
+      "delta_width_or_edge_px": 0.0,
+      "delta_ramp_px": 0.0,
+      "profile_rmse": 0.0,
+      "verdict": "PASS"
+    },
+    "seg-h-9": {
+      "kind": "segment",
+      "ref": {
+        "width": 18.0,
+        "ramp": 0.8
+      },
+      "native": {
+        "width": 18.0,
+        "ramp": 0.8
+      },
+      "delta_width_or_edge_px": 0.0,
+      "delta_ramp_px": 0.0,
+      "profile_rmse": 0.0,
+      "verdict": "PASS"
+    },
+    "seg-v-9": {
+      "kind": "segment",
+      "ref": {
+        "width": 18.0,
+        "ramp": 0.8
+      },
+      "native": {
+        "width": 18.0,
+        "ramp": 0.8
+      },
+      "delta_width_or_edge_px": 0.0,
+      "delta_ramp_px": 0.0,
+      "profile_rmse": 0.0,
+      "verdict": "PASS"
+    },
+    "seg-diag-9": {
+      "kind": "segment",
+      "ref": {
+        "width": 18.066,
+        "ramp": 1.136
+      },
+      "native": {
+        "width": 18.02,
+        "ramp": 1.209
+      },
+      "delta_width_or_edge_px": 0.046,
+      "delta_ramp_px": 0.073,
+      "profile_rmse": 0.0072,
+      "verdict": "PASS"
+    },
+    "quad-9": {
+      "kind": "quad",
+      "ref": {
+        "width": 18.0,
+        "ramp": 0.8
+      },
+      "native": {
+        "width": 18.0,
+        "ramp": 0.8
+      },
+      "delta_width_or_edge_px": 0.0,
+      "delta_ramp_px": 0.0,
+      "profile_rmse": 0.0,
+      "verdict": "PASS"
+    },
+    "head-outline": {
+      "kind": "ellipse-stroke",
+      "ref": {
+        "width": 19.974,
+        "ramp": 1.917
+      },
+      "native": {
+        "width": 19.996,
+        "ramp": 1.862
+      },
+      "delta_width_or_edge_px": 0.022,
+      "delta_ramp_px": 0.055,
+      "profile_rmse": 0.0032,
+      "verdict": "PASS"
+    },
+    "circle-stroke": {
+      "kind": "ellipse-stroke",
+      "ref": {
+        "width": 17.904,
+        "ramp": 1.692
+      },
+      "native": {
+        "width": 17.952,
+        "ramp": 1.699
+      },
+      "delta_width_or_edge_px": 0.048,
+      "delta_ramp_px": 0.007,
+      "profile_rmse": 0.0044,
+      "verdict": "PASS"
+    },
+    "arc-stroke": {
+      "kind": "arc-stroke",
+      "ref": {
+        "width": 20.0,
+        "ramp": 0.8
+      },
+      "native": {
+        "width": 20.0,
+        "ramp": 0.8
+      },
+      "delta_width_or_edge_px": 0.0,
+      "delta_ramp_px": 0.0,
+      "profile_rmse": 0.0,
+      "verdict": "PASS"
+    },
+    "foot-fill": {
+      "kind": "fill",
+      "ref": {
+        "edge": -0.5,
+        "ramp": 0.8
+      },
+      "native": {
+        "edge": -0.5,
+        "ramp": 0.8
+      },
+      "delta_width_or_edge_px": 0.0,
+      "delta_ramp_px": 0.0,
+      "profile_rmse": 0.0,
+      "verdict": "PASS"
+    },
+    "pupil-fill": {
+      "kind": "fill",
+      "ref": {
+        "edge": -0.5,
+        "ramp": 0.8
+      },
+      "native": {
+        "edge": -0.5,
+        "ramp": 0.8
+      },
+      "delta_width_or_edge_px": 0.0,
+      "delta_ramp_px": 0.0,
+      "profile_rmse": 0.0,
+      "verdict": "PASS"
+    },
+    "bun-fill": {
+      "kind": "fill",
+      "ref": {
+        "edge": -0.5,
+        "ramp": 0.8
+      },
+      "native": {
+        "edge": -0.5,
+        "ramp": 0.8
+      },
+      "delta_width_or_edge_px": 0.0,
+      "delta_ramp_px": 0.0,
+      "profile_rmse": 0.0,
+      "verdict": "PASS"
+    },
+    "eye-ring": {
+      "kind": "ring-outer-edge",
+      "ref": {
+        "edge": -0.5,
+        "ramp": 0.8
+      },
+      "native": {
+        "edge": -0.5,
+        "ramp": 0.8
+      },
+      "delta_width_or_edge_px": 0.0,
+      "delta_ramp_px": 0.0,
+      "profile_rmse": 0.0,
+      "verdict": "PASS"
+    },
+    "cap-end": {
+      "kind": "cap",
+      "ref": {
+        "edge": 14.332,
+        "ramp": 1.468
+      },
+      "native": {
+        "edge": 14.332,
+        "ramp": 1.468
+      },
+      "delta_width_or_edge_px": 0.0,
+      "delta_ramp_px": 0.0,
+      "profile_rmse": 0.0,
+      "verdict": "PASS"
+    },
+    "cap-seg": {
+      "kind": "segment",
+      "ref": {
+        "width": 30.0,
+        "ramp": 0.8
+      },
+      "native": {
+        "width": 30.0,
+        "ramp": 0.8
+      },
+      "delta_width_or_edge_px": 0.0,
+      "delta_ramp_px": 0.0,
+      "profile_rmse": 0.0,
+      "verdict": "PASS"
+    },
+    "join-zigzag": {
+      "kind": "crop",
+      "band_px": 6409,
+      "band_rmse": 0.0577,
+      "disagree_frac": 0.0145,
+      "crop_rmse": 0.0144,
+      "verdict": "PASS"
+    },
+    "join-uturn": {
+      "kind": "crop",
+      "band_px": 99,
+      "band_rmse": 0.0673,
+      "disagree_frac": 0.0202,
+      "crop_rmse": 0.002,
+      "verdict": "PASS"
+    },
+    "cross-x": {
+      "kind": "crop",
+      "band_px": 6660,
+      "band_rmse": 0.0568,
+      "disagree_frac": 0.012,
+      "crop_rmse": 0.0137,
+      "verdict": "PASS"
+    },
+    "join-spike": {
+      "kind": "crop",
+      "band_px": 4238,
+      "band_rmse": 0.0543,
+      "disagree_frac": 0.0109,
+      "crop_rmse": 0.0101,
+      "verdict": "PASS"
+    },
+    "face-neutral": {
+      "kind": "crop",
+      "band_px": 25337,
+      "band_rmse": 0.0505,
+      "disagree_frac": 0.0048,
+      "crop_rmse": 0.0115,
+      "verdict": "PASS"
+    },
+    "brow-neutral": {
+      "kind": "brow",
+      "ref": {
+        "width": 24.035,
+        "ramp": 0.828
+      },
+      "native": {
+        "width": 24.035,
+        "ramp": 0.828
+      },
+      "delta_width_or_edge_px": 0.0,
+      "delta_ramp_px": 0.0,
+      "profile_rmse": 0.0,
+      "verdict": "PASS"
+    },
+    "face-determined": {
+      "kind": "crop",
+      "band_px": 25926,
+      "band_rmse": 0.0472,
+      "disagree_frac": 0.0044,
+      "crop_rmse": 0.0109,
+      "verdict": "PASS"
+    },
+    "brow-determined": {
+      "kind": "brow",
+      "ref": {
+        "width": 25.713,
+        "ramp": 1.496
+      },
+      "native": {
+        "width": 25.219,
+        "ramp": 1.616
+      },
+      "delta_width_or_edge_px": 0.494,
+      "delta_ramp_px": 0.12,
+      "profile_rmse": 0.0347,
+      "verdict": "PASS"
+    },
+    "face-angry": {
+      "kind": "crop",
+      "band_px": 26785,
+      "band_rmse": 0.0484,
+      "disagree_frac": 0.0049,
+      "crop_rmse": 0.0113,
+      "verdict": "PASS"
+    },
+    "brow-angry": {
+      "kind": "brow",
+      "ref": {
+        "width": 26.209,
+        "ramp": 1.209
+      },
+      "native": {
+        "width": 26.041,
+        "ramp": 1.21
+      },
+      "delta_width_or_edge_px": 0.168,
+      "delta_ramp_px": 0.001,
+      "profile_rmse": 0.0194,
+      "verdict": "PASS"
+    },
+    "face-laugh": {
+      "kind": "crop",
+      "band_px": 28040,
+      "band_rmse": 0.081,
+      "disagree_frac": 0.0103,
+      "crop_rmse": 0.0195,
+      "verdict": "PASS"
+    },
+    "brow-laugh": {
+      "kind": "brow",
+      "ref": {
+        "width": 24.035,
+        "ramp": 0.828
+      },
+      "native": {
+        "width": 24.035,
+        "ramp": 0.828
+      },
+      "delta_width_or_edge_px": 0.0,
+      "delta_ramp_px": 0.0,
+      "profile_rmse": 0.0,
+      "verdict": "PASS"
+    },
+    "face-shock": {
+      "kind": "crop",
+      "band_px": 32304,
+      "band_rmse": 0.0508,
+      "disagree_frac": 0.0054,
+      "crop_rmse": 0.0131,
+      "verdict": "PASS"
+    },
+    "brow-shock": {
+      "kind": "brow",
+      "ref": {
+        "width": 24.035,
+        "ramp": 0.828
+      },
+      "native": {
+        "width": 24.035,
+        "ramp": 0.828
+      },
+      "delta_width_or_edge_px": 0.0,
+      "delta_ramp_px": 0.0,
+      "profile_rmse": 0.0,
+      "verdict": "PASS"
+    },
+    "toon-card": {
+      "kind": "full-character",
+      "alpha_psnr_db": 47.876,
+      "alpha_rmse": 0.004,
+      "band_px": 34889,
+      "band_rmse": 0.0581,
+      "disagree_frac": 0.0232,
+      "grey_band_rmse": 0.0444,
+      "grey_disagree_frac": 0.0034,
+      "verdict": "PASS"
+    },
+    "toon-head-outline": {
+      "kind": "ellipse-outline-outer-edge-in-situ",
+      "ref": {
+        "edge": 9.603,
+        "ramp": 1.328
+      },
+      "native": {
+        "edge": 9.64,
+        "ramp": 1.548
+      },
+      "delta_width_or_edge_px": 0.037,
+      "delta_ramp_px": 0.22,
+      "profile_rmse": 0.0095,
+      "verdict": "PASS"
+    },
+    "toon-leg": {
+      "kind": "segment-in-situ",
+      "ref": {
+        "width": 30.0,
+        "ramp": 1.468
+      },
+      "native": {
+        "width": 30.0,
+        "ramp": 1.468
+      },
+      "delta_width_or_edge_px": 0.0,
+      "delta_ramp_px": 0.0,
+      "profile_rmse": 0.0,
+      "verdict": "PASS"
+    }
+  },
+  "summary": {
+    "total": 46,
+    "pass": 46,
+    "fail": 0,
+    "failing": []
+  },
+  "regression": {
+    "ab1_s28": {
+      "what": "talerender --scene ab1 (hand-authored) with the final painter, vs the committed docs/ab/onoda-s01-t150/original.png, via that package's ab_metrics.py",
+      "psnr_db": 20.218,
+      "baseline_psnr_db": 20.152,
+      "delta_db": 0.066,
+      "mean_abs_delta_per_channel": 17.177,
+      "baseline_mean_abs_delta_per_channel": 17.273,
+      "verdict": "PASS \u2014 improved, not worse"
+    },
+    "dof_chart_m3_gate": {
+      "what": "talerender --scene dof-chart with the final painter, measured by docs/ab/dof-chart/scripts/measure_dof.py against the committed original.png",
+      "psnr_db": 47.376,
+      "committed_psnr_db": 47.376,
+      "blur_width_max_deviation_px": 0.05,
+      "verdict": "PASS \u2014 render pixel-identical to the committed M3 native (regenerated package files byte-identical)"
+    },
+    "scene_format_m2_proofs": {
+      "what": "same-binary hand-authored vs --scene-file renders with the final painter, via docs/ab/scene-format/scripts/ab_metrics.py",
+      "ab1_as_data_psnr_db": 95.17,
+      "ab1_as_data_committed_psnr_db": 95.17,
+      "dof_as_data_psnr_db": 84.486,
+      "dof_as_data_committed_psnr_db": 84.486,
+      "max_abs_delta": 1,
+      "verdict": "PASS \u2014 both proofs reproduce exactly"
+    },
+    "ci": {
+      "what": "GitHub Actions on the final painter commit (build + unit tests + M1 render)",
+      "commit": "f501d46",
+      "run": 43495977996,
+      "verdict": "GREEN"
+    }
+  }
+}
