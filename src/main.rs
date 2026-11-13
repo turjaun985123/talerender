@@ -13,7 +13,9 @@
 //! log says so. Nothing here claims GPU acceleration it cannot prove.
 //!
 //! Usage: talerender [--width 1080] [--height 1920] [--out frame.png]
+//!        [--scene m1|ab1] [--caption <caption-strip.png>]
 
+mod ab1;
 mod math;
 
 use math::Mat4;
@@ -24,6 +26,8 @@ fn main() {
     let mut width: u32 = 1080;
     let mut height: u32 = 1920;
     let mut out = String::from("frame.png");
+    let mut scene = String::from("m1");
+    let mut caption = String::from("docs/ab/onoda-s01-t150/assets/caption.png");
     let mut i = 1;
     while i < args.len() {
         match args[i].as_str() {
@@ -39,6 +43,14 @@ fn main() {
                 i += 1;
                 out = args.get(i).expect("missing value for --out").clone();
             }
+            "--scene" => {
+                i += 1;
+                scene = args.get(i).expect("missing value for --scene").clone();
+            }
+            "--caption" => {
+                i += 1;
+                caption = args.get(i).expect("missing value for --caption").clone();
+            }
             other => {
                 eprintln!("unknown argument: {other}");
                 std::process::exit(2);
@@ -46,10 +58,17 @@ fn main() {
         }
         i += 1;
     }
-    pollster::block_on(run(width, height, &out));
+    match scene.as_str() {
+        "m1" => pollster::block_on(run(width, height, &out)),
+        "ab1" => pollster::block_on(ab1::run_ab1(width, height, &out, &caption)),
+        other => {
+            eprintln!("unknown scene: {other} (expected m1 or ab1)");
+            std::process::exit(2);
+        }
+    }
 }
 
-async fn request_adapter(instance: &wgpu::Instance) -> wgpu::Adapter {
+pub(crate) async fn request_adapter(instance: &wgpu::Instance) -> wgpu::Adapter {
     if let Some(adapter) = instance
         .request_adapter(&wgpu::RequestAdapterOptions {
             power_preference: wgpu::PowerPreference::HighPerformance,

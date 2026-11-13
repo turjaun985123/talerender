@@ -50,6 +50,30 @@ pub fn rotate_y(rad: f32) -> Mat4 {
     m
 }
 
+pub fn rotate_x(rad: f32) -> Mat4 {
+    let (s, c) = rad.sin_cos();
+    let mut m = identity();
+    m[1] = [0.0, c, s, 0.0];
+    m[2] = [0.0, -s, c, 0.0];
+    m
+}
+
+pub fn rotate_z(rad: f32) -> Mat4 {
+    let (s, c) = rad.sin_cos();
+    let mut m = identity();
+    m[0] = [c, s, 0.0, 0.0];
+    m[1] = [-s, c, 0.0, 0.0];
+    m
+}
+
+/// three.js Euler order 'XYZ' (the default for Object3D.rotation):
+/// the composed rotation is Rx * Ry * Rz, i.e. Z is applied to the
+/// vector first, then Y, then X (matches Quaternion.setFromEuler XYZ,
+/// q = qx * qy * qz).
+pub fn euler_xyz(x: f32, y: f32, z: f32) -> Mat4 {
+    mul(&rotate_x(x), &mul(&rotate_y(y), &rotate_z(z)))
+}
+
 pub fn scale(sx: f32, sy: f32, sz: f32) -> Mat4 {
     let mut m = identity();
     m[0][0] = sx;
@@ -154,6 +178,25 @@ mod tests {
         assert!(approx(c[0], 0.0) && approx(c[1], 0.0) && approx(c[2], -5.0));
         let e = mul_vec4(&view, [0.0, 0.0, 5.0, 1.0]);
         assert!(approx(e[0], 0.0) && approx(e[1], 0.0) && approx(e[2], 0.0));
+    }
+
+    #[test]
+    fn rotate_x_tips_z_toward_negative_y() {
+        // Rotating +Z by +90 deg about X: (0,0,1) -> (0,-1,0)? No:
+        // right-handed about +X, +Y -> +Z, +Z -> -Y. Check +Y -> +Z.
+        let p = mul_vec4(&rotate_x(std::f32::consts::FRAC_PI_2), [0.0, 1.0, 0.0, 1.0]);
+        assert!(approx(p[0], 0.0) && approx(p[1], 0.0) && approx(p[2], 1.0), "{p:?}");
+        let q = mul_vec4(&rotate_x(std::f32::consts::FRAC_PI_2), [0.0, 0.0, 1.0, 1.0]);
+        assert!(approx(q[1], -1.0) && approx(q[2], 0.0), "{q:?}");
+    }
+
+    #[test]
+    fn euler_xyz_applies_z_first() {
+        // euler_xyz(x=90deg, y=0, z=90deg) on (1,0,0): Rz first sends
+        // (1,0,0)->(0,1,0); Rx then sends (0,1,0)->(0,0,1).
+        let m = euler_xyz(std::f32::consts::FRAC_PI_2, 0.0, std::f32::consts::FRAC_PI_2);
+        let p = mul_vec4(&m, [1.0, 0.0, 0.0, 1.0]);
+        assert!(approx(p[0], 0.0) && approx(p[1], 0.0) && approx(p[2], 1.0), "{p:?}");
     }
 
     #[test]

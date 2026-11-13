@@ -23,7 +23,11 @@ env:
 
 jobs:
   build-and-render:
-    runs-on: ubuntu-latest
+    # Pinned to 22.04 (glibc 2.35) on purpose: the binary artifact is
+    # downloaded and run on older dev machines (Ubuntu 24.04 / glibc
+    # 2.39) for local scene iteration — a binary built on the newest
+    # ubuntu-latest image demands GLIBC_2.43 and will not start there.
+    runs-on: ubuntu-22.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
