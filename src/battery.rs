@@ -46,8 +46,11 @@ fn mood_of(s: &str) -> ToonMood {
     }
 }
 
+fn get<'a>(o: &'a Value, k: &str) -> &'a Value {
+    o.get(k).unwrap_or_else(|| panic!("spec: missing {k}"))
+}
+
 fn toon_spec(look: &Value, state: &Value, mood: &str) -> ToonSpec {
-    let get = |o: &Value, k: &str| o.get(k).unwrap_or_else(|| panic!("spec: missing {k}"));
     let pair = |o: &Value, k: &str| {
         let a = get(o, k).as_arr().expect("spec: expected pair");
         (num(&a[0]), num(&a[1]))

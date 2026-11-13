@@ -20,10 +20,9 @@ use crate::math::{self, Mat4};
 use std::borrow::Cow;
 
 use crate::scene::{
-    box_geo, cone_geo, cross3, cyl_geo, disc_geo, flat_quad_geo, flatten_cubic, flatten_quad,
-    ground_disc_geo, hex_lin, hex_rgb, norm3, paint_blob, paint_cloud, paint_grass, paint_sky,
-    quad_geo, rgba_of, rnd, shade_lin, shade_rgb, sky_sphere_geo, sphere_geo, srgb_to_linear, sub3,
-    ColourDraw, Geo, Painter, TexDraw, TexGeo,
+    box_geo, cone_geo, cross3, cyl_geo, disc_geo, flat_quad_geo, ground_disc_geo, hex_lin, norm3,
+    paint_blob, paint_cloud, paint_grass, paint_sky, quad_geo, rnd, shade_lin, sky_sphere_geo,
+    sphere_geo, srgb_to_linear, sub3, ColourDraw, Geo, TexDraw, TexGeo,
 };
 
 // ---------------------------------------------------------------------
@@ -85,7 +84,7 @@ struct Scene {
 
 fn build_scene() -> Scene {
     let mut colour: Vec<ColourDraw> = Vec::new();
-    let mut add = |draws: &mut Vec<ColourDraw>, geo: Geo, model: Mat4| {
+    let add = |draws: &mut Vec<ColourDraw>, geo: Geo, model: Mat4| {
         draws.push(ColourDraw { geo, model });
     };
 
