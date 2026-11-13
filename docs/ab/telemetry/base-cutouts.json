@@ -1,0 +1,20 @@
+[
+ {
+  "id": "onoda",
+  "desc": "hat=cap body=#5C6644 pattern=plain",
+  "pose": "mood=determined armL=[10,6] armR=[16,-6] legs=stand head=0/-0.024999999999999967",
+  "overflow": {
+   "top": 0,
+   "right": 0,
+   "bottom": 0,
+   "left": 0
+  },
+  "box": {
+   "x0": 50,
+   "y0": 528,
+   "x1": 1030,
+   "y1": 1452
+  },
+  "sig": "{\"body\":\"#5C6644\",\"pattern\":null,\"patCol\":null,\"hat\":\"cap\",\"hatCol\":\"#4C5638\",\"band\":null,\"neck\":null,\"neckCol\":null,\"head\":null,\"kid\":false,\"extra\":[]}"
+ }
+]

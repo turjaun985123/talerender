@@ -487,7 +487,7 @@ impl Cutout {
                 let behind = if b.behind { ",\"behind\":true" } else { "" };
                 format!(
                     "{{\"x0\":{},\"y0\":{},\"x1\":{},\"y1\":{}{}}}",
-                    b.x0, b.y0, b.x1, b.y1, behind, ""
+                    b.x0, b.y0, b.x1, b.y1, behind
                 )
             }
             None => "null".to_string(),
@@ -806,7 +806,7 @@ impl Audit {
                 if !b.behind {
                     let fig = fb;
                     let face = face_box(&fig);
-                    let mut rec = |audit: &mut Audit, kind: &'static str, detail: Option<String>| {
+                    let rec = |audit: &mut Audit, kind: &'static str, detail: Option<String>| {
                         let key = format!("{}\0{}\0{}", shot_id, c.id, kind);
                         if let Some((_, e)) = audit.comp.iter_mut().find(|(k, _)| *k == key) {
                             e.n += 1;
@@ -1149,7 +1149,11 @@ pub(crate) fn onoda_look() -> Look {
 
 /// The painter state S01's draw passes at t = 1.50 (shots.ts S01:
 /// mood determined, armR [16,-6], armL [10,6], lean 1, headTurn =
-/// poseTrack sweep = -0.025; legs unset, hence 'stand').
+/// the poseTrack sweep; legs unset, hence 'stand'). The sweep's
+/// exact f64 at t = 1.50 is -0.024999999999999967 — the value the
+/// real page's poseSummary() prints (verified against Chrome,
+/// docs/ab/telemetry/) — so the native pose string matches
+/// byte-for-byte; the rounded -0.025 would not.
 fn onoda_pose() -> PoseState {
     PoseState {
         mood: "determined",
@@ -1157,7 +1161,7 @@ fn onoda_pose() -> PoseState {
         arm_r: (16.0, -6.0),
         legs: "stand",
         head_tilt: 0.0,
-        head_turn: -0.025,
+        head_turn: -0.024999999999999967,
     }
 }
 
@@ -1454,7 +1458,7 @@ mod tests {
     fn onoda_pose_summary_is_exact() {
         assert_eq!(
             pose_summary(&onoda_pose()),
-            "mood=determined armL=[10,6] armR=[16,-6] legs=stand head=0/-0.025"
+            "mood=determined armL=[10,6] armR=[16,-6] legs=stand head=0/-0.024999999999999967"
         );
         let plain = PoseState {
             mood: "neutral",
@@ -1580,7 +1584,7 @@ mod tests {
         let (lines, failed) = audit_lines(shots, &[(1.5, vec![bad])], &[], false);
         assert!(failed);
         assert!(lines.iter().any(|l| {
-            l == "CANVAS OVERFLOW: onoda (hat=cap body=#5C6644 pattern=plain) right=123 — pose mood=determined armL=[10,6] armR=[16,-6] legs=stand head=0/-0.025"
+            l == "CANVAS OVERFLOW: onoda (hat=cap body=#5C6644 pattern=plain) right=123 — pose mood=determined armL=[10,6] armR=[16,-6] legs=stand head=0/-0.024999999999999967"
         }));
         assert!(lines.iter().any(|l| l == "CHECK FAILED"));
     }

@@ -1,0 +1,150 @@
+[
+ {
+  "id": "onoda",
+  "desc": "hat=cap body=#5C6644 pattern=plain",
+  "pose": "mood=determined armL=[10,6] armR=[16,-6] legs=stand head=0/-0.024999999999999967",
+  "overflow": {
+   "top": 0,
+   "right": 0,
+   "bottom": 0,
+   "left": 0
+  },
+  "box": {
+   "x0": 50,
+   "y0": 528,
+   "x1": 1030,
+   "y1": 1452
+  },
+  "sig": "{\"body\":\"#5C6644\",\"pattern\":null,\"patCol\":null,\"hat\":\"cap\",\"hatCol\":\"#4C5638\",\"band\":null,\"neck\":null,\"neckCol\":null,\"head\":null,\"kid\":false,\"extra\":[]}"
+ },
+ {
+  "id": "onoda",
+  "desc": "hat=cap body=#5C6644 pattern=plain",
+  "pose": "mood=neutral armL=[8,6] armR=[8,6] legs=stand",
+  "overflow": {
+   "top": 0,
+   "right": 0,
+   "bottom": 0,
+   "left": 0
+  },
+  "box": null,
+  "sig": "{\"body\":\"#5C6644\",\"pattern\":null,\"patCol\":null,\"hat\":\"cap\",\"hatCol\":\"#4C5638\",\"band\":null,\"neck\":null,\"neckCol\":null,\"head\":null,\"kid\":false,\"extra\":[]}"
+ },
+ {
+  "id": "compA",
+  "desc": "hat=cap body=#68744E pattern=plain",
+  "pose": "mood=neutral armL=[8,6] armR=[8,6] legs=stand",
+  "overflow": {
+   "top": 0,
+   "right": 0,
+   "bottom": 0,
+   "left": 0
+  },
+  "box": null,
+  "sig": "{\"body\":\"#68744E\",\"pattern\":null,\"patCol\":null,\"hat\":\"cap\",\"hatCol\":\"#525C3C\",\"band\":null,\"neck\":null,\"neckCol\":null,\"head\":null,\"kid\":false,\"extra\":[]}"
+ },
+ {
+  "id": "compB",
+  "desc": "hat=cap body=#59613F pattern=plain",
+  "pose": "mood=neutral armL=[8,6] armR=[8,6] legs=stand",
+  "overflow": {
+   "top": 0,
+   "right": 0,
+   "bottom": 0,
+   "left": 0
+  },
+  "box": null,
+  "sig": "{\"body\":\"#59613F\",\"pattern\":null,\"patCol\":null,\"hat\":\"cap\",\"hatCol\":\"#59613F\",\"band\":null,\"neck\":\"scarf\",\"neckCol\":\"#8A7A52\",\"head\":null,\"kid\":false,\"extra\":[]}"
+ },
+ {
+  "id": "suzuki",
+  "desc": "hat=cap body=#C96A42 pattern=plain",
+  "pose": "mood=neutral armL=[8,6] armR=[8,6] legs=stand",
+  "overflow": {
+   "top": 0,
+   "right": 0,
+   "bottom": 0,
+   "left": 0
+  },
+  "box": null,
+  "sig": "{\"body\":\"#C96A42\",\"pattern\":null,\"patCol\":null,\"hat\":\"cap\",\"hatCol\":\"#E8B83A\",\"band\":null,\"neck\":null,\"neckCol\":null,\"head\":null,\"kid\":false,\"extra\":[\"glasses\"]}"
+ },
+ {
+  "id": "taniguchi",
+  "desc": "hat=bowler body=#4A4560 pattern=vest",
+  "pose": "mood=neutral armL=[8,6] armR=[8,6] legs=stand",
+  "overflow": {
+   "top": 0,
+   "right": 0,
+   "bottom": 0,
+   "left": 0
+  },
+  "box": null,
+  "sig": "{\"body\":\"#4A4560\",\"pattern\":\"vest\",\"patCol\":\"#33304A\",\"hat\":\"bowler\",\"hatCol\":\"#2E2A3A\",\"band\":null,\"neck\":\"tie\",\"neckCol\":\"#7A2E3A\",\"head\":null,\"kid\":false,\"extra\":[\"glasses\",\"mustache\"]}"
+ },
+ {
+  "id": "onoda",
+  "desc": "hat=cap body=#5C6644 pattern=plain",
+  "pose": "mood=neutral armL=[8,6] armR=[8,6] legs=stand",
+  "overflow": {
+   "top": 0,
+   "right": 0,
+   "bottom": 0,
+   "left": 0
+  },
+  "box": null,
+  "sig": "{\"body\":\"#5C6644\",\"pattern\":null,\"patCol\":null,\"hat\":\"cap\",\"hatCol\":\"#4C5638\",\"band\":null,\"neck\":null,\"neckCol\":null,\"head\":null,\"kid\":false,\"extra\":[]}"
+ },
+ {
+  "id": "compA",
+  "desc": "hat=cap body=#68744E pattern=plain",
+  "pose": "mood=neutral armL=[8,6] armR=[8,6] legs=stand",
+  "overflow": {
+   "top": 0,
+   "right": 0,
+   "bottom": 0,
+   "left": 0
+  },
+  "box": null,
+  "sig": "{\"body\":\"#68744E\",\"pattern\":null,\"patCol\":null,\"hat\":\"cap\",\"hatCol\":\"#525C3C\",\"band\":null,\"neck\":null,\"neckCol\":null,\"head\":null,\"kid\":false,\"extra\":[]}"
+ },
+ {
+  "id": "compB",
+  "desc": "hat=cap body=#59613F pattern=plain",
+  "pose": "mood=neutral armL=[8,6] armR=[8,6] legs=stand",
+  "overflow": {
+   "top": 0,
+   "right": 0,
+   "bottom": 0,
+   "left": 0
+  },
+  "box": null,
+  "sig": "{\"body\":\"#59613F\",\"pattern\":null,\"patCol\":null,\"hat\":\"cap\",\"hatCol\":\"#59613F\",\"band\":null,\"neck\":\"scarf\",\"neckCol\":\"#8A7A52\",\"head\":null,\"kid\":false,\"extra\":[]}"
+ },
+ {
+  "id": "taniguchi",
+  "desc": "hat=bowler body=#4A4560 pattern=vest",
+  "pose": "mood=neutral armL=[8,6] armR=[8,6] legs=stand",
+  "overflow": {
+   "top": 0,
+   "right": 0,
+   "bottom": 0,
+   "left": 0
+  },
+  "box": null,
+  "sig": "{\"body\":\"#4A4560\",\"pattern\":\"vest\",\"patCol\":\"#33304A\",\"hat\":\"bowler\",\"hatCol\":\"#2E2A3A\",\"band\":null,\"neck\":\"tie\",\"neckCol\":\"#7A2E3A\",\"head\":null,\"kid\":false,\"extra\":[\"glasses\",\"mustache\"]}"
+ },
+ {
+  "id": "taniguchi",
+  "desc": "hat=bowler body=#4A4560 pattern=vest",
+  "pose": "mood=neutral armL=[8,6] armR=[8,6] legs=stand",
+  "overflow": {
+   "top": 0,
+   "right": 0,
+   "bottom": 0,
+   "left": 0
+  },
+  "box": null,
+  "sig": "{\"body\":\"#4A4560\",\"pattern\":\"vest\",\"patCol\":\"#33304A\",\"hat\":\"bowler\",\"hatCol\":\"#2E2A3A\",\"band\":null,\"neck\":\"tie\",\"neckCol\":\"#7A2E3A\",\"head\":null,\"kid\":false,\"extra\":[\"glasses\",\"mustache\"]}"
+ }
+]
