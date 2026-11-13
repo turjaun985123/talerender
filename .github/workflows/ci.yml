@@ -64,10 +64,14 @@ jobs:
         run: cargo test --release
 
       - name: Render the Milestone 1 smoke frame (headless, no browser)
-        env:
-          VK_ICD_FILENAMES: /usr/share/vulkan/icd.d/lvp_icd.json
         run: |
-          ./target/release/talerender --width 1080 --height 1920 --out frame.png
+          # The lavapipe ICD filename varies by distro version
+          # (lvp_icd.json vs lvp_icd.x86_64.json); resolve it instead
+          # of hardcoding — a wrong path makes the Vulkan loader find
+          # no driver at all and the render panics.
+          ICD=$(ls /usr/share/vulkan/icd.d/lvp_icd*.json | head -n 1)
+          echo "lavapipe ICD: $ICD"
+          VK_ICD_FILENAMES="$ICD" ./target/release/talerender --width 1080 --height 1920 --out frame.png
           ls -la frame.png
 
       - name: Upload frame artifact
