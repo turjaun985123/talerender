@@ -210,7 +210,7 @@ fn vs_main(@builtin(vertex_index) i: u32) -> Vout {{
     o.clip = vec4f(x * 2.0 - 1.0, 1.0 - y * 2.0, 0.0, 1.0);
     return o;
 }}
-const KERNEL: array<f32, {radius}> = array<f32, {radius}>({coeffs});
+var<private> KERNEL: array<f32, {radius}> = array<f32, {radius}>({coeffs});
 @fragment
 fn fs_main(in: Vout) -> @location(0) vec4f {{
     var weight_sum = KERNEL[0];
