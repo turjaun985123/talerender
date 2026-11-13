@@ -82,7 +82,6 @@ async fn run(width: u32, height: u32, out: &str) {
                 label: Some("talerender device"),
                 required_features: wgpu::Features::empty(),
                 required_limits: wgpu::Limits::downlevel_defaults(),
-                memory_hints: wgpu::MemoryHints::Performance,
             },
             None,
         )
