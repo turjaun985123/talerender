@@ -1638,7 +1638,7 @@ mod tests {
     #[test]
     fn transform_ops_compose_left_to_right() {
         let v = scene::parse_json(
-            r#"[{"translate": [1.0, 0.0, 0.0]}, {"rotate_y": 1.5707963705062866}]"#,
+            r##"[{"translate": [1.0, 0.0, 0.0]}, {"rotate_y": 1.5707963705062866}]"##,
         )
         .unwrap();
         let m = compose_transform(Some(&v), "t").unwrap();
@@ -1647,7 +1647,7 @@ mod tests {
         assert!((p[0] - 1.0).abs() < 1e-6 && p[1].abs() < 1e-6 && (p[2] + 1.0).abs() < 1e-6, "{p:?}");
         // Reversed op order must give the different, expected result.
         let v2 = scene::parse_json(
-            r#"[{"rotate_y": 1.5707963705062866}, {"translate": [1.0, 0.0, 0.0]}]"#,
+            r##"[{"rotate_y": 1.5707963705062866}, {"translate": [1.0, 0.0, 0.0]}]"##,
         )
         .unwrap();
         let m2 = compose_transform(Some(&v2), "t").unwrap();
@@ -1658,16 +1658,16 @@ mod tests {
     #[test]
     fn shade_hash_colour_matches_the_hand_written_expression() {
         let spec = scene::parse_json(
-            r#"{"color": {"hex": "#5E8F52", "shadeHash": {"index": 3, "base": 0.92, "span": 0.16}}}"#,
+            r##"{"color": {"hex": "#5E8F52", "shadeHash": {"index": 3, "base": 0.92, "span": 0.16}}}"##,
         )
         .unwrap();
         let got = material_colour(&spec, "t").unwrap();
         let expect = shade_lin("#5E8F52", (0.92 + scene::rnd(3.0) * 0.16) as f32);
         assert_eq!(got, expect);
         // Plain shade and plain hex paths.
-        let spec2 = scene::parse_json(r#"{"color": {"hex": "#5E8F52", "shade": 0.75}}"#).unwrap();
+        let spec2 = scene::parse_json(r##"{"color": {"hex": "#5E8F52", "shade": 0.75}}"##).unwrap();
         assert_eq!(material_colour(&spec2, "t").unwrap(), shade_lin("#5E8F52", 0.75));
-        let spec3 = scene::parse_json(r#"{"color": "#5E8F52"}"#).unwrap();
+        let spec3 = scene::parse_json(r##"{"color": "#5E8F52"}"##).unwrap();
         assert_eq!(material_colour(&spec3, "t").unwrap(), hex_lin("#5E8F52"));
     }
 
@@ -1675,9 +1675,9 @@ mod tests {
     fn scatter_reproduces_the_sin_hash_placement() {
         let base = cone_geo(0.05, 0.34, 4, [0.0; 3]);
         let spec = scene::parse_json(
-            r#"{"count": 3, "placement": {"kind": "annulus", "angleHash": 1.31,
+            r##"{"count": 3, "placement": {"kind": "annulus", "angleHash": 1.31,
                "radiusHash": 2.7, "radiusBase": 2.6, "radiusSpan": 20.0,
-               "angleScale": 6.283185307, "center": [0.0, 0.15, -3.0]}}"#,
+               "angleScale": 6.283185307, "center": [0.0, 0.15, -3.0]}}"##,
         )
         .unwrap();
         let merged = scatter_geo(base.clone(), &spec, "t").unwrap();
@@ -1707,8 +1707,8 @@ mod tests {
         let hw = hh * aspect;
         let (w, h) = (0.56f32 * hw, 0.36f32 * hh);
         let json = format!(
-            r#"[{{"type": "mesh", "geometry": {{"kind": "quad", "width": {w}, "height": {h}, "y0": {}}},
-               "texture": "chart", "transform": [{{"translate": [0.0, 0.0, {}]}}]}}]"#,
+            r##"[{{"type": "mesh", "geometry": {{"kind": "quad", "width": {w}, "height": {h}, "y0": {}}},
+               "texture": "chart", "transform": [{{"translate": [0.0, 0.0, {}]}}]}}]"##,
             -h / 2.0,
             -d
         );
@@ -1737,19 +1737,19 @@ mod tests {
     fn load_rejects_other_versions_and_loads_a_minimal_scene() {
         let dir = std::env::temp_dir();
         let bad = dir.join("talerender-test-v2.scene.json");
-        std::fs::write(&bad, r#"{"version": 2, "camera": {}, "nodes": []}"#).unwrap();
+        std::fs::write(&bad, r##"{"version": 2, "camera": {}, "nodes": []}"##).unwrap();
         let e = load(bad.to_str().unwrap()).err().expect("version 2 must be rejected");
         assert!(e.contains("version"), "{e}");
 
         let good = dir.join("talerender-test-v1.scene.json");
         std::fs::write(
             &good,
-            r#"{"format": "talerender-scene", "version": 1, "name": "minimal",
+            r##"{"format": "talerender-scene", "version": 1, "name": "minimal",
                 "camera": {"fovY": 30.0, "eye": [0, 0, 0], "target": [0, 0, -1]},
                 "nodes": [{"type": "mesh",
                            "geometry": {"kind": "box", "size": [1, 1, 1]},
                            "material": {"color": "#FF0000"},
-                           "transform": [{"translate": [0, 0, -5]}]}]}"#,
+                           "transform": [{"translate": [0, 0, -5]}]}]}"##,
         )
         .unwrap();
         let loaded = load(good.to_str().unwrap()).unwrap();
