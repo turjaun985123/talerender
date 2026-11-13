@@ -5,6 +5,22 @@ on:
   pull_request:
   workflow_dispatch:
 
+# Cancel superseded runs on the same ref — fix rounds pushed in quick
+# succession don't queue behind stale runs.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  # Incremental compilation fights the dependency cache in CI (huge, mostly
+  # unreusable artifacts). Off = smaller cache, better hit rate.
+  CARGO_INCREMENTAL: 0
+  # mold links the wgpu-heavy binary far faster than the default linker.
+  # Kept in env so build/test/render all share one cargo fingerprint —
+  # a per-step RUSTFLAGS would silently split the cache.
+  RUSTFLAGS: "-C link-arg=-fuse-ld=mold"
+
 jobs:
   build-and-render:
     runs-on: ubuntu-latest
@@ -15,10 +31,21 @@ jobs:
       - name: Rust toolchain
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Install software Vulkan (lavapipe) for headless rendering
+      # The cache layer: caches ~/.cargo (registry + git checkouts) and
+      # target/ with keys derived from rustc version, Cargo.toml/lockfile
+      # and the job — and prunes artifacts for dependencies that are no
+      # longer in the tree, so the cache stays lean on its own.
+      # cache-on-failure: even a failed compile round saves its cache, so
+      # the next fix round starts warm instead of rebuilding wgpu cold.
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+
+      - name: Install mold + software Vulkan (lavapipe) for headless rendering
         run: |
           sudo apt-get update
-          sudo apt-get install -y mesa-vulkan-drivers vulkan-tools
+          sudo apt-get install -y mold mesa-vulkan-drivers vulkan-tools
           vulkaninfo --summary || true
 
       - name: Build
