@@ -212,6 +212,15 @@ pub async fn run_dof(width: u32, height: u32, out: &str) {
         .expect("request device");
 
     let aspect = width as f32 / height as f32;
+    // Control experiment for the fp16-store question (see
+    // docs/ab/dof-chart/gaps.md): TALERENDER_DOF_DEPTH_FORMAT=rgba8
+    // stores the packed depth in a byte target, which is lossless for
+    // a byte packing; the default stays BokehPass's HalfFloat.
+    let depth_format = if std::env::var("TALERENDER_DOF_DEPTH_FORMAT").is_ok_and(|v| v == "rgba8") {
+        wgpu::TextureFormat::Rgba8Unorm
+    } else {
+        wgpu::TextureFormat::Rgba16Float
+    };
     let proj = math::perspective(FOV_Y_DEG.to_radians(), aspect, NEAR, FAR);
     let uniforms = Uniforms { mvp: proj, model: math::identity() };
     let uniform_buf = device.create_buffer(&wgpu::BufferDescriptor {
@@ -372,15 +381,6 @@ pub async fn run_dof(width: u32, height: u32, out: &str) {
         .and_then(|v| v.parse::<f32>().ok())
         .unwrap_or(APERTURE);
     let dump_depth = std::env::var("TALERENDER_DOF_DUMP_DEPTH").is_ok_and(|v| v == "1");
-    // Control experiment for the fp16-store question (see
-    // docs/ab/dof-chart/gaps.md): TALERENDER_DOF_DEPTH_FORMAT=rgba8
-    // stores the packed depth in a byte target, which is lossless for
-    // a byte packing; the default stays BokehPass's HalfFloat.
-    let depth_format = if std::env::var("TALERENDER_DOF_DEPTH_FORMAT").is_ok_and(|v| v == "rgba8") {
-        wgpu::TextureFormat::Rgba8Unorm
-    } else {
-        wgpu::TextureFormat::Rgba16Float
-    };
     let bokeh_uniform_data: [f32; 8] = [FOCUS, aspect, aperture, MAXBLUR, NEAR, FAR, 0.0, 0.0];
     let bokeh_uniform_buf = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("dof-bokeh-uniforms"),
