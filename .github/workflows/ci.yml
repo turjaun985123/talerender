@@ -66,3 +66,12 @@ jobs:
         with:
           name: talerender-frame
           path: frame.png
+
+      # The built binary itself, so scene work (e.g. the §28 A/B
+      # reproduction) can iterate locally under lavapipe instead of
+      # burning a CI round per visual fix.
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: talerender-binary
+          path: target/release/talerender
