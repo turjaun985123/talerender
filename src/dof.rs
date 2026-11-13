@@ -561,7 +561,7 @@ pub async fn run_dof(width: u32, height: u32, out: &str) {
     }
     drop(mapped);
     out_buf.unmap();
-    image::save_buffer(out, width, height, &rgba, image::ColorType::Rgba8).expect("write PNG");
+    image::save_buffer(out, &rgba, width, height, image::ColorType::Rgba8).expect("write PNG");
     println!(
         "wrote {out} ({width}x{height}) — scene dof-chart: panels at 2..30 m, focus {FOCUS} m, aperture {APERTURE}, maxblur {MAXBLUR}; chain: HalfFloat MSAA-4x scene -> packed-depth prepass -> transcribed r170 bokeh -> Neutral+sRGB output"
     );
