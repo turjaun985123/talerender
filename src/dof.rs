@@ -610,7 +610,7 @@ mod tests {
 
     fn frag_z_at(distance: f32) -> f32 {
         let proj = math::perspective(FOV_Y_DEG.to_radians(), 1080.0 / 1920.0, NEAR, FAR);
-        let clip = math::mat_vec_mul(proj, [0.0, 0.0, -distance, 1.0]);
+        let clip = math::mul_vec4(&proj, [0.0, 0.0, -distance, 1.0]);
         // math::perspective is the wgpu-style projection: clip z/w is
         // already in [0, 1]. three's fragCoordZ is 0.5*ndc+0.5 of the GL
         // [-1, 1] value — algebraically the same number (both equal
