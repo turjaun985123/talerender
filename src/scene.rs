@@ -378,12 +378,15 @@ pub(crate) fn sky_sphere_geo(r: f32, ws: u32, hs: u32) -> TexGeo {
 }
 
 // ---------------------------------------------------------------------
-// A small CPU rasteriser standing in for the Canvas2D painter. It is
-// deliberately simple: shapes are evaluated per-pixel over their
-// bounding box (ellipses, capsule strokes along flattened curves,
-// even-odd polygon fills). This is the component the compatibility
-// contract (§2) flags as identity-critical — Skia's stroke
-// rasterisation is NOT reproduced here; see gaps.md.
+// A small CPU rasteriser standing in for the Canvas2D painter.
+// Shapes are evaluated per-pixel over their bounding box (ellipses,
+// capsule strokes along flattened curves, even-odd polygon fills).
+// This is the component the compatibility contract (§2) flags as
+// identity-critical. Since M4 it rasterises with signed-distance
+// coverage (cov = clamp(0.5 - sd)) instead of point sampling — the
+// model the stroke battery (docs/ab/stroke-battery/) verifies
+// against Skia; remaining deltas are logged in that package's
+// gaps.md.
 // ---------------------------------------------------------------------
 
 pub(crate) struct Painter {
@@ -437,18 +440,41 @@ impl Painter {
             (y1.ceil() as i32).min(self.h as i32 - 1),
         )
     }
-    /// Filled ellipse (centre, radii, rotation rad).
+    /// Blend with an anti-aliasing coverage factor (0..1): coverage
+    /// multiplies the source alpha — the per-pixel term Skia's
+    /// analytic coverage contributes. Quantised to u8 like canvas
+    /// storage. (M4: the painter was point-sampled/binary before;
+    /// see docs/ab/stroke-battery/.)
+    pub(crate) fn blend_cov(&mut self, x: i32, y: i32, src: Rgba, cov: f32) {
+        if cov <= 0.0 {
+            return;
+        }
+        if cov >= 1.0 {
+            self.blend(x, y, src);
+            return;
+        }
+        let a = (src.3 as f32 * cov).round().clamp(0.0, 255.0) as u8;
+        if a > 0 {
+            self.blend(x, y, (src.0, src.1, src.2, a));
+        }
+    }
+    /// Coverage from a signed distance (negative inside):
+    /// cov = clamp(0.5 - sd, 0, 1) — exact for straight edges, the
+    /// standard approximation for curves.
+    pub(crate) fn cov_of(sd: f32) -> f32 {
+        (0.5 - sd).clamp(0.0, 1.0)
+    }
+    /// Filled ellipse (centre, radii, rotation rad), coverage-AA.
     pub(crate) fn fill_ellipse(&mut self, cx: f32, cy: f32, rx: f32, ry: f32, rot: f32, col: Rgba) {
         let ex = (rx * rot.cos()).abs() + (ry * rot.sin()).abs();
         let ey = (rx * rot.sin()).abs() + (ry * rot.cos()).abs();
-        let (x0, y0, x1, y1) = self.bbox(cx - ex, cy - ey, cx + ex, cy + ey);
-        let (s, c) = rot.sin_cos();
+        let (x0, y0, x1, y1) = self.bbox(cx - ex - 1.0, cy - ey - 1.0, cx + ex + 1.0, cy + ey + 1.0);
         for y in y0..=y1 {
             for x in x0..=x1 {
-                let (dx, dy) = (x as f32 + 0.5 - cx, y as f32 + 0.5 - cy);
-                let (lx, ly) = (dx * c + dy * s, -dx * s + dy * c);
-                if (lx / rx).powi(2) + (ly / ry).powi(2) <= 1.0 {
-                    self.blend(x, y, col);
+                let sd = ellipse_sd(cx, cy, rx, ry, rot, x as f32 + 0.5, y as f32 + 0.5);
+                let cov = Self::cov_of(sd);
+                if cov > 0.0 {
+                    self.blend_cov(x, y, col, cov);
                 }
             }
         }
@@ -467,17 +493,34 @@ impl Painter {
         self.stroke_polyline(&pts, width, col);
     }
     /// Capsule stroke along a polyline (round caps and joins, like
-    /// Canvas2D lineCap/lineJoin 'round').
+    /// Canvas2D lineCap/lineJoin 'round'), coverage-AA: per pixel the
+    /// coverage is computed ONCE from the distance to the whole
+    /// polyline (min over segments), so joins are the union shape —
+    /// one canvas stroke is one shape, never a double blend.
     pub(crate) fn stroke_polyline(&mut self, pts: &[(f32, f32)], width: f32, col: Rgba) {
+        if pts.len() < 2 {
+            return;
+        }
         let hw = width / 2.0;
+        let (mut mnx, mut mny, mut mxx, mut mxy) = (f32::MAX, f32::MAX, f32::MIN, f32::MIN);
+        for &(x, y) in pts {
+            mnx = mnx.min(x);
+            mny = mny.min(y);
+            mxx = mxx.max(x);
+            mxy = mxy.max(y);
+        }
+        let (x0, y0, x1, y1) = self.bbox(mnx - hw - 1.0, mny - hw - 1.0, mxx + hw + 1.0, mxy + hw + 1.0);
+        let wpx = (x1 - x0 + 1).max(0) as usize;
+        let hpx = (y1 - y0 + 1).max(0) as usize;
+        let mut cov = vec![0f32; wpx * hpx];
         for seg in pts.windows(2) {
             let (ax, ay) = seg[0];
             let (bx, by) = seg[1];
-            let (x0, y0, x1, y1) = self.bbox(ax.min(bx) - hw, ay.min(by) - hw, ax.max(bx) + hw, ay.max(by) + hw);
+            let (sx0, sy0, sx1, sy1) = self.bbox(ax.min(bx) - hw - 1.0, ay.min(by) - hw - 1.0, ax.max(bx) + hw + 1.0, ay.max(by) + hw + 1.0);
             let (dx, dy) = (bx - ax, by - ay);
             let len2 = dx * dx + dy * dy;
-            for y in y0..=y1 {
-                for x in x0..=x1 {
+            for y in sy0..=sy1 {
+                for x in sx0..=sx1 {
                     let (px, py) = (x as f32 + 0.5, y as f32 + 0.5);
                     let t = if len2 > 0.0 {
                         (((px - ax) * dx + (py - ay) * dy) / len2).clamp(0.0, 1.0)
@@ -485,9 +528,20 @@ impl Painter {
                         0.0
                     };
                     let (qx, qy) = (ax + dx * t, ay + dy * t);
-                    if (px - qx).hypot(py - qy) <= hw {
-                        self.blend(x, y, col);
+                    let d = (px - qx).hypot(py - qy);
+                    let c = Self::cov_of(d - hw);
+                    let idx = ((y - y0) as usize) * wpx + (x - x0) as usize;
+                    if c > cov[idx] {
+                        cov[idx] = c;
                     }
+                }
+            }
+        }
+        for y in y0..=y1 {
+            for x in x0..=x1 {
+                let c = cov[((y - y0) as usize) * wpx + (x - x0) as usize];
+                if c > 0.0 {
+                    self.blend_cov(x, y, col, c);
                 }
             }
         }
@@ -496,7 +550,9 @@ impl Painter {
         let pts = flatten_quad(p0, p1, p2, 24);
         self.stroke_polyline(&pts, width, col);
     }
-    /// Even-odd polygon fill (flattened path supplied by the caller).
+    /// Even-odd polygon fill (flattened path supplied by the
+    /// caller), coverage-AA from the signed distance to the outline
+    /// (sign from the centre-sample inside test).
     pub(crate) fn fill_polygon(&mut self, pts: &[(f32, f32)], col: Rgba) {
         let (mut mnx, mut mny, mut mxx, mut mxy) = (f32::MAX, f32::MAX, f32::MIN, f32::MIN);
         for &(x, y) in pts {
@@ -505,11 +561,35 @@ impl Painter {
             mxx = mxx.max(x);
             mxy = mxy.max(y);
         }
-        let (x0, y0, x1, y1) = self.bbox(mnx, mny, mxx, mxy);
+        let (x0, y0, x1, y1) = self.bbox(mnx - 1.0, mny - 1.0, mxx + 1.0, mxy + 1.0);
+        let n = pts.len();
         for y in y0..=y1 {
             for x in x0..=x1 {
-                if point_in_polygon(x as f32 + 0.5, y as f32 + 0.5, pts) {
-                    self.blend(x, y, col);
+                let (px, py) = (x as f32 + 0.5, y as f32 + 0.5);
+                let mut dmin = f32::MAX;
+                for i in 0..n {
+                    let (ax, ay) = pts[i];
+                    let (bx, by) = pts[(i + 1) % n];
+                    let (dx, dy) = (bx - ax, by - ay);
+                    let len2 = dx * dx + dy * dy;
+                    let t = if len2 > 0.0 {
+                        (((px - ax) * dx + (py - ay) * dy) / len2).clamp(0.0, 1.0)
+                    } else {
+                        0.0
+                    };
+                    let d = (px - (ax + dx * t)).hypot(py - (ay + dy * t));
+                    if d < dmin {
+                        dmin = d;
+                    }
+                }
+                let inside = point_in_polygon(px, py, pts);
+                if dmin > 1.5 && !inside {
+                    continue; // certainly outside, beyond the AA band
+                }
+                let sd = if inside { -dmin } else { dmin };
+                let cov = Self::cov_of(sd);
+                if cov > 0.0 {
+                    self.blend_cov(x, y, col, cov);
                 }
             }
         }
@@ -556,29 +636,52 @@ impl Painter {
     pub(crate) fn fill_ellipse_masked(&mut self, cx: f32, cy: f32, rx: f32, ry: f32, rot: f32, col: Rgba, mask: &[bool]) {
         let ex = (rx * rot.cos()).abs() + (ry * rot.sin()).abs();
         let ey = (rx * rot.sin()).abs() + (ry * rot.cos()).abs();
-        let (x0, y0, x1, y1) = self.bbox(cx - ex, cy - ey, cx + ex, cy + ey);
-        let (s, c) = rot.sin_cos();
+        let (x0, y0, x1, y1) = self.bbox(cx - ex - 1.0, cy - ey - 1.0, cx + ex + 1.0, cy + ey + 1.0);
         for y in y0..=y1 {
             for x in x0..=x1 {
                 if !mask[y as usize * self.w + x as usize] {
                     continue;
                 }
-                let (dx, dy) = (x as f32 + 0.5 - cx, y as f32 + 0.5 - cy);
-                let (lx, ly) = (dx * c + dy * s, -dx * s + dy * c);
-                if (lx / rx).powi(2) + (ly / ry).powi(2) <= 1.0 {
-                    self.blend(x, y, col);
+                let sd = ellipse_sd(cx, cy, rx, ry, rot, x as f32 + 0.5, y as f32 + 0.5);
+                let cov = Self::cov_of(sd);
+                if cov > 0.0 {
+                    self.blend_cov(x, y, col, cov);
                 }
             }
         }
     }
+    /// Axis-aligned rect fill, coverage-AA via the box SDF.
     pub(crate) fn fill_rect(&mut self, x: f32, y: f32, w: f32, h: f32, col: Rgba) {
-        let (x0, y0, x1, y1) = self.bbox(x, y, x + w, y + h);
+        let (x0, y0, x1, y1) = self.bbox(x - 1.0, y - 1.0, x + w + 1.0, y + h + 1.0);
+        let (cx, cy) = (x + w / 2.0, y + h / 2.0);
+        let (hw, hh) = (w / 2.0, h / 2.0);
         for yy in y0..=y1 {
             for xx in x0..=x1 {
-                self.blend(xx, yy, col);
+                let (dx, dy) = ((xx as f32 + 0.5 - cx).abs() - hw, (yy as f32 + 0.5 - cy).abs() - hh);
+                let sd = dx.max(0.0).hypot(dy.max(0.0)) + dx.max(dy).min(0.0);
+                let cov = Self::cov_of(sd);
+                if cov > 0.0 {
+                    self.blend_cov(xx, yy, col, cov);
+                }
             }
         }
     }
+}
+
+/// Approximate signed distance to an ellipse boundary (negative
+/// inside): the implicit function g = sqrt((lx/rx)^2 + (ly/ry)^2),
+/// normalised by its gradient magnitude — exact for circles, a close
+/// estimate for the production eccentricities (head 0.97, pupils).
+pub(crate) fn ellipse_sd(cx: f32, cy: f32, rx: f32, ry: f32, rot: f32, x: f32, y: f32) -> f32 {
+    let (s, c) = rot.sin_cos();
+    let (dx, dy) = (x - cx, y - cy);
+    let (lx, ly) = (dx * c + dy * s, -dx * s + dy * c);
+    let g = ((lx / rx).powi(2) + (ly / ry).powi(2)).sqrt();
+    if g == 0.0 {
+        return -rx.min(ry);
+    }
+    let grad = (((lx / (rx * rx)).powi(2) + (ly / (ry * ry)).powi(2)).sqrt()) / g;
+    (g - 1.0) / grad
 }
 
 pub(crate) fn point_in_polygon(x: f32, y: f32, pts: &[(f32, f32)]) -> bool {
@@ -770,20 +873,21 @@ pub(crate) fn paint_toon(spec: &ToonSpec) -> (Vec<u8>, u32, u32) {
         let (ccxp, ccyp) = px(ccx, ccy);
         let shade = shade_rgb(spec.head, 0.9);
         let col = (shade.0, shade.1, shade.2, 255u8);
-        let (x0, y0, x1, y1) = p.bbox(hxp - rp * res, hyp - rp * res, hxp + rp * res, hyp + rp * res);
-        let (s2, c2) = th.sin_cos();
+        let (x0, y0, x1, y1) = p.bbox(hxp - rp * res - 1.0, hyp - rp * res - 1.0, hxp + rp * res + 1.0, hyp + rp * res + 1.0);
         for y in y0..=y1 {
             for x in x0..=x1 {
-                let (dx, dy) = (x as f32 + 0.5 - hxp, y as f32 + 0.5 - hyp);
-                let (lx, ly) = (dx * c2 + dy * s2, -dx * s2 + dy * c2);
-                if (lx / (rp * res)).powi(2) + (ly / (rp * 0.97 * res)).powi(2) > 1.0 {
+                let (pxx, pyy) = (x as f32 + 0.5, y as f32 + 0.5);
+                // Coverage form of the even-odd trick: inside the
+                // head ellipse AND outside the offset circle.
+                let cov_head = Painter::cov_of(ellipse_sd(hxp, hyp, rp * res, rp * 0.97 * res, th, pxx, pyy));
+                if cov_head <= 0.0 {
                     continue;
                 }
-                let (dcx, dcy) = (x as f32 + 0.5 - ccxp, y as f32 + 0.5 - ccyp);
-                if (dcx * dcx + dcy * dcy) < (rp * res).powi(2) {
-                    continue; // inside the offset circle: unshaded
+                let unshaded = ((pxx - ccxp).hypot(pyy - ccyp) - rp * res + 0.5).clamp(0.0, 1.0);
+                let cov = cov_head * unshaded;
+                if cov > 0.0 {
+                    p.blend_cov(x, y, col, cov);
                 }
-                p.blend(x, y, col);
             }
         }
     }
