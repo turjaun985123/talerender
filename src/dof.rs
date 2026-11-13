@@ -94,31 +94,55 @@ fn chart_texture_rgba() -> Vec<u8> {
     data
 }
 
-#[repr(C)]
-#[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
 struct Uniforms {
-    mvp: [[f32; 4]; 4],
-    model: [[f32; 4]; 4],
+    mvp: math::Mat4,
+    model: math::Mat4,
 }
 
-#[repr(C)]
-#[derive(Clone, Copy, bytemuck::Pod, bytemuck::Zeroable)]
-struct BokehUniforms {
-    focus: f32,
-    aspect: f32,
-    aperture: f32,
-    maxblur: f32,
-    near_clip: f32,
-    far_clip: f32,
-    _pad0: f32,
-    _pad1: f32,
+// Byte packing follows ab1.rs's house pattern (the crate carries no
+// bytemuck dependency): native-endian f32/u32 streams, column-major
+// matrices.
+fn mat_bytes(m: &math::Mat4) -> [u8; 64] {
+    let mut out = [0u8; 64];
+    let mut k = 0;
+    for col in 0..4 {
+        for row in 0..4 {
+            out[k..k + 4].copy_from_slice(&m[col][row].to_ne_bytes());
+            k += 4;
+        }
+    }
+    out
 }
 
-/// All panels in one vertex/index set (pos xyz + uv), camera at the
-/// origin looking down -Z, so model = view = identity and mvp = proj.
-fn panel_geometry(aspect: f32) -> (Vec<[f32; 5]>, Vec<u32>) {
+fn uniform_bytes(u: &Uniforms) -> Vec<u8> {
+    let mut out = Vec::with_capacity(128);
+    out.extend_from_slice(&mat_bytes(&u.mvp));
+    out.extend_from_slice(&mat_bytes(&u.model));
+    out
+}
+
+fn pack_f32(data: &[f32]) -> Vec<u8> {
+    let mut out = Vec::with_capacity(data.len() * 4);
+    for v in data {
+        out.extend_from_slice(&v.to_ne_bytes());
+    }
+    out
+}
+
+fn pack_u32(data: &[u32]) -> Vec<u8> {
+    let mut out = Vec::with_capacity(data.len() * 4);
+    for v in data {
+        out.extend_from_slice(&v.to_ne_bytes());
+    }
+    out
+}
+
+/// All panels in one vertex/index set (flat pos xyz + uv floats),
+/// camera at the origin looking down -Z, so model = view = identity
+/// and mvp = proj.
+fn panel_geometry(aspect: f32) -> (Vec<f32>, Vec<u32>) {
     let tan_h = (FOV_Y_DEG * 0.5).to_radians().tan();
-    let mut verts: Vec<[f32; 5]> = Vec::new();
+    let mut verts: Vec<f32> = Vec::new();
     let mut idx: Vec<u32> = Vec::new();
     for &(nx, ny, d) in PANELS.iter() {
         let hh = d * tan_h;
@@ -129,14 +153,14 @@ fn panel_geometry(aspect: f32) -> (Vec<[f32; 5]>, Vec<u32>) {
         let cx = nx * hw;
         let cy = ny * hh;
         let z = -d;
-        let base = verts.len() as u32;
+        let base = (verts.len() / 5) as u32;
         // BL, BR, TR, TL — uv.y picks the pattern row the same way
         // three's flipY CanvasTexture + PlaneGeometry uvs do: panel top
         // samples pattern w ~ 0 (buffer row 0).
-        verts.push([cx - w / 2.0, cy - h / 2.0, z, 0.0, 1.0]);
-        verts.push([cx + w / 2.0, cy - h / 2.0, z, 1.0, 1.0]);
-        verts.push([cx + w / 2.0, cy + h / 2.0, z, 1.0, 0.0]);
-        verts.push([cx - w / 2.0, cy + h / 2.0, z, 0.0, 0.0]);
+        verts.extend_from_slice(&[cx - w / 2.0, cy - h / 2.0, z, 0.0, 1.0]);
+        verts.extend_from_slice(&[cx + w / 2.0, cy - h / 2.0, z, 1.0, 1.0]);
+        verts.extend_from_slice(&[cx + w / 2.0, cy + h / 2.0, z, 1.0, 0.0]);
+        verts.extend_from_slice(&[cx - w / 2.0, cy + h / 2.0, z, 0.0, 0.0]);
         idx.extend_from_slice(&[base, base + 1, base + 2, base, base + 2, base + 3]);
     }
     (verts, idx)
@@ -189,31 +213,32 @@ pub async fn run_dof(width: u32, height: u32, out: &str) {
 
     let aspect = width as f32 / height as f32;
     let proj = math::perspective(FOV_Y_DEG.to_radians(), aspect, NEAR, FAR);
-    let uniforms = Uniforms { mvp: proj, model: math::MAT4_IDENTITY };
+    let uniforms = Uniforms { mvp: proj, model: math::identity() };
     let uniform_buf = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("dof-uniforms"),
-        size: std::mem::size_of::<Uniforms>() as u64,
+        size: 128,
         usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         mapped_at_creation: false,
     });
-    queue.write_buffer(&uniform_buf, 0, bytemuck::bytes_of(&uniforms));
+    queue.write_buffer(&uniform_buf, 0, &uniform_bytes(&uniforms));
 
     // ---- chart texture (sRGB, single level, linear sampling) ----
     let tex_data = chart_texture_rgba();
-    let chart_tex = device.create_texture_with_data(
-        &queue,
-        &wgpu::TextureDescriptor {
-            label: Some("dof-chart-texture"),
-            size: wgpu::Extent3d { width: TEX_SIZE, height: TEX_SIZE, depth_or_array_layers: 1 },
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba8UnormSrgb,
-            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-            view_formats: &[],
-        },
-        wgpu::util::TextureDataOrder::LayerMajor,
+    let chart_tex = device.create_texture(&wgpu::TextureDescriptor {
+        label: Some("dof-chart-texture"),
+        size: wgpu::Extent3d { width: TEX_SIZE, height: TEX_SIZE, depth_or_array_layers: 1 },
+        mip_level_count: 1,
+        sample_count: 1,
+        dimension: wgpu::TextureDimension::D2,
+        format: wgpu::TextureFormat::Rgba8UnormSrgb,
+        usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+        view_formats: &[],
+    });
+    queue.write_texture(
+        wgpu::ImageCopyTexture { texture: &chart_tex, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
         &tex_data,
+        wgpu::ImageDataLayout { offset: 0, bytes_per_row: Some(TEX_SIZE * 4), rows_per_image: Some(TEX_SIZE) },
+        wgpu::Extent3d { width: TEX_SIZE, height: TEX_SIZE, depth_or_array_layers: 1 },
     );
     let chart_view = chart_tex.create_view(&wgpu::TextureViewDescriptor::default());
     let linear_sampler = device.create_sampler(&wgpu::SamplerDescriptor {
@@ -241,18 +266,18 @@ pub async fn run_dof(width: u32, height: u32, out: &str) {
     let (verts, idx) = panel_geometry(aspect);
     let vb = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("dof-panels-vb"),
-        size: (verts.len() * std::mem::size_of::<[f32; 5]>()) as u64,
+        size: (verts.len() * 4) as u64,
         usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
         mapped_at_creation: false,
     });
-    queue.write_buffer(&vb, 0, bytemuck::cast_slice(&verts));
+    queue.write_buffer(&vb, 0, &pack_f32(&verts));
     let ib = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("dof-panels-ib"),
         size: (idx.len() * 4) as u64,
         usage: wgpu::BufferUsages::INDEX | wgpu::BufferUsages::COPY_DST,
         mapped_at_creation: false,
     });
-    queue.write_buffer(&ib, 0, bytemuck::cast_slice(&idx));
+    queue.write_buffer(&ib, 0, &pack_u32(&idx));
     let index_count = idx.len() as u32;
     let vlayout = wgpu::VertexBufferLayout {
         array_stride: 20,
@@ -297,10 +322,10 @@ pub async fn run_dof(width: u32, height: u32, out: &str) {
     let scene_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
         label: Some("dof-scene-pipeline"),
         layout: Some(&device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("dof-scene-layout"), bind_group_layouts: &[&tex_bgl], push_constant_ranges: &[] })),
-        vertex: wgpu::VertexState { module: &tex_module, entry_point: Some("vs_main"), buffers: &[vlayout.clone()], compilation_options: Default::default() },
+        vertex: wgpu::VertexState { module: &tex_module, entry_point: "vs_main", buffers: &[vlayout.clone()], compilation_options: Default::default() },
         fragment: Some(wgpu::FragmentState {
             module: &tex_module,
-            entry_point: Some("fs_main"),
+            entry_point: "fs_main",
             targets: &[Some(wgpu::ColorTargetState { format: wgpu::TextureFormat::Rgba16Float, blend: Some(wgpu::BlendState::REPLACE), write_mask: wgpu::ColorWrites::ALL })],
             compilation_options: Default::default(),
         }),
@@ -308,7 +333,6 @@ pub async fn run_dof(width: u32, height: u32, out: &str) {
         depth_stencil: Some(wgpu::DepthStencilState { format: wgpu::TextureFormat::Depth32Float, depth_write_enabled: true, depth_compare: wgpu::CompareFunction::Less, stencil: Default::default(), bias: Default::default() }),
         multisample: wgpu::MultisampleState { count: 4, ..Default::default() },
         multiview: None,
-        cache: None,
     });
 
     let depth_module = device.create_shader_module(wgpu::ShaderModuleDescriptor { label: Some("dof-shader-depth"), source: wgpu::ShaderSource::Wgsl(SHADER_DEPTH.into()) });
@@ -324,10 +348,10 @@ pub async fn run_dof(width: u32, height: u32, out: &str) {
     let depth_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
         label: Some("dof-depth-pipeline"),
         layout: Some(&device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("dof-depth-layout"), bind_group_layouts: &[&depth_bgl], push_constant_ranges: &[] })),
-        vertex: wgpu::VertexState { module: &depth_module, entry_point: Some("vs_main"), buffers: &[vlayout], compilation_options: Default::default() },
+        vertex: wgpu::VertexState { module: &depth_module, entry_point: "vs_main", buffers: &[vlayout], compilation_options: Default::default() },
         fragment: Some(wgpu::FragmentState {
             module: &depth_module,
-            entry_point: Some("fs_main"),
+            entry_point: "fs_main",
             targets: &[Some(wgpu::ColorTargetState { format: wgpu::TextureFormat::Rgba16Float, blend: Some(wgpu::BlendState::REPLACE), write_mask: wgpu::ColorWrites::ALL })],
             compilation_options: Default::default(),
         }),
@@ -335,17 +359,17 @@ pub async fn run_dof(width: u32, height: u32, out: &str) {
         depth_stencil: Some(wgpu::DepthStencilState { format: wgpu::TextureFormat::Depth32Float, depth_write_enabled: true, depth_compare: wgpu::CompareFunction::Less, stencil: Default::default(), bias: Default::default() }),
         multisample: wgpu::MultisampleState::default(),
         multiview: None,
-        cache: None,
     });
 
-    let bokeh_uniforms = BokehUniforms { focus: FOCUS, aspect, aperture: APERTURE, maxblur: MAXBLUR, near_clip: NEAR, far_clip: FAR, _pad0: 0.0, _pad1: 0.0 };
+    // WGSL BokehUniforms layout: six f32 fields + two padding slots.
+    let bokeh_uniform_data: [f32; 8] = [FOCUS, aspect, APERTURE, MAXBLUR, NEAR, FAR, 0.0, 0.0];
     let bokeh_uniform_buf = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("dof-bokeh-uniforms"),
-        size: std::mem::size_of::<BokehUniforms>() as u64,
+        size: 32,
         usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         mapped_at_creation: false,
     });
-    queue.write_buffer(&bokeh_uniform_buf, 0, bytemuck::bytes_of(&bokeh_uniforms));
+    queue.write_buffer(&bokeh_uniform_buf, 0, &pack_f32(&bokeh_uniform_data));
     let bokeh_module = device.create_shader_module(wgpu::ShaderModuleDescriptor { label: Some("dof-shader-bokeh"), source: wgpu::ShaderSource::Wgsl(SHADER_BOKEH.into()) });
     let bokeh_bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
         label: Some("dof-bokeh-bgl"),
@@ -373,10 +397,10 @@ pub async fn run_dof(width: u32, height: u32, out: &str) {
     let bokeh_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
         label: Some("dof-bokeh-pipeline"),
         layout: Some(&device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("dof-bokeh-layout"), bind_group_layouts: &[&bokeh_bgl], push_constant_ranges: &[] })),
-        vertex: wgpu::VertexState { module: &bokeh_module, entry_point: Some("vs_main"), buffers: &[], compilation_options: Default::default() },
+        vertex: wgpu::VertexState { module: &bokeh_module, entry_point: "vs_main", buffers: &[], compilation_options: Default::default() },
         fragment: Some(wgpu::FragmentState {
             module: &bokeh_module,
-            entry_point: Some("fs_main"),
+            entry_point: "fs_main",
             targets: &[Some(wgpu::ColorTargetState { format: wgpu::TextureFormat::Rgba16Float, blend: Some(wgpu::BlendState::REPLACE), write_mask: wgpu::ColorWrites::ALL })],
             compilation_options: Default::default(),
         }),
@@ -384,7 +408,6 @@ pub async fn run_dof(width: u32, height: u32, out: &str) {
         depth_stencil: None,
         multisample: wgpu::MultisampleState::default(),
         multiview: None,
-        cache: None,
     });
 
     let output_module = device.create_shader_module(wgpu::ShaderModuleDescriptor { label: Some("dof-shader-output"), source: wgpu::ShaderSource::Wgsl(SHADER_OUTPUT.into()) });
@@ -407,10 +430,10 @@ pub async fn run_dof(width: u32, height: u32, out: &str) {
     let output_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
         label: Some("dof-output-pipeline"),
         layout: Some(&device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("dof-output-layout"), bind_group_layouts: &[&output_bgl], push_constant_ranges: &[] })),
-        vertex: wgpu::VertexState { module: &output_module, entry_point: Some("vs_main"), buffers: &[], compilation_options: Default::default() },
+        vertex: wgpu::VertexState { module: &output_module, entry_point: "vs_main", buffers: &[], compilation_options: Default::default() },
         fragment: Some(wgpu::FragmentState {
             module: &output_module,
-            entry_point: Some("fs_main"),
+            entry_point: "fs_main",
             targets: &[Some(wgpu::ColorTargetState { format: wgpu::TextureFormat::Rgba8Unorm, blend: Some(wgpu::BlendState::REPLACE), write_mask: wgpu::ColorWrites::ALL })],
             compilation_options: Default::default(),
         }),
@@ -418,7 +441,6 @@ pub async fn run_dof(width: u32, height: u32, out: &str) {
         depth_stencil: None,
         multisample: wgpu::MultisampleState::default(),
         multiview: None,
-        cache: None,
     });
 
     // ---- render ----
@@ -432,7 +454,6 @@ pub async fn run_dof(width: u32, height: u32, out: &str) {
                 view: &msaa_view,
                 resolve_target: Some(&scene_view),
                 ops: wgpu::Operations { load: wgpu::LoadOp::Clear(wgpu::Color { r: 0.0, g: 0.0, b: 0.0, a: 1.0 }), store: wgpu::StoreOp::Store },
-                depth_slice: None,
             })],
             depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
                 view: &sdepth_view,
@@ -459,7 +480,6 @@ pub async fn run_dof(width: u32, height: u32, out: &str) {
                 // BokehPass clears its depth target to WHITE before the
                 // override render; background pixels then unpack to ~far.
                 ops: wgpu::Operations { load: wgpu::LoadOp::Clear(wgpu::Color { r: 1.0, g: 1.0, b: 1.0, a: 1.0 }), store: wgpu::StoreOp::Store },
-                depth_slice: None,
             })],
             depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
                 view: &pdepth_view,
@@ -482,7 +502,6 @@ pub async fn run_dof(width: u32, height: u32, out: &str) {
                 view: &bokeh_view,
                 resolve_target: None,
                 ops: wgpu::Operations { load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT), store: wgpu::StoreOp::Store },
-                depth_slice: None,
             })],
             depth_stencil_attachment: None,
             timestamp_writes: None,
@@ -500,7 +519,6 @@ pub async fn run_dof(width: u32, height: u32, out: &str) {
                 view: &final_view,
                 resolve_target: None,
                 ops: wgpu::Operations { load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT), store: wgpu::StoreOp::Store },
-                depth_slice: None,
             })],
             depth_stencil_attachment: None,
             timestamp_writes: None,
@@ -521,8 +539,8 @@ pub async fn run_dof(width: u32, height: u32, out: &str) {
         mapped_at_creation: false,
     });
     encoder.copy_texture_to_buffer(
-        wgpu::TexelCopyTextureInfo { texture: &final_tex, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
-        wgpu::TexelCopyBufferInfo { buffer: &out_buf, layout: wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(padded as u32), rows_per_image: Some(height) } },
+        wgpu::ImageCopyTexture { texture: &final_tex, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
+        wgpu::ImageCopyBuffer { buffer: &out_buf, layout: wgpu::ImageDataLayout { offset: 0, bytes_per_row: Some(padded as u32), rows_per_image: Some(height) } },
         wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
     );
     queue.submit(Some(encoder.finish()));
