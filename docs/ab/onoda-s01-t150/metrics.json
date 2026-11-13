@@ -1,0 +1,13 @@
+{
+  "size": [
+    1080,
+    1920
+  ],
+  "psnr_db": 20.152,
+  "mean_abs_delta_per_channel": 17.273,
+  "pct_pixels_max_channel_delta_gt_10": 79.904,
+  "pct_pixels_any_channel_delta_gt_0": 99.692,
+  "original": "project review frame t1.50.jpg (SwiftShader Chrome, OP.frame JPEG q~0.92), converted losslessly to PNG",
+  "native": "TaleRender --scene ab1, wgpu on lavapipe (software Vulkan), PNG direct",
+  "diff_amplification": 4
+}

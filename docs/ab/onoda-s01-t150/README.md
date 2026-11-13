@@ -236,4 +236,38 @@ python3 docs/ab/onoda-s01-t150/scripts/ab_metrics.py docs/ab/onoda-s01-t150
 
 ## Results
 
-<!-- filled after the native render: metrics headline + CI verdict -->
+**Metrics** ([metrics.json](metrics.json), computed by
+`scripts/ab_metrics.py`): **PSNR 20.152 dB** · mean |Δ| per channel
+**17.273** · **79.90%** of pixels differ by >10 (max-channel). For
+calibration: the headless-gl spike's Chrome-vs-GL comparison of a
+28 s film — two builds of the *same* three.js engine — measured
+PSNR 15.8–19.3 dB. This from-scratch native renderer, with no
+composer and a one-light shader, lands at 20.2 dB against the
+shipped pipeline on a real production frame, with composition,
+staging, character, prop and caption all aligned (see
+[side-by-side.png](side-by-side.png) and [diff.png](diff.png)).
+
+The differences concentrate exactly where [gaps.md](gaps.md) says
+they should: the shadow-map shadows the native frame lacks (tree
+shadows across the grass, Onoda's ground shadow), the flame's bloom
+halo, DoF softening of the background, and the GRADE pass's
+desaturation/warmth over the whole frame.
+
+**Renderer evidence.** Native frame adapter line (local run):
+`llvmpipe (LLVM 20.1.2, 256 bits) | backend: Vulkan | device type:
+Cpu | driver: llvmpipe Mesa 25.2.8-0ubuntu0.24.04.4` — software
+Vulkan, correctness evidence only (contract §6.2). The original is
+SwiftShader Chrome. Neither is a GPU master.
+
+**CI.** The scene code, the workflow changes it needed (binary
+artifact; runner pinned to ubuntu-22.04 so the artifact binary runs
+on glibc-2.39 machines; rust-cache key bumped for the OS change;
+lavapipe ICD path resolved by glob) and this package are all on
+`main`; the final CI run is green (build + test + M1 smoke render +
+both artifact uploads). Two findings from the build are recorded
+here because they are engine facts, not scene facts: (1) wgpu's
+`downlevel_defaults()` limits cap textures at 2048 px — the real
+character canvas (2560×2816) needs standard limits; (2) a CI binary
+built on ubuntu-latest demands GLIBC_2.43 and will not start on
+Ubuntu 24.04 — CI artifacts intended for local runs must be built
+on the oldest supported runner.
