@@ -1,0 +1,241 @@
+{
+ "format": "talerender-scene",
+ "version": 1,
+ "name": "dof-chart \u2014 the M3 bokeh gate chart (scene-format re-expression)",
+ "camera": {
+  "fovY": 30.0,
+  "near": 0.05,
+  "far": 800.0,
+  "eye": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "target": [
+   0.0,
+   0.0,
+   -1.0
+  ],
+  "up": [
+   0.0,
+   1.0,
+   0.0
+  ]
+ },
+ "textures": [
+  {
+   "id": "chart",
+   "generator": "dof-chart-pattern",
+   "size": 512
+  }
+ ],
+ "post": {
+  "bokeh": {
+   "focus": 10.0,
+   "aperture": 0.0015,
+   "maxblur": 0.006
+  }
+ },
+ "nodes": [
+  {
+   "type": "mesh",
+   "geometry": {
+    "kind": "quad",
+    "width": 2.5321199893951416,
+    "height": 2.8938515186309814,
+    "y0": -1.4469257593154907
+   },
+   "name": "panel 30.0 m",
+   "texture": "chart",
+   "transform": [
+    {
+     "translate": [
+      -2.8034183979034424,
+      5.305394172668457,
+      -30.0
+     ]
+    }
+   ]
+  },
+  {
+   "type": "mesh",
+   "geometry": {
+    "kind": "quad",
+    "width": 1.1816558837890625,
+    "height": 1.3504639863967896,
+    "y0": -0.6752319931983948
+   },
+   "name": "panel 14.0 m",
+   "texture": "chart",
+   "transform": [
+    {
+     "translate": [
+      0.0,
+      2.4758505821228027,
+      -14.0
+     ]
+    }
+   ]
+  },
+  {
+   "type": "mesh",
+   "geometry": {
+    "kind": "quad",
+    "width": 0.928443968296051,
+    "height": 1.0610787868499756,
+    "y0": -0.5305393934249878
+   },
+   "name": "panel 11.0 m",
+   "texture": "chart",
+   "transform": [
+    {
+     "translate": [
+      1.027920126914978,
+      1.945311188697815,
+      -11.0
+     ]
+    }
+   ]
+  },
+  {
+   "type": "mesh",
+   "geometry": {
+    "kind": "quad",
+    "width": 1.012847900390625,
+    "height": 1.1575405597686768,
+    "y0": -0.5787702798843384
+   },
+   "name": "panel 12.0 m",
+   "texture": "chart",
+   "transform": [
+    {
+     "translate": [
+      -1.121367335319519,
+      0.0,
+      -12.0
+     ]
+    }
+   ]
+  },
+  {
+   "type": "mesh",
+   "geometry": {
+    "kind": "quad",
+    "width": 0.844040036201477,
+    "height": 0.964617133140564,
+    "y0": -0.482308566570282
+   },
+   "name": "panel 10.0 m",
+   "texture": "chart",
+   "transform": [
+    {
+     "translate": [
+      0.0,
+      0.0,
+      -10.0
+     ]
+    }
+   ]
+  },
+  {
+   "type": "mesh",
+   "geometry": {
+    "kind": "quad",
+    "width": 0.67523193359375,
+    "height": 0.7716937065124512,
+    "y0": -0.3858468532562256
+   },
+   "name": "panel 8.0 m",
+   "texture": "chart",
+   "transform": [
+    {
+     "translate": [
+      0.7475782036781311,
+      0.0,
+      -8.0
+     ]
+    }
+   ]
+  },
+  {
+   "type": "mesh",
+   "geometry": {
+    "kind": "quad",
+    "width": 0.5908279418945312,
+    "height": 0.6752319931983948,
+    "y0": -0.3376159965991974
+   },
+   "name": "panel 7.0 m",
+   "texture": "chart",
+   "transform": [
+    {
+     "translate": [
+      -0.6541309356689453,
+      -1.2379252910614014,
+      -7.0
+     ]
+    }
+   ]
+  },
+  {
+   "type": "mesh",
+   "geometry": {
+    "kind": "quad",
+    "width": 0.4220200181007385,
+    "height": 0.482308566570282,
+    "y0": -0.241154283285141
+   },
+   "name": "panel 5.0 m",
+   "texture": "chart",
+   "transform": [
+    {
+     "translate": [
+      0.0,
+      -0.8842324018478394,
+      -5.0
+     ]
+    }
+   ]
+  },
+  {
+   "type": "mesh",
+   "geometry": {
+    "kind": "quad",
+    "width": 0.2954139709472656,
+    "height": 0.3376159965991974,
+    "y0": -0.1688079982995987
+   },
+   "name": "panel 3.5 m",
+   "texture": "chart",
+   "transform": [
+    {
+     "translate": [
+      0.32706546783447266,
+      -0.6189626455307007,
+      -3.5
+     ]
+    }
+   ]
+  },
+  {
+   "type": "mesh",
+   "geometry": {
+    "kind": "quad",
+    "width": 0.1688079833984375,
+    "height": 0.160769522190094,
+    "y0": -0.080384761095047
+   },
+   "name": "panel 2.0 m",
+   "texture": "chart",
+   "transform": [
+    {
+     "translate": [
+      0.0,
+      -0.160769522190094,
+      -2.0
+     ]
+    }
+   ]
+  }
+ ]
+}

@@ -85,35 +85,38 @@ BLOBS = [
 
 
 def tree_children(s, colour, round_):
+    s = f32(s)
     kids = [
         mesh(
-            {"kind": "cylinder", "radiusTop": f32(0.12 * s), "radiusBottom": f32(0.18 * s),
-             "height": f32(1.6 * s), "segments": 7},
+            {"kind": "cylinder", "radiusTop": f32(f32(0.12) * s), "radiusBottom": f32(f32(0.18) * s),
+             "height": f32(f32(1.6) * s), "segments": 7},
             "#7A5234",
-            transform=[T(0.0, f32(0.8 * s), 0.0)],
+            transform=[T(0.0, f32(f32(0.8) * s), 0.0)],
             name="trunk",
         )
     ]
     if round_:
         for bi, (ox, oy, oz, f) in enumerate(BLOBS):
             kids.append(mesh(
-                {"kind": "sphere", "radius": f32(f * s), "widthSegments": 12, "heightSegments": 9},
+                {"kind": "sphere", "radius": f32(f32(f) * s), "widthSegments": 12, "heightSegments": 9},
                 shade_hash(colour, bi, 0.9, 0.2),
-                transform=[T(f32(ox * s), f32(oy * s), f32(oz * s))],
+                transform=[T(f32(f32(ox) * s), f32(f32(oy) * s), f32(f32(oz) * s))],
                 name=f"canopy blob {bi}",
             ))
     else:
         kids.append(mesh(
             {"kind": "sphere", "radius": 1.0, "widthSegments": 16, "heightSegments": 12},
             colour,
-            transform=[T(0.0, f32(3.2 * s), 0.0),
-                       {"scale": [f32(0.7 * s), f32(2.6 * s), f32(0.7 * s)]}],
+            transform=[T(0.0, f32(f32(3.2) * s), 0.0),
+                       {"scale": [f32(f32(0.7) * s), f32(f32(2.6) * s), f32(f32(0.7) * s)]}],
             name="cypress canopy",
         ))
     return kids
 
 
 def palm(pos, s, lean, rot):
+    s, lean, rot = f32(s), f32(lean), f32(rot)
+    pos = [f32(c) for c in pos]
     kids = [
         mesh(
             {"kind": "cylinder", "radiusTop": 0.085, "radiusBottom": 0.13, "height": 4.4, "segments": 8},
@@ -122,7 +125,7 @@ def palm(pos, s, lean, rot):
             name="trunk",
         )
     ]
-    top_y = 4.35
+    top_y = f32(4.35)
     for i in range(7):
         a = f32(f32(f32(i / 7.0) * TAU_F32) + f32(0.4))
         sa, ca = f32(math.sin(a)), f32(math.cos(a))
@@ -131,7 +134,7 @@ def palm(pos, s, lean, rot):
             {"kind": "sphere", "radius": 1.0, "widthSegments": 10, "heightSegments": 6},
             col,
             transform=[
-                T(sa, f32(f32(top_y + 0.1) - f32(f32(i % 3) * f32(0.07))), ca),
+                T(sa, f32(f32(top_y + f32(0.1)) - f32(f32(i % 3) * f32(0.07))), ca),
                 {"rotate_y": a},
                 {"scale": [0.17, 0.05, 1.2]},
             ],
@@ -141,7 +144,7 @@ def palm(pos, s, lean, rot):
             {"kind": "sphere", "radius": 1.0, "widthSegments": 10, "heightSegments": 6},
             col,
             transform=[
-                T(f32(sa * 1.85), f32(f32(top_y - 0.28) - f32(f32(i % 3) * f32(0.06))), f32(ca * 1.85)),
+                T(f32(sa * f32(1.85)), f32(f32(top_y - f32(0.28)) - f32(f32(i % 3) * f32(0.06))), f32(ca * f32(1.85))),
                 {"euler_xyz": [f32(ca * 0.5), a, f32(-sa * 0.5)]},
                 {"scale": [0.13, 0.04, 0.8]},
             ],
@@ -151,7 +154,7 @@ def palm(pos, s, lean, rot):
         kids.append(mesh(
             {"kind": "sphere", "radius": 0.13, "widthSegments": 10, "heightSegments": 8},
             "#6B4A2E",
-            transform=[T(nx, f32(top_y - 0.2), nz)],
+            transform=[T(f32(nx), f32(top_y - f32(0.2)), f32(nz))],
             name="coconut",
         ))
     return group(
@@ -185,10 +188,11 @@ def ab1_scene():
     hills = [(-40.0, -75.0, 34.0, 12.0), (10.0, -85.0, 46.0, 16.0),
              (60.0, -71.0, 36.0, 11.0), (-90.0, -65.0, 40.0, 10.0)]
     for i, (hx, hz, r, h) in enumerate(hills):
+        hx, hz, r, h = f32(hx), f32(hz), f32(r), f32(h)
         nodes.append(mesh(
             {"kind": "sphere", "radius": 1.0, "widthSegments": 24, "heightSegments": 16},
             shade_hash("#5E8F52", i, 0.92, 0.16),
-            transform=[T(hx, f32(-h * 0.25), hz), {"scale": [r, h, f32(r * 0.6)]}],
+            transform=[T(hx, f32(-h * f32(0.25)), hz), {"scale": [r, h, f32(r * f32(0.6))]}],
             name=f"hill {i}",
         ))
         for k in range(6):
@@ -212,6 +216,7 @@ def ab1_scene():
         (11.5, 3.5, 1.45, True),
     ]
     for i, (x, z, s, round_) in enumerate(ring):
+        x, z, s = f32(x), f32(z), f32(s)
         col = "#3E7A34" if i % 3 != 0 else "#356B2C"
         nodes.append(group(
             tree_children(s, col, round_),
@@ -234,7 +239,7 @@ def ab1_scene():
                       "angleScale": 6.283185307, "center": [0.0, 0.15, -3.0]},
     })
     # Camp (fire pit at (-1.35, -2.45)).
-    fx, fz = -1.35, -2.45
+    fx, fz = f32(-1.35), f32(-2.45)
     for i in range(8):
         a = f32(f32(i / 8.0) * TAU_F32)
         r_i = f32(0.09 + rnd(float(i)) * 0.04)
@@ -249,7 +254,7 @@ def ab1_scene():
         nodes.append(mesh(
             {"kind": "cylinder", "radiusTop": 0.05, "radiusBottom": 0.05, "height": 0.72, "segments": 7},
             "#7A5A38",
-            transform=[T(f32(fx + dx), 0.09, f32(fz + dz)),
+            transform=[T(f32(fx + f32(dx)), 0.09, f32(fz + f32(dz))),
                        {"euler_xyz": [0.0, f32(f32(i) * f32(0.7)), FRAC_PI_2]}],
             name=f"fire log {i}",
         ))
@@ -261,7 +266,7 @@ def ab1_scene():
     nodes.append(mesh(
         {"kind": "cone", "radius": 0.09, "height": 0.34, "segments": 8},
         "#FFD23C",
-        transform=[T(f32(fx + 0.03), 0.30, f32(fz + 0.04)), {"scale": [1.0, 0.86854, 1.0]}],
+        transform=[T(f32(fx + f32(0.03)), 0.30, f32(fz + f32(0.04))), {"scale": [1.0, 0.86854, 1.0]}],
         name="flame inner",
     ))
     nodes.append(mesh(
@@ -394,9 +399,10 @@ def dof_scene():
     tan_h = f32(math.tan(f32(math.radians(15.0))))
     nodes = []
     for nx, ny, d in PANELS:
+        nx, ny, d = f32(nx), f32(ny), f32(d)
         hh = f32(d * tan_h)
         hw = f32(hh * aspect)
-        h_ndc = 0.30 if d == 2.0 else 0.36
+        h_ndc = f32(0.30) if d == 2.0 else f32(0.36)
         w = f32(f32(0.56) * hw)
         h = f32(f32(h_ndc) * hh)
         nodes.append(mesh(

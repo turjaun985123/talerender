@@ -1,0 +1,14 @@
+{
+  "size": [
+    1080,
+    1920
+  ],
+  "psnr_db": 84.486,
+  "mean_abs_delta_per_channel": 0.00023,
+  "pct_pixels_max_channel_delta_gt_10": 0.0,
+  "pct_pixels_any_channel_delta_gt_0": 0.02315,
+  "max_abs_delta": 1,
+  "original": "hand-authored scene: talerender --scene dof-chart (binary from CI run 43484074039, commit 9398540) on lavapipe llvmpipe (LLVM 20.1.2), lossless PNG",
+  "native": "scene-format render: talerender --scene-file scenes/dof-chart.scene.json (same binary, same adapter), lossless PNG",
+  "diff_amplification": 4
+}
