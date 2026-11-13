@@ -544,14 +544,10 @@ impl Painter {
         for y in y0..=y1 {
             for x in x0..=x1 {
                 let d0 = dmin[((y - y0) as usize) * wpx + (x - x0) as usize] - hw;
-                if d0 >= 2.0 {
+                if d0 >= 1.0 {
                     continue; // beyond the AA band: coverage 0
                 }
-                let cov = if d0 <= -2.0 {
-                    1.0
-                } else {
-                    cov_area0(&dist, x as f32 + 0.5, y as f32 + 0.5, d0)
-                };
+                let cov = cov_area0(&dist, x as f32 + 0.5, y as f32 + 0.5, d0);
                 if cov > 0.0 {
                     self.blend_cov(x, y, col, cov);
                 }
@@ -706,25 +702,34 @@ pub(crate) fn seg_dist(px: f32, py: f32, ax: f32, ay: f32, bx: f32, by: f32) -> 
     (px - (ax + dx * t)).hypot(py - (ay + dy * t))
 }
 
-/// Area coverage of a pixel from a signed-distance closure: the
-/// centre sample, refined by 2x2 sub-sampling inside the AA band
-/// (|sd| < 2 px). Skia's coverage integrates the pixel footprint;
-/// the centre sample alone underestimates the ramp wherever the
-/// boundary curves at the pixel scale — the stroke battery's
-/// cap-end class is the measured case (centre-distance ramp
-/// 0.81 px vs Skia's 1.47 px at a 15-unit round cap).
+/// Area coverage of a pixel from a signed-distance closure.
+/// Skia's coverage is the pixel FOOTPRINT integral of the shape;
+/// the centre-distance ramp (cov_of) equals it only for straight
+/// edges — wherever the boundary curves at the pixel scale the
+/// centre sample misstates the covered fraction (the stroke
+/// battery's cap-end class is the measured case: centre-distance
+/// ramp 0.81 px vs Skia's 1.47 px at a 15-unit round cap).
+/// Inside the band |sd| < 1 the integral is therefore estimated
+/// directly: a 4x4 binary supersample of the inside test.
+/// (Averaging cov_of over sub-points instead would convolve the
+/// ramp with itself and widen even straight edges — measured
+/// 1.41 px against Skia's 0.8 px on the battery's segment rows.)
 pub(crate) fn cov_area<F: Fn(f32, f32) -> f32>(dist: &F, x: f32, y: f32) -> f32 {
     cov_area0(dist, x, y, dist(x, y))
 }
 
 /// cov_area with the centre distance already computed.
 pub(crate) fn cov_area0<F: Fn(f32, f32) -> f32>(dist: &F, x: f32, y: f32, d0: f32) -> f32 {
-    if d0.abs() < 2.0 {
-        let mut s = 0.0f32;
-        for (ox, oy) in [(-0.25f32, -0.25f32), (0.25, -0.25), (-0.25, 0.25), (0.25, 0.25)] {
-            s += Painter::cov_of(dist(x + ox, y + oy));
+    if d0.abs() < 1.0 {
+        let mut inside = 0u32;
+        for oy in [-0.375f32, -0.125, 0.125, 0.375] {
+            for ox in [-0.375f32, -0.125, 0.125, 0.375] {
+                if dist(x + ox, y + oy) < 0.0 {
+                    inside += 1;
+                }
+            }
         }
-        s * 0.25
+        inside as f32 / 16.0
     } else {
         Painter::cov_of(d0)
     }

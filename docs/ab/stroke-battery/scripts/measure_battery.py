@@ -408,7 +408,16 @@ def main():
     angs_head = [0.0, math.pi / 4, math.pi / 2, 3 * math.pi / 4, math.pi]
     dr_, vr = radial_profile(t_ref, head_c, ellipse_r(rp_dev, rp_dev * 0.97), D(10) / 2, angs_head)
     _, vn = radial_profile(t_nat, head_c, ellipse_r(rp_dev, rp_dev * 0.97), D(10) / 2, angs_head)
-    classes["toon-head-outline"] = judge_profile("toon-head-outline", "ellipse-stroke-in-situ", stroke_metrics(dr_, vr), stroke_metrics(dr_, vn), profile_rmse(vr, vn))
+    # Judged as an EDGE (fill_metrics), not a stroke band: the head
+    # is filled, so alpha = 1 throughout the interior and the radial
+    # profile carries only the outline's OUTER (silhouette) edge —
+    # a stroke-width reading needs two crossings that do not exist
+    # in alpha. The full stroke band at these radii/width is covered
+    # in isolation by the prims head-outline class; what is in-situ
+    # here is the silhouette edge position + ramp, at fractional
+    # coords under lean + camPitch. (Methodology fix, tolerances
+    # unchanged.)
+    classes["toon-head-outline"] = judge_profile("toon-head-outline", "ellipse-outline-outer-edge-in-situ", fill_metrics(dr_, vr), fill_metrics(dr_, vn), profile_rmse(vr, vn))
     # leg: horizontal profile at stage y=787 across the left leg
     xs = np.arange(D(560), D(680) + 0.5, 0.5)
     vr = np.array([bilinear(t_ref, xx, D(1043)) for xx in xs])
