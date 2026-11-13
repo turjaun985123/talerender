@@ -16,6 +16,8 @@
 //!        [--scene m1|ab1|dof-chart] [--caption <caption-strip.png>]
 //!        [--scene-file <scene.json>]
 //!        [--scene stroke-battery] [--out <dir>]  (M4 battery cards)
+//!        [--telemetry ab1|ab1-file|ab1-variant] [--captions <metrics.json>]
+//!        [--cutouts-out <cutouts.json>]  (M6 QA telemetry, contract §3)
 
 mod ab1;
 mod battery;
@@ -24,6 +26,7 @@ mod dof;
 mod math;
 mod scene;
 mod scenefile;
+mod telemetry;
 
 use math::Mat4;
 use std::borrow::Cow;
@@ -40,6 +43,9 @@ fn main() {
     // chain runs (lighting | bloom | grade). Default is the full
     // chain, matching production.
     let mut post_stage = String::from("grade");
+    let mut telemetry_mode: Option<String> = None;
+    let mut captions_path: Option<String> = None;
+    let mut cutouts_out: Option<String> = None;
     let mut i = 1;
     while i < args.len() {
         match args[i].as_str() {
@@ -71,12 +77,34 @@ fn main() {
                 i += 1;
                 post_stage = args.get(i).expect("missing value for --post-stage").clone();
             }
+            "--telemetry" => {
+                i += 1;
+                telemetry_mode = Some(args.get(i).expect("missing value for --telemetry").clone());
+            }
+            "--captions" => {
+                i += 1;
+                captions_path = Some(args.get(i).expect("missing value for --captions").clone());
+            }
+            "--cutouts-out" => {
+                i += 1;
+                cutouts_out = Some(args.get(i).expect("missing value for --cutouts-out").clone());
+            }
             other => {
                 eprintln!("unknown argument: {other}");
                 std::process::exit(2);
             }
         }
         i += 1;
+    }
+    if let Some(mode) = &telemetry_mode {
+        // M6 QA telemetry (contract §3): pure CPU — the painter
+        // canvas + scene-graph projection; no GPU device is created.
+        std::process::exit(telemetry::run(
+            mode,
+            scene_file.as_deref(),
+            captions_path.as_deref(),
+            cutouts_out.as_deref(),
+        ));
     }
     if let Some(path) = &scene_file {
         // A scene file wins over --scene: the two are alternative

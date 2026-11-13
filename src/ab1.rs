@@ -73,8 +73,8 @@ const TEX_CAPTION: usize = 6;
 
 // Camera at t = 1.50 (camK smootherstep k = 0.05228 through the S01
 // push-in; fov 44 from G.jungle spread in the shoot() call).
-const EYE: [f32; 3] = [0.83432, 2.64354, 5.28499];
-const TGT: [f32; 3] = [0.35, 1.11477, -0.55];
+pub(crate) const EYE: [f32; 3] = [0.83432, 2.64354, 5.28499];
+pub(crate) const TGT: [f32; 3] = [0.35, 1.11477, -0.55];
 
 fn t3(x: f32, y: f32, z: f32) -> Mat4 {
     math::translate(x, y, z)
