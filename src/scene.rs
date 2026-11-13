@@ -88,6 +88,7 @@ pub(crate) fn rnd(i: f64) -> f64 {
 // happens through the model matrix, like the TS builders + three.js.
 // ---------------------------------------------------------------------
 
+#[derive(Clone)]
 pub(crate) struct Geo {
     pub(crate) verts: Vec<f32>,
     pub(crate) idx: Vec<u32>,
@@ -281,6 +282,7 @@ pub(crate) fn disc_geo(r: f32, seg: u32, col: [f32; 3]) -> Geo {
 // Textured geometry (pos + uv).
 // ---------------------------------------------------------------------
 
+#[derive(Clone)]
 pub(crate) struct TexGeo {
     pub(crate) verts: Vec<f32>,
     pub(crate) idx: Vec<u32>,
@@ -804,4 +806,268 @@ pub(crate) fn chart_texture_rgba(size: u32) -> Vec<u8> {
         }
     }
     data
+}
+
+// ---------------------------------------------------------------------
+// A small JSON parser: the subset the scene format needs (objects,
+// arrays, strings with the standard escapes, numbers, true/false/
+// null). Numbers are f64; the format loader casts per field, the
+// same way the hand-authored code's literals land in f32/f64 slots.
+// ---------------------------------------------------------------------
+
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) enum Value {
+    Null,
+    Bool(bool),
+    Num(f64),
+    Str(String),
+    Arr(Vec<Value>),
+    Obj(Vec<(String, Value)>),
+}
+
+impl Value {
+    pub(crate) fn get(&self, key: &str) -> Option<&Value> {
+        match self {
+            Value::Obj(pairs) => pairs.iter().find(|(k, _)| k == key).map(|(_, v)| v),
+            _ => None,
+        }
+    }
+    pub(crate) fn as_arr(&self) -> Option<&[Value]> {
+        match self {
+            Value::Arr(items) => Some(items),
+            _ => None,
+        }
+    }
+    pub(crate) fn as_str(&self) -> Option<&str> {
+        match self {
+            Value::Str(s) => Some(s),
+            _ => None,
+        }
+    }
+    pub(crate) fn as_f64(&self) -> Option<f64> {
+        match self {
+            Value::Num(n) => Some(*n),
+            _ => None,
+        }
+    }
+}
+
+pub(crate) fn parse_json(text: &str) -> Result<Value, String> {
+    let mut p = JsonParser { bytes: text.as_bytes(), pos: 0 };
+    p.skip_ws();
+    let v = p.parse_value()?;
+    p.skip_ws();
+    if p.pos != p.bytes.len() {
+        return Err(format!("json: trailing input at byte {}", p.pos));
+    }
+    Ok(v)
+}
+
+struct JsonParser<'a> {
+    bytes: &'a [u8],
+    pos: usize,
+}
+
+impl<'a> JsonParser<'a> {
+    fn skip_ws(&mut self) {
+        while self.pos < self.bytes.len() && matches!(self.bytes[self.pos], b' ' | b'\t' | b'\n' | b'\r') {
+            self.pos += 1;
+        }
+    }
+    fn peek(&self) -> Result<u8, String> {
+        self.bytes.get(self.pos).copied().ok_or_else(|| "json: unexpected end of input".to_string())
+    }
+    fn parse_value(&mut self) -> Result<Value, String> {
+        match self.peek()? {
+            b'{' => self.parse_obj(),
+            b'[' => self.parse_arr(),
+            b'"' => Ok(Value::Str(self.parse_string()?)),
+            b't' => self.parse_lit("true", Value::Bool(true)),
+            b'f' => self.parse_lit("false", Value::Bool(false)),
+            b'n' => self.parse_lit("null", Value::Null),
+            _ => self.parse_number(),
+        }
+    }
+    fn parse_lit(&mut self, lit: &str, val: Value) -> Result<Value, String> {
+        if self.bytes[self.pos..].starts_with(lit.as_bytes()) {
+            self.pos += lit.len();
+            Ok(val)
+        } else {
+            Err(format!("json: bad literal at byte {}", self.pos))
+        }
+    }
+    fn parse_obj(&mut self) -> Result<Value, String> {
+        self.pos += 1; // '{'
+        let mut pairs = Vec::new();
+        self.skip_ws();
+        if self.peek()? == b'}' {
+            self.pos += 1;
+            return Ok(Value::Obj(pairs));
+        }
+        loop {
+            self.skip_ws();
+            if self.peek()? != b'"' {
+                return Err(format!("json: expected object key at byte {}", self.pos));
+            }
+            let key = self.parse_string()?;
+            self.skip_ws();
+            if self.peek()? != b':' {
+                return Err(format!("json: expected ':' at byte {}", self.pos));
+            }
+            self.pos += 1;
+            self.skip_ws();
+            let val = self.parse_value()?;
+            pairs.push((key, val));
+            self.skip_ws();
+            match self.peek()? {
+                b',' => {
+                    self.pos += 1;
+                }
+                b'}' => {
+                    self.pos += 1;
+                    return Ok(Value::Obj(pairs));
+                }
+                _ => return Err(format!("json: expected ',' or '}}' at byte {}", self.pos)),
+            }
+        }
+    }
+    fn parse_arr(&mut self) -> Result<Value, String> {
+        self.pos += 1; // '['
+        let mut items = Vec::new();
+        self.skip_ws();
+        if self.peek()? == b']' {
+            self.pos += 1;
+            return Ok(Value::Arr(items));
+        }
+        loop {
+            self.skip_ws();
+            items.push(self.parse_value()?);
+            self.skip_ws();
+            match self.peek()? {
+                b',' => {
+                    self.pos += 1;
+                }
+                b']' => {
+                    self.pos += 1;
+                    return Ok(Value::Arr(items));
+                }
+                _ => return Err(format!("json: expected ',' or ']' at byte {}", self.pos)),
+            }
+        }
+    }
+    fn parse_string(&mut self) -> Result<String, String> {
+        self.pos += 1; // opening quote
+        let mut out = String::new();
+        loop {
+            let b = self.peek()?;
+            self.pos += 1;
+            match b {
+                b'"' => return Ok(out),
+                b'\\' => {
+                    let e = self.peek()?;
+                    self.pos += 1;
+                    match e {
+                        b'"' => out.push('"'),
+                        b'\\' => out.push('\\'),
+                        b'/' => out.push('/'),
+                        b'b' => out.push('\u{0008}'),
+                        b'f' => out.push('\u{000C}'),
+                        b'n' => out.push('\n'),
+                        b'r' => out.push('\r'),
+                        b't' => out.push('\t'),
+                        b'u' => {
+                            let hi = self.parse_hex4()?;
+                            if (0xD800..0xDC00).contains(&hi) {
+                                // High surrogate: expect a low one.
+                                if self.peek()? == b'\\' {
+                                    self.pos += 1;
+                                    if self.peek()? == b'u' {
+                                        self.pos += 1;
+                                        let lo = self.parse_hex4()?;
+                                        let c = 0x10000 + ((hi - 0xD800) << 10) + (lo.wrapping_sub(0xDC00) & 0x3FF);
+                                        out.push(char::from_u32(c).unwrap_or('\u{FFFD}'));
+                                        continue;
+                                    }
+                                }
+                                out.push('\u{FFFD}');
+                            } else {
+                                out.push(char::from_u32(hi).unwrap_or('\u{FFFD}'));
+                            }
+                        }
+                        _ => return Err(format!("json: bad escape at byte {}", self.pos)),
+                    }
+                }
+                _ => {
+                    // Raw byte: copy the full UTF-8 sequence verbatim.
+                    let start = self.pos - 1;
+                    let mut end = self.pos;
+                    if b >= 0x80 {
+                        while end < self.bytes.len() && (self.bytes[end] & 0xC0) == 0x80 {
+                            end += 1;
+                        }
+                    }
+                    match std::str::from_utf8(&self.bytes[start..end]) {
+                        Ok(s) => out.push_str(s),
+                        Err(_) => return Err(format!("json: invalid utf-8 at byte {start}")),
+                    }
+                    self.pos = end;
+                }
+            }
+        }
+    }
+    fn parse_hex4(&mut self) -> Result<u32, String> {
+        if self.pos + 4 > self.bytes.len() {
+            return Err("json: truncated \\u escape".to_string());
+        }
+        let s = std::str::from_utf8(&self.bytes[self.pos..self.pos + 4])
+            .map_err(|_| "json: bad \\u escape".to_string())?;
+        let v = u32::from_str_radix(s, 16).map_err(|_| "json: bad \\u escape".to_string())?;
+        self.pos += 4;
+        Ok(v)
+    }
+    fn parse_number(&mut self) -> Result<Value, String> {
+        let start = self.pos;
+        while self.pos < self.bytes.len()
+            && matches!(self.bytes[self.pos], b'0'..=b'9' | b'-' | b'+' | b'.' | b'e' | b'E')
+        {
+            self.pos += 1;
+        }
+        if start == self.pos {
+            return Err(format!("json: expected a value at byte {start}"));
+        }
+        let s = std::str::from_utf8(&self.bytes[start..self.pos]).unwrap_or("");
+        s.parse::<f64>()
+            .map(Value::Num)
+            .map_err(|_| format!("json: bad number '{s}' at byte {start}"))
+    }
+}
+
+#[cfg(test)]
+mod json_tests {
+    use super::*;
+
+    #[test]
+    fn parses_all_value_kinds() {
+        let v = parse_json(r#"{"a": [1, -2.5e2, true, false, null, "x\nA"], "b": {}, "c": []}"#)
+            .expect("parse");
+        let a = v.get("a").and_then(Value::as_arr).expect("a is array");
+        assert_eq!(a[0].as_f64(), Some(1.0));
+        assert_eq!(a[1].as_f64(), Some(-250.0));
+        assert_eq!(a[2], Value::Bool(true));
+        assert_eq!(a[3], Value::Bool(false));
+        assert_eq!(a[4], Value::Null);
+        assert_eq!(a[5].as_str(), Some("x\nA"));
+        assert_eq!(v.get("b"), Some(&Value::Obj(vec![])));
+        assert_eq!(v.get("c"), Some(&Value::Arr(vec![])));
+        assert_eq!(v.get("missing"), None);
+    }
+
+    #[test]
+    fn rejects_garbage() {
+        assert!(parse_json("{").is_err());
+        assert!(parse_json("[1,]").is_err());
+        assert!(parse_json("{\"a\": }").is_err());
+        assert!(parse_json("1 2").is_err());
+        assert!(parse_json("").is_err());
+    }
 }

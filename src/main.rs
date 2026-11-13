@@ -14,11 +14,13 @@
 //!
 //! Usage: talerender [--width 1080] [--height 1920] [--out frame.png]
 //!        [--scene m1|ab1|dof-chart] [--caption <caption-strip.png>]
+//!        [--scene-file <scene.json>]
 
 mod ab1;
 mod dof;
 mod math;
 mod scene;
+mod scenefile;
 
 use math::Mat4;
 use std::borrow::Cow;
@@ -30,6 +32,7 @@ fn main() {
     let mut out = String::from("frame.png");
     let mut scene = String::from("m1");
     let mut caption = String::from("docs/ab/onoda-s01-t150/assets/caption.png");
+    let mut scene_file: Option<String> = None;
     let mut i = 1;
     while i < args.len() {
         match args[i].as_str() {
@@ -49,6 +52,10 @@ fn main() {
                 i += 1;
                 scene = args.get(i).expect("missing value for --scene").clone();
             }
+            "--scene-file" => {
+                i += 1;
+                scene_file = Some(args.get(i).expect("missing value for --scene-file").clone());
+            }
             "--caption" => {
                 i += 1;
                 caption = args.get(i).expect("missing value for --caption").clone();
@@ -59,6 +66,12 @@ fn main() {
             }
         }
         i += 1;
+    }
+    if let Some(path) = &scene_file {
+        // A scene file wins over --scene: the two are alternative
+        // scene sources, and the file is the more specific request.
+        pollster::block_on(scenefile::run_scene_file(width, height, &out, path));
+        return;
     }
     match scene.as_str() {
         "m1" => pollster::block_on(run(width, height, &out)),
