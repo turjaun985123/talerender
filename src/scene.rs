@@ -469,10 +469,10 @@ impl Painter {
         let ex = (rx * rot.cos()).abs() + (ry * rot.sin()).abs();
         let ey = (rx * rot.sin()).abs() + (ry * rot.cos()).abs();
         let (x0, y0, x1, y1) = self.bbox(cx - ex - 1.0, cy - ey - 1.0, cx + ex + 1.0, cy + ey + 1.0);
+        let dist = |qx: f32, qy: f32| ellipse_sd(cx, cy, rx, ry, rot, qx, qy);
         for y in y0..=y1 {
             for x in x0..=x1 {
-                let sd = ellipse_sd(cx, cy, rx, ry, rot, x as f32 + 0.5, y as f32 + 0.5);
-                let cov = Self::cov_of(sd);
+                let cov = cov_area(&dist, x as f32 + 0.5, y as f32 + 0.5);
                 if cov > 0.0 {
                     self.blend_cov(x, y, col, cov);
                 }
@@ -512,36 +512,45 @@ impl Painter {
         let (x0, y0, x1, y1) = self.bbox(mnx - hw - 1.0, mny - hw - 1.0, mxx + hw + 1.0, mxy + hw + 1.0);
         let wpx = (x1 - x0 + 1).max(0) as usize;
         let hpx = (y1 - y0 + 1).max(0) as usize;
-        let mut cov = vec![0f32; wpx * hpx];
+        // Pass 1: stamp each segment's distance into a dmin buffer
+        // (per-segment bounding boxes keep this cheap).
+        let mut dmin = vec![f32::MAX; wpx * hpx];
         for seg in pts.windows(2) {
             let (ax, ay) = seg[0];
             let (bx, by) = seg[1];
-            let (sx0, sy0, sx1, sy1) = self.bbox(ax.min(bx) - hw - 1.0, ay.min(by) - hw - 1.0, ax.max(bx) + hw + 1.0, ay.max(by) + hw + 1.0);
-            let (dx, dy) = (bx - ax, by - ay);
-            let len2 = dx * dx + dy * dy;
+            let (sx0, sy0, sx1, sy1) = self.bbox(ax.min(bx) - hw - 2.0, ay.min(by) - hw - 2.0, ax.max(bx) + hw + 2.0, ay.max(by) + hw + 2.0);
             for y in sy0..=sy1 {
                 for x in sx0..=sx1 {
-                    let (px, py) = (x as f32 + 0.5, y as f32 + 0.5);
-                    let t = if len2 > 0.0 {
-                        (((px - ax) * dx + (py - ay) * dy) / len2).clamp(0.0, 1.0)
-                    } else {
-                        0.0
-                    };
-                    let (qx, qy) = (ax + dx * t, ay + dy * t);
-                    let d = (px - qx).hypot(py - qy);
-                    let c = Self::cov_of(d - hw);
+                    let d = seg_dist(x as f32 + 0.5, y as f32 + 0.5, ax, ay, bx, by);
                     let idx = ((y - y0) as usize) * wpx + (x - x0) as usize;
-                    if c > cov[idx] {
-                        cov[idx] = c;
+                    if d < dmin[idx] {
+                        dmin[idx] = d;
                     }
                 }
             }
         }
+        // Pass 2: blend once per pixel from the union distance,
+        // area-refined in the AA band (cov_area).
+        let dist = |qx: f32, qy: f32| {
+            let mut d = f32::MAX;
+            for seg in pts.windows(2) {
+                d = d.min(seg_dist(qx, qy, seg[0].0, seg[0].1, seg[1].0, seg[1].1));
+            }
+            d - hw
+        };
         for y in y0..=y1 {
             for x in x0..=x1 {
-                let c = cov[((y - y0) as usize) * wpx + (x - x0) as usize];
-                if c > 0.0 {
-                    self.blend_cov(x, y, col, c);
+                let d0 = dmin[((y - y0) as usize) * wpx + (x - x0) as usize] - hw;
+                if d0 >= 2.0 {
+                    continue; // beyond the AA band: coverage 0
+                }
+                let cov = if d0 <= -2.0 {
+                    1.0
+                } else {
+                    cov_area0(&dist, x as f32 + 0.5, y as f32 + 0.5, d0)
+                };
+                if cov > 0.0 {
+                    self.blend_cov(x, y, col, cov);
                 }
             }
         }
@@ -563,31 +572,27 @@ impl Painter {
         }
         let (x0, y0, x1, y1) = self.bbox(mnx - 1.0, mny - 1.0, mxx + 1.0, mxy + 1.0);
         let n = pts.len();
+        let sd_at = |qx: f32, qy: f32| {
+            let mut dmin = f32::MAX;
+            for i in 0..n {
+                let (ax, ay) = pts[i];
+                let (bx, by) = pts[(i + 1) % n];
+                dmin = dmin.min(seg_dist(qx, qy, ax, ay, bx, by));
+            }
+            if point_in_polygon(qx, qy, pts) {
+                -dmin
+            } else {
+                dmin
+            }
+        };
         for y in y0..=y1 {
             for x in x0..=x1 {
                 let (px, py) = (x as f32 + 0.5, y as f32 + 0.5);
-                let mut dmin = f32::MAX;
-                for i in 0..n {
-                    let (ax, ay) = pts[i];
-                    let (bx, by) = pts[(i + 1) % n];
-                    let (dx, dy) = (bx - ax, by - ay);
-                    let len2 = dx * dx + dy * dy;
-                    let t = if len2 > 0.0 {
-                        (((px - ax) * dx + (py - ay) * dy) / len2).clamp(0.0, 1.0)
-                    } else {
-                        0.0
-                    };
-                    let d = (px - (ax + dx * t)).hypot(py - (ay + dy * t));
-                    if d < dmin {
-                        dmin = d;
-                    }
-                }
-                let inside = point_in_polygon(px, py, pts);
-                if dmin > 1.5 && !inside {
+                let sd0 = sd_at(px, py);
+                if sd0 > 2.6 {
                     continue; // certainly outside, beyond the AA band
                 }
-                let sd = if inside { -dmin } else { dmin };
-                let cov = Self::cov_of(sd);
+                let cov = cov_area0(&sd_at, px, py, sd0);
                 if cov > 0.0 {
                     self.blend_cov(x, y, col, cov);
                 }
@@ -637,13 +642,13 @@ impl Painter {
         let ex = (rx * rot.cos()).abs() + (ry * rot.sin()).abs();
         let ey = (rx * rot.sin()).abs() + (ry * rot.cos()).abs();
         let (x0, y0, x1, y1) = self.bbox(cx - ex - 1.0, cy - ey - 1.0, cx + ex + 1.0, cy + ey + 1.0);
+        let dist = |qx: f32, qy: f32| ellipse_sd(cx, cy, rx, ry, rot, qx, qy);
         for y in y0..=y1 {
             for x in x0..=x1 {
                 if !mask[y as usize * self.w + x as usize] {
                     continue;
                 }
-                let sd = ellipse_sd(cx, cy, rx, ry, rot, x as f32 + 0.5, y as f32 + 0.5);
-                let cov = Self::cov_of(sd);
+                let cov = cov_area(&dist, x as f32 + 0.5, y as f32 + 0.5);
                 if cov > 0.0 {
                     self.blend_cov(x, y, col, cov);
                 }
@@ -655,11 +660,13 @@ impl Painter {
         let (x0, y0, x1, y1) = self.bbox(x - 1.0, y - 1.0, x + w + 1.0, y + h + 1.0);
         let (cx, cy) = (x + w / 2.0, y + h / 2.0);
         let (hw, hh) = (w / 2.0, h / 2.0);
+        let dist = |qx: f32, qy: f32| {
+            let (dx, dy) = ((qx - cx).abs() - hw, (qy - cy).abs() - hh);
+            dx.max(0.0).hypot(dy.max(0.0)) + dx.max(dy).min(0.0)
+        };
         for yy in y0..=y1 {
             for xx in x0..=x1 {
-                let (dx, dy) = ((xx as f32 + 0.5 - cx).abs() - hw, (yy as f32 + 0.5 - cy).abs() - hh);
-                let sd = dx.max(0.0).hypot(dy.max(0.0)) + dx.max(dy).min(0.0);
-                let cov = Self::cov_of(sd);
+                let cov = cov_area(&dist, xx as f32 + 0.5, yy as f32 + 0.5);
                 if cov > 0.0 {
                     self.blend_cov(xx, yy, col, cov);
                 }
@@ -682,6 +689,42 @@ pub(crate) fn ellipse_sd(cx: f32, cy: f32, rx: f32, ry: f32, rot: f32, x: f32, y
     }
     let grad = (((lx / (rx * rx)).powi(2) + (ly / (ry * ry)).powi(2)).sqrt()) / g;
     (g - 1.0) / grad
+}
+
+/// Distance from a point to a segment.
+pub(crate) fn seg_dist(px: f32, py: f32, ax: f32, ay: f32, bx: f32, by: f32) -> f32 {
+    let (dx, dy) = (bx - ax, by - ay);
+    let len2 = dx * dx + dy * dy;
+    let t = if len2 > 0.0 {
+        (((px - ax) * dx + (py - ay) * dy) / len2).clamp(0.0, 1.0)
+    } else {
+        0.0
+    };
+    (px - (ax + dx * t)).hypot(py - (ay + dy * t))
+}
+
+/// Area coverage of a pixel from a signed-distance closure: the
+/// centre sample, refined by 2x2 sub-sampling inside the AA band
+/// (|sd| < 2 px). Skia's coverage integrates the pixel footprint;
+/// the centre sample alone underestimates the ramp wherever the
+/// boundary curves at the pixel scale — the stroke battery's
+/// cap-end class is the measured case (centre-distance ramp
+/// 0.81 px vs Skia's 1.47 px at a 15-unit round cap).
+pub(crate) fn cov_area<F: Fn(f32, f32) -> f32>(dist: &F, x: f32, y: f32) -> f32 {
+    cov_area0(dist, x, y, dist(x, y))
+}
+
+/// cov_area with the centre distance already computed.
+pub(crate) fn cov_area0<F: Fn(f32, f32) -> f32>(dist: &F, x: f32, y: f32, d0: f32) -> f32 {
+    if d0.abs() < 2.0 {
+        let mut s = 0.0f32;
+        for (ox, oy) in [(-0.25f32, -0.25f32), (0.25, -0.25), (-0.25, 0.25), (0.25, 0.25)] {
+            s += Painter::cov_of(dist(x + ox, y + oy));
+        }
+        s * 0.25
+    } else {
+        Painter::cov_of(d0)
+    }
 }
 
 pub(crate) fn point_in_polygon(x: f32, y: f32, pts: &[(f32, f32)]) -> bool {
@@ -1012,9 +1055,13 @@ pub(crate) fn paint_toon(spec: &ToonSpec) -> (Vec<u8>, u32, u32) {
                     }
                 }
             }
-            let mut ring = pts.clone();
-            ring.push(pts[0]);
-            p.stroke_polyline(&ring, lw(8.0), ink);
+            // Canvas2D path-state quirk, reproduced faithfully:
+            // the branch's final g.stroke() runs AFTER the tongue's
+            // beginPath(), so it strokes the TONGUE ELLIPSE (lineWidth
+            // 8), not the mouth outline — the production laugh mouth
+            // has no outline; the tongue carries an ink ring instead.
+            // (Found by the M4 stroke battery: docs/ab/stroke-battery.)
+            p.stroke_ellipse(txp, typ, 24.0 * res, 18.0 * res, th, lw(8.0), ink);
         }
         ToonMood::Shock => {
             // openMouth(16, 20): ellipse(fx, my + h*0.3, w, h) filled
@@ -1045,7 +1092,12 @@ pub(crate) fn paint_toon(spec: &ToonSpec) -> (Vec<u8>, u32, u32) {
                 pts.push((ccx + lx * c3 - ly * s3, ccy + lx * s3 + ly * c3));
             }
             p.fill_polygon(&pts, cap);
-            p.stroke_polyline(&pts, lw(9.0), ink);
+            // The real path is closePath()'d before fill+stroke:
+            // the crown's chord is stroked too (the brim's is not —
+            // no closePath there).
+            let mut ring = pts.clone();
+            ring.push(pts[0]);
+            p.stroke_polyline(&ring, lw(9.0), ink);
         }
         // Brim band: lower half ellipse, shadeOf(cap, 0.75).
         {

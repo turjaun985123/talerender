@@ -397,8 +397,17 @@ def main():
     # The 1-degree ellipse rotation is ignored (cos error ~0.02%).
     head_c = (1308.7, 868.3)
     rp_dev = 138 * (1 + 0.04 * 0.28747) * res
-    dr_, vr = radial_profile(t_ref, head_c, ellipse_r(rp_dev, rp_dev * 0.97), D(10) / 2, angs)
-    _, vn = radial_profile(t_nat, head_c, ellipse_r(rp_dev, rp_dev * 0.97), D(10) / 2, angs)
+    # Only unobstructed rays: the upward rays (3*pi/2, and the
+    # up-diagonals) cross the cap, whose silhouette replaces the
+    # head outline there in BOTH renderers — including them leaves
+    # the averaged profile plateaued at 0.2 outside the outline, so
+    # the 10% crossing never occurs and the class reads degenerate.
+    # (Methodology fix, tolerances unchanged: the measured quantity
+    # — the outline's width/ramp where the outline is what is drawn
+    # — is the same.)
+    angs_head = [0.0, math.pi / 4, math.pi / 2, 3 * math.pi / 4, math.pi]
+    dr_, vr = radial_profile(t_ref, head_c, ellipse_r(rp_dev, rp_dev * 0.97), D(10) / 2, angs_head)
+    _, vn = radial_profile(t_nat, head_c, ellipse_r(rp_dev, rp_dev * 0.97), D(10) / 2, angs_head)
     classes["toon-head-outline"] = judge_profile("toon-head-outline", "ellipse-stroke-in-situ", stroke_metrics(dr_, vr), stroke_metrics(dr_, vn), profile_rmse(vr, vn))
     # leg: horizontal profile at stage y=787 across the left leg
     xs = np.arange(D(560), D(680) + 0.5, 0.5)
