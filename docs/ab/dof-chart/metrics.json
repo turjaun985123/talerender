@@ -1,0 +1,192 @@
+{
+  "pair": "original.png (Chrome/SwiftShader, three r170 real composer) vs native.png (talerender --scene dof-chart, wgpu llvmpipe)",
+  "psnr_db": 47.376,
+  "mean_abs_delta_per_channel": 0.242,
+  "pct_pixels_max_channel_delta_gt_10": 0.25,
+  "pct_pixels_any_delta": 14.782,
+  "diff_amplification": 4,
+  "chart": {
+    "focus_m": 10.0,
+    "aperture": 0.0015,
+    "maxblur": 0.006,
+    "camera": "fov 30, near 0.05, far 800 (engine defaults)",
+    "look_neutralised": "bloom 0, exposure 1, vignette 0, grain 0, warm 0, sat 1"
+  },
+  "blur_table": [
+    {
+      "depth_m": 30.0,
+      "dofblur": -0.006,
+      "step_width_px": {
+        "original": 4.33,
+        "native": 4.38,
+        "delta": 0.04,
+        "kernel_prediction": 4.29
+      },
+      "checker_width_px_median": {
+        "original": 4.08,
+        "native": 4.07,
+        "delta": -0.01,
+        "samples": 40
+      },
+      "step_zone_psnr_db": 54.4
+    },
+    {
+      "depth_m": 14.0,
+      "dofblur": -0.006,
+      "step_width_px": {
+        "original": 4.23,
+        "native": 4.27,
+        "delta": 0.04,
+        "kernel_prediction": 4.29
+      },
+      "checker_width_px_median": {
+        "original": 4.09,
+        "native": 4.07,
+        "delta": -0.02,
+        "samples": 40
+      },
+      "step_zone_psnr_db": 56.62
+    },
+    {
+      "depth_m": 11.0,
+      "dofblur": -0.0015,
+      "step_width_px": {
+        "original": 1.71,
+        "native": 1.7,
+        "delta": -0.02,
+        "kernel_prediction": 1.29
+      },
+      "checker_width_px_median": {
+        "original": 1.81,
+        "native": 1.88,
+        "delta": 0.06,
+        "samples": 40
+      },
+      "step_zone_psnr_db": 55.19
+    },
+    {
+      "depth_m": 12.0,
+      "dofblur": -0.003,
+      "step_width_px": {
+        "original": 2.71,
+        "native": 2.71,
+        "delta": 0.0,
+        "kernel_prediction": 2.17
+      },
+      "checker_width_px_median": {
+        "original": 2.29,
+        "native": 2.26,
+        "delta": -0.03,
+        "samples": 40
+      },
+      "step_zone_psnr_db": 50.78
+    },
+    {
+      "depth_m": 10.0,
+      "dofblur": 0.0,
+      "step_width_px": {
+        "original": 1.29,
+        "native": 1.33,
+        "delta": 0.04,
+        "kernel_prediction": 0.8
+      },
+      "checker_width_px_median": {
+        "original": 0.81,
+        "native": 0.8,
+        "delta": -0.01,
+        "samples": 40
+      },
+      "step_zone_psnr_db": 55.74
+    },
+    {
+      "depth_m": 8.0,
+      "dofblur": 0.003,
+      "step_width_px": {
+        "original": 2.25,
+        "native": 2.26,
+        "delta": 0.01,
+        "kernel_prediction": 2.17
+      },
+      "checker_width_px_median": {
+        "original": 2.4,
+        "native": 2.52,
+        "delta": 0.12,
+        "samples": 40
+      },
+      "step_zone_psnr_db": 57.71
+    },
+    {
+      "depth_m": 7.0,
+      "dofblur": 0.0045,
+      "step_width_px": {
+        "original": 3.44,
+        "native": 3.39,
+        "delta": -0.04,
+        "kernel_prediction": 3.21
+      },
+      "checker_width_px_median": {
+        "original": 3.32,
+        "native": 3.35,
+        "delta": 0.03,
+        "samples": 40
+      },
+      "step_zone_psnr_db": 52.83
+    },
+    {
+      "depth_m": 5.0,
+      "dofblur": 0.006,
+      "step_width_px": {
+        "original": 4.23,
+        "native": 4.27,
+        "delta": 0.04,
+        "kernel_prediction": 4.29
+      },
+      "checker_width_px_median": {
+        "original": 4.09,
+        "native": 4.07,
+        "delta": -0.02,
+        "samples": 40
+      },
+      "step_zone_psnr_db": 56.62
+    },
+    {
+      "depth_m": 3.5,
+      "dofblur": 0.006,
+      "step_width_px": {
+        "original": 4.11,
+        "native": 4.07,
+        "delta": -0.04,
+        "kernel_prediction": 4.29
+      },
+      "checker_width_px_median": {
+        "original": 4.2,
+        "native": 4.23,
+        "delta": 0.03,
+        "samples": 40
+      },
+      "step_zone_psnr_db": 56.38
+    },
+    {
+      "depth_m": 2.0,
+      "dofblur": 0.006,
+      "step_width_px": {
+        "original": 4.23,
+        "native": 4.27,
+        "delta": 0.04,
+        "kernel_prediction": 4.29
+      },
+      "checker_width_px_median": {
+        "original": 4.09,
+        "native": 4.07,
+        "delta": -0.02,
+        "samples": 36
+      },
+      "step_zone_psnr_db": 56.62
+    }
+  ],
+  "foreground_bleed": {
+    "rmse_above_bleed_edge": 0.658,
+    "rmse_control_strip": 1.056,
+    "note": "both strips are focal-panel (10 m) texels; the first sits within one maxblur radius band above the 2 m panel's silhouette, where the shader's no-depth-test gather spills foreground colour"
+  }
+}
