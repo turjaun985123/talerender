@@ -45,6 +45,11 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           cache-on-failure: true
+          # Key segment bumped when the runner image changed
+          # (ubuntu-latest -> 22.04): the cross-OS restore produced
+          # "can't find crate" failures for transitive deps (naga,
+          # wgpu_hal, rav1e) — a stale-cache symptom, not a code error.
+          key: ubuntu2204
 
       - name: Install mold + software Vulkan (lavapipe) for headless rendering
         run: |
