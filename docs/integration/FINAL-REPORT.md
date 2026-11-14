@@ -97,7 +97,11 @@ plus milestone evidence packages (M0–M6). Everything below is new.
   0.9227, max rendered width 960 px, 7 chunks over the 850 floor,
   0 under 0.68 — matching Chrome's own audit headline exactly, same
   seven chunks. PIL-vs-Skia measurement: raw width differs by at
-  most 0.15 px (mean 0.054); no audit verdict flips. Determinism is
+  most 0.15 px (mean 0.054 — source: `tools/captions/README.md`,
+  measured against the M6 first-party metrics in
+  `docs/ab/telemetry/ab1-captions.json`, all 66 chunks; located
+  by W89 after W80's audit could not find it in the integration
+  docs); no audit verdict flips. Determinism is
   byte-proven (regeneration diffed clean in the tools-CI rehearsal,
   Batch 6).
 - **Film manifest** (`scenes/film/film.json`): segment frame ranges
@@ -173,6 +177,16 @@ reproduces every sampled centre to ≤ 2 codes — the Chrome rig's
 effective light factor measures as house/π, consistent with three
 r170's physical light convention. The native side of the chart
 still awaits the loader-lane fog wiring (§4.1).
+
+**[W89 correction, 2026-11-14]:** the native side no longer
+awaits anything. The lead wired loader-lane fog in `69952ab`
+(scenefile parses the v2 `fog` block; a new `shader_fog.wgsl`
+applies three's fog_fragment to the resolved HDR before bokeh,
+depth from the packed-depth prepass; the direct path stays
+fog-free) and verified it in `5b0889d`: **fog chart ≤1 code at
+every panel**, inside the ±2-code bar. The route shipped differs
+from the one W74's checklist proposed — the full account is the
+closure addendum in `docs/integration/FOG-STATUS-W74.md` §5.
 
 ### 2.4 Tooling: A/B, golden, bridge, hardening, tools CI
 
@@ -334,6 +348,16 @@ Disposition of all eight mismatches:
   the 1.12 default until the data is renamed to the canonical
   spelling. All values are correct; the film lane is unaffected
   (film.rs computes its own grade).
+  **[W89 update, 2026-11-14]:** the rename has since landed.
+  W81 renamed `saturation` → `sat` in all 12 files (values
+  untouched; W81's record is in `scenes/film/ASSUMPTIONS.md`),
+  and this seat verified it first-hand: all 14 files now carry
+  `sat` in `post.grade` with the authored values (0.52–1.08),
+  zero `saturation` keys remain anywhere in `scenes/film/`, and
+  the validator passes 7/7 on the renamed tree. At this writing
+  the rename is in the working tree, pending the Batch-9 central
+  commit — so the loader-lane default-grading described above is
+  closed on the data side once that commit lands.
 
 A third review (W50, `docs/integration/REVIEW-W50.md`) read the
 whole doc set as a stranger: 20 findings (6 contradictions, 11
@@ -471,17 +495,27 @@ Closed since the draft of this report:
   keys sat/warm/exposure/time; exposure parsed and wired. The
   remaining piece is data-side, not a decision: 12 of 14 files'
   `post.grade` blocks still spell `saturation` and are not read on
-  the loader lane until renamed (§2.7).
+  the loader lane until renamed (§2.7). **[W89, 2026-11-14:
+  that rename has landed in the working tree (W81) — all 14
+  files verified carrying `sat` with their authored values,
+  validator 7/7; pending the Batch-9 central commit.]**
+- **Fog loader wiring — CLOSED** (**[W89, 2026-11-14]**;
+  `69952ab`, verified `5b0889d`): scenefile parses the v2 `fog`
+  block `{color, near, far}` and the composer path applies
+  three's fog_fragment to the resolved HDR before bokeh (new
+  `shader_fog.wgsl`, depth from the packed-depth prepass); the
+  direct path stays fog-free, and every fog-carrying production
+  file routes through the composer via `post.bokeh`. Fog chart
+  verified **≤1 code at every panel**. The shipped route is the
+  lead's, not W74's proposed uniform extension — closure account
+  in `docs/integration/FOG-STATUS-W74.md` §5.
 
 Still open:
 
-- **Fog loader wiring**: the scene-file loader still reads zero
-  fog fields (verified at HEAD for this pass); the data carries
-  fog blocks in s06/s07/s11/s12. Spec: FOG.md §8. The `solid` arm
-  the fog chart also needed has landed (`c74cf0c`), so this wiring
-  is now the chart's only native-side prerequisite; until it lands,
-  the native chart renders unfogged and its control column is the
-  diagnostic.
+- **Fog loader wiring — CLOSED** ([W89, 2026-11-14]: moved to
+  the closed list above; `69952ab` / `5b0889d`. The text this
+  entry replaces reported the loader reading zero fog fields,
+  true at the W75 pass's HEAD.)
 
 ### 4.2 The proof run — PENDING
 
@@ -569,12 +603,19 @@ decision, when given.]**
   §4): S06 fog fidelity, the caption PIL-vs-Skia bound (≤0.15 px),
   calendar glyphs as approximation vs PIL plates, RADV fp16
   rounding unverified from this VM.
-- Push state: the lead's commits are pushed through `d8fbe83`
-  (the local remote-tracking ref shows `origin/main` at `d8fbe83`;
-  its CI run for `e5860b4`, 43569768582, was success as recorded in
-  RENDER-READINESS). Local `main` is ahead by the Batch-7 commit
-  `3781eb2`, with Batches 8–10 still to land; the remaining commits
-  push at wave close per the user's order. **[TO COMPLETE: final
+- Push state: **[W89 correction, 2026-11-14]** — `origin/main`
+  is at `5b0889d`; local `main` is at `743d248`, ahead by exactly
+  that one commit (the Batch-8 central commit). The lead's
+  `69952ab` (fog wiring) and `5b0889d` (spec §14.5 addendum) were
+  pushed during Batch 8 — W80's audit caught the ref mid-move at
+  `69952ab` — so the pushed line now runs through `5b0889d`, not
+  `d8fbe83` as this entry previously read, and local is ahead by
+  `743d248`, not `3781eb2`. Commit census at this correction:
+  21 since base `34d7882` on local `main`, 20 of them on
+  `origin/main`. Batches 9–10 still to land; the remaining
+  commits push at wave close per the user's order. (The
+  `e5860b4` CI run 43569768582 success recorded in
+  RENDER-READINESS stands.) **[TO COMPLETE: final
   push commit + CI verdicts on the final HEAD, including the new
   tools-ci workflow.]**
 

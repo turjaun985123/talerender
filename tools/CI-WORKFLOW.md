@@ -18,7 +18,7 @@ not drift.
 
 | Step | Command (essence) | Proves | Failure signal |
 |---|---|---|---|
-| Film data validator (7/7) | `validate_film.py --root .` | The film manifest, all 14 segment files, atmospheres and caption ownership still satisfy the validator's seven checks (tiling, f32 exactness, R5 atmospheres, …) | Exit 1 = a check failed, 2 = unreadable input; the full report prints either way. Exit 0 *is* the 7/7 verdict by the tool's construction |
+| Film data validator (7/7) | `validate_film.py --root . --no-source` in CI; plain `--root .` where the project exists | The film manifest, all 14 segment files, atmospheres and caption ownership still satisfy the validator's seven checks (tiling, f32 exactness, R5 atmospheres, …). Check 3 runs in reduced-coverage mode on hosted runners — exact-f32 enforced on all 1,389 numbers, SOURCE LITERAL class UNVERIFIED (see Decisions) | Exit 1 = a check failed, 2 = unreadable input; the full report prints either way. Exit 0 *is* the 7/7 verdict by the tool's construction — in CI, with check 3's literal class declared UNVERIFIED in the report, not silently waived |
 | Caption strips determinism | `gen_caption_strips.py --project … --out $RUNNER_TEMP/captions`, then `diff -r` vs `assets/captions` | The committed strips + manifest are exactly what the generator produces from the source project — no hand-edited or stale strip can survive | Any byte differs → `diff` names the file, step fails |
 | Native golden pack verify | `make_golden.py` (verify mode) | No pinned golden reference has drifted from its file | Exit 1 iff any item is STALE. MISSING (the 14 film mid-frames, until the film renders) does **not** fail |
 | Bridge packager self-verification | `package_bridge.py --repo . --project $RUNNER_TEMP/bridge-project` | The repo's film data still packages into the skill adapter's `native/` layout and passes the adapter-contract checks | Tool exit non-zero → step prints the captured log and fails; the summary line must read `VERIFICATION PASSED — 21/21 checks` |
@@ -52,6 +52,38 @@ on their own PR) and `workflow_dispatch` for manual runs:
 
 ## Decisions the tools forced
 
+- **The validator's check 3 has two modes, and CI names the one
+  it runs.** Check 3 is really two checks wearing one coat: the
+  exact-f32 round-trip (needs nothing but the data) and the
+  SOURCE LITERAL class, which greps the film's project source
+  tree. That tree is **not in this repo** — the film manifest's
+  `project` is an absolute path on the dev VM
+  (`/home/hatch/faceless-shorts/the-soldier-who-didnt-know`), so
+  on a GitHub-hosted runner the grep finds 0 files, the literal
+  set is empty, and every one of the 506 short-decimal source
+  literals "fails" as a rounded computed value. The first real
+  run proved it: run `43573712817` at `381ff47` went red 6/7 with
+  the data blameless — the check conflated "not found in the
+  sources" with "wrong", on a machine that has no sources. The
+  fix (seat W83) is in the tool, not in a workflow workaround:
+  `validate_film.py --no-source` — also auto-enabled when the
+  source tree is absent — runs check 3 in reduced-coverage
+  mode. Short decimals that don't round-trip are reported
+  **UNVERIFIED** (counted, listed verbatim, under a
+  `COVERAGE: REDUCED` line in the report) instead of failing;
+  the exact-f32 round-trip is still enforced on all 1,389
+  numbers, and not-round-tripping values with > 6 significant
+  digits still FAIL in both modes (they can never be source
+  literals, so no tree is needed to convict them). Where the
+  project exists and no flag is given, the tool's behaviour —
+  output bytes included — is unchanged, so the full-coverage
+  7/7 still runs on the dev VM and any self-hosted runner with
+  the project. The workflow passes the flag explicitly and
+  echoes the mode before the report, so the reduced coverage
+  is visible in the step log, not just discoverable in the
+  tool's fine print. Same philosophy as the caption gate
+  below: environment facts are announced, never silently
+  passed over.
 - **Caption determinism is environment-gated — loudly, never
   silently.** The generator's inputs (`script.json`,
   `data/words.json`, `data/lines.json`, `fonts/Inter-Black.otf`)
@@ -132,3 +164,47 @@ step's commands were then executed against this repo:
 
 First real run happens on the next push that touches a trigger
 path; a green run there is the workflow's own proof.
+
+## W83 addendum — first real run, diagnosis, fix (2026-11-14)
+
+The first real run did happen — and went red, which is why this
+section exists. Run `43573712817` (push at `381ff47`) failed the
+validator step 6/7: check 3 reported `0 source literals (pass),
+506 computed values not round-tripping (fail); literals grepped
+from 0 source files`. Diagnosis (confirmed from the run's own
+log): the hosted runner has no
+`/home/hatch/faceless-shorts/the-soldier-who-didnt-know/src` —
+the project tree the SOURCE LITERAL class greps — so the class
+was empty and 506 valid values failed environmentally. All
+other steps passed; the data was never at fault.
+
+Fix, all in `tools/film/validate_film.py` +
+`.github/workflows/tools-ci.yml` (this doc updated to match):
+
+- `--no-source` flag + auto-detection when the source tree is
+  absent → check 3 reduced-coverage mode, as specified in the
+  Decisions section above. The workflow passes the flag
+  explicitly and echoes the mode line before the report.
+- Local proofs (dev VM, project present): (i) full mode —
+  output **byte-identical** to a pristine
+  `git show HEAD:tools/film/validate_film.py` run, 7/7, exit 0
+  (883 exact f32, 506 source literals from 15 files);
+  (ii) `--no-source` — 7/7, exit 0, exactly the same 506 values
+  listed UNVERIFIED, `COVERAGE: REDUCED` line printed;
+  (iii) auto-detection — a copied root whose manifest points at
+  a nonexistent project path enters the same mode with reason
+  `source tree absent`, no flag needed; (iv) negative control —
+  a planted rounded computed value (`0.8500000001`, 10
+  significant digits) in the copied data still **FAILS** check 3
+  in reduced mode (505 UNVERIFIED + 1 FAIL, exit 1): the
+  enforcement that needs no source tree survives intact.
+- Other-steps audit for the same defect class (reads of
+  non-repo paths on hosted runners): caption determinism —
+  same dependency (the project under `$HOME`), already gated
+  loudly (that gate is the precedent this fix follows), fine;
+  golden verify — repo paths only (`docs/golden/`,
+  `docs/ab/`), fine; bridge packager — inputs are `--repo .`
+  and `film/`/`scenes/` in the checkout, output is
+  `$RUNNER_TEMP`, fine; scene JSON sweep — checkout only, fine;
+  setup/pip — pinned wheels from PyPI, no data reads, fine.
+  The validator was the only ungated instance.

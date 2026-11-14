@@ -10539,7 +10539,7 @@
    "radius": 0.6
   },
   "grade": {
-   "saturation": 0.8,
+   "sat": 0.8,
    "warm": 0.04,
    "vignette": 0.24,
    "grain": 0.012,

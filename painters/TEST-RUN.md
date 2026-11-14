@@ -122,3 +122,42 @@ binary). It does **not** prove the `resolve_texture` arms (they
 exist only as the INDEX snippets until the lead pastes them),
 the wgpu render path, or anything about `src/film.rs`'s local
 duplicate painters — those remain CI/integration territory.
+
+---
+
+## Addendum — 2026-11-14, seat W82: staging felt reconcile
+
+**The staging felt shade test now matches production again.**
+`felt::tests::shade_is_the_three_linear_multiply` in
+`painters/felt.rs` pinned `shade_three("#1F5A45", 0.85)` with
+`assert_ne!` against `scene::shade_rgb` — correct when
+`shade_rgb` was the old sRGB byte multiply. The shade root
+fix `c00897d` replaced `shade_rgb` with the same THREE.Color
+linear multiply, so the two implementations now agree on the
+corpus witness (28, 83, 64), and the lead re-pinned the
+production test in `src/scene.rs` (`d8fbe83`) to assert that
+agreement. The staging copy kept the retired `assert_ne!`
+(W70's red team caught the resulting 51/52; W80 confirmed
+production reads 45/45 while staging read 51/52). W82
+reconciled the staging test: `assert_ne!` → `assert_eq!`,
+production's post-fix comment mirrored, plus a reconcile
+note. The pinned values never diverged — (0x1F, 0x5A, 0x45)
+at k = 1.0 and (28, 83, 64) at k = 0.85 in both copies,
+before and after; the only remaining textual difference is
+the `crate::scene::` path prefix, required because the
+staging module compiles standalone.
+
+**Re-runs (standalone rustc 1.99.1, same recipe as above,
+scratch in `/tmp/w82-staging` and `/tmp/w82-integrated`):**
+
+| form | assembly | result |
+|---|---|---|
+| staging | staging `painters/*.rs` + `src/scene.rs` from `c74cf0c^` (planks appended) + repo `src/math.rs` | **52 passed, 0 failed** |
+| integrated | HEAD `src/scene.rs` + `src/math.rs` verbatim | **45 passed, 0 failed** (unchanged) |
+
+**Standing rule:** staging mirrors production. When the two
+disagree, production wins and the staging copy is reconciled
+to it — never the reverse. A staging/production divergence
+is a reconcile task (like this one), not evidence about
+which implementation is right; that question is settled in
+production and its CI.

@@ -154,7 +154,7 @@
    "radius": 0.6
   },
   "grade": {
-   "saturation": 1.08,
+   "sat": 1.08,
    "warm": 0.06,
    "vignette": 0.24,
    "grain": 0.012,

@@ -3065,3 +3065,54 @@ identical to the W31 run (check 3: 883 exact f32 / 506 literals
 / 0 failures; check 5: 66 listings / 66 unique / 0 duplicates /
 0 uncovered) — `captionsNote` is top-level data the validator
 ignores, as expected.
+
+---
+
+## [W81, 2026-11-14] Grade key rename: `saturation` → `sat` in all 12 remaining files
+
+The naming question recorded at S07 §note, S10 §6, S12 §6 and
+elsewhere in this file ("files write `saturation` + `exposure`
+(house convention); the loader reads only `sat` …") is now
+closed on the data side. The lead's `c74cf0c` fixed the
+canonical grade keys in the loader — `sat` / `warm` /
+`exposure` / `time` — and W71's census confirmed the loader
+reads only `sat` (scenefile.rs, default 1.12, no alias), so
+the 12 files still spelling the key `saturation` were grading
+at the 1.12 default on the loader lane, their authored values
+silently dropped. This seat renamed the key in exactly those
+12 files: s01, s02, s04, s05a, s05b, s07, s08, s08b, s09,
+s10, s11, s12. s03 (`sat` 0.84) and s06 (`sat` 0.52) already
+used the canonical key and are untouched.
+
+The rename is key-only: every value is byte-unchanged
+(s01 0.8, s02 0.84, s04/s05a/s05b/s08/s08b/s09 0.8, s07 0.85,
+s10 0.78, s11/s12 1.08), key order and formatting untouched —
+the git diff is exactly one line per file, inside the
+`post.grade` block only. Other `sat`-spelled fields elsewhere
+in the data are NOT grade keys and were not touched:
+s06 `atmospherePreset.tint.sat` 0.82, s07/s11/s12 per-node
+`envTint.sat`. Scope is loader-lane only: film.rs does not
+read scene-file grade blocks, so the film render is
+unaffected. The historical prose in this file that says
+"grade saturation …" describes the pre-rename spelling and
+stands as the record of the transcription; this note
+supersedes the naming claims, not the values.
+
+Verification: zero `"saturation"` keys remain anywhere under
+scenes/film/; all 14 files re-parse and every file's
+`post.grade.sat` equals its pre-rename value (census taken
+before and after). Validator after the rename: **7/7 PASS
+(exit 0)**, counts identical to the pre-rename run (check 3:
+883 exact f32 / 506 literals / 0 failures) — the validator
+does not inspect grade-key spelling, so the rename's proof
+is the census, and the validator proves nothing else broke.
+
+Two doc lags recorded for whoever closes them (neither edited
+here): `scenes/fixtures/FIXTURES.md` trap 1 (the "Grade keys"
+fixture note) still says the film data mostly spells it
+`saturation` and that the loader reads neither key — stale on
+both halves since `c74cf0c` (exposure wired) and this rename;
+and `docs/scene-format.md`'s grade example (:302) and
+defaults prose (:310) still show `saturation`, although the
+same document states correctly at :499 that `saturation` is
+NOT a key (scene-format.md is lead-owned).

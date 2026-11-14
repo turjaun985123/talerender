@@ -69,8 +69,27 @@ jobs:
       # Exit 0 from the validator IS the 7/7 verdict: it returns 1
       # on any failed check and 2 on unreadable input, and prints
       # its full report either way.
+      #
+      # --no-source is deliberate, not a weakening smuggled in:
+      # check 3's SOURCE LITERAL class greps the film's project
+      # source tree (the manifest's `project` — an absolute path
+      # on the dev VM), which is NOT in this repo. Without the
+      # flag, a hosted runner greps 0 files and fails all 506
+      # source-literal values for an environmental reason — the
+      # first real Tools CI run (43573712817, at 381ff47) went red
+      # on exactly that, 6/7, with the data blameless. With
+      # --no-source those values report UNVERIFIED under a
+      # COVERAGE: REDUCED line in the report (never silently
+      # passed), while the exact-f32 round-trip is still enforced
+      # on all 1,389 numbers and not-round-tripping values with
+      # > 6 significant digits still FAIL. Full-coverage check 3
+      # runs wherever the project exists (dev VM / self-hosted).
+      # Same environment-gate philosophy as the caption step
+      # below; tools/CI-WORKFLOW.md has the full rationale.
       - name: Film data validator (7/7)
-        run: python3 tools/film/validate_film.py --root .
+        run: |
+          echo "Validator mode: --no-source (check 3 SOURCE LITERAL class UNVERIFIED on hosted runners — the film's project tree is not in this repo; see the COVERAGE: REDUCED line in the report)"
+          python3 tools/film/validate_film.py --root . --no-source
 
       # The generator's inputs (script.json, data/words.json,
       # data/lines.json, fonts/Inter-Black.otf) live in the film's

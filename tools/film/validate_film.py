@@ -17,7 +17,23 @@ consistency rules the wave works under:
                     literal in the project's source tree
                     (<project>/src, grep by float value) — anything
                     else is a COMPUTED value written rounded and
-                    FAILs, listed verbatim
+                    FAILs, listed verbatim. The SOURCE LITERAL class
+                    needs the project tree, which is NOT part of
+                    this repo (the manifest's `project` is an
+                    absolute path on the machine that authored the
+                    data). On a machine without the tree — or with
+                    --no-source — check 3 runs in reduced-coverage
+                    mode: the exact-f32 class is still enforced on
+                    every number, values that can never be source
+                    literals (> 6 significant digits, not
+                    round-tripping) still FAIL, and the remaining
+                    short decimals are reported UNVERIFIED (counted
+                    and listed, under a COVERAGE: REDUCED line)
+                    instead of failing — absence of the tree is an
+                    environment fact, not a data defect. UNVERIFIED
+                    is not a pass and is never silent; full coverage
+                    returns the moment the check runs where the
+                    project lives
   4. attachments    §14.5 R2: attachments live ON character nodes;
                     a top-level `attachments` key is an error
   5. captions       caption chunk ids across all present segment
@@ -37,7 +53,7 @@ consistency rules the wave works under:
                     leading 's') must appear in exactly the look the
                     manifest names
 
-Usage: python3 tools/film/validate_film.py [--root DIR]
+Usage: python3 tools/film/validate_film.py [--root DIR] [--no-source]
 Exit code: 0 = all checks PASS, 1 = any check FAIL, 2 = input error
 (the manifest or atmospheres file is unreadable, invalid JSON, or
 missing/mistyping a required field — one-line ERROR on stderr,
@@ -154,6 +170,15 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--root", default=".",
                     help="repo root (default: current directory)")
+    ap.add_argument("--no-source", action="store_true",
+                    help="run check 3 in reduced-coverage mode: do not "
+                         "consult the project source tree for the "
+                         "SOURCE LITERAL class (for machines without "
+                         "the project, e.g. CI runners). Short decimals "
+                         "that do not round-trip are reported "
+                         "UNVERIFIED under a COVERAGE: REDUCED line "
+                         "instead of failing. Auto-enabled when the "
+                         "source tree is absent")
     args = ap.parse_args()
     root = args.root
 
@@ -237,12 +262,35 @@ def main():
                     "%d files checked, %d wrong" % (len(docs), len(bad)), bad))
 
     # ---- 3 f32 data law (two classes) -----------------------------------------
+    # The SOURCE LITERAL class greps the project's source tree. That
+    # tree is not in this repo (the manifest's `project` is an
+    # absolute path on the authoring machine), so on machines
+    # without it — CI runners — the class is empty and every short
+    # decimal would "fail" for an environmental reason (this is
+    # exactly what Tools CI run 43573712817 did: 0 literals grepped,
+    # 506 good values failed). Reduced-coverage mode (explicit
+    # --no-source, or auto when the tree is absent): short decimals
+    # that do not round-trip are reported UNVERIFIED instead of
+    # failing; the exact-f32 class and the > 6-significant-digit
+    # failure need no tree and are enforced in both modes. With
+    # the tree present and no flag, behaviour — output included —
+    # is unchanged.
     src_dir = os.path.join(manifest["project"], "src")
-    src_literals, src_files = source_literal_values(src_dir)
+    if args.no_source:
+        unverified_mode = "--no-source given"
+        src_literals, src_files = set(), 0
+    elif not os.path.isdir(src_dir):
+        unverified_mode = "source tree absent"
+        src_literals, src_files = set(), 0
+    else:
+        unverified_mode = None
+        src_literals, src_files = source_literal_values(src_dir)
     total_nums = 0
     n_exact = 0
     n_literal = 0
+    n_unverified = 0
     bad = []
+    unverified = []
     for seg in segments:
         d = docs.get(seg["id"])
         if d is None:
@@ -262,6 +310,14 @@ def main():
                 fv = f32(float(v))
                 if fv == float(v):
                     n_exact += 1
+                elif unverified_mode and sig_digits(v) <= 6:
+                    n_unverified += 1
+                    unverified.append("%s: %s = %r -> f32 %r "
+                                      "(UNVERIFIED: short decimal; the "
+                                      "SOURCE LITERAL class was not "
+                                      "checked — %s)"
+                                      % (seg["scene"], path, v, fv,
+                                         unverified_mode))
                 elif sig_digits(v) <= 6 and float(v) in src_literals:
                     n_literal += 1
                 else:
@@ -269,16 +325,35 @@ def main():
                                "(computed value, not a source literal)"
                                % (seg["scene"], path, v, fv))
     bad.sort()
-    lines = list(bad)
-    if not src_files:
-        lines.append("NOTE: no source files scanned under %s — the "
-                     "SOURCE LITERAL class is empty for this run" % src_dir)
-    results.append(("3 f32", not bad,
-                    "%d numbers checked: %d exact f32, %d source literals "
+    unverified.sort()
+    lines = list(bad) + unverified
+    if unverified_mode:
+        lines.append("COVERAGE: REDUCED (%s) — check 3's SOURCE "
+                     "LITERAL class was NOT checked in this run: the "
+                     "%d short decimals above are UNVERIFIED, not "
+                     "passed. The exact-f32 round-trip was enforced "
+                     "on all %d numbers, and not-round-tripping "
+                     "values with > 6 significant digits still FAIL "
+                     "(they can never be source literals). For full "
+                     "check-3 coverage, run where the project source "
+                     "tree exists (%s)."
+                     % (unverified_mode, n_unverified, total_nums,
+                        src_dir))
+        headline = ("%d numbers checked: %d exact f32 (pass), %d "
+                    "source literals UNVERIFIED (%s), %d computed "
+                    "values not round-tripping (fail)"
+                    % (total_nums, n_exact, n_unverified,
+                       unverified_mode, len(bad)))
+    else:
+        if not src_files:
+            lines.append("NOTE: no source files scanned under %s — the "
+                         "SOURCE LITERAL class is empty for this run" % src_dir)
+        headline = ("%d numbers checked: %d exact f32, %d source literals "
                     "(pass), %d computed values not round-tripping (fail); "
                     "literals grepped from %d source files under %s"
                     % (total_nums, n_exact, n_literal, len(bad),
-                       src_files, src_dir), lines))
+                       src_files, src_dir))
+    results.append(("3 f32", not bad, headline, lines))
 
     # ---- 4 attachments placement (§14.5 R2) -----------------------------------
     bad = []

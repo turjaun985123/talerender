@@ -133,7 +133,16 @@ mod tests {
         // linear curve lifts mid-tones. Pinned from the r170
         // arithmetic above.
         assert_eq!(shade_three("#1F5A45", 0.85), (28, 83, 64));
-        assert_ne!(
+        // Post root-fix (shade_rgb IS the THREE.Color linear
+        // multiply now, c00897d) the two implementations agree —
+        // this assertion pinned their difference against the old
+        // byte multiply and is inverted deliberately: agreement
+        // on the corpus witness is the pinned truth now.
+        // (Mirrors the production re-pin, src/scene.rs d8fbe83;
+        // staging reconciled by W82 — same witness, same values,
+        // only the crate:: path differs, as this module compiles
+        // standalone in the staging harness.)
+        assert_eq!(
             shade_three("#1F5A45", 0.85),
             crate::scene::shade_rgb("#1F5A45", 0.85)
         );

@@ -6,6 +6,13 @@ file's top-level `fog` block at HEAD, what wiring remains, and how the
 fog chart accepts it once wired. `src/` read-only for this seat;
 nothing here is committed by the wave.
 
+> **[W89 closure note, 2026-11-14]** §1's verdict was true at
+> `3781eb2`. The lead has since wired loader-lane fog (`69952ab`)
+> and verified it (`5b0889d` — fog chart ≤1 code at every panel).
+> §2's checklist is **SUPERSEDED-BY-IMPLEMENTATION**: the shipped
+> route differs from the checklist's. The full closure account is
+> §5 at the end of this document; read it before acting on §§1–4.
+
 ## 1. Verdict: (c) — ignored entirely
 
 A scene file's `fog` block is **not parsed, not stored, and not
@@ -65,6 +72,16 @@ would not help here either; the loader's shaders need the term added,
 in the include's frame-host form. A dated note to this effect is
 appended to FOG.md §8.
 
+**Postscript [W89, 2026-11-14]:** the lead's `69952ab` commit
+message states the same correction independently — "S8's 'no
+shader change, the loader already forwards to the PBR FrameU'
+premise does not hold for scenefile's own renderers (they carry no
+fog stage)". W74 and the lead therefore **agree** the old §8
+premise was false; the premise is settled, not contested. (The
+shipped wiring did need a new shader — `shader_fog.wgsl` — on the
+composer path rather than in the two per-draw shaders §2 targeted;
+see §5.)
+
 ### Prerequisite status
 
 Of the fog chart's two loader prerequisites (`tools/fog-chart/
@@ -75,9 +92,10 @@ README.md`, `expected.json: prerequisites`):
    introduces). The chart's five basic panels can now load.
 2. **Fog wiring — OPEN.** The only remaining prerequisite. Until it
    lands, the native side of the fog-chart gate cannot run: both
-   chart files render the unfogged image.
+   chart files render the unfogged image. **[W89, 2026-11-14:
+   since landed and verified — `69952ab` / `5b0889d`; §5.]**
 
-## 2. Remaining wiring — mechanical checklist for the lead
+## 2. Remaining wiring — mechanical checklist for the lead — SUPERSEDED-BY-IMPLEMENTATION (see §5)
 
 Target semantics are FOG.md §1–§4 and `shaders/fog/fog.wgsl.inc`:
 factor = `smoothstep(near, far, viewDepth)` over **forward-axis**
@@ -231,3 +249,47 @@ not = only one of the two loader pipelines got the term.
   extension + tail application in each of `shader_scene3d.wgsl` /
   `shader_tex.wgsl`, and the matching packing in `run_direct` /
   `run_composer` — checklist in §2, acceptance in §3.
+
+## 5. Closure addendum [W89, 2026-11-14] — wiring landed and verified; §2 superseded
+
+Everything above is the state at `3781eb2` and is retained as the
+record of what the wave found and proposed. It is no longer the
+current state:
+
+- **The verdict (§1) was overtaken the same day.** In `69952ab`
+  the lead wired loader-lane fog: `scenefile` now parses the v2
+  top-level `fog` block `{color, near, far}`, and `run_composer`
+  applies three's `fog_fragment` (smoothstep over axis depth) to
+  the resolved HDR **before bokeh**, taking depth from the
+  packed-depth prepass via `perspectiveDepthToViewZ` — a new
+  shader, `src/shader_fog.wgsl`. Cleared-depth pixels take factor
+  0. The direct (non-composer) path stays fog-free; every
+  fog-carrying production file routes through the composer via
+  `post.bokeh`, so in practice all fog-carrying files are fogged.
+- **§2's checklist is SUPERSEDED-BY-IMPLEMENTATION.** §2 proposed
+  extending the `Uniforms` of the loader's own two shaders
+  (`shader_scene3d.wgsl` / `shader_tex.wgsl`) with fog terms and
+  packing them per draw in both run paths. What shipped instead is
+  a separate composer-stage fog pass over the resolved HDR buffer:
+  no per-draw uniform extension, and nothing in `run_direct`. The
+  lead's route, not the checklist's, is what the code now does;
+  §2 stands as the wave's proposal record, not as a description
+  of the implementation.
+- **The §8 premise is settled.** FOG.md §8's claim that the wiring
+  "needs no shader change — the loader already forwards to the PBR
+  `FrameU`" was false at HEAD (§1). The lead's `69952ab` message
+  corrects the same premise in the same words ("does not hold for
+  scenefile's own renderers; they carry no fog stage"). Both sides
+  agree; there is no open dispute about the premise, only the
+  historical record that it was wrong.
+- **Verification.** `5b0889d` (the spec §14.5 addendum in
+  `docs/scene-format.md`) records the fog block as consumed and
+  verified: **fog chart ≤1 code at every panel** — inside the ±2
+  sRGB-code pass bar §3 set, at the level the Chrome side achieved
+  empirically. The native side of the fog-chart gate is therefore
+  discharged; §3's procedure remains the way to re-run it.
+- **Bottom line, updated.** Loader-lane fog at current HEAD:
+  **WIRED (composer path) + VERIFIED**. §4's "the chart cannot
+  pass natively until §2 lands" is overtaken — the chart passed
+  via the lead's route, not §2's. No fog-chart prerequisite
+  remains open.
