@@ -92,13 +92,12 @@ import json
 import os
 import sys
 
-# The film driver's hardcoded asset names (src/film.rs:2051,
-# 2069-2077). Not data — the loader reads exactly these.
-PLATE_NAMES = ["paper-map", "leaflet", "book-open", "book-closed",
-               "coconut"]
-CALENDAR_YEARS = ["1945", "1955", "1965", "1974"]
-FIXED_ASSETS = (["plates.json", "calendar-dark.png", "sign.png"]
-                + ["calendar-%s.png" % y for y in CALENDAR_YEARS])
+# F2 migration (W53 T1): the driver's asset set is DATA now —
+# the plate set comes from assets/plates.json (a manifest), the
+# calendar set / dark plate / sign from the film data's
+# calendarYears / calendarDark / sign keys. This checker reads
+# them from the tree in scope; the only name it still fixes is
+# plates.json itself, the manifest's home.
 
 PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
 IMAGE_MAGICS = (PNG_MAGIC, b"\xff\xd8\xff", b"GIF87a", b"GIF89a",
@@ -364,46 +363,98 @@ def check_driver(d):
             if not isinstance(strip, str) or not strip:
                 guards.append(
                     "captions[%d].strip: missing or empty — "
-                    "src/film.rs:89 defaults it to \"\" and "
-                    "load_png(assets/) then fails without naming "
-                    "the caption" % i)
+                    "the data loader defaults it to \"\" and "
+                    "load_assets errors naming the caption "
+                    "(captions[%d].strip: missing or empty)" % (i, i))
                 continue
             refs.append(Ref("captions[%d].strip" % i, strip,
                             "film dir assets/",
                             os.path.join(adir, strip), "png"))
-    for name in FIXED_ASSETS:
-        kind = "json" if name.endswith(".json") else "png"
-        refs.append(Ref("assets/%s (loader-fixed name)" % name, name,
-                        "film dir assets/", os.path.join(adir, name),
-                        kind))
-    for name in PLATE_NAMES:
-        refs.append(Ref("assets/%s.png (loader-fixed name)" % name,
-                        "%s.png" % name, "film dir assets/",
-                        os.path.join(adir, "%s.png" % name), "png"))
-    # check 5: plates.json completeness (src/film.rs:2047-2064)
+    # The asset set is declared by the data in scope (F2/W53 T1):
+    # plates.json (the manifest) + the film data's calendar/sign
+    # keys. Loader-fixed behaviour left: plates.json's own name.
+    refs.append(Ref("assets/plates.json (the plates manifest)",
+                    "plates.json", "film dir assets/",
+                    os.path.join(adir, "plates.json"), "json"))
     plates_path = os.path.join(adir, "plates.json")
+    plates = None
     if os.path.isfile(plates_path):
         try:
             with open(plates_path) as f:
                 plates = json.load(f)
         except ValueError:
             plates = None  # check 3 reports the parse failure
-        if plates is not None:
-            if not isinstance(plates, dict):
+    entries = None
+    if isinstance(plates, dict) \
+            and plates.get("format") == "talerender-plates" \
+            and isinstance(plates.get("plates"), list):
+        entries = plates["plates"]
+    if entries is not None:
+        for e in entries:
+            if isinstance(e, dict) and isinstance(e.get("file"), str):
+                refs.append(Ref(
+                    "assets/%s (plates manifest entry %r)"
+                    % (e["file"], e.get("name")), e["file"],
+                    "film dir assets/", os.path.join(adir, e["file"]),
+                    "png"))
+    years = data.get("calendarYears")
+    if isinstance(years, list):
+        for y in years:
+            if isinstance(y, str):
+                refs.append(Ref(
+                    "assets/calendar-%s.png (film data calendarYears)"
+                    % y, "calendar-%s.png" % y, "film dir assets/",
+                    os.path.join(adir, "calendar-%s.png" % y), "png"))
+    for key in ("calendarDark", "sign"):
+        v = data.get(key)
+        if isinstance(v, str):
+            refs.append(Ref("assets/%s (film data %s)" % (v, key), v,
+                            "film dir assets/", os.path.join(adir, v),
+                            "png"))
+    # check 5: the loader's named data errors, mirrored (F2/W53:
+    # FB1 manifest shape, FB2 required origins, duplicate names,
+    # and the film data's required calendar/sign keys)
+    if plates is not None and entries is None:
+        guards.append(
+            "plates.json: not a plates manifest — src/film.rs "
+            "load_assets rejects any shape but {\"format\": "
+            "\"talerender-plates\", \"plates\": [...]} (FB1); the "
+            "legacy bare object is rejected by name, not half-read")
+    if entries is not None:
+        seen = set()
+        for e in entries:
+            if not isinstance(e, dict):
+                guards.append("plates.json: plate entry is not an "
+                              "object — the loader cannot name it")
+                continue
+            name = e.get("name")
+            if not isinstance(name, str):
+                guards.append("plates.json: plate entry missing "
+                              "'name' — load_assets errors on it")
+                continue
+            if name in seen:
                 guards.append(
-                    "plates.json: top level is not an object — "
-                    "src/film.rs:2050 loads NO plates at all in "
-                    "that case, silently (the plate PNGs are never "
-                    "even opened)")
-            else:
-                for name in PLATE_NAMES:
-                    v = plates.get(name)
-                    if not (isinstance(v, list) and len(v) == 2
-                            and all(is_number(x) for x in v)):
-                        guards.append(
-                            "plates.json: no [x, y] origin for %r — "
-                            "src/film.rs:2054-2061 silently defaults "
-                            "a missing entry to (0, 0)" % name)
+                    "plates.json: duplicate plate name %r — "
+                    "load_assets rejects duplicates instead of "
+                    "silently overwriting" % name)
+            seen.add(name)
+            if not isinstance(e.get("file"), str):
+                guards.append(
+                    "plates.json: plate %r: missing 'file' — "
+                    "load_assets errors by name" % name)
+            o = e.get("origin")
+            if not (isinstance(o, list) and len(o) == 2
+                    and all(is_number(x) for x in o)):
+                guards.append(
+                    "plates.json: plate %r: origin must be [x, y] "
+                    "numbers — load_assets errors by name (FB2); "
+                    "there is no (0, 0) default" % name)
+    for key in ("calendarYears", "calendarDark", "sign"):
+        if key not in data:
+            guards.append(
+                "film data: missing %s — load_film_data requires "
+                "it (F2); the driver no longer defaults to this "
+                "film's values" % key)
     referenced = {os.path.normpath(r.resolved) for r in refs}
     orphans = []
     if os.path.isdir(adir):

@@ -648,7 +648,18 @@ def _diff_plates(plan, old, new):
                      os.path.join(snap.root, "assets", "plates.json")):
             if os.path.isfile(cand):
                 d = load_json(cand, "plates.json")
-                return d if isinstance(d, dict) else {}
+                if not isinstance(d, dict):
+                    return {}
+                # F2 migration (W53 T3): the manifest entries
+                # form — resolve origin per plate name. The
+                # legacy bare {name: [x, y]} object still reads
+                # (pre-migration snapshots stay diffable).
+                entries = d.get("plates")
+                if isinstance(entries, list):
+                    return {e.get("name"): e.get("origin")
+                            for e in entries
+                            if isinstance(e, dict) and e.get("name")}
+                return d
         return {}
 
     op, np_ = plates(old), plates(new)

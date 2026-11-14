@@ -1255,3 +1255,34 @@ The extensions land in this order, and no step is skipped:
    convention), with `validate_film.py` still enforcing the
    §11 f32 law on the expanded result.
 
+
+---
+
+## Appendix — the film driver's data file (F1/F2, Wave 2)
+
+Not a scene document: the `--film` driver's per-film data
+(`load_film_data` in `src/film.rs`), documented here because it
+shares the format's discipline (f32 law §11 applies to its
+staging values; unknown keys are tolerated per §1, with the
+strictness ratchet watching them).
+
+- **Entry name:** `film.json` is the generic entry; `onoda.json`
+  is accepted as the fallback for the existing film (F1). The
+  file sits beside an `assets/` directory.
+- **Required keys:** `duration`, `anchors`, `lines`,
+  `captions` (each with `s`, `e`, `text`, `fit`, `strip` — the
+  strips are pre-rendered PNGs in `assets/`, the standing
+  caption contract), and since the F2 migration (W53):
+  `calendarYears` (year stems in flip order; `[]` is legal),
+  `calendarDark` and `sign` (assets-relative file names). A
+  file missing any of them fails by name — the driver defaults
+  nothing to any particular film's values.
+- **`assets/plates.json` is a manifest:**
+  `{"format": "talerender-plates", "version": 1, "plates":
+  [{"name", "file", "origin": [x, y]}]}`. Its entries are the
+  plate set the driver loads — any count, any names the
+  staging holds by name. `origin` is required per entry
+  (no default); duplicate names are a load error; any other
+  shape is rejected by name (no dual-read of the legacy bare
+  object). Schema: `docs/integration/f2-migration/
+  plates-manifest.schema.json`.

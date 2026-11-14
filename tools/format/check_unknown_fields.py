@@ -203,7 +203,10 @@ GRADE = {"vignette", "grain", "warm", "sat", "exposure", "time"}
 FOG = {"color", "near", "far"}
 
 # src/film.rs load_film_data: the --film driver's data file.
-FILM_ROOT = {"anchors", "lines", "captions", "duration"}
+FILM_ROOT = {"anchors", "lines", "captions", "duration",
+             # F2 migration (W53 T2): declared by the film data,
+             # consumed by load_film_data since the migration.
+             "calendarYears", "calendarDark", "sign"}
 FILM_LINE = {"start", "end"}
 FILM_CAPTION = {"s", "e", "text", "fit", "strip"}
 

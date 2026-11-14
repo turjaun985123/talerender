@@ -46,6 +46,11 @@ pub(crate) struct FilmData {
     pub anchors: HashMap<String, f64>,
     pub captions: Vec<Caption>,
     pub lines: Vec<(f64, f64)>, // (start, end) per line index
+    // F2 migration (W53 s1.2): the calendar set, dark plate and
+    // sign are declared by the data, not hardcoded in the driver.
+    pub calendar_years: Vec<String>,
+    pub calendar_dark: String,
+    pub sign: String,
 }
 
 pub(crate) struct Caption {
@@ -109,11 +114,36 @@ pub(crate) fn load_film_data(dir: &Path) -> Result<FilmData, String> {
             });
         }
     }
+    // F2 (W53 L1): required keys, demanded through g() like the
+    // rest — a film data file without them fails by name rather
+    // than inheriting this film's values by default.
+    let calendar_years = match g("calendarYears")? {
+        Value::Arr(a) => {
+            let mut ys = Vec::new();
+            for (i, v) in a.iter().enumerate() {
+                ys.push(
+                    v.as_str()
+                        .ok_or_else(|| format!("calendarYears[{i}]: expected string"))?
+                        .to_string(),
+                );
+            }
+            ys
+        }
+        _ => return Err("calendarYears: expected array".to_string()),
+    };
+    let str_key = |k: &str| -> Result<String, String> {
+        g(k)?.as_str()
+            .map(|s| s.to_string())
+            .ok_or_else(|| format!("{k}: expected string"))
+    };
     Ok(FilmData {
         duration: jnum(g("duration")?, "duration")?,
         anchors,
         captions,
         lines,
+        calendar_years,
+        calendar_dark: str_key("calendarDark")?,
+        sign: str_key("sign")?,
     })
 }
 
@@ -1678,11 +1708,16 @@ fn s06(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
     f
 }
 
-fn calendar_state(lt_cal: f64) -> Option<CalendarState> {
+fn calendar_state(lt_cal: f64, years: usize) -> Option<CalendarState> {
+    // W53 s6.1: an empty calendarYears is legal (a film with no
+    // calendar sequence); the clamp below computes years - 1 on
+    // a usize, so zero years must return before it.
+    if years == 0 {
+        return None;
+    }
     if !(0.0..=4.4).contains(&lt_cal) {
         return None;
     }
-    let years = 4;
     let cyc = 1.04f64;
     let idx = ((lt_cal / cyc).floor() as usize).min(years - 1);
     let local = lt_cal - idx as f64 * cyc;
@@ -1741,7 +1776,7 @@ fn s07(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
     if t >= w_coco - 0.05 {
         f.chars[idx].hold_l = Some("coconut");
     }
-    f.calendar = calendar_state(lt - 0.16);
+    f.calendar = calendar_state(lt - 0.16, data.calendar_years.len());
     { let (e, tg) = (f.eye, f.target); add_clouds(&mut f, &[([-28.0, 23.0, -85.0], 13.0), ([26.0, 29.0, -95.0], 16.0), ([58.0, 19.0, -75.0], 10.0)], e, tg); }
     f
 }
@@ -2066,27 +2101,50 @@ fn load_png(path: &Path) -> Result<(Vec<u8>, u32, u32), String> {
 
 pub(crate) fn load_assets(dir: &Path, data: &FilmData) -> Result<Assets, String> {
     let adir = dir.join("assets");
+    // F2 migration (W53 L3): plates.json is a MANIFEST now —
+    // {"format": "talerender-plates", "plates": [{name, file,
+    // origin}]} — and its entries are the plate set: any count,
+    // any names, each loaded and PNG-validated. The legacy bare
+    // object shape is rejected BY NAME (FB1): there is no
+    // dual-read, because the old loader half-read the new shape
+    // into (0,0) origins — the silent failure F2 exists to kill.
     let origins_text = std::fs::read_to_string(adir.join("plates.json")).map_err(|e| format!("plates.json: {e}"))?;
-    let origins = crate::scene::parse_json(&origins_text)?;
-    let mut plate_map = HashMap::new();
-    // F2 (W41 s3.3): a non-object plates.json used to load ZERO
-    // plates silently and let staging lookups miss. It is a data
-    // error — fail loud, in the words check_assets' guard uses.
-    let Value::Obj(m) = &origins else {
-        return Err("plates.json: top level is not an object — no plates loaded".to_string());
+    let manifest = crate::scene::parse_json(&origins_text)?;
+    let entries = match (
+        manifest.get("format").and_then(|v| v.as_str()),
+        manifest.get("plates").and_then(|v| v.as_arr()),
+    ) {
+        (Some("talerender-plates"), Some(entries)) => entries,
+        _ => {
+            return Err(
+                "plates.json: not a plates manifest (expected {\"format\": \"talerender-plates\", \"plates\": [...]})"
+                    .to_string(),
+            )
+        }
     };
-    for name in ["paper-map", "leaflet", "book-open", "book-closed", "coconut"] {
-        let (px, w, h) = load_png(&adir.join(format!("{name}.png")))?;
-        // A missing or malformed origin used to default to (0, 0)
-        // silently; the plate's placement is data, so name it.
-        let entry = m.iter().find(|(k, _)| k == name).map(|(_, v)| v);
-        let (x0, y0) = match entry {
-            Some(Value::Arr(a)) if a.len() == 2 => (
-                a[0].as_f64().ok_or_else(|| format!("plates.json: origin for {name:?} is not [x, y] numbers"))? as f32,
-                a[1].as_f64().ok_or_else(|| format!("plates.json: origin for {name:?} is not [x, y] numbers"))? as f32,
-            ),
-            _ => return Err(format!("plates.json: no [x, y] origin for {name:?}")),
+    let mut plate_map = HashMap::new();
+    for e in entries {
+        let name = e
+            .get("name")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| "plates.json: plate entry missing 'name'".to_string())?;
+        if plate_map.contains_key(name) {
+            return Err(format!("plates.json: duplicate plate name {name:?}"));
+        }
+        let file = e
+            .get("file")
+            .and_then(|v| v.as_str())
+            .ok_or_else(|| format!("plates.json: plate {name:?}: missing 'file'"))?;
+        // FB2: origin is required and must be exactly two
+        // numbers — no (0, 0) default.
+        let (x0, y0) = match e.get("origin") {
+            Some(Value::Arr(a)) if a.len() == 2 => match (a[0].as_f64(), a[1].as_f64()) {
+                (Some(x), Some(y)) => (x as f32, y as f32),
+                _ => return Err(format!("plates.json: plate {name:?}: origin must be [x, y] numbers")),
+            },
+            _ => return Err(format!("plates.json: plate {name:?}: origin must be [x, y] numbers")),
         };
+        let (px, w, h) = load_png(&adir.join(file))?;
         plate_map.insert(name.to_string(), Plate { px, w, h, x0, y0 });
     }
     let mut strips = Vec::new();
@@ -2099,16 +2157,18 @@ pub(crate) fn load_assets(dir: &Path, data: &FilmData) -> Result<Assets, String>
         }
         strips.push(load_png(&adir.join(&c.strip))?);
     }
+    // F2 (W53 L2): the calendar set and the dark/sign files are
+    // the film data's declarations; the derivation stays.
     let mut cal = Vec::new();
-    for y in ["1945", "1955", "1965", "1974"] {
+    for y in &data.calendar_years {
         cal.push(load_png(&adir.join(format!("calendar-{y}.png")))?);
     }
     Ok(Assets {
         plates: plate_map,
         strips,
         cal,
-        cal_dark: load_png(&adir.join("calendar-dark.png"))?,
-        sign: load_png(&adir.join("sign.png"))?,
+        cal_dark: load_png(&adir.join(&data.calendar_dark))?,
+        sign: load_png(&adir.join(&data.sign))?,
     })
 }
 

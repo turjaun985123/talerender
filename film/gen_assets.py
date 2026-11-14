@@ -150,7 +150,16 @@ for name, (img, x0, y0) in {
     img.save(ASSETS / f"{name}.png")
     PLATES[name] = [x0, y0]
     print(f"plate {name}: {img.width}x{img.height} origin ({x0}, {y0})")
-(ASSETS / "plates.json").write_text(json.dumps(PLATES, indent=1))
+# F2 migration (W53 D4): plates.json is a manifest — the entry
+# list IS the plate set the driver loads.
+(ASSETS / "plates.json").write_text(json.dumps({
+    "format": "talerender-plates",
+    "version": 1,
+    "plates": [
+        {"name": name, "file": f"{name}.png", "origin": origin}
+        for name, origin in PLATES.items()
+    ],
+}, indent=1))
 
 # ------------------------------------------------------------------
 # Caption strips: 1080x300 frame-space, text centred (540, 150),
