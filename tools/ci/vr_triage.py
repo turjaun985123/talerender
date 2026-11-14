@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Visual-regression triage — first-dispatch debt register check.
+"""Visual-regression triage — post-pin debt register check.
 
 WHAT THIS IS
     tools/ci/visual_regression.py renders the pinned references
-    fresh and fails on same-renderer drift. Its FIRST dispatch is
-    expected to FAIL — on exactly the known re-pin debt, not on
+    fresh and fails on same-renderer drift. A dispatch is
+    expected to FAIL — on exactly the known remaining debt (s28),
+    not on
     new drift (VISUAL-REGRESSION-W16.md §4; the workflow header
     says the same at the point of failure). A red job therefore
     needs a second reading: which rows are the debt we already
@@ -15,69 +16,93 @@ WHAT THIS IS
     classifies every non-MATCH row as KNOWN-DEBT or NEW-SIGNAL
     against the register below.
 
-THE REGISTER — a snapshot of the pre-pin repo state
-    golden-hashes.json pins exactly 4 items (s28-onoda-t150,
-    dof-chart, stroke-toon, ab1-composer); the 14 film mids are
-    staged candidates, unpinned. The workflow renders
-    ab1-composer, s28-onoda-t150 (both from the one ab1 render),
-    dof-chart, and film-s08b. Expected first dispatch:
+THE REGISTER — the post-pin steady state
+    golden-hashes.json pins all 18 items (make_golden verifies
+    18 OK / 0 STALE / 0 MISSING). Both pin acts and the Act-1
+    corrective have landed: Act 1 916a109 (the 14 film
+    first-pins), Act 2 166873c (ab1-composer re-pinned
+    d7bd71a0 -> 60c32c1a), corrective 2755ff3 (11 film pins
+    moved to the f021991 candidates, after the canary caught
+    the first act pinning staged 381ff47-era bytes). The
+    workflow renders a canary set only: the ab1 render
+    (checked against ab1-composer AND s28-onoda-t150),
+    dof-chart, and film frame 1231 (film-s08b). Expected
+    dispatch (first measured on run 43625139818 at 2755ff3:
+    3 MATCH · 1 DRIFT · 14 NOT-RENDERED):
 
-      ab1-composer    DRIFT        pin predates the shade
-                                   root-fix c00897d (EXPECTED
-                                   STALE, "certain" —
-                                   tools/golden/RUNNER.md)
-      s28-onoda-t150  DRIFT        same pre-c00897d debt
-      dof-chart       MATCH        the clean control — its chart
-                                   texture never passes through
-                                   shade_rgb; anything but MATCH
-                                   here is real drift
+      ab1-composer    MATCH        re-pinned in Act 2; only
+                                   MATCH is acceptable — it is
+                                   deliberately absent from
+                                   REGISTER, like the control,
+                                   so any non-MATCH row is a
+                                   NEW-SIGNAL
+      film-s08b       MATCH        the one film mid the
+                                   workflow renders; same
+                                   treatment as ab1-composer
+      dof-chart       MATCH        the clean control — its
+                                   chart texture never passes
+                                   through shade_rgb; anything
+                                   but MATCH here is real drift
+      s28-onoda-t150  DRIFT        the sole remaining debt:
+                      (or          the pin predates c00897d and
+                      WITHIN-     neither act cleared it (the
+                      BAND)       repin packet recommends
+                                   against re-pinning the
+                                   historical prototype);
+                                   WITHIN-BAND is the same
+                                   debt in a milder form
+      film-* (13)     NOT-RENDERED pinned in Act 1 but
+                                   rendered nowhere — the
+                                   workflow's canary set is by
+                                   design; the register entry
+                                   covers this ONE status only
+                                   (see the anti-whitelist rule)
       stroke-toon     NOT-RENDERED the workflow renders no
                                    battery card set (different
                                    output contract, W16 §4)
-      film-* (14)     UNPINNED     staged candidates are not
-                                   references; reported only
 
-    For the two stale pins the debt is "pin predates c00897d", so
-    WITHIN-BAND is the same debt in a milder form (bytes differ
-    from a pre-fix pin) and is registered alongside DRIFT. Every
-    other non-MATCH row is a NEW-SIGNAL: MISSING-RENDER and
-    REFERENCE-MISSING always (run / repo breakage is never debt),
-    any non-MATCH on the dof-chart control, any registered item
-    in an unregistered state, any unknown item id, and any
-    registry item missing from the report altogether.
+    THE ANTI-WHITELIST RULE. A register entry names the exact
+    statuses it covers; every other non-MATCH status on that
+    item is a NEW-SIGNAL ("registered debt item in an
+    unregistered state"). The film entries cover NOT-RENDERED
+    and nothing else: the day a non-canary film mid actually
+    renders and drifts, its DRIFT row is a NEW-SIGNAL, not
+    debt. MISSING-RENDER and REFERENCE-MISSING are always
+    NEW-SIGNAL (run / repo breakage is never debt), any
+    non-MATCH on the dof-chart control is a NEW-SIGNAL, an
+    unknown item id is a NEW-SIGNAL, and any registry item
+    missing from the report altogether is a NEW-SIGNAL.
 
 CLEARING ACTIONS — the only ways debt leaves the register
-    * film-* UNPINNED clears with GOLDEN-RESTAGE-W03.md Act 1:
-      human first-pins of the 14 film mids from
-      docs/golden/frames-f021991/ (one commit; exactly 14 pin
-      lines added; the 4 milestone pins unmoved).
-    * ab1-composer clears with Act 2: the human re-pin, its own
-      commit, diff scoped to the one ab1-composer pin line
-      (packet: docs/golden/repin-packets/ab1-composer.md).
-    * s28-onoda-t150 is cleared by NEITHER act — the repin packet
-      recommends against re-pinning it (historical prototype
-      artefact). It clears only with a separate human disposition
-      of that pin (a deliberate re-pin anyway, or retiring the
-      pin), recorded per docs/golden/NATIVE-GOLDEN.md. Expect the
-      job to stay red on s28 alone after Acts 1-2 land; that is
-      this debt ageing, not a new regression.
+    * s28-onoda-t150 clears only with a separate human
+      disposition of that pin (a deliberate re-pin anyway —
+      which would make it a byte-duplicate of ab1-composer —
+      or retiring the pin), recorded per
+      docs/golden/NATIVE-GOLDEN.md. Expect the job to stay red
+      on s28 alone until then; that is this debt ageing, not
+      a new regression.
     * stroke-toon NOT-RENDERED clears with a future deliberate
-      act: re-baseline the founding pin and add a battery render
-      to the workflow (W16 §4).
-    NOTHING here widens the 80 dB band and NOTHING whitelists a
-    pin. The band is policy (changing it is a commit-message act
-    in visual_regression.py), and whitelisting is the one move
-    every document in this chain forbids. This tool classifies;
-    it cannot silence.
+      act: re-baseline the founding pin and add a battery
+      render to the workflow (W16 §4).
+    * The 13 film NOT-RENDERED entries clear if the workflow's
+      render set is deliberately extended to those mids (MATCH
+      then expected; the entries leave REGISTER in the same
+      commit) — or never: the entries record a permanent
+      design fact, not a defect awaiting a fix.
+    NOTHING here widens the 80 dB band and NOTHING whitelists
+    a pin. The band is policy (changing it is a commit-message
+    act in visual_regression.py), and whitelisting is the one
+    move every document in this chain forbids. This tool
+    classifies; it cannot silence.
 
 REGISTER MAINTENANCE
-    The register describes the repo state BEFORE any pin act.
-    When an act lands, update REGISTER in the same commit —
-    triage against a stale register manufactures NEW-SIGNALs.
-    Post-act expectations: Act 1 -> film-s08b MATCH (it is the
-    one film mid this workflow renders), the other film-* rows
-    become NOT-RENDERED when rendered nowhere / stay UNPINNED
-    only until their pin exists; Act 2 -> ab1-composer MATCH.
+    The register describes the repo state AFTER the pin acts
+    (916a109 / 166873c / 2755ff3). When the state moves again
+    — an s28 disposition, a render-set change, a new pin —
+    update REGISTER in the same commit. Triage against a stale
+    register manufactures NEW-SIGNALs: the pre-pin register
+    printed 13 false NEW-SIGNALs (the designed NOT-RENDERED
+    film rows) on the healthy post-corrective run 43625139818.
 
 USAGE
     python3 tools/ci/vr_triage.py visual-regression.md
@@ -85,7 +110,7 @@ USAGE
     python3 tools/ci/vr_triage.py --self-test
 
 EXIT CODES (same discipline as the runner)
-    0   TRIAGE VERDICT: first-dispatch result is AS EXPECTED
+    0   TRIAGE VERDICT: result is AS EXPECTED
     1   TRIAGE VERDICT: contains NEW SIGNALS: ...
     2   input error — one ERROR line on stderr, NO verdict line
         (an unparseable report is no evidence, never a soft pass)
@@ -102,36 +127,89 @@ STATUSES = {"MATCH", "WITHIN-BAND", "DRIFT", "MISSING-RENDER",
 # ---------------------------------------------------------------- register
 # id -> (expected statuses, clearing action). MATCH is never listed:
 # a MATCH row needs no triage on any item.
+#
+# POST-PIN REGISTER (VR-REGISTER-W72). The pre-pin register this
+# replaces described the repo BEFORE any pin act: 4 milestone pins
+# (two of them stale, pre-c00897d) and 14 unpinned film mids. Both
+# acts and the Act-1 corrective have landed:
+#   Act 1            916a109  14 film first-pins struck
+#   Act 2            166873c  ab1-composer re-pinned
+#                             d7bd71a0 -> 60c32c1a (fresh render
+#                             at the integration head)
+#   Act 1 corrective 2755ff3  11 film pins moved to the f021991
+#                             candidates — the VR canary caught
+#                             the first act pinning staged
+#                             381ff47-era bytes (film-s08b DRIFT
+#                             24.85 dB, run 43624398371)
+# golden-hashes.json now pins all 18 items; make_golden verifies
+# 18 OK / 0 STALE / 0 MISSING (GOLDEN-VERIFY-W63.md).
+#
+# The workflow renders a canary set ONLY (.github/workflows/
+# visual-regression.yml, by design): the ab1 render — checked
+# against ab1-composer AND s28-onoda-t150 — dof-chart, and film
+# frame 1231 (film-s08b). Every other pinned item reports
+# NOT-RENDERED on every dispatch. Steady state, first measured
+# on run 43625139818 at 2755ff3: 3 MATCH (ab1-composer,
+# dof-chart, film-s08b — all byte-identical) · s28 DRIFT ·
+# 14 NOT-RENDERED. Expected classes:
+#   ab1-composer    MATCH only — deliberately NOT in REGISTER,
+#                   like the dof-chart control: any non-MATCH
+#                   row is a NEW-SIGNAL
+#   film-s08b       MATCH only — the one film mid rendered;
+#                   same treatment as ab1-composer
+#   s28-onoda-t150  DRIFT / WITHIN-BAND = KNOWN-DEBT, the sole
+#                   expected red (see its entry)
+#   film-* (13)     NOT-RENDERED = expected by design; the
+#                   entry covers that ONE status only (see the
+#                   anti-whitelist rule in the docstring)
+#   stroke-toon     NOT-RENDERED = KNOWN-DEBT (unchanged)
+#   dof-chart       MATCH only — the clean control (CONTROL_ID)
 
 FILM_IDS = ["film-s01", "film-s02", "film-s03", "film-s04",
             "film-s05a", "film-s05b", "film-s06", "film-s07",
             "film-s08", "film-s08b", "film-s09", "film-s10",
             "film-s11", "film-s12"]
 
-FILM_ACTION = ("Clears with GOLDEN-RESTAGE-W03 Act 1 — human "
-               "first-pins of the 14 film mids from "
-               "docs/golden/frames-f021991/ (one commit, exactly "
-               "14 pin lines added, milestone pins unmoved). "
-               "Until pinned, UNPINNED is reported-only by design "
-               "and gates nothing.")
+# The one film mid the workflow renders (frame 1231, the s08b
+# mid — "the highest-value film canary per frame rendered",
+# visual-regression.yml). It is EXPECTED to render, so — like
+# ab1-composer and the dof-chart control — it carries NO
+# register entry: only MATCH is acceptable, and any non-MATCH
+# row (DRIFT, WITHIN-BAND, or NOT-RENDERED because the render
+# set shrank) falls through to a NEW-SIGNAL.
+FILM_CANARY_ID = "film-s08b"
+
+FILM_NOT_RENDERED_ACTION = (
+    "NOT-RENDERED by design: pinned in GOLDEN-RESTAGE-W03 "
+    "Act 1 (916a109; corrective 2755ff3) and covered by the "
+    "make_golden pack verification (18 OK / 0 STALE / 0 "
+    "MISSING), but the visual-regression workflow renders a "
+    "canary set only — the ab1 render (two pins), dof-chart, "
+    "and film-s08b (frame 1231) — so this mid renders on no "
+    "dispatch. This entry covers NOT-RENDERED ONLY: if the "
+    "render set is deliberately extended to this mid, MATCH "
+    "is the expectation, and a DRIFT / WITHIN-BAND / UNPINNED "
+    "row here is a NEW-SIGNAL, never debt.")
 
 REGISTER = {
-    "ab1-composer": (
-        {"DRIFT", "WITHIN-BAND"},
-        "Stale pin: predates the shade root-fix c00897d "
-        "(EXPECTED STALE, tools/golden/RUNNER.md). Clears with "
-        "GOLDEN-RESTAGE-W03 Act 2 — human re-pin per "
-        "docs/golden/repin-packets/ab1-composer.md, its own "
-        "commit, diff scoped to the one ab1-composer pin line."),
     "s28-onoda-t150": (
         {"DRIFT", "WITHIN-BAND"},
-        "Stale pin: predates c00897d, same debt as ab1-composer — "
-        "but cleared by NEITHER W03 act (the repin packet "
-        "recommends against re-pinning this historical prototype "
-        "artefact). Clears only with a separate human disposition "
-        "of the s28 pin (deliberate re-pin or pin retirement, "
-        "recorded per NATIVE-GOLDEN.md). Expect this row to keep "
-        "failing after Acts 1-2 land."),
+        "The sole remaining re-pin debt. The pin (ff68fad3) "
+        "predates the shade root-fix c00897d; Acts 1 (916a109) "
+        "and 2 (166873c) and the Act-1 corrective (2755ff3) "
+        "all landed WITHOUT touching it — the repin packet "
+        "recommends against re-pinning this historical "
+        "prototype artefact, and VR supplies the ab1 render as "
+        "its candidate, so the DRIFT (21.65 dB on run "
+        "43625139818) measures current output against the "
+        "prototype, not a regression. WITHIN-BAND is the same "
+        "debt in milder form. Clears ONLY with a separate "
+        "human disposition of the s28 pin (deliberate re-pin — "
+        "which would make it a byte-duplicate of ab1-composer "
+        "— or pin retirement), recorded per "
+        "docs/golden/NATIVE-GOLDEN.md. Until then the job "
+        "stays red on s28 alone; that is this debt ageing, "
+        "not a new regression."),
     "stroke-toon": (
         {"NOT-RENDERED"},
         "Expected: the workflow renders no battery card set "
@@ -142,7 +220,9 @@ REGISTER = {
 }
 
 for _fid in FILM_IDS:
-    REGISTER[_fid] = ({"UNPINNED"}, FILM_ACTION)
+    if _fid != FILM_CANARY_ID:
+        REGISTER[_fid] = ({"NOT-RENDERED"},
+                          FILM_NOT_RENDERED_ACTION)
 
 # The clean control: only MATCH is expected; it is deliberately
 # NOT in REGISTER, so every non-MATCH row lands as NEW-SIGNAL
@@ -301,7 +381,7 @@ def triage_report(runner_verdict, rows):
                if r["id"] in REGISTER and r["status"] == "MATCH"]
 
     lines = [
-        "# Visual-regression triage — first dispatch",
+        "# Visual-regression triage — post-pin register",
         "",
         f"Runner verdict: {runner_verdict}",
         "Band: 80 dB — unchanged. Nothing in this triage widens "
@@ -325,7 +405,7 @@ def triage_report(runner_verdict, rows):
                      f"its registered debt appears already "
                      f"cleared. Confirm the clearing act landed "
                      f"and update REGISTER in that commit; a "
-                     f"first dispatch that passes outright is "
+                     f"dispatch that passes outright is "
                      f"this note's story, not a silent surprise.")
     lines.append("")
     if signals:
@@ -333,7 +413,7 @@ def triage_report(runner_verdict, rows):
         lines.append(f"TRIAGE VERDICT: contains NEW SIGNALS: "
                      f"{named}")
     else:
-        lines.append("TRIAGE VERDICT: first-dispatch result is "
+        lines.append("TRIAGE VERDICT: result is "
                      "AS EXPECTED")
     lines.append("")
     return "\n".join(lines), len(signals)
@@ -346,9 +426,10 @@ FIXTURE_DIR = Path(__file__).resolve().parent / "fixtures" / \
 
 # (fixture, must_contain_in_verdict, expected_exit)
 SELF_TESTS = [
-    ("expected-first-dispatch.md", "AS EXPECTED", 0),
+    ("expected-steady-state.md", "AS EXPECTED", 0),
     ("planted-new-drift.md", "dof-chart", 1),
     ("planted-missing-render.md", "dof-chart", 1),
+    ("planted-noncanary-drift.md", "film-s03", 1),
 ]
 
 
@@ -391,7 +472,7 @@ def run_self_test() -> int:
 def main() -> int:
     ap = argparse.ArgumentParser(
         description="Triage a visual_regression.py report "
-                    "against the first-dispatch re-pin debt "
+                    "against the post-pin re-pin debt "
                     "register. See the module docstring for the "
                     "register, the clearing actions and the exit "
                     "codes.",

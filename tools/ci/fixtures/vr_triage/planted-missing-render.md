@@ -5,25 +5,25 @@ Band: PSNR >= 80 dB = WITHIN-BAND; below = DRIFT. Byte-identity (MATCH) is the p
 
 | pin | status | PSNR (dB) | mean \|d\| | %px > 10 | max d | pinned sha | rendered sha | note |
 |---|---|---|---|---|---|---|---|---|---|
-| s28-onoda-t150 | DRIFT | 41.27 | 0.51230 | 1.20400 | 87 | ff68fad3bbcc | 3f9a1c77e2b4 | PSNR < band 80 dB — same-renderer drift |
+| s28-onoda-t150 | DRIFT | 21.65 | 0.51230 | 1.20400 | 87 | ff68fad3bbcc | 3f9a1c77e2b4 | PSNR < band 80 dB — same-renderer drift |
 | dof-chart | MISSING-RENDER | — | — | — | — | 957d5573497e | - | rendered file not found: visual-out/dof-chart.png |
 | stroke-toon | NOT-RENDERED | — | — | — | — | 9ba9ff890402 | - | pinned, but no rendered frame supplied this run |
-| ab1-composer | DRIFT | 38.94 | 0.68410 | 1.93200 | 112 | d7bd71a02a3d | 77c05d19aa31 | PSNR < band 80 dB — same-renderer drift |
-| film-s01 | UNPINNED | — | — | — | — | - | - | no pin in golden-hashes.json — staged candidates are not references; pinning is a human act (NATIVE-GOLDEN.md) |
-| film-s02 | UNPINNED | — | — | — | — | - | - | no pin in golden-hashes.json — staged candidates are not references; pinning is a human act (NATIVE-GOLDEN.md) |
-| film-s03 | UNPINNED | — | — | — | — | - | - | no pin in golden-hashes.json — staged candidates are not references; pinning is a human act (NATIVE-GOLDEN.md) |
-| film-s04 | UNPINNED | — | — | — | — | - | - | no pin in golden-hashes.json — staged candidates are not references; pinning is a human act (NATIVE-GOLDEN.md) |
-| film-s05a | UNPINNED | — | — | — | — | - | - | no pin in golden-hashes.json — staged candidates are not references; pinning is a human act (NATIVE-GOLDEN.md) |
-| film-s05b | UNPINNED | — | — | — | — | - | - | no pin in golden-hashes.json — staged candidates are not references; pinning is a human act (NATIVE-GOLDEN.md) |
-| film-s06 | UNPINNED | — | — | — | — | - | - | no pin in golden-hashes.json — staged candidates are not references; pinning is a human act (NATIVE-GOLDEN.md) |
-| film-s07 | UNPINNED | — | — | — | — | - | - | no pin in golden-hashes.json — staged candidates are not references; pinning is a human act (NATIVE-GOLDEN.md) |
-| film-s08 | UNPINNED | — | — | — | — | - | - | no pin in golden-hashes.json — staged candidates are not references; pinning is a human act (NATIVE-GOLDEN.md) |
-| film-s08b | UNPINNED | — | — | — | — | - | - | no pin in golden-hashes.json — staged candidates are not references; pinning is a human act (NATIVE-GOLDEN.md) |
-| film-s09 | UNPINNED | — | — | — | — | - | - | no pin in golden-hashes.json — staged candidates are not references; pinning is a human act (NATIVE-GOLDEN.md) |
-| film-s10 | UNPINNED | — | — | — | — | - | - | no pin in golden-hashes.json — staged candidates are not references; pinning is a human act (NATIVE-GOLDEN.md) |
-| film-s11 | UNPINNED | — | — | — | — | - | - | no pin in golden-hashes.json — staged candidates are not references; pinning is a human act (NATIVE-GOLDEN.md) |
-| film-s12 | UNPINNED | — | — | — | — | - | - | no pin in golden-hashes.json — staged candidates are not references; pinning is a human act (NATIVE-GOLDEN.md) |
+| ab1-composer | MATCH | inf | — | — | — | 60c32c1af021 | 60c32c1af021 | sha256 == pin (byte-identical) |
+| film-s01 | NOT-RENDERED | — | — | — | — | 1608ead9a477 | - | pinned, but no rendered frame supplied this run |
+| film-s02 | NOT-RENDERED | — | — | — | — | 9649a9b65fa3 | - | pinned, but no rendered frame supplied this run |
+| film-s03 | NOT-RENDERED | — | — | — | — | 0bbdbdd8a939 | - | pinned, but no rendered frame supplied this run |
+| film-s04 | NOT-RENDERED | — | — | — | — | f135462d330c | - | pinned, but no rendered frame supplied this run |
+| film-s05a | NOT-RENDERED | — | — | — | — | bb0ee0c0d969 | - | pinned, but no rendered frame supplied this run |
+| film-s05b | NOT-RENDERED | — | — | — | — | 471366bffdc7 | - | pinned, but no rendered frame supplied this run |
+| film-s06 | NOT-RENDERED | — | — | — | — | 7eff42cdf8c8 | - | pinned, but no rendered frame supplied this run |
+| film-s07 | NOT-RENDERED | — | — | — | — | 7f8e1555249f | - | pinned, but no rendered frame supplied this run |
+| film-s08 | NOT-RENDERED | — | — | — | — | 3e8e703f2560 | - | pinned, but no rendered frame supplied this run |
+| film-s08b | MATCH | inf | — | — | — | fb4e2ba44ad8 | fb4e2ba44ad8 | sha256 == pin (byte-identical) |
+| film-s09 | NOT-RENDERED | — | — | — | — | 74b6003d0eda | - | pinned, but no rendered frame supplied this run |
+| film-s10 | NOT-RENDERED | — | — | — | — | 59bdb4f2558f | - | pinned, but no rendered frame supplied this run |
+| film-s11 | NOT-RENDERED | — | — | — | — | 7bed0da5f199 | - | pinned, but no rendered frame supplied this run |
+| film-s12 | NOT-RENDERED | — | — | — | — | dfabc09a542d | - | pinned, but no rendered frame supplied this run |
 
-Counts: 2 DRIFT · 1 MISSING-RENDER · 14 UNPINNED · 1 NOT-RENDERED (of 18 golden items).
+Counts: 3 MATCH · 1 DRIFT · 1 MISSING-RENDER · 13 NOT-RENDERED (of 18 golden items).
 
-VISUAL REGRESSION: FAIL (3 pins, 3 drift)
+VISUAL REGRESSION: FAIL (4 pins, 2 drift)
