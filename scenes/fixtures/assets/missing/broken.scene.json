@@ -1,0 +1,30 @@
+{
+ "format": "talerender-scene",
+ "version": 2,
+ "name": "fixture-missing",
+ "camera": {
+  "fovY": 36.0,
+  "eye": [
+   0,
+   1.6,
+   6
+  ],
+  "target": [
+   0,
+   1.2,
+   0
+  ]
+ },
+ "textures": [
+  {
+   "id": "card",
+   "file": "nope.png"
+  }
+ ],
+ "nodes": [
+  {
+   "type": "calendar",
+   "ref": "gone.json"
+  }
+ ]
+}

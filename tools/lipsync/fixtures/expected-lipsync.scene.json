@@ -1,0 +1,756 @@
+{
+ "clips": {
+  "lipsync-fixture": {
+   "duration": 4.4,
+   "tracks": [
+    {
+     "keys": [
+      {
+       "ease": "linear",
+       "t": 0.0,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 0.096,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 0.24,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 0.28,
+       "value": 0.22
+      },
+      {
+       "ease": "linear",
+       "t": 0.36,
+       "value": 0.85
+      },
+      {
+       "ease": "linear",
+       "t": 0.48,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 0.56,
+       "value": 0.55
+      },
+      {
+       "ease": "linear",
+       "t": 0.64,
+       "value": 0.65
+      },
+      {
+       "ease": "linear",
+       "t": 0.76,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 0.8,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 0.862,
+       "value": 0.65
+      },
+      {
+       "ease": "linear",
+       "t": 0.956,
+       "value": 0.02
+      },
+      {
+       "ease": "linear",
+       "t": 1.018,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 1.08,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 1.12,
+       "value": 0.3
+      },
+      {
+       "ease": "linear",
+       "t": 1.2,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 1.32,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 1.4,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 1.6,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 2.0,
+       "value": 0.22
+      },
+      {
+       "ease": "linear",
+       "t": 2.067,
+       "value": 0.85
+      },
+      {
+       "ease": "linear",
+       "t": 2.167,
+       "value": 0.45
+      },
+      {
+       "ease": "linear",
+       "t": 2.233,
+       "value": 0.02
+      },
+      {
+       "ease": "linear",
+       "t": 2.3,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 2.367,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 2.467,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 2.533,
+       "value": 0.22
+      },
+      {
+       "ease": "linear",
+       "t": 2.6,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 2.64,
+       "value": 0.6
+      },
+      {
+       "ease": "linear",
+       "t": 2.72,
+       "value": 0.65
+      },
+      {
+       "ease": "linear",
+       "t": 2.84,
+       "value": 0.3
+      },
+      {
+       "ease": "linear",
+       "t": 2.92,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 3.0,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 3.04,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 3.136,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 3.2,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 3.24,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 3.304,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 3.4,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 3.44,
+       "value": 0.02
+      },
+      {
+       "ease": "linear",
+       "t": 3.507,
+       "value": 0.65
+      },
+      {
+       "ease": "linear",
+       "t": 3.607,
+       "value": 0.02
+      },
+      {
+       "ease": "linear",
+       "t": 3.673,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 3.773,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 3.84,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 3.88,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 3.945,
+       "value": 0.6
+      },
+      {
+       "ease": "linear",
+       "t": 4.01,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 4.173,
+       "value": 0.22
+      },
+      {
+       "ease": "linear",
+       "t": 4.238,
+       "value": 0.85
+      },
+      {
+       "ease": "linear",
+       "t": 4.335,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 4.4,
+       "value": 0.0
+      }
+     ],
+     "target": {
+      "channel": "talk",
+      "node": "Narrator"
+     }
+    }
+   ]
+  }
+ },
+ "format": "talerender-scene",
+ "lipsync": {
+  "clipName": "lipsync-fixture",
+  "counts": {
+   "dict": 6,
+   "failed": 0,
+   "g2p": 4,
+   "number": 0
+  },
+  "failedWords": [],
+  "g2pWords": [
+   "purple",
+   "quixote",
+   "waved",
+   "zorblax"
+  ],
+  "segments": [
+   {
+    "end": 0.096,
+    "line": 0,
+    "phoneme": "DH",
+    "source": "dict",
+    "start": 0.0,
+    "talk": 0.4,
+    "viseme": "th",
+    "word": "The"
+   },
+   {
+    "end": 0.24,
+    "line": 0,
+    "phoneme": "AH",
+    "source": "dict",
+    "start": 0.096,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "The"
+   },
+   {
+    "end": 0.36,
+    "line": 0,
+    "phoneme": "S",
+    "source": "dict",
+    "start": 0.28,
+    "talk": 0.22,
+    "viseme": "ss",
+    "word": "soldier"
+   },
+   {
+    "end": 0.48,
+    "line": 0,
+    "phoneme": "OW",
+    "source": "dict",
+    "start": 0.36,
+    "talk": 0.85,
+    "viseme": "O",
+    "word": "soldier"
+   },
+   {
+    "end": 0.56,
+    "line": 0,
+    "phoneme": "L",
+    "source": "dict",
+    "start": 0.48,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "soldier"
+   },
+   {
+    "end": 0.64,
+    "line": 0,
+    "phoneme": "JH",
+    "source": "dict",
+    "start": 0.56,
+    "talk": 0.55,
+    "viseme": "ch",
+    "word": "soldier"
+   },
+   {
+    "end": 0.76,
+    "line": 0,
+    "phoneme": "ER",
+    "source": "dict",
+    "start": 0.64,
+    "talk": 0.65,
+    "viseme": "E",
+    "word": "soldier"
+   },
+   {
+    "end": 0.862,
+    "line": 0,
+    "phoneme": "K",
+    "source": "dict",
+    "start": 0.8,
+    "talk": 0.5,
+    "viseme": "kk",
+    "word": "kept"
+   },
+   {
+    "end": 0.956,
+    "line": 0,
+    "phoneme": "EH",
+    "source": "dict",
+    "start": 0.862,
+    "talk": 0.65,
+    "viseme": "E",
+    "word": "kept"
+   },
+   {
+    "end": 1.018,
+    "line": 0,
+    "phoneme": "P",
+    "source": "dict",
+    "start": 0.956,
+    "talk": 0.02,
+    "viseme": "pp",
+    "word": "kept"
+   },
+   {
+    "end": 1.08,
+    "line": 0,
+    "phoneme": "T",
+    "source": "dict",
+    "start": 1.018,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "kept"
+   },
+   {
+    "end": 1.2,
+    "line": 0,
+    "phoneme": "F",
+    "source": "dict",
+    "start": 1.12,
+    "talk": 0.3,
+    "viseme": "ff",
+    "word": "fighting."
+   },
+   {
+    "end": 1.32,
+    "line": 0,
+    "phoneme": "AY",
+    "source": "dict",
+    "start": 1.2,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "fighting."
+   },
+   {
+    "end": 1.4,
+    "line": 0,
+    "phoneme": "T",
+    "source": "dict",
+    "start": 1.32,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "fighting."
+   },
+   {
+    "end": 1.52,
+    "line": 0,
+    "phoneme": "IH",
+    "source": "dict",
+    "start": 1.4,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "fighting."
+   },
+   {
+    "end": 1.6,
+    "line": 0,
+    "phoneme": "NG",
+    "source": "dict",
+    "start": 1.52,
+    "talk": 0.5,
+    "viseme": "kk",
+    "word": "fighting."
+   },
+   {
+    "end": 2.067,
+    "line": 1,
+    "phoneme": "Z",
+    "source": "g2p",
+    "start": 2.0,
+    "talk": 0.22,
+    "viseme": "ss",
+    "word": "Zorblax"
+   },
+   {
+    "end": 2.167,
+    "line": 1,
+    "phoneme": "AO",
+    "source": "g2p",
+    "start": 2.067,
+    "talk": 0.85,
+    "viseme": "O",
+    "word": "Zorblax"
+   },
+   {
+    "end": 2.233,
+    "line": 1,
+    "phoneme": "R",
+    "source": "g2p",
+    "start": 2.167,
+    "talk": 0.45,
+    "viseme": "rr",
+    "word": "Zorblax"
+   },
+   {
+    "end": 2.3,
+    "line": 1,
+    "phoneme": "B",
+    "source": "g2p",
+    "start": 2.233,
+    "talk": 0.02,
+    "viseme": "pp",
+    "word": "Zorblax"
+   },
+   {
+    "end": 2.367,
+    "line": 1,
+    "phoneme": "L",
+    "source": "g2p",
+    "start": 2.3,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "Zorblax"
+   },
+   {
+    "end": 2.467,
+    "line": 1,
+    "phoneme": "AE",
+    "source": "g2p",
+    "start": 2.367,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "Zorblax"
+   },
+   {
+    "end": 2.533,
+    "line": 1,
+    "phoneme": "K",
+    "source": "g2p",
+    "start": 2.467,
+    "talk": 0.5,
+    "viseme": "kk",
+    "word": "Zorblax"
+   },
+   {
+    "end": 2.6,
+    "line": 1,
+    "phoneme": "S",
+    "source": "g2p",
+    "start": 2.533,
+    "talk": 0.22,
+    "viseme": "ss",
+    "word": "Zorblax"
+   },
+   {
+    "end": 2.72,
+    "line": 1,
+    "phoneme": "W",
+    "source": "g2p",
+    "start": 2.64,
+    "talk": 0.6,
+    "viseme": "U",
+    "word": "waved"
+   },
+   {
+    "end": 2.84,
+    "line": 1,
+    "phoneme": "EY",
+    "source": "g2p",
+    "start": 2.72,
+    "talk": 0.65,
+    "viseme": "E",
+    "word": "waved"
+   },
+   {
+    "end": 2.92,
+    "line": 1,
+    "phoneme": "V",
+    "source": "g2p",
+    "start": 2.84,
+    "talk": 0.3,
+    "viseme": "ff",
+    "word": "waved"
+   },
+   {
+    "end": 3.0,
+    "line": 1,
+    "phoneme": "D",
+    "source": "g2p",
+    "start": 2.92,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "waved"
+   },
+   {
+    "end": 3.136,
+    "line": 1,
+    "phoneme": "AE",
+    "source": "dict",
+    "start": 3.04,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "at"
+   },
+   {
+    "end": 3.2,
+    "line": 1,
+    "phoneme": "T",
+    "source": "dict",
+    "start": 3.136,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "at"
+   },
+   {
+    "end": 3.304,
+    "line": 1,
+    "phoneme": "DH",
+    "source": "dict",
+    "start": 3.24,
+    "talk": 0.4,
+    "viseme": "th",
+    "word": "the"
+   },
+   {
+    "end": 3.4,
+    "line": 1,
+    "phoneme": "AH",
+    "source": "dict",
+    "start": 3.304,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "the"
+   },
+   {
+    "end": 3.507,
+    "line": 1,
+    "phoneme": "P",
+    "source": "g2p",
+    "start": 3.44,
+    "talk": 0.02,
+    "viseme": "pp",
+    "word": "purple"
+   },
+   {
+    "end": 3.607,
+    "line": 1,
+    "phoneme": "ER",
+    "source": "g2p",
+    "start": 3.507,
+    "talk": 0.65,
+    "viseme": "E",
+    "word": "purple"
+   },
+   {
+    "end": 3.673,
+    "line": 1,
+    "phoneme": "P",
+    "source": "g2p",
+    "start": 3.607,
+    "talk": 0.02,
+    "viseme": "pp",
+    "word": "purple"
+   },
+   {
+    "end": 3.773,
+    "line": 1,
+    "phoneme": "AH",
+    "source": "g2p",
+    "start": 3.673,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "purple"
+   },
+   {
+    "end": 3.84,
+    "line": 1,
+    "phoneme": "L",
+    "source": "g2p",
+    "start": 3.773,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "purple"
+   },
+   {
+    "end": 3.945,
+    "line": 1,
+    "phoneme": "K",
+    "source": "g2p",
+    "start": 3.88,
+    "talk": 0.5,
+    "viseme": "kk",
+    "word": "quixote."
+   },
+   {
+    "end": 4.01,
+    "line": 1,
+    "phoneme": "W",
+    "source": "g2p",
+    "start": 3.945,
+    "talk": 0.6,
+    "viseme": "U",
+    "word": "quixote."
+   },
+   {
+    "end": 4.108,
+    "line": 1,
+    "phoneme": "IH",
+    "source": "g2p",
+    "start": 4.01,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "quixote."
+   },
+   {
+    "end": 4.173,
+    "line": 1,
+    "phoneme": "K",
+    "source": "g2p",
+    "start": 4.108,
+    "talk": 0.5,
+    "viseme": "kk",
+    "word": "quixote."
+   },
+   {
+    "end": 4.238,
+    "line": 1,
+    "phoneme": "S",
+    "source": "g2p",
+    "start": 4.173,
+    "talk": 0.22,
+    "viseme": "ss",
+    "word": "quixote."
+   },
+   {
+    "end": 4.335,
+    "line": 1,
+    "phoneme": "OW",
+    "source": "g2p",
+    "start": 4.238,
+    "talk": 0.85,
+    "viseme": "O",
+    "word": "quixote."
+   },
+   {
+    "end": 4.4,
+    "line": 1,
+    "phoneme": "T",
+    "source": "g2p",
+    "start": 4.335,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "quixote."
+   }
+  ],
+  "speakerWorkaround": "single narrator \u2014 words.json and lines.json carry no speaker field (W12); every word is attributed to the one --target node",
+  "target": "Narrator",
+  "tool": "tools/lipsync/build_visemes.py (W23)"
+ },
+ "name": "lipsync \u2014 lipsync-fixture (built by tools/lipsync/build_visemes.py)",
+ "nodes": [
+  {
+   "clip": "lipsync-fixture",
+   "clipTime": {
+    "loop": "clamp",
+    "offset": 0.0,
+    "rate": 1.0
+   },
+   "name": "Narrator",
+   "state": {
+    "talk": 0
+   },
+   "type": "character"
+  }
+ ],
+ "version": 2
+}

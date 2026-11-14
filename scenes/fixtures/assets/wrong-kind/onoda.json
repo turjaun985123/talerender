@@ -1,0 +1,29 @@
+{
+ "film": "fixture",
+ "duration": 2.0,
+ "fps": 30,
+ "frames": 60,
+ "lines": [
+  {
+   "start": 0.0,
+   "end": 2.0
+  }
+ ],
+ "anchors": {},
+ "captions": [
+  {
+   "s": 0.0,
+   "e": 1.0,
+   "text": "A",
+   "fit": 1.0,
+   "strip": "cap_000.png"
+  },
+  {
+   "s": 1.0,
+   "e": 2.0,
+   "text": "B",
+   "fit": 1.0,
+   "strip": "cap_001.png"
+  }
+ ]
+}

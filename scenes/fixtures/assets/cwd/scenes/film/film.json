@@ -1,0 +1,12 @@
+{
+ "format": "talerender-film",
+ "version": 1,
+ "title": "FIXTURE",
+ "sourceData": "film/onoda.json",
+ "segments": [
+  {
+   "id": "s01",
+   "scene": "scenes/film/s01.scene.json"
+  }
+ ]
+}

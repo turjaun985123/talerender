@@ -1,0 +1,45 @@
+{
+ "format": "talerender-scene",
+ "version": 2,
+ "name": "fixture-valid",
+ "camera": {
+  "fovY": 36.0,
+  "eye": [
+   0,
+   1.6,
+   6
+  ],
+  "target": [
+   0,
+   1.2,
+   0
+  ]
+ },
+ "textures": [
+  {
+   "id": "card",
+   "file": "tex.png"
+  },
+  {
+   "id": "grass",
+   "generator": "grass",
+   "base": "#3F7A34"
+  }
+ ],
+ "nodes": [
+  {
+   "type": "calendar",
+   "ref": "cal-data.json"
+  },
+  {
+   "type": "mesh",
+   "texture": "card",
+   "geometry": {
+    "kind": "plane",
+    "w": 1.0,
+    "h": 1.0
+   },
+   "transform": []
+  }
+ ]
+}

@@ -1,0 +1,26 @@
+{
+ "format": "talerender-scene",
+ "version": 2,
+ "name": "fixture-cwd",
+ "camera": {
+  "fovY": 36.0,
+  "eye": [
+   0,
+   1.6,
+   6
+  ],
+  "target": [
+   0,
+   1.2,
+   0
+  ]
+ },
+ "textures": [
+  {
+   "id": "grass",
+   "generator": "grass",
+   "base": "#3F7A34"
+  }
+ ],
+ "nodes": []
+}

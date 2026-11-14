@@ -1,0 +1,25 @@
+{
+ "format": "talerender-scene",
+ "version": 2,
+ "name": "fixture-kind",
+ "camera": {
+  "fovY": 36.0,
+  "eye": [
+   0,
+   1.6,
+   6
+  ],
+  "target": [
+   0,
+   1.2,
+   0
+  ]
+ },
+ "textures": [
+  {
+   "id": "card",
+   "file": "fake.png"
+  }
+ ],
+ "nodes": []
+}

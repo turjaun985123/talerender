@@ -1,0 +1,8452 @@
+{
+ "clips": {
+  "lipsync-onoda": {
+   "duration": 58.92,
+   "tracks": [
+    {
+     "keys": [
+      {
+       "ease": "linear",
+       "t": 0.0,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 0.3,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 0.334,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 0.386,
+       "value": 0.22
+      },
+      {
+       "ease": "linear",
+       "t": 0.42,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 0.46,
+       "value": 0.22
+      },
+      {
+       "ease": "linear",
+       "t": 0.537,
+       "value": 0.85
+      },
+      {
+       "ease": "linear",
+       "t": 0.652,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 0.728,
+       "value": 0.55
+      },
+      {
+       "ease": "linear",
+       "t": 0.805,
+       "value": 0.65
+      },
+      {
+       "ease": "linear",
+       "t": 0.96,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 1.044,
+       "value": 0.65
+      },
+      {
+       "ease": "linear",
+       "t": 1.171,
+       "value": 0.02
+      },
+      {
+       "ease": "linear",
+       "t": 1.256,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 1.38,
+       "value": 0.3
+      },
+      {
+       "ease": "linear",
+       "t": 1.453,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 1.563,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 1.637,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 1.82,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 1.86,
+       "value": 0.6
+      },
+      {
+       "ease": "linear",
+       "t": 1.922,
+       "value": 0.65
+      },
+      {
+       "ease": "linear",
+       "t": 2.016,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 2.078,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 2.14,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 2.18,
+       "value": 0.6
+      },
+      {
+       "ease": "linear",
+       "t": 2.254,
+       "value": 0.85
+      },
+      {
+       "ease": "linear",
+       "t": 2.366,
+       "value": 0.45
+      },
+      {
+       "ease": "linear",
+       "t": 2.44,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 2.8,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 2.928,
+       "value": 0.6
+      },
+      {
+       "ease": "linear",
+       "t": 3.12,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 3.16,
+       "value": 0.3
+      },
+      {
+       "ease": "linear",
+       "t": 3.297,
+       "value": 0.85
+      },
+      {
+       "ease": "linear",
+       "t": 3.503,
+       "value": 0.45
+      },
+      {
+       "ease": "linear",
+       "t": 3.64,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 3.68,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 3.92,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 4.16,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 4.2,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 4.456,
+       "value": 0.45
+      },
+      {
+       "ease": "linear",
+       "t": 4.558,
+       "value": 0.22
+      },
+      {
+       "ease": "linear",
+       "t": 4.66,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 4.7,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 4.826,
+       "value": 0.3
+      },
+      {
+       "ease": "linear",
+       "t": 4.91,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 4.994,
+       "value": 0.65
+      },
+      {
+       "ease": "linear",
+       "t": 5.12,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 5.16,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 5.232,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 5.28,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 5.32,
+       "value": 0.65
+      },
+      {
+       "ease": "linear",
+       "t": 5.425,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 5.495,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 5.565,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 5.67,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 5.74,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 5.967,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 6.115,
+       "value": 0.45
+      },
+      {
+       "ease": "linear",
+       "t": 6.174,
+       "value": 0.6
+      },
+      {
+       "ease": "linear",
+       "t": 6.262,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 6.32,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 6.403,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 6.458,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 6.542,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 6.597,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 6.68,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 6.72,
+       "value": 0.6
+      },
+      {
+       "ease": "linear",
+       "t": 6.869,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 7.091,
+       "value": 0.22
+      },
+      {
+       "ease": "linear",
+       "t": 7.24,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 7.28,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 7.42,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 7.46,
+       "value": 0.55
+      },
+      {
+       "ease": "linear",
+       "t": 7.507,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 7.578,
+       "value": 0.02
+      },
+      {
+       "ease": "linear",
+       "t": 7.625,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 7.695,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 7.742,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 7.813,
+       "value": 0.22
+      },
+      {
+       "ease": "linear",
+       "t": 7.86,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 7.9,
+       "value": 0.22
+      },
+      {
+       "ease": "linear",
+       "t": 8.003,
+       "value": 0.85
+      },
+      {
+       "ease": "linear",
+       "t": 8.158,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 8.262,
+       "value": 0.55
+      },
+      {
+       "ease": "linear",
+       "t": 8.365,
+       "value": 0.65
+      },
+      {
+       "ease": "linear",
+       "t": 8.52,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 8.56,
+       "value": 0.22
+      },
+      {
+       "ease": "linear",
+       "t": 8.671,
+       "value": 0.65
+      },
+      {
+       "ease": "linear",
+       "t": 8.838,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 8.949,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 9.18,
+       "value": 0.6
+      },
+      {
+       "ease": "linear",
+       "t": 9.34,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 9.52,
+       "value": 0.3
+      },
+      {
+       "ease": "linear",
+       "t": 9.565,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 9.632,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 9.676,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 9.744,
+       "value": 0.02
+      },
+      {
+       "ease": "linear",
+       "t": 9.788,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 9.855,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 9.94,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 10.05,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 10.123,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 10.233,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 10.307,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 10.42,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 10.768,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 11.48,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 11.92,
+       "value": 0.45
+      },
+      {
+       "ease": "linear",
+       "t": 12.36,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 13.18,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 13.223,
+       "value": 0.22
+      },
+      {
+       "ease": "linear",
+       "t": 13.28,
+       "value": 0.85
+      },
+      {
+       "ease": "linear",
+       "t": 13.36,
+       "value": 0.45
+      },
+      {
+       "ease": "linear",
+       "t": 13.413,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 13.467,
+       "value": 0.65
+      },
+      {
+       "ease": "linear",
+       "t": 13.547,
+       "value": 0.22
+      },
+      {
+       "ease": "linear",
+       "t": 13.6,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 13.64,
+       "value": 0.6
+      },
+      {
+       "ease": "linear",
+       "t": 13.744,
+       "value": 0.65
+      },
+      {
+       "ease": "linear",
+       "t": 13.94,
+       "value": 0.22
+      },
+      {
+       "ease": "linear",
+       "t": 14.0,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 14.09,
+       "value": 0.02
+      },
+      {
+       "ease": "linear",
+       "t": 14.21,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 14.3,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 14.36,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 14.78,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 14.82,
+       "value": 0.65
+      },
+      {
+       "ease": "linear",
+       "t": 14.88,
+       "value": 0.3
+      },
+      {
+       "ease": "linear",
+       "t": 14.92,
+       "value": 0.65
+      },
+      {
+       "ease": "linear",
+       "t": 15.02,
+       "value": 0.22
+      },
+      {
+       "ease": "linear",
+       "t": 15.1,
+       "value": 0.65
+      },
+      {
+       "ease": "linear",
+       "t": 15.34,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 15.42,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 15.5,
+       "value": 0.65
+      },
+      {
+       "ease": "linear",
+       "t": 15.62,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 16.04,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 16.076,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 16.507,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 16.873,
+       "value": 0.3
+      },
+      {
+       "ease": "linear",
+       "t": 17.24,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 17.28,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 17.656,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 18.22,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 18.26,
+       "value": 0.6
+      },
+      {
+       "ease": "linear",
+       "t": 18.329,
+       "value": 0.85
+      },
+      {
+       "ease": "linear",
+       "t": 18.431,
+       "value": 0.45
+      },
+      {
+       "ease": "linear",
+       "t": 18.54,
+       "value": 0.65
+      },
+      {
+       "ease": "linear",
+       "t": 18.65,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 18.723,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 18.797,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 18.907,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 18.98,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 19.54,
+       "value": 0.02
+      },
+      {
+       "ease": "linear",
+       "t": 19.557,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 19.583,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 19.64,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 19.705,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 19.748,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 19.812,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 19.855,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 19.96,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 20.004,
+       "value": 0.65
+      },
+      {
+       "ease": "linear",
+       "t": 20.07,
+       "value": 0.3
+      },
+      {
+       "ease": "linear",
+       "t": 20.114,
+       "value": 0.65
+      },
+      {
+       "ease": "linear",
+       "t": 20.22,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 20.289,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 20.391,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 20.5,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 20.564,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 20.7,
+       "value": 0.02
+      },
+      {
+       "ease": "linear",
+       "t": 20.767,
+       "value": 0.65
+      },
+      {
+       "ease": "linear",
+       "t": 20.867,
+       "value": 0.22
+      },
+      {
+       "ease": "linear",
+       "t": 20.933,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 21.033,
+       "value": 0.55
+      },
+      {
+       "ease": "linear",
+       "t": 21.1,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 21.64,
+       "value": 0.02
+      },
+      {
+       "ease": "linear",
+       "t": 21.655,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 21.669,
+       "value": 0.65
+      },
+      {
+       "ease": "linear",
+       "t": 21.691,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 21.705,
+       "value": 0.22
+      },
+      {
+       "ease": "linear",
+       "t": 21.72,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 21.76,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 21.818,
+       "value": 0.45
+      },
+      {
+       "ease": "linear",
+       "t": 21.876,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 21.964,
+       "value": 0.02
+      },
+      {
+       "ease": "linear",
+       "t": 22.022,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 22.08,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 22.12,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 22.18,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 22.27,
+       "value": 0.3
+      },
+      {
+       "ease": "linear",
+       "t": 22.33,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 22.39,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 22.48,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 22.54,
+       "value": 0.22
+      },
+      {
+       "ease": "linear",
+       "t": 22.744,
+       "value": 0.65
+      },
+      {
+       "ease": "linear",
+       "t": 22.9,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 23.2,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 23.256,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 23.38,
+       "value": 0.6
+      },
+      {
+       "ease": "linear",
+       "t": 23.437,
+       "value": 0.85
+      },
+      {
+       "ease": "linear",
+       "t": 23.523,
+       "value": 0.45
+      },
+      {
+       "ease": "linear",
+       "t": 23.58,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 23.62,
+       "value": 0.6
+      },
+      {
+       "ease": "linear",
+       "t": 23.66,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 23.72,
+       "value": 0.22
+      },
+      {
+       "ease": "linear",
+       "t": 23.8,
+       "value": 0.85
+      },
+      {
+       "ease": "linear",
+       "t": 23.92,
+       "value": 0.3
+      },
+      {
+       "ease": "linear",
+       "t": 24.0,
+       "value": 0.65
+      },
+      {
+       "ease": "linear",
+       "t": 24.12,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 24.52,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 24.68,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 24.72,
+       "value": 0.85
+      },
+      {
+       "ease": "linear",
+       "t": 24.78,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 24.86,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 24.92,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 25.0,
+       "value": 0.6
+      },
+      {
+       "ease": "linear",
+       "t": 25.023,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 25.057,
+       "value": 0.22
+      },
+      {
+       "ease": "linear",
+       "t": 25.08,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 25.12,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 25.18,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 25.22,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 25.26,
+       "value": 0.65
+      },
+      {
+       "ease": "linear",
+       "t": 25.329,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 25.375,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 25.445,
+       "value": 0.02
+      },
+      {
+       "ease": "linear",
+       "t": 25.491,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 25.56,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 25.6,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 25.667,
+       "value": 0.45
+      },
+      {
+       "ease": "linear",
+       "t": 25.733,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 25.9,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 26.22,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 26.277,
+       "value": 0.22
+      },
+      {
+       "ease": "linear",
+       "t": 26.34,
+       "value": 0.3
+      },
+      {
+       "ease": "linear",
+       "t": 26.389,
+       "value": 0.45
+      },
+      {
+       "ease": "linear",
+       "t": 26.438,
+       "value": 0.65
+      },
+      {
+       "ease": "linear",
+       "t": 26.512,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 26.562,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 26.611,
+       "value": 0.22
+      },
+      {
+       "ease": "linear",
+       "t": 26.7,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 26.78,
+       "value": 0.65
+      },
+      {
+       "ease": "linear",
+       "t": 26.9,
+       "value": 0.3
+      },
+      {
+       "ease": "linear",
+       "t": 27.02,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 27.116,
+       "value": 0.02
+      },
+      {
+       "ease": "linear",
+       "t": 27.22,
+       "value": 0.85
+      },
+      {
+       "ease": "linear",
+       "t": 27.328,
+       "value": 0.45
+      },
+      {
+       "ease": "linear",
+       "t": 27.4,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 27.44,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 27.537,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 27.683,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 27.82,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 27.95,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 28.037,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 28.123,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 28.253,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 28.38,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 28.52,
+       "value": 0.6
+      },
+      {
+       "ease": "linear",
+       "t": 28.543,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 28.577,
+       "value": 0.22
+      },
+      {
+       "ease": "linear",
+       "t": 28.64,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 28.736,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 28.8,
+       "value": 0.85
+      },
+      {
+       "ease": "linear",
+       "t": 28.896,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 28.96,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 29.381,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 29.5,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 29.544,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 29.611,
+       "value": 0.3
+      },
+      {
+       "ease": "linear",
+       "t": 29.656,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 29.74,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 29.836,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 29.9,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 29.94,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 29.972,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 30.06,
+       "value": 0.55
+      },
+      {
+       "ease": "linear",
+       "t": 30.091,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 30.139,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 30.201,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 30.249,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 30.32,
+       "value": 0.3
+      },
+      {
+       "ease": "linear",
+       "t": 30.4,
+       "value": 0.85
+      },
+      {
+       "ease": "linear",
+       "t": 30.52,
+       "value": 0.45
+      },
+      {
+       "ease": "linear",
+       "t": 30.64,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 30.714,
+       "value": 0.65
+      },
+      {
+       "ease": "linear",
+       "t": 30.826,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 30.9,
+       "value": 0.65
+      },
+      {
+       "ease": "linear",
+       "t": 31.011,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 31.086,
+       "value": 0.22
+      },
+      {
+       "ease": "linear",
+       "t": 31.16,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 31.58,
+       "value": 0.22
+      },
+      {
+       "ease": "linear",
+       "t": 31.629,
+       "value": 0.65
+      },
+      {
+       "ease": "linear",
+       "t": 31.704,
+       "value": 0.3
+      },
+      {
+       "ease": "linear",
+       "t": 31.753,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 31.827,
+       "value": 0.3
+      },
+      {
+       "ease": "linear",
+       "t": 31.876,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 32.04,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 32.232,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 32.4,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 32.461,
+       "value": 0.85
+      },
+      {
+       "ease": "linear",
+       "t": 32.553,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 32.614,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 32.705,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 32.766,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 32.858,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 32.919,
+       "value": 0.22
+      },
+      {
+       "ease": "linear",
+       "t": 32.98,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 33.02,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 33.174,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 33.277,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 33.42,
+       "value": 0.02
+      },
+      {
+       "ease": "linear",
+       "t": 33.46,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 33.52,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 33.56,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 33.62,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 33.66,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 33.72,
+       "value": 0.22
+      },
+      {
+       "ease": "linear",
+       "t": 33.76,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 34.3,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 34.336,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 34.773,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 35.147,
+       "value": 0.45
+      },
+      {
+       "ease": "linear",
+       "t": 35.56,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 36.48,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 36.52,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 36.589,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 36.691,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 36.8,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 36.838,
+       "value": 0.45
+      },
+      {
+       "ease": "linear",
+       "t": 36.875,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 36.932,
+       "value": 0.3
+      },
+      {
+       "ease": "linear",
+       "t": 36.969,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 37.026,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 37.064,
+       "value": 0.65
+      },
+      {
+       "ease": "linear",
+       "t": 37.16,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 37.249,
+       "value": 0.65
+      },
+      {
+       "ease": "linear",
+       "t": 37.382,
+       "value": 0.02
+      },
+      {
+       "ease": "linear",
+       "t": 37.471,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 37.6,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 37.671,
+       "value": 0.85
+      },
+      {
+       "ease": "linear",
+       "t": 37.777,
+       "value": 0.45
+      },
+      {
+       "ease": "linear",
+       "t": 37.848,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 37.954,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 38.1,
+       "value": 0.22
+      },
+      {
+       "ease": "linear",
+       "t": 38.145,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 38.213,
+       "value": 0.22
+      },
+      {
+       "ease": "linear",
+       "t": 38.259,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 38.327,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 38.48,
+       "value": 0.3
+      },
+      {
+       "ease": "linear",
+       "t": 38.596,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 38.769,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 38.884,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 39.04,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 39.311,
+       "value": 0.02
+      },
+      {
+       "ease": "linear",
+       "t": 39.42,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 39.98,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 39.998,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 40.011,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 40.029,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 40.042,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 40.1,
+       "value": 0.22
+      },
+      {
+       "ease": "linear",
+       "t": 40.171,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 40.242,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 40.349,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 40.46,
+       "value": 0.45
+      },
+      {
+       "ease": "linear",
+       "t": 40.505,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 40.573,
+       "value": 0.3
+      },
+      {
+       "ease": "linear",
+       "t": 40.618,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 40.663,
+       "value": 0.6
+      },
+      {
+       "ease": "linear",
+       "t": 40.73,
+       "value": 0.22
+      },
+      {
+       "ease": "linear",
+       "t": 40.775,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 40.98,
+       "value": 0.6
+      },
+      {
+       "ease": "linear",
+       "t": 41.16,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 41.2,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 41.274,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 41.386,
+       "value": 0.3
+      },
+      {
+       "ease": "linear",
+       "t": 41.46,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 41.792,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 41.94,
+       "value": 0.22
+      },
+      {
+       "ease": "linear",
+       "t": 42.003,
+       "value": 0.65
+      },
+      {
+       "ease": "linear",
+       "t": 42.097,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 42.16,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 42.2,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 42.42,
+       "value": 0.6
+      },
+      {
+       "ease": "linear",
+       "t": 42.463,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 42.48,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 42.52,
+       "value": 0.85
+      },
+      {
+       "ease": "linear",
+       "t": 42.598,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 42.702,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 42.82,
+       "value": 0.22
+      },
+      {
+       "ease": "linear",
+       "t": 42.887,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 42.953,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 43.053,
+       "value": 0.02
+      },
+      {
+       "ease": "linear",
+       "t": 43.16,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 43.424,
+       "value": 0.3
+      },
+      {
+       "ease": "linear",
+       "t": 43.64,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 43.711,
+       "value": 0.22
+      },
+      {
+       "ease": "linear",
+       "t": 43.78,
+       "value": 0.85
+      },
+      {
+       "ease": "linear",
+       "t": 43.912,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 44.04,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 44.085,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 44.152,
+       "value": 0.02
+      },
+      {
+       "ease": "linear",
+       "t": 44.196,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 44.264,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 44.308,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 44.353,
+       "value": 0.65
+      },
+      {
+       "ease": "linear",
+       "t": 44.46,
+       "value": 0.85
+      },
+      {
+       "ease": "linear",
+       "t": 44.57,
+       "value": 0.45
+      },
+      {
+       "ease": "linear",
+       "t": 44.643,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 44.717,
+       "value": 0.65
+      },
+      {
+       "ease": "linear",
+       "t": 44.827,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 44.94,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 45.123,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 45.245,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 45.425,
+       "value": 0.22
+      },
+      {
+       "ease": "linear",
+       "t": 45.495,
+       "value": 0.85
+      },
+      {
+       "ease": "linear",
+       "t": 45.64,
+       "value": 0.55
+      },
+      {
+       "ease": "linear",
+       "t": 45.687,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 45.757,
+       "value": 0.02
+      },
+      {
+       "ease": "linear",
+       "t": 45.803,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 45.873,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 45.96,
+       "value": 0.3
+      },
+      {
+       "ease": "linear",
+       "t": 46.053,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 46.193,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 46.287,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 46.42,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 46.563,
+       "value": 0.22
+      },
+      {
+       "ease": "linear",
+       "t": 46.66,
+       "value": 0.85
+      },
+      {
+       "ease": "linear",
+       "t": 46.771,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 46.846,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 46.96,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 47.012,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 47.089,
+       "value": 0.02
+      },
+      {
+       "ease": "linear",
+       "t": 47.141,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 47.219,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 47.271,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 47.322,
+       "value": 0.65
+      },
+      {
+       "ease": "linear",
+       "t": 47.4,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 47.8,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 47.872,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 47.98,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 48.02,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 48.16,
+       "value": 0.02
+      },
+      {
+       "ease": "linear",
+       "t": 48.207,
+       "value": 0.6
+      },
+      {
+       "ease": "linear",
+       "t": 48.278,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 48.325,
+       "value": 0.22
+      },
+      {
+       "ease": "linear",
+       "t": 48.372,
+       "value": 0.65
+      },
+      {
+       "ease": "linear",
+       "t": 48.442,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 48.489,
+       "value": 0.65
+      },
+      {
+       "ease": "linear",
+       "t": 48.56,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 48.96,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 49.054,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 49.117,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 49.22,
+       "value": 0.3
+      },
+      {
+       "ease": "linear",
+       "t": 49.266,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 49.311,
+       "value": 0.6
+      },
+      {
+       "ease": "linear",
+       "t": 49.42,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 49.563,
+       "value": 0.02
+      },
+      {
+       "ease": "linear",
+       "t": 49.66,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 49.732,
+       "value": 0.6
+      },
+      {
+       "ease": "linear",
+       "t": 49.88,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 49.92,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 49.98,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 50.02,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 50.075,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 50.112,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 50.167,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 50.203,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 50.24,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 50.72,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 50.86,
+       "value": 0.3
+      },
+      {
+       "ease": "linear",
+       "t": 50.903,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 50.967,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 51.009,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 51.073,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 51.116,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 51.311,
+       "value": 0.65
+      },
+      {
+       "ease": "linear",
+       "t": 51.449,
+       "value": 0.3
+      },
+      {
+       "ease": "linear",
+       "t": 51.58,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 51.644,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 51.78,
+       "value": 0.85
+      },
+      {
+       "ease": "linear",
+       "t": 51.864,
+       "value": 0.45
+      },
+      {
+       "ease": "linear",
+       "t": 51.92,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 51.976,
+       "value": 0.65
+      },
+      {
+       "ease": "linear",
+       "t": 52.1,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 52.297,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 52.429,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 52.6,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 52.688,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 52.746,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 52.834,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 52.892,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 52.98,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 53.02,
+       "value": 0.22
+      },
+      {
+       "ease": "linear",
+       "t": 53.084,
+       "value": 0.65
+      },
+      {
+       "ease": "linear",
+       "t": 53.274,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 53.338,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 53.401,
+       "value": 0.65
+      },
+      {
+       "ease": "linear",
+       "t": 53.496,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 53.6,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 53.762,
+       "value": 0.3
+      },
+      {
+       "ease": "linear",
+       "t": 53.87,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 53.978,
+       "value": 0.65
+      },
+      {
+       "ease": "linear",
+       "t": 54.18,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 54.45,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 54.76,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 54.982,
+       "value": 0.45
+      },
+      {
+       "ease": "linear",
+       "t": 55.071,
+       "value": 0.22
+      },
+      {
+       "ease": "linear",
+       "t": 55.16,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 55.58,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 55.66,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 55.7,
+       "value": 0.6
+      },
+      {
+       "ease": "linear",
+       "t": 55.729,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 55.771,
+       "value": 0.22
+      },
+      {
+       "ease": "linear",
+       "t": 55.8,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 55.843,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 55.871,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 55.94,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 56.048,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 56.092,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 56.24,
+       "value": 0.3
+      },
+      {
+       "ease": "linear",
+       "t": 56.302,
+       "value": 0.45
+      },
+      {
+       "ease": "linear",
+       "t": 56.364,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 56.458,
+       "value": 0.02
+      },
+      {
+       "ease": "linear",
+       "t": 56.56,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 56.608,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 56.72,
+       "value": 0.6
+      },
+      {
+       "ease": "linear",
+       "t": 56.8,
+       "value": 0.85
+      },
+      {
+       "ease": "linear",
+       "t": 56.92,
+       "value": 0.45
+      },
+      {
+       "ease": "linear",
+       "t": 57.0,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 57.18,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 57.5,
+       "value": 0.6
+      },
+      {
+       "ease": "linear",
+       "t": 57.511,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 57.529,
+       "value": 0.22
+      },
+      {
+       "ease": "linear",
+       "t": 57.58,
+       "value": 0.55
+      },
+      {
+       "ease": "linear",
+       "t": 57.611,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 57.658,
+       "value": 0.22
+      },
+      {
+       "ease": "linear",
+       "t": 57.689,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 57.76,
+       "value": 0.22
+      },
+      {
+       "ease": "linear",
+       "t": 57.831,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 57.902,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 58.009,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 58.164,
+       "value": 0.85
+      },
+      {
+       "ease": "linear",
+       "t": 58.23,
+       "value": 1.0
+      },
+      {
+       "ease": "linear",
+       "t": 58.296,
+       "value": 0.4
+      },
+      {
+       "ease": "linear",
+       "t": 58.38,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 58.492,
+       "value": 0.6
+      },
+      {
+       "ease": "linear",
+       "t": 58.66,
+       "value": 0.0
+      },
+      {
+       "ease": "linear",
+       "t": 58.7,
+       "value": 0.5
+      },
+      {
+       "ease": "linear",
+       "t": 58.832,
+       "value": 0.35
+      },
+      {
+       "ease": "linear",
+       "t": 58.92,
+       "value": 0.0
+      }
+     ],
+     "target": {
+      "channel": "talk",
+      "node": "narrator"
+     }
+    }
+   ]
+  }
+ },
+ "format": "talerender-scene",
+ "lipsync": {
+  "clipName": "lipsync-onoda",
+  "counts": {
+   "dict": 133,
+   "failed": 0,
+   "g2p": 8,
+   "number": 5
+  },
+  "failedWords": [],
+  "g2pWords": [
+   "hiroo",
+   "norio",
+   "onoda",
+   "philippine",
+   "suzuki"
+  ],
+  "segments": [
+   {
+    "end": 0.334,
+    "line": 0,
+    "phoneme": "DH",
+    "source": "dict",
+    "start": 0.3,
+    "talk": 0.4,
+    "viseme": "th",
+    "word": "This"
+   },
+   {
+    "end": 0.386,
+    "line": 0,
+    "phoneme": "IH",
+    "source": "dict",
+    "start": 0.334,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "This"
+   },
+   {
+    "end": 0.42,
+    "line": 0,
+    "phoneme": "S",
+    "source": "dict",
+    "start": 0.386,
+    "talk": 0.22,
+    "viseme": "ss",
+    "word": "This"
+   },
+   {
+    "end": 0.537,
+    "line": 0,
+    "phoneme": "S",
+    "source": "dict",
+    "start": 0.46,
+    "talk": 0.22,
+    "viseme": "ss",
+    "word": "soldier"
+   },
+   {
+    "end": 0.652,
+    "line": 0,
+    "phoneme": "OW",
+    "source": "dict",
+    "start": 0.537,
+    "talk": 0.85,
+    "viseme": "O",
+    "word": "soldier"
+   },
+   {
+    "end": 0.728,
+    "line": 0,
+    "phoneme": "L",
+    "source": "dict",
+    "start": 0.652,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "soldier"
+   },
+   {
+    "end": 0.805,
+    "line": 0,
+    "phoneme": "JH",
+    "source": "dict",
+    "start": 0.728,
+    "talk": 0.55,
+    "viseme": "ch",
+    "word": "soldier"
+   },
+   {
+    "end": 0.92,
+    "line": 0,
+    "phoneme": "ER",
+    "source": "dict",
+    "start": 0.805,
+    "talk": 0.65,
+    "viseme": "E",
+    "word": "soldier"
+   },
+   {
+    "end": 1.044,
+    "line": 0,
+    "phoneme": "K",
+    "source": "dict",
+    "start": 0.96,
+    "talk": 0.5,
+    "viseme": "kk",
+    "word": "kept"
+   },
+   {
+    "end": 1.171,
+    "line": 0,
+    "phoneme": "EH",
+    "source": "dict",
+    "start": 1.044,
+    "talk": 0.65,
+    "viseme": "E",
+    "word": "kept"
+   },
+   {
+    "end": 1.256,
+    "line": 0,
+    "phoneme": "P",
+    "source": "dict",
+    "start": 1.171,
+    "talk": 0.02,
+    "viseme": "pp",
+    "word": "kept"
+   },
+   {
+    "end": 1.34,
+    "line": 0,
+    "phoneme": "T",
+    "source": "dict",
+    "start": 1.256,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "kept"
+   },
+   {
+    "end": 1.453,
+    "line": 0,
+    "phoneme": "F",
+    "source": "dict",
+    "start": 1.38,
+    "talk": 0.3,
+    "viseme": "ff",
+    "word": "fighting"
+   },
+   {
+    "end": 1.563,
+    "line": 0,
+    "phoneme": "AY",
+    "source": "dict",
+    "start": 1.453,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "fighting"
+   },
+   {
+    "end": 1.637,
+    "line": 0,
+    "phoneme": "T",
+    "source": "dict",
+    "start": 1.563,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "fighting"
+   },
+   {
+    "end": 1.747,
+    "line": 0,
+    "phoneme": "IH",
+    "source": "dict",
+    "start": 1.637,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "fighting"
+   },
+   {
+    "end": 1.82,
+    "line": 0,
+    "phoneme": "NG",
+    "source": "dict",
+    "start": 1.747,
+    "talk": 0.5,
+    "viseme": "kk",
+    "word": "fighting"
+   },
+   {
+    "end": 1.922,
+    "line": 0,
+    "phoneme": "W",
+    "source": "dict",
+    "start": 1.86,
+    "talk": 0.6,
+    "viseme": "U",
+    "word": "World"
+   },
+   {
+    "end": 2.016,
+    "line": 0,
+    "phoneme": "ER",
+    "source": "dict",
+    "start": 1.922,
+    "talk": 0.65,
+    "viseme": "E",
+    "word": "World"
+   },
+   {
+    "end": 2.078,
+    "line": 0,
+    "phoneme": "L",
+    "source": "dict",
+    "start": 2.016,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "World"
+   },
+   {
+    "end": 2.14,
+    "line": 0,
+    "phoneme": "D",
+    "source": "dict",
+    "start": 2.078,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "World"
+   },
+   {
+    "end": 2.254,
+    "line": 0,
+    "phoneme": "W",
+    "source": "dict",
+    "start": 2.18,
+    "talk": 0.6,
+    "viseme": "U",
+    "word": "War"
+   },
+   {
+    "end": 2.366,
+    "line": 0,
+    "phoneme": "AO",
+    "source": "dict",
+    "start": 2.254,
+    "talk": 0.85,
+    "viseme": "O",
+    "word": "War"
+   },
+   {
+    "end": 2.44,
+    "line": 0,
+    "phoneme": "R",
+    "source": "dict",
+    "start": 2.366,
+    "talk": 0.45,
+    "viseme": "rr",
+    "word": "War"
+   },
+   {
+    "end": 2.928,
+    "line": 0,
+    "phoneme": "T",
+    "source": "dict",
+    "start": 2.8,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "II"
+   },
+   {
+    "end": 3.12,
+    "line": 0,
+    "phoneme": "UW",
+    "source": "dict",
+    "start": 2.928,
+    "talk": 0.6,
+    "viseme": "U",
+    "word": "II"
+   },
+   {
+    "end": 3.297,
+    "line": 0,
+    "phoneme": "F",
+    "source": "dict",
+    "start": 3.16,
+    "talk": 0.3,
+    "viseme": "ff",
+    "word": "for"
+   },
+   {
+    "end": 3.503,
+    "line": 0,
+    "phoneme": "AO",
+    "source": "dict",
+    "start": 3.297,
+    "talk": 0.85,
+    "viseme": "O",
+    "word": "for"
+   },
+   {
+    "end": 3.64,
+    "line": 0,
+    "phoneme": "R",
+    "source": "dict",
+    "start": 3.503,
+    "talk": 0.45,
+    "viseme": "rr",
+    "word": "for"
+   },
+   {
+    "end": 3.92,
+    "line": 0,
+    "phoneme": "T",
+    "source": "number",
+    "start": 3.68,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "29"
+   },
+   {
+    "end": 3.92,
+    "line": 0,
+    "phoneme": "W",
+    "source": "number",
+    "start": 3.68,
+    "talk": 0.6,
+    "viseme": "U",
+    "word": "29"
+   },
+   {
+    "end": 3.92,
+    "line": 0,
+    "phoneme": "EH",
+    "source": "number",
+    "start": 3.68,
+    "talk": 0.65,
+    "viseme": "E",
+    "word": "29"
+   },
+   {
+    "end": 3.92,
+    "line": 0,
+    "phoneme": "N",
+    "source": "number",
+    "start": 3.68,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "29"
+   },
+   {
+    "end": 3.92,
+    "line": 0,
+    "phoneme": "T",
+    "source": "number",
+    "start": 3.68,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "29"
+   },
+   {
+    "end": 3.92,
+    "line": 0,
+    "phoneme": "IY",
+    "source": "number",
+    "start": 3.68,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "29"
+   },
+   {
+    "end": 4.16,
+    "line": 0,
+    "phoneme": "N",
+    "source": "number",
+    "start": 3.92,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "29"
+   },
+   {
+    "end": 4.16,
+    "line": 0,
+    "phoneme": "AY",
+    "source": "number",
+    "start": 3.92,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "29"
+   },
+   {
+    "end": 4.16,
+    "line": 0,
+    "phoneme": "N",
+    "source": "number",
+    "start": 3.92,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "29"
+   },
+   {
+    "end": 4.302,
+    "line": 0,
+    "phoneme": "Y",
+    "source": "dict",
+    "start": 4.2,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "years"
+   },
+   {
+    "end": 4.456,
+    "line": 0,
+    "phoneme": "IH",
+    "source": "dict",
+    "start": 4.302,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "years"
+   },
+   {
+    "end": 4.558,
+    "line": 0,
+    "phoneme": "R",
+    "source": "dict",
+    "start": 4.456,
+    "talk": 0.45,
+    "viseme": "rr",
+    "word": "years"
+   },
+   {
+    "end": 4.66,
+    "line": 0,
+    "phoneme": "Z",
+    "source": "dict",
+    "start": 4.558,
+    "talk": 0.22,
+    "viseme": "ss",
+    "word": "years"
+   },
+   {
+    "end": 4.826,
+    "line": 0,
+    "phoneme": "AE",
+    "source": "dict",
+    "start": 4.7,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "after"
+   },
+   {
+    "end": 4.91,
+    "line": 0,
+    "phoneme": "F",
+    "source": "dict",
+    "start": 4.826,
+    "talk": 0.3,
+    "viseme": "ff",
+    "word": "after"
+   },
+   {
+    "end": 4.994,
+    "line": 0,
+    "phoneme": "T",
+    "source": "dict",
+    "start": 4.91,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "after"
+   },
+   {
+    "end": 5.12,
+    "line": 0,
+    "phoneme": "ER",
+    "source": "dict",
+    "start": 4.994,
+    "talk": 0.65,
+    "viseme": "E",
+    "word": "after"
+   },
+   {
+    "end": 5.232,
+    "line": 0,
+    "phoneme": "IH",
+    "source": "dict",
+    "start": 5.16,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "it"
+   },
+   {
+    "end": 5.28,
+    "line": 0,
+    "phoneme": "T",
+    "source": "dict",
+    "start": 5.232,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "it"
+   },
+   {
+    "end": 5.425,
+    "line": 0,
+    "phoneme": "EH",
+    "source": "dict",
+    "start": 5.32,
+    "talk": 0.65,
+    "viseme": "E",
+    "word": "ended."
+   },
+   {
+    "end": 5.495,
+    "line": 0,
+    "phoneme": "N",
+    "source": "dict",
+    "start": 5.425,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "ended."
+   },
+   {
+    "end": 5.565,
+    "line": 0,
+    "phoneme": "D",
+    "source": "dict",
+    "start": 5.495,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "ended."
+   },
+   {
+    "end": 5.67,
+    "line": 0,
+    "phoneme": "IH",
+    "source": "dict",
+    "start": 5.565,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "ended."
+   },
+   {
+    "end": 5.74,
+    "line": 0,
+    "phoneme": "D",
+    "source": "dict",
+    "start": 5.67,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "ended."
+   },
+   {
+    "end": 6.115,
+    "line": 1,
+    "phoneme": "IH",
+    "source": "g2p",
+    "start": 5.967,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "Hiroo"
+   },
+   {
+    "end": 6.174,
+    "line": 1,
+    "phoneme": "R",
+    "source": "g2p",
+    "start": 6.115,
+    "talk": 0.45,
+    "viseme": "rr",
+    "word": "Hiroo"
+   },
+   {
+    "end": 6.262,
+    "line": 1,
+    "phoneme": "UW",
+    "source": "g2p",
+    "start": 6.174,
+    "talk": 0.6,
+    "viseme": "U",
+    "word": "Hiroo"
+   },
+   {
+    "end": 6.403,
+    "line": 1,
+    "phoneme": "AA",
+    "source": "g2p",
+    "start": 6.32,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "Onoda"
+   },
+   {
+    "end": 6.458,
+    "line": 1,
+    "phoneme": "N",
+    "source": "g2p",
+    "start": 6.403,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "Onoda"
+   },
+   {
+    "end": 6.542,
+    "line": 1,
+    "phoneme": "AA",
+    "source": "g2p",
+    "start": 6.458,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "Onoda"
+   },
+   {
+    "end": 6.597,
+    "line": 1,
+    "phoneme": "D",
+    "source": "g2p",
+    "start": 6.542,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "Onoda"
+   },
+   {
+    "end": 6.68,
+    "line": 1,
+    "phoneme": "AE",
+    "source": "g2p",
+    "start": 6.597,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "Onoda"
+   },
+   {
+    "end": 6.869,
+    "line": 1,
+    "phoneme": "W",
+    "source": "dict",
+    "start": 6.72,
+    "talk": 0.6,
+    "viseme": "U",
+    "word": "was"
+   },
+   {
+    "end": 7.091,
+    "line": 1,
+    "phoneme": "AH",
+    "source": "dict",
+    "start": 6.869,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "was"
+   },
+   {
+    "end": 7.24,
+    "line": 1,
+    "phoneme": "Z",
+    "source": "dict",
+    "start": 7.091,
+    "talk": 0.22,
+    "viseme": "ss",
+    "word": "was"
+   },
+   {
+    "end": 7.42,
+    "line": 1,
+    "phoneme": "AH",
+    "source": "dict",
+    "start": 7.28,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "a"
+   },
+   {
+    "end": 7.507,
+    "line": 1,
+    "phoneme": "JH",
+    "source": "dict",
+    "start": 7.46,
+    "talk": 0.55,
+    "viseme": "ch",
+    "word": "Japanese"
+   },
+   {
+    "end": 7.578,
+    "line": 1,
+    "phoneme": "AE",
+    "source": "dict",
+    "start": 7.507,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "Japanese"
+   },
+   {
+    "end": 7.625,
+    "line": 1,
+    "phoneme": "P",
+    "source": "dict",
+    "start": 7.578,
+    "talk": 0.02,
+    "viseme": "pp",
+    "word": "Japanese"
+   },
+   {
+    "end": 7.695,
+    "line": 1,
+    "phoneme": "AH",
+    "source": "dict",
+    "start": 7.625,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "Japanese"
+   },
+   {
+    "end": 7.742,
+    "line": 1,
+    "phoneme": "N",
+    "source": "dict",
+    "start": 7.695,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "Japanese"
+   },
+   {
+    "end": 7.813,
+    "line": 1,
+    "phoneme": "IY",
+    "source": "dict",
+    "start": 7.742,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "Japanese"
+   },
+   {
+    "end": 7.86,
+    "line": 1,
+    "phoneme": "Z",
+    "source": "dict",
+    "start": 7.813,
+    "talk": 0.22,
+    "viseme": "ss",
+    "word": "Japanese"
+   },
+   {
+    "end": 8.003,
+    "line": 1,
+    "phoneme": "S",
+    "source": "dict",
+    "start": 7.9,
+    "talk": 0.22,
+    "viseme": "ss",
+    "word": "soldier"
+   },
+   {
+    "end": 8.158,
+    "line": 1,
+    "phoneme": "OW",
+    "source": "dict",
+    "start": 8.003,
+    "talk": 0.85,
+    "viseme": "O",
+    "word": "soldier"
+   },
+   {
+    "end": 8.262,
+    "line": 1,
+    "phoneme": "L",
+    "source": "dict",
+    "start": 8.158,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "soldier"
+   },
+   {
+    "end": 8.365,
+    "line": 1,
+    "phoneme": "JH",
+    "source": "dict",
+    "start": 8.262,
+    "talk": 0.55,
+    "viseme": "ch",
+    "word": "soldier"
+   },
+   {
+    "end": 8.52,
+    "line": 1,
+    "phoneme": "ER",
+    "source": "dict",
+    "start": 8.365,
+    "talk": 0.65,
+    "viseme": "E",
+    "word": "soldier"
+   },
+   {
+    "end": 8.671,
+    "line": 1,
+    "phoneme": "S",
+    "source": "dict",
+    "start": 8.56,
+    "talk": 0.22,
+    "viseme": "ss",
+    "word": "sent"
+   },
+   {
+    "end": 8.838,
+    "line": 1,
+    "phoneme": "EH",
+    "source": "dict",
+    "start": 8.671,
+    "talk": 0.65,
+    "viseme": "E",
+    "word": "sent"
+   },
+   {
+    "end": 8.949,
+    "line": 1,
+    "phoneme": "N",
+    "source": "dict",
+    "start": 8.838,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "sent"
+   },
+   {
+    "end": 9.06,
+    "line": 1,
+    "phoneme": "T",
+    "source": "dict",
+    "start": 8.949,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "sent"
+   },
+   {
+    "end": 9.18,
+    "line": 1,
+    "phoneme": "T",
+    "source": "dict",
+    "start": 9.1,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "to"
+   },
+   {
+    "end": 9.3,
+    "line": 1,
+    "phoneme": "UW",
+    "source": "dict",
+    "start": 9.18,
+    "talk": 0.6,
+    "viseme": "U",
+    "word": "to"
+   },
+   {
+    "end": 9.48,
+    "line": 1,
+    "phoneme": "AH",
+    "source": "dict",
+    "start": 9.34,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "a"
+   },
+   {
+    "end": 9.565,
+    "line": 1,
+    "phoneme": "F",
+    "source": "g2p",
+    "start": 9.52,
+    "talk": 0.3,
+    "viseme": "ff",
+    "word": "Philippine"
+   },
+   {
+    "end": 9.632,
+    "line": 1,
+    "phoneme": "IH",
+    "source": "g2p",
+    "start": 9.565,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "Philippine"
+   },
+   {
+    "end": 9.676,
+    "line": 1,
+    "phoneme": "L",
+    "source": "g2p",
+    "start": 9.632,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "Philippine"
+   },
+   {
+    "end": 9.744,
+    "line": 1,
+    "phoneme": "IH",
+    "source": "g2p",
+    "start": 9.676,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "Philippine"
+   },
+   {
+    "end": 9.788,
+    "line": 1,
+    "phoneme": "P",
+    "source": "g2p",
+    "start": 9.744,
+    "talk": 0.02,
+    "viseme": "pp",
+    "word": "Philippine"
+   },
+   {
+    "end": 9.855,
+    "line": 1,
+    "phoneme": "AY",
+    "source": "g2p",
+    "start": 9.788,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "Philippine"
+   },
+   {
+    "end": 9.9,
+    "line": 1,
+    "phoneme": "N",
+    "source": "g2p",
+    "start": 9.855,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "Philippine"
+   },
+   {
+    "end": 10.05,
+    "line": 1,
+    "phoneme": "AY",
+    "source": "dict",
+    "start": 9.94,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "island"
+   },
+   {
+    "end": 10.123,
+    "line": 1,
+    "phoneme": "L",
+    "source": "dict",
+    "start": 10.05,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "island"
+   },
+   {
+    "end": 10.233,
+    "line": 1,
+    "phoneme": "AH",
+    "source": "dict",
+    "start": 10.123,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "island"
+   },
+   {
+    "end": 10.307,
+    "line": 1,
+    "phoneme": "N",
+    "source": "dict",
+    "start": 10.233,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "island"
+   },
+   {
+    "end": 10.38,
+    "line": 1,
+    "phoneme": "D",
+    "source": "dict",
+    "start": 10.307,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "island"
+   },
+   {
+    "end": 10.768,
+    "line": 1,
+    "phoneme": "IH",
+    "source": "dict",
+    "start": 10.42,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "in"
+   },
+   {
+    "end": 11.0,
+    "line": 1,
+    "phoneme": "N",
+    "source": "dict",
+    "start": 10.768,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "in"
+   },
+   {
+    "end": 11.48,
+    "line": 1,
+    "phoneme": "N",
+    "source": "number",
+    "start": 11.04,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "1944."
+   },
+   {
+    "end": 11.48,
+    "line": 1,
+    "phoneme": "AY",
+    "source": "number",
+    "start": 11.04,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "1944."
+   },
+   {
+    "end": 11.48,
+    "line": 1,
+    "phoneme": "N",
+    "source": "number",
+    "start": 11.04,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "1944."
+   },
+   {
+    "end": 11.48,
+    "line": 1,
+    "phoneme": "T",
+    "source": "number",
+    "start": 11.04,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "1944."
+   },
+   {
+    "end": 11.48,
+    "line": 1,
+    "phoneme": "IY",
+    "source": "number",
+    "start": 11.04,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "1944."
+   },
+   {
+    "end": 11.48,
+    "line": 1,
+    "phoneme": "N",
+    "source": "number",
+    "start": 11.04,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "1944."
+   },
+   {
+    "end": 11.92,
+    "line": 1,
+    "phoneme": "F",
+    "source": "number",
+    "start": 11.48,
+    "talk": 0.3,
+    "viseme": "ff",
+    "word": "1944."
+   },
+   {
+    "end": 11.92,
+    "line": 1,
+    "phoneme": "AO",
+    "source": "number",
+    "start": 11.48,
+    "talk": 0.85,
+    "viseme": "O",
+    "word": "1944."
+   },
+   {
+    "end": 11.92,
+    "line": 1,
+    "phoneme": "R",
+    "source": "number",
+    "start": 11.48,
+    "talk": 0.45,
+    "viseme": "rr",
+    "word": "1944."
+   },
+   {
+    "end": 11.92,
+    "line": 1,
+    "phoneme": "T",
+    "source": "number",
+    "start": 11.48,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "1944."
+   },
+   {
+    "end": 11.92,
+    "line": 1,
+    "phoneme": "IY",
+    "source": "number",
+    "start": 11.48,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "1944."
+   },
+   {
+    "end": 12.36,
+    "line": 1,
+    "phoneme": "F",
+    "source": "number",
+    "start": 11.92,
+    "talk": 0.3,
+    "viseme": "ff",
+    "word": "1944."
+   },
+   {
+    "end": 12.36,
+    "line": 1,
+    "phoneme": "AO",
+    "source": "number",
+    "start": 11.92,
+    "talk": 0.85,
+    "viseme": "O",
+    "word": "1944."
+   },
+   {
+    "end": 12.36,
+    "line": 1,
+    "phoneme": "R",
+    "source": "number",
+    "start": 11.92,
+    "talk": 0.45,
+    "viseme": "rr",
+    "word": "1944."
+   },
+   {
+    "end": 13.223,
+    "line": 2,
+    "phoneme": "IH",
+    "source": "dict",
+    "start": 13.18,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "His"
+   },
+   {
+    "end": 13.24,
+    "line": 2,
+    "phoneme": "Z",
+    "source": "dict",
+    "start": 13.223,
+    "talk": 0.22,
+    "viseme": "ss",
+    "word": "His"
+   },
+   {
+    "end": 13.36,
+    "line": 2,
+    "phoneme": "AO",
+    "source": "dict",
+    "start": 13.28,
+    "talk": 0.85,
+    "viseme": "O",
+    "word": "orders"
+   },
+   {
+    "end": 13.413,
+    "line": 2,
+    "phoneme": "R",
+    "source": "dict",
+    "start": 13.36,
+    "talk": 0.45,
+    "viseme": "rr",
+    "word": "orders"
+   },
+   {
+    "end": 13.467,
+    "line": 2,
+    "phoneme": "D",
+    "source": "dict",
+    "start": 13.413,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "orders"
+   },
+   {
+    "end": 13.547,
+    "line": 2,
+    "phoneme": "ER",
+    "source": "dict",
+    "start": 13.467,
+    "talk": 0.65,
+    "viseme": "E",
+    "word": "orders"
+   },
+   {
+    "end": 13.6,
+    "line": 2,
+    "phoneme": "Z",
+    "source": "dict",
+    "start": 13.547,
+    "talk": 0.22,
+    "viseme": "ss",
+    "word": "orders"
+   },
+   {
+    "end": 13.744,
+    "line": 2,
+    "phoneme": "W",
+    "source": "dict",
+    "start": 13.64,
+    "talk": 0.6,
+    "viseme": "U",
+    "word": "were"
+   },
+   {
+    "end": 13.9,
+    "line": 2,
+    "phoneme": "ER",
+    "source": "dict",
+    "start": 13.744,
+    "talk": 0.65,
+    "viseme": "E",
+    "word": "were"
+   },
+   {
+    "end": 14.0,
+    "line": 2,
+    "phoneme": "S",
+    "source": "dict",
+    "start": 13.94,
+    "talk": 0.22,
+    "viseme": "ss",
+    "word": "simple:"
+   },
+   {
+    "end": 14.09,
+    "line": 2,
+    "phoneme": "IH",
+    "source": "dict",
+    "start": 14.0,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "simple:"
+   },
+   {
+    "end": 14.15,
+    "line": 2,
+    "phoneme": "M",
+    "source": "dict",
+    "start": 14.09,
+    "talk": 0.02,
+    "viseme": "pp",
+    "word": "simple:"
+   },
+   {
+    "end": 14.21,
+    "line": 2,
+    "phoneme": "P",
+    "source": "dict",
+    "start": 14.15,
+    "talk": 0.02,
+    "viseme": "pp",
+    "word": "simple:"
+   },
+   {
+    "end": 14.3,
+    "line": 2,
+    "phoneme": "AH",
+    "source": "dict",
+    "start": 14.21,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "simple:"
+   },
+   {
+    "end": 14.36,
+    "line": 2,
+    "phoneme": "L",
+    "source": "dict",
+    "start": 14.3,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "simple:"
+   },
+   {
+    "end": 14.82,
+    "line": 2,
+    "phoneme": "N",
+    "source": "dict",
+    "start": 14.78,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "never"
+   },
+   {
+    "end": 14.88,
+    "line": 2,
+    "phoneme": "EH",
+    "source": "dict",
+    "start": 14.82,
+    "talk": 0.65,
+    "viseme": "E",
+    "word": "never"
+   },
+   {
+    "end": 14.92,
+    "line": 2,
+    "phoneme": "V",
+    "source": "dict",
+    "start": 14.88,
+    "talk": 0.3,
+    "viseme": "ff",
+    "word": "never"
+   },
+   {
+    "end": 14.98,
+    "line": 2,
+    "phoneme": "ER",
+    "source": "dict",
+    "start": 14.92,
+    "talk": 0.65,
+    "viseme": "E",
+    "word": "never"
+   },
+   {
+    "end": 15.1,
+    "line": 2,
+    "phoneme": "S",
+    "source": "dict",
+    "start": 15.02,
+    "talk": 0.22,
+    "viseme": "ss",
+    "word": "surrender."
+   },
+   {
+    "end": 15.22,
+    "line": 2,
+    "phoneme": "ER",
+    "source": "dict",
+    "start": 15.1,
+    "talk": 0.65,
+    "viseme": "E",
+    "word": "surrender."
+   },
+   {
+    "end": 15.34,
+    "line": 2,
+    "phoneme": "EH",
+    "source": "dict",
+    "start": 15.22,
+    "talk": 0.65,
+    "viseme": "E",
+    "word": "surrender."
+   },
+   {
+    "end": 15.42,
+    "line": 2,
+    "phoneme": "N",
+    "source": "dict",
+    "start": 15.34,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "surrender."
+   },
+   {
+    "end": 15.5,
+    "line": 2,
+    "phoneme": "D",
+    "source": "dict",
+    "start": 15.42,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "surrender."
+   },
+   {
+    "end": 15.62,
+    "line": 2,
+    "phoneme": "ER",
+    "source": "dict",
+    "start": 15.5,
+    "talk": 0.65,
+    "viseme": "E",
+    "word": "surrender."
+   },
+   {
+    "end": 16.076,
+    "line": 3,
+    "phoneme": "IH",
+    "source": "dict",
+    "start": 16.04,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "In"
+   },
+   {
+    "end": 16.1,
+    "line": 3,
+    "phoneme": "N",
+    "source": "dict",
+    "start": 16.076,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "In"
+   },
+   {
+    "end": 16.507,
+    "line": 3,
+    "phoneme": "N",
+    "source": "number",
+    "start": 16.14,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "1945,"
+   },
+   {
+    "end": 16.507,
+    "line": 3,
+    "phoneme": "AY",
+    "source": "number",
+    "start": 16.14,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "1945,"
+   },
+   {
+    "end": 16.507,
+    "line": 3,
+    "phoneme": "N",
+    "source": "number",
+    "start": 16.14,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "1945,"
+   },
+   {
+    "end": 16.507,
+    "line": 3,
+    "phoneme": "T",
+    "source": "number",
+    "start": 16.14,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "1945,"
+   },
+   {
+    "end": 16.507,
+    "line": 3,
+    "phoneme": "IY",
+    "source": "number",
+    "start": 16.14,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "1945,"
+   },
+   {
+    "end": 16.507,
+    "line": 3,
+    "phoneme": "N",
+    "source": "number",
+    "start": 16.14,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "1945,"
+   },
+   {
+    "end": 16.873,
+    "line": 3,
+    "phoneme": "F",
+    "source": "number",
+    "start": 16.507,
+    "talk": 0.3,
+    "viseme": "ff",
+    "word": "1945,"
+   },
+   {
+    "end": 16.873,
+    "line": 3,
+    "phoneme": "AO",
+    "source": "number",
+    "start": 16.507,
+    "talk": 0.85,
+    "viseme": "O",
+    "word": "1945,"
+   },
+   {
+    "end": 16.873,
+    "line": 3,
+    "phoneme": "R",
+    "source": "number",
+    "start": 16.507,
+    "talk": 0.45,
+    "viseme": "rr",
+    "word": "1945,"
+   },
+   {
+    "end": 16.873,
+    "line": 3,
+    "phoneme": "T",
+    "source": "number",
+    "start": 16.507,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "1945,"
+   },
+   {
+    "end": 16.873,
+    "line": 3,
+    "phoneme": "IY",
+    "source": "number",
+    "start": 16.507,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "1945,"
+   },
+   {
+    "end": 17.24,
+    "line": 3,
+    "phoneme": "F",
+    "source": "number",
+    "start": 16.873,
+    "talk": 0.3,
+    "viseme": "ff",
+    "word": "1945,"
+   },
+   {
+    "end": 17.24,
+    "line": 3,
+    "phoneme": "AY",
+    "source": "number",
+    "start": 16.873,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "1945,"
+   },
+   {
+    "end": 17.24,
+    "line": 3,
+    "phoneme": "V",
+    "source": "number",
+    "start": 16.873,
+    "talk": 0.3,
+    "viseme": "ff",
+    "word": "1945,"
+   },
+   {
+    "end": 17.656,
+    "line": 3,
+    "phoneme": "DH",
+    "source": "dict",
+    "start": 17.28,
+    "talk": 0.4,
+    "viseme": "th",
+    "word": "the"
+   },
+   {
+    "end": 18.22,
+    "line": 3,
+    "phoneme": "AH",
+    "source": "dict",
+    "start": 17.656,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "the"
+   },
+   {
+    "end": 18.329,
+    "line": 3,
+    "phoneme": "W",
+    "source": "dict",
+    "start": 18.26,
+    "talk": 0.6,
+    "viseme": "U",
+    "word": "war"
+   },
+   {
+    "end": 18.431,
+    "line": 3,
+    "phoneme": "AO",
+    "source": "dict",
+    "start": 18.329,
+    "talk": 0.85,
+    "viseme": "O",
+    "word": "war"
+   },
+   {
+    "end": 18.5,
+    "line": 3,
+    "phoneme": "R",
+    "source": "dict",
+    "start": 18.431,
+    "talk": 0.45,
+    "viseme": "rr",
+    "word": "war"
+   },
+   {
+    "end": 18.65,
+    "line": 3,
+    "phoneme": "EH",
+    "source": "dict",
+    "start": 18.54,
+    "talk": 0.65,
+    "viseme": "E",
+    "word": "ended."
+   },
+   {
+    "end": 18.723,
+    "line": 3,
+    "phoneme": "N",
+    "source": "dict",
+    "start": 18.65,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "ended."
+   },
+   {
+    "end": 18.797,
+    "line": 3,
+    "phoneme": "D",
+    "source": "dict",
+    "start": 18.723,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "ended."
+   },
+   {
+    "end": 18.907,
+    "line": 3,
+    "phoneme": "IH",
+    "source": "dict",
+    "start": 18.797,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "ended."
+   },
+   {
+    "end": 18.98,
+    "line": 3,
+    "phoneme": "D",
+    "source": "dict",
+    "start": 18.907,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "ended."
+   },
+   {
+    "end": 19.557,
+    "line": 3,
+    "phoneme": "B",
+    "source": "dict",
+    "start": 19.54,
+    "talk": 0.02,
+    "viseme": "pp",
+    "word": "But"
+   },
+   {
+    "end": 19.583,
+    "line": 3,
+    "phoneme": "AH",
+    "source": "dict",
+    "start": 19.557,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "But"
+   },
+   {
+    "end": 19.6,
+    "line": 3,
+    "phoneme": "T",
+    "source": "dict",
+    "start": 19.583,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "But"
+   },
+   {
+    "end": 19.705,
+    "line": 3,
+    "phoneme": "AA",
+    "source": "g2p",
+    "start": 19.64,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "Onoda"
+   },
+   {
+    "end": 19.748,
+    "line": 3,
+    "phoneme": "N",
+    "source": "g2p",
+    "start": 19.705,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "Onoda"
+   },
+   {
+    "end": 19.812,
+    "line": 3,
+    "phoneme": "AA",
+    "source": "g2p",
+    "start": 19.748,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "Onoda"
+   },
+   {
+    "end": 19.855,
+    "line": 3,
+    "phoneme": "D",
+    "source": "g2p",
+    "start": 19.812,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "Onoda"
+   },
+   {
+    "end": 19.92,
+    "line": 3,
+    "phoneme": "AE",
+    "source": "g2p",
+    "start": 19.855,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "Onoda"
+   },
+   {
+    "end": 20.004,
+    "line": 3,
+    "phoneme": "N",
+    "source": "dict",
+    "start": 19.96,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "never"
+   },
+   {
+    "end": 20.07,
+    "line": 3,
+    "phoneme": "EH",
+    "source": "dict",
+    "start": 20.004,
+    "talk": 0.65,
+    "viseme": "E",
+    "word": "never"
+   },
+   {
+    "end": 20.114,
+    "line": 3,
+    "phoneme": "V",
+    "source": "dict",
+    "start": 20.07,
+    "talk": 0.3,
+    "viseme": "ff",
+    "word": "never"
+   },
+   {
+    "end": 20.18,
+    "line": 3,
+    "phoneme": "ER",
+    "source": "dict",
+    "start": 20.114,
+    "talk": 0.65,
+    "viseme": "E",
+    "word": "never"
+   },
+   {
+    "end": 20.289,
+    "line": 3,
+    "phoneme": "G",
+    "source": "dict",
+    "start": 20.22,
+    "talk": 0.5,
+    "viseme": "kk",
+    "word": "got"
+   },
+   {
+    "end": 20.391,
+    "line": 3,
+    "phoneme": "AA",
+    "source": "dict",
+    "start": 20.289,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "got"
+   },
+   {
+    "end": 20.46,
+    "line": 3,
+    "phoneme": "T",
+    "source": "dict",
+    "start": 20.391,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "got"
+   },
+   {
+    "end": 20.564,
+    "line": 3,
+    "phoneme": "DH",
+    "source": "dict",
+    "start": 20.5,
+    "talk": 0.4,
+    "viseme": "th",
+    "word": "the"
+   },
+   {
+    "end": 20.66,
+    "line": 3,
+    "phoneme": "AH",
+    "source": "dict",
+    "start": 20.564,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "the"
+   },
+   {
+    "end": 20.767,
+    "line": 3,
+    "phoneme": "M",
+    "source": "dict",
+    "start": 20.7,
+    "talk": 0.02,
+    "viseme": "pp",
+    "word": "message."
+   },
+   {
+    "end": 20.867,
+    "line": 3,
+    "phoneme": "EH",
+    "source": "dict",
+    "start": 20.767,
+    "talk": 0.65,
+    "viseme": "E",
+    "word": "message."
+   },
+   {
+    "end": 20.933,
+    "line": 3,
+    "phoneme": "S",
+    "source": "dict",
+    "start": 20.867,
+    "talk": 0.22,
+    "viseme": "ss",
+    "word": "message."
+   },
+   {
+    "end": 21.033,
+    "line": 3,
+    "phoneme": "IH",
+    "source": "dict",
+    "start": 20.933,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "message."
+   },
+   {
+    "end": 21.1,
+    "line": 3,
+    "phoneme": "JH",
+    "source": "dict",
+    "start": 21.033,
+    "talk": 0.55,
+    "viseme": "ch",
+    "word": "message."
+   },
+   {
+    "end": 21.655,
+    "line": 4,
+    "phoneme": "P",
+    "source": "dict",
+    "start": 21.64,
+    "talk": 0.02,
+    "viseme": "pp",
+    "word": "Planes"
+   },
+   {
+    "end": 21.669,
+    "line": 4,
+    "phoneme": "L",
+    "source": "dict",
+    "start": 21.655,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "Planes"
+   },
+   {
+    "end": 21.691,
+    "line": 4,
+    "phoneme": "EY",
+    "source": "dict",
+    "start": 21.669,
+    "talk": 0.65,
+    "viseme": "E",
+    "word": "Planes"
+   },
+   {
+    "end": 21.705,
+    "line": 4,
+    "phoneme": "N",
+    "source": "dict",
+    "start": 21.691,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "Planes"
+   },
+   {
+    "end": 21.72,
+    "line": 4,
+    "phoneme": "Z",
+    "source": "dict",
+    "start": 21.705,
+    "talk": 0.22,
+    "viseme": "ss",
+    "word": "Planes"
+   },
+   {
+    "end": 21.818,
+    "line": 4,
+    "phoneme": "D",
+    "source": "dict",
+    "start": 21.76,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "dropped"
+   },
+   {
+    "end": 21.876,
+    "line": 4,
+    "phoneme": "R",
+    "source": "dict",
+    "start": 21.818,
+    "talk": 0.45,
+    "viseme": "rr",
+    "word": "dropped"
+   },
+   {
+    "end": 21.964,
+    "line": 4,
+    "phoneme": "AA",
+    "source": "dict",
+    "start": 21.876,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "dropped"
+   },
+   {
+    "end": 22.022,
+    "line": 4,
+    "phoneme": "P",
+    "source": "dict",
+    "start": 21.964,
+    "talk": 0.02,
+    "viseme": "pp",
+    "word": "dropped"
+   },
+   {
+    "end": 22.08,
+    "line": 4,
+    "phoneme": "T",
+    "source": "dict",
+    "start": 22.022,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "dropped"
+   },
+   {
+    "end": 22.18,
+    "line": 4,
+    "phoneme": "L",
+    "source": "dict",
+    "start": 22.12,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "leaflets"
+   },
+   {
+    "end": 22.27,
+    "line": 4,
+    "phoneme": "IY",
+    "source": "dict",
+    "start": 22.18,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "leaflets"
+   },
+   {
+    "end": 22.33,
+    "line": 4,
+    "phoneme": "F",
+    "source": "dict",
+    "start": 22.27,
+    "talk": 0.3,
+    "viseme": "ff",
+    "word": "leaflets"
+   },
+   {
+    "end": 22.39,
+    "line": 4,
+    "phoneme": "L",
+    "source": "dict",
+    "start": 22.33,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "leaflets"
+   },
+   {
+    "end": 22.48,
+    "line": 4,
+    "phoneme": "AH",
+    "source": "dict",
+    "start": 22.39,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "leaflets"
+   },
+   {
+    "end": 22.54,
+    "line": 4,
+    "phoneme": "T",
+    "source": "dict",
+    "start": 22.48,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "leaflets"
+   },
+   {
+    "end": 22.6,
+    "line": 4,
+    "phoneme": "S",
+    "source": "dict",
+    "start": 22.54,
+    "talk": 0.22,
+    "viseme": "ss",
+    "word": "leaflets"
+   },
+   {
+    "end": 22.744,
+    "line": 4,
+    "phoneme": "S",
+    "source": "dict",
+    "start": 22.64,
+    "talk": 0.22,
+    "viseme": "ss",
+    "word": "saying"
+   },
+   {
+    "end": 22.9,
+    "line": 4,
+    "phoneme": "EY",
+    "source": "dict",
+    "start": 22.744,
+    "talk": 0.65,
+    "viseme": "E",
+    "word": "saying"
+   },
+   {
+    "end": 23.056,
+    "line": 4,
+    "phoneme": "IH",
+    "source": "dict",
+    "start": 22.9,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "saying"
+   },
+   {
+    "end": 23.16,
+    "line": 4,
+    "phoneme": "NG",
+    "source": "dict",
+    "start": 23.056,
+    "talk": 0.5,
+    "viseme": "kk",
+    "word": "saying"
+   },
+   {
+    "end": 23.256,
+    "line": 4,
+    "phoneme": "DH",
+    "source": "dict",
+    "start": 23.2,
+    "talk": 0.4,
+    "viseme": "th",
+    "word": "the"
+   },
+   {
+    "end": 23.34,
+    "line": 4,
+    "phoneme": "AH",
+    "source": "dict",
+    "start": 23.256,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "the"
+   },
+   {
+    "end": 23.437,
+    "line": 4,
+    "phoneme": "W",
+    "source": "dict",
+    "start": 23.38,
+    "talk": 0.6,
+    "viseme": "U",
+    "word": "war"
+   },
+   {
+    "end": 23.523,
+    "line": 4,
+    "phoneme": "AO",
+    "source": "dict",
+    "start": 23.437,
+    "talk": 0.85,
+    "viseme": "O",
+    "word": "war"
+   },
+   {
+    "end": 23.58,
+    "line": 4,
+    "phoneme": "R",
+    "source": "dict",
+    "start": 23.523,
+    "talk": 0.45,
+    "viseme": "rr",
+    "word": "war"
+   },
+   {
+    "end": 23.66,
+    "line": 4,
+    "phoneme": "W",
+    "source": "dict",
+    "start": 23.62,
+    "talk": 0.6,
+    "viseme": "U",
+    "word": "was"
+   },
+   {
+    "end": 23.72,
+    "line": 4,
+    "phoneme": "AH",
+    "source": "dict",
+    "start": 23.66,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "was"
+   },
+   {
+    "end": 23.76,
+    "line": 4,
+    "phoneme": "Z",
+    "source": "dict",
+    "start": 23.72,
+    "talk": 0.22,
+    "viseme": "ss",
+    "word": "was"
+   },
+   {
+    "end": 23.92,
+    "line": 4,
+    "phoneme": "OW",
+    "source": "dict",
+    "start": 23.8,
+    "talk": 0.85,
+    "viseme": "O",
+    "word": "over."
+   },
+   {
+    "end": 24.0,
+    "line": 4,
+    "phoneme": "V",
+    "source": "dict",
+    "start": 23.92,
+    "talk": 0.3,
+    "viseme": "ff",
+    "word": "over."
+   },
+   {
+    "end": 24.12,
+    "line": 4,
+    "phoneme": "ER",
+    "source": "dict",
+    "start": 24.0,
+    "talk": 0.65,
+    "viseme": "E",
+    "word": "over."
+   },
+   {
+    "end": 24.64,
+    "line": 4,
+    "phoneme": "IY",
+    "source": "dict",
+    "start": 24.52,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "He"
+   },
+   {
+    "end": 24.72,
+    "line": 4,
+    "phoneme": "TH",
+    "source": "dict",
+    "start": 24.68,
+    "talk": 0.4,
+    "viseme": "th",
+    "word": "thought"
+   },
+   {
+    "end": 24.78,
+    "line": 4,
+    "phoneme": "AO",
+    "source": "dict",
+    "start": 24.72,
+    "talk": 0.85,
+    "viseme": "O",
+    "word": "thought"
+   },
+   {
+    "end": 24.82,
+    "line": 4,
+    "phoneme": "T",
+    "source": "dict",
+    "start": 24.78,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "thought"
+   },
+   {
+    "end": 24.92,
+    "line": 4,
+    "phoneme": "IH",
+    "source": "dict",
+    "start": 24.86,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "it"
+   },
+   {
+    "end": 24.96,
+    "line": 4,
+    "phoneme": "T",
+    "source": "dict",
+    "start": 24.92,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "it"
+   },
+   {
+    "end": 25.023,
+    "line": 4,
+    "phoneme": "W",
+    "source": "dict",
+    "start": 25.0,
+    "talk": 0.6,
+    "viseme": "U",
+    "word": "was"
+   },
+   {
+    "end": 25.057,
+    "line": 4,
+    "phoneme": "AH",
+    "source": "dict",
+    "start": 25.023,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "was"
+   },
+   {
+    "end": 25.08,
+    "line": 4,
+    "phoneme": "Z",
+    "source": "dict",
+    "start": 25.057,
+    "talk": 0.22,
+    "viseme": "ss",
+    "word": "was"
+   },
+   {
+    "end": 25.18,
+    "line": 4,
+    "phoneme": "AH",
+    "source": "dict",
+    "start": 25.12,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "an"
+   },
+   {
+    "end": 25.22,
+    "line": 4,
+    "phoneme": "N",
+    "source": "dict",
+    "start": 25.18,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "an"
+   },
+   {
+    "end": 25.329,
+    "line": 4,
+    "phoneme": "EH",
+    "source": "dict",
+    "start": 25.26,
+    "talk": 0.65,
+    "viseme": "E",
+    "word": "enemy"
+   },
+   {
+    "end": 25.375,
+    "line": 4,
+    "phoneme": "N",
+    "source": "dict",
+    "start": 25.329,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "enemy"
+   },
+   {
+    "end": 25.445,
+    "line": 4,
+    "phoneme": "AH",
+    "source": "dict",
+    "start": 25.375,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "enemy"
+   },
+   {
+    "end": 25.491,
+    "line": 4,
+    "phoneme": "M",
+    "source": "dict",
+    "start": 25.445,
+    "talk": 0.02,
+    "viseme": "pp",
+    "word": "enemy"
+   },
+   {
+    "end": 25.56,
+    "line": 4,
+    "phoneme": "IY",
+    "source": "dict",
+    "start": 25.491,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "enemy"
+   },
+   {
+    "end": 25.667,
+    "line": 4,
+    "phoneme": "T",
+    "source": "dict",
+    "start": 25.6,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "trick."
+   },
+   {
+    "end": 25.733,
+    "line": 4,
+    "phoneme": "R",
+    "source": "dict",
+    "start": 25.667,
+    "talk": 0.45,
+    "viseme": "rr",
+    "word": "trick."
+   },
+   {
+    "end": 25.833,
+    "line": 4,
+    "phoneme": "IH",
+    "source": "dict",
+    "start": 25.733,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "trick."
+   },
+   {
+    "end": 25.9,
+    "line": 4,
+    "phoneme": "K",
+    "source": "dict",
+    "start": 25.833,
+    "talk": 0.5,
+    "viseme": "kk",
+    "word": "trick."
+   },
+   {
+    "end": 26.277,
+    "line": 5,
+    "phoneme": "IH",
+    "source": "dict",
+    "start": 26.22,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "His"
+   },
+   {
+    "end": 26.3,
+    "line": 5,
+    "phoneme": "Z",
+    "source": "dict",
+    "start": 26.277,
+    "talk": 0.22,
+    "viseme": "ss",
+    "word": "His"
+   },
+   {
+    "end": 26.389,
+    "line": 5,
+    "phoneme": "F",
+    "source": "dict",
+    "start": 26.34,
+    "talk": 0.3,
+    "viseme": "ff",
+    "word": "friends"
+   },
+   {
+    "end": 26.438,
+    "line": 5,
+    "phoneme": "R",
+    "source": "dict",
+    "start": 26.389,
+    "talk": 0.45,
+    "viseme": "rr",
+    "word": "friends"
+   },
+   {
+    "end": 26.512,
+    "line": 5,
+    "phoneme": "EH",
+    "source": "dict",
+    "start": 26.438,
+    "talk": 0.65,
+    "viseme": "E",
+    "word": "friends"
+   },
+   {
+    "end": 26.562,
+    "line": 5,
+    "phoneme": "N",
+    "source": "dict",
+    "start": 26.512,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "friends"
+   },
+   {
+    "end": 26.611,
+    "line": 5,
+    "phoneme": "D",
+    "source": "dict",
+    "start": 26.562,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "friends"
+   },
+   {
+    "end": 26.66,
+    "line": 5,
+    "phoneme": "Z",
+    "source": "dict",
+    "start": 26.611,
+    "talk": 0.22,
+    "viseme": "ss",
+    "word": "friends"
+   },
+   {
+    "end": 26.78,
+    "line": 5,
+    "phoneme": "G",
+    "source": "dict",
+    "start": 26.7,
+    "talk": 0.5,
+    "viseme": "kk",
+    "word": "gave"
+   },
+   {
+    "end": 26.9,
+    "line": 5,
+    "phoneme": "EY",
+    "source": "dict",
+    "start": 26.78,
+    "talk": 0.65,
+    "viseme": "E",
+    "word": "gave"
+   },
+   {
+    "end": 26.98,
+    "line": 5,
+    "phoneme": "V",
+    "source": "dict",
+    "start": 26.9,
+    "talk": 0.3,
+    "viseme": "ff",
+    "word": "gave"
+   },
+   {
+    "end": 27.116,
+    "line": 5,
+    "phoneme": "AH",
+    "source": "dict",
+    "start": 27.02,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "up"
+   },
+   {
+    "end": 27.18,
+    "line": 5,
+    "phoneme": "P",
+    "source": "dict",
+    "start": 27.116,
+    "talk": 0.02,
+    "viseme": "pp",
+    "word": "up"
+   },
+   {
+    "end": 27.328,
+    "line": 5,
+    "phoneme": "AO",
+    "source": "dict",
+    "start": 27.22,
+    "talk": 0.85,
+    "viseme": "O",
+    "word": "or"
+   },
+   {
+    "end": 27.4,
+    "line": 5,
+    "phoneme": "R",
+    "source": "dict",
+    "start": 27.328,
+    "talk": 0.45,
+    "viseme": "rr",
+    "word": "or"
+   },
+   {
+    "end": 27.537,
+    "line": 5,
+    "phoneme": "D",
+    "source": "dict",
+    "start": 27.44,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "died,"
+   },
+   {
+    "end": 27.683,
+    "line": 5,
+    "phoneme": "AY",
+    "source": "dict",
+    "start": 27.537,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "died,"
+   },
+   {
+    "end": 27.78,
+    "line": 5,
+    "phoneme": "D",
+    "source": "dict",
+    "start": 27.683,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "died,"
+   },
+   {
+    "end": 27.95,
+    "line": 5,
+    "phoneme": "AH",
+    "source": "dict",
+    "start": 27.82,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "until"
+   },
+   {
+    "end": 28.037,
+    "line": 5,
+    "phoneme": "N",
+    "source": "dict",
+    "start": 27.95,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "until"
+   },
+   {
+    "end": 28.123,
+    "line": 5,
+    "phoneme": "T",
+    "source": "dict",
+    "start": 28.037,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "until"
+   },
+   {
+    "end": 28.253,
+    "line": 5,
+    "phoneme": "IH",
+    "source": "dict",
+    "start": 28.123,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "until"
+   },
+   {
+    "end": 28.34,
+    "line": 5,
+    "phoneme": "L",
+    "source": "dict",
+    "start": 28.253,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "until"
+   },
+   {
+    "end": 28.48,
+    "line": 5,
+    "phoneme": "IY",
+    "source": "dict",
+    "start": 28.38,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "he"
+   },
+   {
+    "end": 28.543,
+    "line": 5,
+    "phoneme": "W",
+    "source": "dict",
+    "start": 28.52,
+    "talk": 0.6,
+    "viseme": "U",
+    "word": "was"
+   },
+   {
+    "end": 28.577,
+    "line": 5,
+    "phoneme": "AH",
+    "source": "dict",
+    "start": 28.543,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "was"
+   },
+   {
+    "end": 28.6,
+    "line": 5,
+    "phoneme": "Z",
+    "source": "dict",
+    "start": 28.577,
+    "talk": 0.22,
+    "viseme": "ss",
+    "word": "was"
+   },
+   {
+    "end": 28.736,
+    "line": 5,
+    "phoneme": "AH",
+    "source": "dict",
+    "start": 28.64,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "alone."
+   },
+   {
+    "end": 28.8,
+    "line": 5,
+    "phoneme": "L",
+    "source": "dict",
+    "start": 28.736,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "alone."
+   },
+   {
+    "end": 28.896,
+    "line": 5,
+    "phoneme": "OW",
+    "source": "dict",
+    "start": 28.8,
+    "talk": 0.85,
+    "viseme": "O",
+    "word": "alone."
+   },
+   {
+    "end": 28.96,
+    "line": 5,
+    "phoneme": "N",
+    "source": "dict",
+    "start": 28.896,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "alone."
+   },
+   {
+    "end": 29.46,
+    "line": 6,
+    "phoneme": "IY",
+    "source": "dict",
+    "start": 29.381,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "He"
+   },
+   {
+    "end": 29.544,
+    "line": 6,
+    "phoneme": "L",
+    "source": "dict",
+    "start": 29.5,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "lived"
+   },
+   {
+    "end": 29.611,
+    "line": 6,
+    "phoneme": "IH",
+    "source": "dict",
+    "start": 29.544,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "lived"
+   },
+   {
+    "end": 29.656,
+    "line": 6,
+    "phoneme": "V",
+    "source": "dict",
+    "start": 29.611,
+    "talk": 0.3,
+    "viseme": "ff",
+    "word": "lived"
+   },
+   {
+    "end": 29.7,
+    "line": 6,
+    "phoneme": "D",
+    "source": "dict",
+    "start": 29.656,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "lived"
+   },
+   {
+    "end": 29.836,
+    "line": 6,
+    "phoneme": "IH",
+    "source": "dict",
+    "start": 29.74,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "in"
+   },
+   {
+    "end": 29.9,
+    "line": 6,
+    "phoneme": "N",
+    "source": "dict",
+    "start": 29.836,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "in"
+   },
+   {
+    "end": 29.972,
+    "line": 6,
+    "phoneme": "DH",
+    "source": "dict",
+    "start": 29.94,
+    "talk": 0.4,
+    "viseme": "th",
+    "word": "the"
+   },
+   {
+    "end": 30.02,
+    "line": 6,
+    "phoneme": "AH",
+    "source": "dict",
+    "start": 29.972,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "the"
+   },
+   {
+    "end": 30.091,
+    "line": 6,
+    "phoneme": "JH",
+    "source": "dict",
+    "start": 30.06,
+    "talk": 0.55,
+    "viseme": "ch",
+    "word": "jungle"
+   },
+   {
+    "end": 30.139,
+    "line": 6,
+    "phoneme": "AH",
+    "source": "dict",
+    "start": 30.091,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "jungle"
+   },
+   {
+    "end": 30.17,
+    "line": 6,
+    "phoneme": "NG",
+    "source": "dict",
+    "start": 30.139,
+    "talk": 0.5,
+    "viseme": "kk",
+    "word": "jungle"
+   },
+   {
+    "end": 30.201,
+    "line": 6,
+    "phoneme": "G",
+    "source": "dict",
+    "start": 30.17,
+    "talk": 0.5,
+    "viseme": "kk",
+    "word": "jungle"
+   },
+   {
+    "end": 30.249,
+    "line": 6,
+    "phoneme": "AH",
+    "source": "dict",
+    "start": 30.201,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "jungle"
+   },
+   {
+    "end": 30.28,
+    "line": 6,
+    "phoneme": "L",
+    "source": "dict",
+    "start": 30.249,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "jungle"
+   },
+   {
+    "end": 30.4,
+    "line": 6,
+    "phoneme": "F",
+    "source": "dict",
+    "start": 30.32,
+    "talk": 0.3,
+    "viseme": "ff",
+    "word": "for"
+   },
+   {
+    "end": 30.52,
+    "line": 6,
+    "phoneme": "AO",
+    "source": "dict",
+    "start": 30.4,
+    "talk": 0.85,
+    "viseme": "O",
+    "word": "for"
+   },
+   {
+    "end": 30.6,
+    "line": 6,
+    "phoneme": "R",
+    "source": "dict",
+    "start": 30.52,
+    "talk": 0.45,
+    "viseme": "rr",
+    "word": "for"
+   },
+   {
+    "end": 30.714,
+    "line": 6,
+    "phoneme": "D",
+    "source": "dict",
+    "start": 30.64,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "decades,"
+   },
+   {
+    "end": 30.826,
+    "line": 6,
+    "phoneme": "EH",
+    "source": "dict",
+    "start": 30.714,
+    "talk": 0.65,
+    "viseme": "E",
+    "word": "decades,"
+   },
+   {
+    "end": 30.9,
+    "line": 6,
+    "phoneme": "K",
+    "source": "dict",
+    "start": 30.826,
+    "talk": 0.5,
+    "viseme": "kk",
+    "word": "decades,"
+   },
+   {
+    "end": 31.011,
+    "line": 6,
+    "phoneme": "EY",
+    "source": "dict",
+    "start": 30.9,
+    "talk": 0.65,
+    "viseme": "E",
+    "word": "decades,"
+   },
+   {
+    "end": 31.086,
+    "line": 6,
+    "phoneme": "D",
+    "source": "dict",
+    "start": 31.011,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "decades,"
+   },
+   {
+    "end": 31.16,
+    "line": 6,
+    "phoneme": "Z",
+    "source": "dict",
+    "start": 31.086,
+    "talk": 0.22,
+    "viseme": "ss",
+    "word": "decades,"
+   },
+   {
+    "end": 31.629,
+    "line": 6,
+    "phoneme": "S",
+    "source": "dict",
+    "start": 31.58,
+    "talk": 0.22,
+    "viseme": "ss",
+    "word": "surviving"
+   },
+   {
+    "end": 31.704,
+    "line": 6,
+    "phoneme": "ER",
+    "source": "dict",
+    "start": 31.629,
+    "talk": 0.65,
+    "viseme": "E",
+    "word": "surviving"
+   },
+   {
+    "end": 31.753,
+    "line": 6,
+    "phoneme": "V",
+    "source": "dict",
+    "start": 31.704,
+    "talk": 0.3,
+    "viseme": "ff",
+    "word": "surviving"
+   },
+   {
+    "end": 31.827,
+    "line": 6,
+    "phoneme": "AY",
+    "source": "dict",
+    "start": 31.753,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "surviving"
+   },
+   {
+    "end": 31.876,
+    "line": 6,
+    "phoneme": "V",
+    "source": "dict",
+    "start": 31.827,
+    "talk": 0.3,
+    "viseme": "ff",
+    "word": "surviving"
+   },
+   {
+    "end": 31.951,
+    "line": 6,
+    "phoneme": "IH",
+    "source": "dict",
+    "start": 31.876,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "surviving"
+   },
+   {
+    "end": 32.0,
+    "line": 6,
+    "phoneme": "NG",
+    "source": "dict",
+    "start": 31.951,
+    "talk": 0.5,
+    "viseme": "kk",
+    "word": "surviving"
+   },
+   {
+    "end": 32.232,
+    "line": 6,
+    "phoneme": "AA",
+    "source": "dict",
+    "start": 32.04,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "on"
+   },
+   {
+    "end": 32.36,
+    "line": 6,
+    "phoneme": "N",
+    "source": "dict",
+    "start": 32.232,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "on"
+   },
+   {
+    "end": 32.461,
+    "line": 6,
+    "phoneme": "K",
+    "source": "dict",
+    "start": 32.4,
+    "talk": 0.5,
+    "viseme": "kk",
+    "word": "coconuts"
+   },
+   {
+    "end": 32.553,
+    "line": 6,
+    "phoneme": "OW",
+    "source": "dict",
+    "start": 32.461,
+    "talk": 0.85,
+    "viseme": "O",
+    "word": "coconuts"
+   },
+   {
+    "end": 32.614,
+    "line": 6,
+    "phoneme": "K",
+    "source": "dict",
+    "start": 32.553,
+    "talk": 0.5,
+    "viseme": "kk",
+    "word": "coconuts"
+   },
+   {
+    "end": 32.705,
+    "line": 6,
+    "phoneme": "AH",
+    "source": "dict",
+    "start": 32.614,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "coconuts"
+   },
+   {
+    "end": 32.766,
+    "line": 6,
+    "phoneme": "N",
+    "source": "dict",
+    "start": 32.705,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "coconuts"
+   },
+   {
+    "end": 32.858,
+    "line": 6,
+    "phoneme": "AH",
+    "source": "dict",
+    "start": 32.766,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "coconuts"
+   },
+   {
+    "end": 32.919,
+    "line": 6,
+    "phoneme": "T",
+    "source": "dict",
+    "start": 32.858,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "coconuts"
+   },
+   {
+    "end": 32.98,
+    "line": 6,
+    "phoneme": "S",
+    "source": "dict",
+    "start": 32.919,
+    "talk": 0.22,
+    "viseme": "ss",
+    "word": "coconuts"
+   },
+   {
+    "end": 33.174,
+    "line": 6,
+    "phoneme": "AH",
+    "source": "dict",
+    "start": 33.02,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "and"
+   },
+   {
+    "end": 33.277,
+    "line": 6,
+    "phoneme": "N",
+    "source": "dict",
+    "start": 33.174,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "and"
+   },
+   {
+    "end": 33.38,
+    "line": 6,
+    "phoneme": "D",
+    "source": "dict",
+    "start": 33.277,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "and"
+   },
+   {
+    "end": 33.46,
+    "line": 6,
+    "phoneme": "B",
+    "source": "dict",
+    "start": 33.42,
+    "talk": 0.02,
+    "viseme": "pp",
+    "word": "bananas."
+   },
+   {
+    "end": 33.52,
+    "line": 6,
+    "phoneme": "AH",
+    "source": "dict",
+    "start": 33.46,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "bananas."
+   },
+   {
+    "end": 33.56,
+    "line": 6,
+    "phoneme": "N",
+    "source": "dict",
+    "start": 33.52,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "bananas."
+   },
+   {
+    "end": 33.62,
+    "line": 6,
+    "phoneme": "AE",
+    "source": "dict",
+    "start": 33.56,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "bananas."
+   },
+   {
+    "end": 33.66,
+    "line": 6,
+    "phoneme": "N",
+    "source": "dict",
+    "start": 33.62,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "bananas."
+   },
+   {
+    "end": 33.72,
+    "line": 6,
+    "phoneme": "AH",
+    "source": "dict",
+    "start": 33.66,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "bananas."
+   },
+   {
+    "end": 33.76,
+    "line": 6,
+    "phoneme": "Z",
+    "source": "dict",
+    "start": 33.72,
+    "talk": 0.22,
+    "viseme": "ss",
+    "word": "bananas."
+   },
+   {
+    "end": 34.336,
+    "line": 7,
+    "phoneme": "IH",
+    "source": "dict",
+    "start": 34.3,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "In"
+   },
+   {
+    "end": 34.36,
+    "line": 7,
+    "phoneme": "N",
+    "source": "dict",
+    "start": 34.336,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "In"
+   },
+   {
+    "end": 34.773,
+    "line": 7,
+    "phoneme": "N",
+    "source": "number",
+    "start": 34.4,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "1974,"
+   },
+   {
+    "end": 34.773,
+    "line": 7,
+    "phoneme": "AY",
+    "source": "number",
+    "start": 34.4,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "1974,"
+   },
+   {
+    "end": 34.773,
+    "line": 7,
+    "phoneme": "N",
+    "source": "number",
+    "start": 34.4,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "1974,"
+   },
+   {
+    "end": 34.773,
+    "line": 7,
+    "phoneme": "T",
+    "source": "number",
+    "start": 34.4,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "1974,"
+   },
+   {
+    "end": 34.773,
+    "line": 7,
+    "phoneme": "IY",
+    "source": "number",
+    "start": 34.4,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "1974,"
+   },
+   {
+    "end": 34.773,
+    "line": 7,
+    "phoneme": "N",
+    "source": "number",
+    "start": 34.4,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "1974,"
+   },
+   {
+    "end": 35.147,
+    "line": 7,
+    "phoneme": "S",
+    "source": "number",
+    "start": 34.773,
+    "talk": 0.22,
+    "viseme": "ss",
+    "word": "1974,"
+   },
+   {
+    "end": 35.147,
+    "line": 7,
+    "phoneme": "EH",
+    "source": "number",
+    "start": 34.773,
+    "talk": 0.65,
+    "viseme": "E",
+    "word": "1974,"
+   },
+   {
+    "end": 35.147,
+    "line": 7,
+    "phoneme": "V",
+    "source": "number",
+    "start": 34.773,
+    "talk": 0.3,
+    "viseme": "ff",
+    "word": "1974,"
+   },
+   {
+    "end": 35.147,
+    "line": 7,
+    "phoneme": "AH",
+    "source": "number",
+    "start": 34.773,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "1974,"
+   },
+   {
+    "end": 35.147,
+    "line": 7,
+    "phoneme": "N",
+    "source": "number",
+    "start": 34.773,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "1974,"
+   },
+   {
+    "end": 35.147,
+    "line": 7,
+    "phoneme": "T",
+    "source": "number",
+    "start": 34.773,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "1974,"
+   },
+   {
+    "end": 35.147,
+    "line": 7,
+    "phoneme": "IY",
+    "source": "number",
+    "start": 34.773,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "1974,"
+   },
+   {
+    "end": 35.52,
+    "line": 7,
+    "phoneme": "F",
+    "source": "number",
+    "start": 35.147,
+    "talk": 0.3,
+    "viseme": "ff",
+    "word": "1974,"
+   },
+   {
+    "end": 35.52,
+    "line": 7,
+    "phoneme": "AO",
+    "source": "number",
+    "start": 35.147,
+    "talk": 0.85,
+    "viseme": "O",
+    "word": "1974,"
+   },
+   {
+    "end": 35.52,
+    "line": 7,
+    "phoneme": "R",
+    "source": "number",
+    "start": 35.147,
+    "talk": 0.45,
+    "viseme": "rr",
+    "word": "1974,"
+   },
+   {
+    "end": 36.48,
+    "line": 7,
+    "phoneme": "AH",
+    "source": "dict",
+    "start": 35.56,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "a"
+   },
+   {
+    "end": 36.589,
+    "line": 7,
+    "phoneme": "Y",
+    "source": "dict",
+    "start": 36.52,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "young"
+   },
+   {
+    "end": 36.691,
+    "line": 7,
+    "phoneme": "AH",
+    "source": "dict",
+    "start": 36.589,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "young"
+   },
+   {
+    "end": 36.76,
+    "line": 7,
+    "phoneme": "NG",
+    "source": "dict",
+    "start": 36.691,
+    "talk": 0.5,
+    "viseme": "kk",
+    "word": "young"
+   },
+   {
+    "end": 36.838,
+    "line": 7,
+    "phoneme": "T",
+    "source": "dict",
+    "start": 36.8,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "traveler"
+   },
+   {
+    "end": 36.875,
+    "line": 7,
+    "phoneme": "R",
+    "source": "dict",
+    "start": 36.838,
+    "talk": 0.45,
+    "viseme": "rr",
+    "word": "traveler"
+   },
+   {
+    "end": 36.932,
+    "line": 7,
+    "phoneme": "AE",
+    "source": "dict",
+    "start": 36.875,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "traveler"
+   },
+   {
+    "end": 36.969,
+    "line": 7,
+    "phoneme": "V",
+    "source": "dict",
+    "start": 36.932,
+    "talk": 0.3,
+    "viseme": "ff",
+    "word": "traveler"
+   },
+   {
+    "end": 37.026,
+    "line": 7,
+    "phoneme": "AH",
+    "source": "dict",
+    "start": 36.969,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "traveler"
+   },
+   {
+    "end": 37.064,
+    "line": 7,
+    "phoneme": "L",
+    "source": "dict",
+    "start": 37.026,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "traveler"
+   },
+   {
+    "end": 37.12,
+    "line": 7,
+    "phoneme": "ER",
+    "source": "dict",
+    "start": 37.064,
+    "talk": 0.65,
+    "viseme": "E",
+    "word": "traveler"
+   },
+   {
+    "end": 37.249,
+    "line": 7,
+    "phoneme": "N",
+    "source": "dict",
+    "start": 37.16,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "named"
+   },
+   {
+    "end": 37.382,
+    "line": 7,
+    "phoneme": "EY",
+    "source": "dict",
+    "start": 37.249,
+    "talk": 0.65,
+    "viseme": "E",
+    "word": "named"
+   },
+   {
+    "end": 37.471,
+    "line": 7,
+    "phoneme": "M",
+    "source": "dict",
+    "start": 37.382,
+    "talk": 0.02,
+    "viseme": "pp",
+    "word": "named"
+   },
+   {
+    "end": 37.56,
+    "line": 7,
+    "phoneme": "D",
+    "source": "dict",
+    "start": 37.471,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "named"
+   },
+   {
+    "end": 37.671,
+    "line": 7,
+    "phoneme": "N",
+    "source": "g2p",
+    "start": 37.6,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "Norio"
+   },
+   {
+    "end": 37.777,
+    "line": 7,
+    "phoneme": "AO",
+    "source": "g2p",
+    "start": 37.671,
+    "talk": 0.85,
+    "viseme": "O",
+    "word": "Norio"
+   },
+   {
+    "end": 37.848,
+    "line": 7,
+    "phoneme": "R",
+    "source": "g2p",
+    "start": 37.777,
+    "talk": 0.45,
+    "viseme": "rr",
+    "word": "Norio"
+   },
+   {
+    "end": 37.954,
+    "line": 7,
+    "phoneme": "IH",
+    "source": "g2p",
+    "start": 37.848,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "Norio"
+   },
+   {
+    "end": 38.06,
+    "line": 7,
+    "phoneme": "AA",
+    "source": "g2p",
+    "start": 37.954,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "Norio"
+   },
+   {
+    "end": 38.145,
+    "line": 7,
+    "phoneme": "S",
+    "source": "g2p",
+    "start": 38.1,
+    "talk": 0.22,
+    "viseme": "ss",
+    "word": "Suzuki"
+   },
+   {
+    "end": 38.213,
+    "line": 7,
+    "phoneme": "AH",
+    "source": "g2p",
+    "start": 38.145,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "Suzuki"
+   },
+   {
+    "end": 38.259,
+    "line": 7,
+    "phoneme": "Z",
+    "source": "g2p",
+    "start": 38.213,
+    "talk": 0.22,
+    "viseme": "ss",
+    "word": "Suzuki"
+   },
+   {
+    "end": 38.327,
+    "line": 7,
+    "phoneme": "AH",
+    "source": "g2p",
+    "start": 38.259,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "Suzuki"
+   },
+   {
+    "end": 38.372,
+    "line": 7,
+    "phoneme": "K",
+    "source": "g2p",
+    "start": 38.327,
+    "talk": 0.5,
+    "viseme": "kk",
+    "word": "Suzuki"
+   },
+   {
+    "end": 38.44,
+    "line": 7,
+    "phoneme": "IH",
+    "source": "g2p",
+    "start": 38.372,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "Suzuki"
+   },
+   {
+    "end": 38.596,
+    "line": 7,
+    "phoneme": "F",
+    "source": "dict",
+    "start": 38.48,
+    "talk": 0.3,
+    "viseme": "ff",
+    "word": "found"
+   },
+   {
+    "end": 38.769,
+    "line": 7,
+    "phoneme": "AW",
+    "source": "dict",
+    "start": 38.596,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "found"
+   },
+   {
+    "end": 38.884,
+    "line": 7,
+    "phoneme": "N",
+    "source": "dict",
+    "start": 38.769,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "found"
+   },
+   {
+    "end": 39.0,
+    "line": 7,
+    "phoneme": "D",
+    "source": "dict",
+    "start": 38.884,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "found"
+   },
+   {
+    "end": 39.311,
+    "line": 7,
+    "phoneme": "IH",
+    "source": "dict",
+    "start": 39.04,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "him."
+   },
+   {
+    "end": 39.42,
+    "line": 7,
+    "phoneme": "M",
+    "source": "dict",
+    "start": 39.311,
+    "talk": 0.02,
+    "viseme": "pp",
+    "word": "him."
+   },
+   {
+    "end": 39.998,
+    "line": 7,
+    "phoneme": "AA",
+    "source": "g2p",
+    "start": 39.98,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "Onoda"
+   },
+   {
+    "end": 40.011,
+    "line": 7,
+    "phoneme": "N",
+    "source": "g2p",
+    "start": 39.998,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "Onoda"
+   },
+   {
+    "end": 40.029,
+    "line": 7,
+    "phoneme": "AA",
+    "source": "g2p",
+    "start": 40.011,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "Onoda"
+   },
+   {
+    "end": 40.042,
+    "line": 7,
+    "phoneme": "D",
+    "source": "g2p",
+    "start": 40.029,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "Onoda"
+   },
+   {
+    "end": 40.06,
+    "line": 7,
+    "phoneme": "AE",
+    "source": "g2p",
+    "start": 40.042,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "Onoda"
+   },
+   {
+    "end": 40.171,
+    "line": 7,
+    "phoneme": "S",
+    "source": "dict",
+    "start": 40.1,
+    "talk": 0.22,
+    "viseme": "ss",
+    "word": "still"
+   },
+   {
+    "end": 40.242,
+    "line": 7,
+    "phoneme": "T",
+    "source": "dict",
+    "start": 40.171,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "still"
+   },
+   {
+    "end": 40.349,
+    "line": 7,
+    "phoneme": "IH",
+    "source": "dict",
+    "start": 40.242,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "still"
+   },
+   {
+    "end": 40.42,
+    "line": 7,
+    "phoneme": "L",
+    "source": "dict",
+    "start": 40.349,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "still"
+   },
+   {
+    "end": 40.505,
+    "line": 7,
+    "phoneme": "R",
+    "source": "dict",
+    "start": 40.46,
+    "talk": 0.45,
+    "viseme": "rr",
+    "word": "refused"
+   },
+   {
+    "end": 40.573,
+    "line": 7,
+    "phoneme": "IH",
+    "source": "dict",
+    "start": 40.505,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "refused"
+   },
+   {
+    "end": 40.618,
+    "line": 7,
+    "phoneme": "F",
+    "source": "dict",
+    "start": 40.573,
+    "talk": 0.3,
+    "viseme": "ff",
+    "word": "refused"
+   },
+   {
+    "end": 40.663,
+    "line": 7,
+    "phoneme": "Y",
+    "source": "dict",
+    "start": 40.618,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "refused"
+   },
+   {
+    "end": 40.73,
+    "line": 7,
+    "phoneme": "UW",
+    "source": "dict",
+    "start": 40.663,
+    "talk": 0.6,
+    "viseme": "U",
+    "word": "refused"
+   },
+   {
+    "end": 40.775,
+    "line": 7,
+    "phoneme": "Z",
+    "source": "dict",
+    "start": 40.73,
+    "talk": 0.22,
+    "viseme": "ss",
+    "word": "refused"
+   },
+   {
+    "end": 40.82,
+    "line": 7,
+    "phoneme": "D",
+    "source": "dict",
+    "start": 40.775,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "refused"
+   },
+   {
+    "end": 40.98,
+    "line": 7,
+    "phoneme": "T",
+    "source": "dict",
+    "start": 40.86,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "to"
+   },
+   {
+    "end": 41.16,
+    "line": 7,
+    "phoneme": "UW",
+    "source": "dict",
+    "start": 40.98,
+    "talk": 0.6,
+    "viseme": "U",
+    "word": "to"
+   },
+   {
+    "end": 41.274,
+    "line": 7,
+    "phoneme": "L",
+    "source": "dict",
+    "start": 41.2,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "leave."
+   },
+   {
+    "end": 41.386,
+    "line": 7,
+    "phoneme": "IY",
+    "source": "dict",
+    "start": 41.274,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "leave."
+   },
+   {
+    "end": 41.46,
+    "line": 7,
+    "phoneme": "V",
+    "source": "dict",
+    "start": 41.386,
+    "talk": 0.3,
+    "viseme": "ff",
+    "word": "leave."
+   },
+   {
+    "end": 41.9,
+    "line": 8,
+    "phoneme": "IY",
+    "source": "dict",
+    "start": 41.792,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "He"
+   },
+   {
+    "end": 42.003,
+    "line": 8,
+    "phoneme": "S",
+    "source": "dict",
+    "start": 41.94,
+    "talk": 0.22,
+    "viseme": "ss",
+    "word": "said"
+   },
+   {
+    "end": 42.097,
+    "line": 8,
+    "phoneme": "EH",
+    "source": "dict",
+    "start": 42.003,
+    "talk": 0.65,
+    "viseme": "E",
+    "word": "said"
+   },
+   {
+    "end": 42.16,
+    "line": 8,
+    "phoneme": "D",
+    "source": "dict",
+    "start": 42.097,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "said"
+   },
+   {
+    "end": 42.38,
+    "line": 8,
+    "phoneme": "IY",
+    "source": "dict",
+    "start": 42.2,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "he"
+   },
+   {
+    "end": 42.437,
+    "line": 8,
+    "phoneme": "W",
+    "source": "dict",
+    "start": 42.42,
+    "talk": 0.6,
+    "viseme": "U",
+    "word": "would"
+   },
+   {
+    "end": 42.463,
+    "line": 8,
+    "phoneme": "UH",
+    "source": "dict",
+    "start": 42.437,
+    "talk": 0.6,
+    "viseme": "U",
+    "word": "would"
+   },
+   {
+    "end": 42.48,
+    "line": 8,
+    "phoneme": "D",
+    "source": "dict",
+    "start": 42.463,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "would"
+   },
+   {
+    "end": 42.598,
+    "line": 8,
+    "phoneme": "OW",
+    "source": "dict",
+    "start": 42.52,
+    "talk": 0.85,
+    "viseme": "O",
+    "word": "only"
+   },
+   {
+    "end": 42.65,
+    "line": 8,
+    "phoneme": "N",
+    "source": "dict",
+    "start": 42.598,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "only"
+   },
+   {
+    "end": 42.702,
+    "line": 8,
+    "phoneme": "L",
+    "source": "dict",
+    "start": 42.65,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "only"
+   },
+   {
+    "end": 42.78,
+    "line": 8,
+    "phoneme": "IY",
+    "source": "dict",
+    "start": 42.702,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "only"
+   },
+   {
+    "end": 42.887,
+    "line": 8,
+    "phoneme": "S",
+    "source": "dict",
+    "start": 42.82,
+    "talk": 0.22,
+    "viseme": "ss",
+    "word": "stop"
+   },
+   {
+    "end": 42.953,
+    "line": 8,
+    "phoneme": "T",
+    "source": "dict",
+    "start": 42.887,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "stop"
+   },
+   {
+    "end": 43.053,
+    "line": 8,
+    "phoneme": "AA",
+    "source": "dict",
+    "start": 42.953,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "stop"
+   },
+   {
+    "end": 43.12,
+    "line": 8,
+    "phoneme": "P",
+    "source": "dict",
+    "start": 43.053,
+    "talk": 0.02,
+    "viseme": "pp",
+    "word": "stop"
+   },
+   {
+    "end": 43.424,
+    "line": 8,
+    "phoneme": "IH",
+    "source": "dict",
+    "start": 43.16,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "if"
+   },
+   {
+    "end": 43.6,
+    "line": 8,
+    "phoneme": "F",
+    "source": "dict",
+    "start": 43.424,
+    "talk": 0.3,
+    "viseme": "ff",
+    "word": "if"
+   },
+   {
+    "end": 43.711,
+    "line": 8,
+    "phoneme": "IH",
+    "source": "dict",
+    "start": 43.64,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "his"
+   },
+   {
+    "end": 43.74,
+    "line": 8,
+    "phoneme": "Z",
+    "source": "dict",
+    "start": 43.711,
+    "talk": 0.22,
+    "viseme": "ss",
+    "word": "his"
+   },
+   {
+    "end": 43.912,
+    "line": 8,
+    "phoneme": "OW",
+    "source": "dict",
+    "start": 43.78,
+    "talk": 0.85,
+    "viseme": "O",
+    "word": "own"
+   },
+   {
+    "end": 44.0,
+    "line": 8,
+    "phoneme": "N",
+    "source": "dict",
+    "start": 43.912,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "own"
+   },
+   {
+    "end": 44.085,
+    "line": 8,
+    "phoneme": "K",
+    "source": "dict",
+    "start": 44.04,
+    "talk": 0.5,
+    "viseme": "kk",
+    "word": "commander"
+   },
+   {
+    "end": 44.152,
+    "line": 8,
+    "phoneme": "AH",
+    "source": "dict",
+    "start": 44.085,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "commander"
+   },
+   {
+    "end": 44.196,
+    "line": 8,
+    "phoneme": "M",
+    "source": "dict",
+    "start": 44.152,
+    "talk": 0.02,
+    "viseme": "pp",
+    "word": "commander"
+   },
+   {
+    "end": 44.264,
+    "line": 8,
+    "phoneme": "AE",
+    "source": "dict",
+    "start": 44.196,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "commander"
+   },
+   {
+    "end": 44.308,
+    "line": 8,
+    "phoneme": "N",
+    "source": "dict",
+    "start": 44.264,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "commander"
+   },
+   {
+    "end": 44.353,
+    "line": 8,
+    "phoneme": "D",
+    "source": "dict",
+    "start": 44.308,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "commander"
+   },
+   {
+    "end": 44.42,
+    "line": 8,
+    "phoneme": "ER",
+    "source": "dict",
+    "start": 44.353,
+    "talk": 0.65,
+    "viseme": "E",
+    "word": "commander"
+   },
+   {
+    "end": 44.57,
+    "line": 8,
+    "phoneme": "AO",
+    "source": "dict",
+    "start": 44.46,
+    "talk": 0.85,
+    "viseme": "O",
+    "word": "ordered"
+   },
+   {
+    "end": 44.643,
+    "line": 8,
+    "phoneme": "R",
+    "source": "dict",
+    "start": 44.57,
+    "talk": 0.45,
+    "viseme": "rr",
+    "word": "ordered"
+   },
+   {
+    "end": 44.717,
+    "line": 8,
+    "phoneme": "D",
+    "source": "dict",
+    "start": 44.643,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "ordered"
+   },
+   {
+    "end": 44.827,
+    "line": 8,
+    "phoneme": "ER",
+    "source": "dict",
+    "start": 44.717,
+    "talk": 0.65,
+    "viseme": "E",
+    "word": "ordered"
+   },
+   {
+    "end": 44.9,
+    "line": 8,
+    "phoneme": "D",
+    "source": "dict",
+    "start": 44.827,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "ordered"
+   },
+   {
+    "end": 45.123,
+    "line": 8,
+    "phoneme": "IH",
+    "source": "dict",
+    "start": 44.94,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "it."
+   },
+   {
+    "end": 45.245,
+    "line": 8,
+    "phoneme": "T",
+    "source": "dict",
+    "start": 45.123,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "it."
+   },
+   {
+    "end": 45.495,
+    "line": 9,
+    "phoneme": "S",
+    "source": "dict",
+    "start": 45.425,
+    "talk": 0.22,
+    "viseme": "ss",
+    "word": "So"
+   },
+   {
+    "end": 45.6,
+    "line": 9,
+    "phoneme": "OW",
+    "source": "dict",
+    "start": 45.495,
+    "talk": 0.85,
+    "viseme": "O",
+    "word": "So"
+   },
+   {
+    "end": 45.687,
+    "line": 9,
+    "phoneme": "JH",
+    "source": "dict",
+    "start": 45.64,
+    "talk": 0.55,
+    "viseme": "ch",
+    "word": "Japan"
+   },
+   {
+    "end": 45.757,
+    "line": 9,
+    "phoneme": "AH",
+    "source": "dict",
+    "start": 45.687,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "Japan"
+   },
+   {
+    "end": 45.803,
+    "line": 9,
+    "phoneme": "P",
+    "source": "dict",
+    "start": 45.757,
+    "talk": 0.02,
+    "viseme": "pp",
+    "word": "Japan"
+   },
+   {
+    "end": 45.873,
+    "line": 9,
+    "phoneme": "AE",
+    "source": "dict",
+    "start": 45.803,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "Japan"
+   },
+   {
+    "end": 45.92,
+    "line": 9,
+    "phoneme": "N",
+    "source": "dict",
+    "start": 45.873,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "Japan"
+   },
+   {
+    "end": 46.053,
+    "line": 9,
+    "phoneme": "F",
+    "source": "dict",
+    "start": 45.96,
+    "talk": 0.3,
+    "viseme": "ff",
+    "word": "found"
+   },
+   {
+    "end": 46.193,
+    "line": 9,
+    "phoneme": "AW",
+    "source": "dict",
+    "start": 46.053,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "found"
+   },
+   {
+    "end": 46.287,
+    "line": 9,
+    "phoneme": "N",
+    "source": "dict",
+    "start": 46.193,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "found"
+   },
+   {
+    "end": 46.38,
+    "line": 9,
+    "phoneme": "D",
+    "source": "dict",
+    "start": 46.287,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "found"
+   },
+   {
+    "end": 46.563,
+    "line": 9,
+    "phoneme": "IH",
+    "source": "dict",
+    "start": 46.42,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "his"
+   },
+   {
+    "end": 46.62,
+    "line": 9,
+    "phoneme": "Z",
+    "source": "dict",
+    "start": 46.563,
+    "talk": 0.22,
+    "viseme": "ss",
+    "word": "his"
+   },
+   {
+    "end": 46.771,
+    "line": 9,
+    "phoneme": "OW",
+    "source": "dict",
+    "start": 46.66,
+    "talk": 0.85,
+    "viseme": "O",
+    "word": "old"
+   },
+   {
+    "end": 46.846,
+    "line": 9,
+    "phoneme": "L",
+    "source": "dict",
+    "start": 46.771,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "old"
+   },
+   {
+    "end": 46.92,
+    "line": 9,
+    "phoneme": "D",
+    "source": "dict",
+    "start": 46.846,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "old"
+   },
+   {
+    "end": 47.012,
+    "line": 9,
+    "phoneme": "K",
+    "source": "dict",
+    "start": 46.96,
+    "talk": 0.5,
+    "viseme": "kk",
+    "word": "commander,"
+   },
+   {
+    "end": 47.089,
+    "line": 9,
+    "phoneme": "AH",
+    "source": "dict",
+    "start": 47.012,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "commander,"
+   },
+   {
+    "end": 47.141,
+    "line": 9,
+    "phoneme": "M",
+    "source": "dict",
+    "start": 47.089,
+    "talk": 0.02,
+    "viseme": "pp",
+    "word": "commander,"
+   },
+   {
+    "end": 47.219,
+    "line": 9,
+    "phoneme": "AE",
+    "source": "dict",
+    "start": 47.141,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "commander,"
+   },
+   {
+    "end": 47.271,
+    "line": 9,
+    "phoneme": "N",
+    "source": "dict",
+    "start": 47.219,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "commander,"
+   },
+   {
+    "end": 47.322,
+    "line": 9,
+    "phoneme": "D",
+    "source": "dict",
+    "start": 47.271,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "commander,"
+   },
+   {
+    "end": 47.4,
+    "line": 9,
+    "phoneme": "ER",
+    "source": "dict",
+    "start": 47.322,
+    "talk": 0.65,
+    "viseme": "E",
+    "word": "commander,"
+   },
+   {
+    "end": 47.872,
+    "line": 9,
+    "phoneme": "N",
+    "source": "dict",
+    "start": 47.8,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "now"
+   },
+   {
+    "end": 47.98,
+    "line": 9,
+    "phoneme": "AW",
+    "source": "dict",
+    "start": 47.872,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "now"
+   },
+   {
+    "end": 48.12,
+    "line": 9,
+    "phoneme": "AH",
+    "source": "dict",
+    "start": 48.02,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "a"
+   },
+   {
+    "end": 48.207,
+    "line": 9,
+    "phoneme": "B",
+    "source": "dict",
+    "start": 48.16,
+    "talk": 0.02,
+    "viseme": "pp",
+    "word": "bookseller,"
+   },
+   {
+    "end": 48.278,
+    "line": 9,
+    "phoneme": "UH",
+    "source": "dict",
+    "start": 48.207,
+    "talk": 0.6,
+    "viseme": "U",
+    "word": "bookseller,"
+   },
+   {
+    "end": 48.325,
+    "line": 9,
+    "phoneme": "K",
+    "source": "dict",
+    "start": 48.278,
+    "talk": 0.5,
+    "viseme": "kk",
+    "word": "bookseller,"
+   },
+   {
+    "end": 48.372,
+    "line": 9,
+    "phoneme": "S",
+    "source": "dict",
+    "start": 48.325,
+    "talk": 0.22,
+    "viseme": "ss",
+    "word": "bookseller,"
+   },
+   {
+    "end": 48.442,
+    "line": 9,
+    "phoneme": "EH",
+    "source": "dict",
+    "start": 48.372,
+    "talk": 0.65,
+    "viseme": "E",
+    "word": "bookseller,"
+   },
+   {
+    "end": 48.489,
+    "line": 9,
+    "phoneme": "L",
+    "source": "dict",
+    "start": 48.442,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "bookseller,"
+   },
+   {
+    "end": 48.56,
+    "line": 9,
+    "phoneme": "ER",
+    "source": "dict",
+    "start": 48.489,
+    "talk": 0.65,
+    "viseme": "E",
+    "word": "bookseller,"
+   },
+   {
+    "end": 49.054,
+    "line": 9,
+    "phoneme": "AH",
+    "source": "dict",
+    "start": 48.96,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "and"
+   },
+   {
+    "end": 49.117,
+    "line": 9,
+    "phoneme": "N",
+    "source": "dict",
+    "start": 49.054,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "and"
+   },
+   {
+    "end": 49.18,
+    "line": 9,
+    "phoneme": "D",
+    "source": "dict",
+    "start": 49.117,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "and"
+   },
+   {
+    "end": 49.266,
+    "line": 9,
+    "phoneme": "F",
+    "source": "dict",
+    "start": 49.22,
+    "talk": 0.3,
+    "viseme": "ff",
+    "word": "flew"
+   },
+   {
+    "end": 49.311,
+    "line": 9,
+    "phoneme": "L",
+    "source": "dict",
+    "start": 49.266,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "flew"
+   },
+   {
+    "end": 49.38,
+    "line": 9,
+    "phoneme": "UW",
+    "source": "dict",
+    "start": 49.311,
+    "talk": 0.6,
+    "viseme": "U",
+    "word": "flew"
+   },
+   {
+    "end": 49.563,
+    "line": 9,
+    "phoneme": "IH",
+    "source": "dict",
+    "start": 49.42,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "him"
+   },
+   {
+    "end": 49.62,
+    "line": 9,
+    "phoneme": "M",
+    "source": "dict",
+    "start": 49.563,
+    "talk": 0.02,
+    "viseme": "pp",
+    "word": "him"
+   },
+   {
+    "end": 49.732,
+    "line": 9,
+    "phoneme": "T",
+    "source": "dict",
+    "start": 49.66,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "to"
+   },
+   {
+    "end": 49.84,
+    "line": 9,
+    "phoneme": "UW",
+    "source": "dict",
+    "start": 49.732,
+    "talk": 0.6,
+    "viseme": "U",
+    "word": "to"
+   },
+   {
+    "end": 49.92,
+    "line": 9,
+    "phoneme": "DH",
+    "source": "dict",
+    "start": 49.88,
+    "talk": 0.4,
+    "viseme": "th",
+    "word": "the"
+   },
+   {
+    "end": 49.98,
+    "line": 9,
+    "phoneme": "AH",
+    "source": "dict",
+    "start": 49.92,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "the"
+   },
+   {
+    "end": 50.075,
+    "line": 9,
+    "phoneme": "AY",
+    "source": "dict",
+    "start": 50.02,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "island."
+   },
+   {
+    "end": 50.112,
+    "line": 9,
+    "phoneme": "L",
+    "source": "dict",
+    "start": 50.075,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "island."
+   },
+   {
+    "end": 50.167,
+    "line": 9,
+    "phoneme": "AH",
+    "source": "dict",
+    "start": 50.112,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "island."
+   },
+   {
+    "end": 50.203,
+    "line": 9,
+    "phoneme": "N",
+    "source": "dict",
+    "start": 50.167,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "island."
+   },
+   {
+    "end": 50.24,
+    "line": 9,
+    "phoneme": "D",
+    "source": "dict",
+    "start": 50.203,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "island."
+   },
+   {
+    "end": 50.82,
+    "line": 10,
+    "phoneme": "IY",
+    "source": "dict",
+    "start": 50.72,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "He"
+   },
+   {
+    "end": 50.903,
+    "line": 10,
+    "phoneme": "F",
+    "source": "dict",
+    "start": 50.86,
+    "talk": 0.3,
+    "viseme": "ff",
+    "word": "finally"
+   },
+   {
+    "end": 50.967,
+    "line": 10,
+    "phoneme": "AY",
+    "source": "dict",
+    "start": 50.903,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "finally"
+   },
+   {
+    "end": 51.009,
+    "line": 10,
+    "phoneme": "N",
+    "source": "dict",
+    "start": 50.967,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "finally"
+   },
+   {
+    "end": 51.073,
+    "line": 10,
+    "phoneme": "AH",
+    "source": "dict",
+    "start": 51.009,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "finally"
+   },
+   {
+    "end": 51.116,
+    "line": 10,
+    "phoneme": "L",
+    "source": "dict",
+    "start": 51.073,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "finally"
+   },
+   {
+    "end": 51.18,
+    "line": 10,
+    "phoneme": "IY",
+    "source": "dict",
+    "start": 51.116,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "finally"
+   },
+   {
+    "end": 51.311,
+    "line": 10,
+    "phoneme": "G",
+    "source": "dict",
+    "start": 51.22,
+    "talk": 0.5,
+    "viseme": "kk",
+    "word": "gave"
+   },
+   {
+    "end": 51.449,
+    "line": 10,
+    "phoneme": "EY",
+    "source": "dict",
+    "start": 51.311,
+    "talk": 0.65,
+    "viseme": "E",
+    "word": "gave"
+   },
+   {
+    "end": 51.54,
+    "line": 10,
+    "phoneme": "V",
+    "source": "dict",
+    "start": 51.449,
+    "talk": 0.3,
+    "viseme": "ff",
+    "word": "gave"
+   },
+   {
+    "end": 51.644,
+    "line": 10,
+    "phoneme": "DH",
+    "source": "dict",
+    "start": 51.58,
+    "talk": 0.4,
+    "viseme": "th",
+    "word": "the"
+   },
+   {
+    "end": 51.74,
+    "line": 10,
+    "phoneme": "AH",
+    "source": "dict",
+    "start": 51.644,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "the"
+   },
+   {
+    "end": 51.864,
+    "line": 10,
+    "phoneme": "AO",
+    "source": "dict",
+    "start": 51.78,
+    "talk": 0.85,
+    "viseme": "O",
+    "word": "order,"
+   },
+   {
+    "end": 51.92,
+    "line": 10,
+    "phoneme": "R",
+    "source": "dict",
+    "start": 51.864,
+    "talk": 0.45,
+    "viseme": "rr",
+    "word": "order,"
+   },
+   {
+    "end": 51.976,
+    "line": 10,
+    "phoneme": "D",
+    "source": "dict",
+    "start": 51.92,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "order,"
+   },
+   {
+    "end": 52.06,
+    "line": 10,
+    "phoneme": "ER",
+    "source": "dict",
+    "start": 51.976,
+    "talk": 0.65,
+    "viseme": "E",
+    "word": "order,"
+   },
+   {
+    "end": 52.297,
+    "line": 10,
+    "phoneme": "AH",
+    "source": "dict",
+    "start": 52.1,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "and"
+   },
+   {
+    "end": 52.429,
+    "line": 10,
+    "phoneme": "N",
+    "source": "dict",
+    "start": 52.297,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "and"
+   },
+   {
+    "end": 52.56,
+    "line": 10,
+    "phoneme": "D",
+    "source": "dict",
+    "start": 52.429,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "and"
+   },
+   {
+    "end": 52.688,
+    "line": 10,
+    "phoneme": "AA",
+    "source": "g2p",
+    "start": 52.6,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "Onoda"
+   },
+   {
+    "end": 52.746,
+    "line": 10,
+    "phoneme": "N",
+    "source": "g2p",
+    "start": 52.688,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "Onoda"
+   },
+   {
+    "end": 52.834,
+    "line": 10,
+    "phoneme": "AA",
+    "source": "g2p",
+    "start": 52.746,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "Onoda"
+   },
+   {
+    "end": 52.892,
+    "line": 10,
+    "phoneme": "D",
+    "source": "g2p",
+    "start": 52.834,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "Onoda"
+   },
+   {
+    "end": 52.98,
+    "line": 10,
+    "phoneme": "AE",
+    "source": "g2p",
+    "start": 52.892,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "Onoda"
+   },
+   {
+    "end": 53.084,
+    "line": 10,
+    "phoneme": "S",
+    "source": "dict",
+    "start": 53.02,
+    "talk": 0.22,
+    "viseme": "ss",
+    "word": "surrendered"
+   },
+   {
+    "end": 53.179,
+    "line": 10,
+    "phoneme": "ER",
+    "source": "dict",
+    "start": 53.084,
+    "talk": 0.65,
+    "viseme": "E",
+    "word": "surrendered"
+   },
+   {
+    "end": 53.274,
+    "line": 10,
+    "phoneme": "EH",
+    "source": "dict",
+    "start": 53.179,
+    "talk": 0.65,
+    "viseme": "E",
+    "word": "surrendered"
+   },
+   {
+    "end": 53.338,
+    "line": 10,
+    "phoneme": "N",
+    "source": "dict",
+    "start": 53.274,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "surrendered"
+   },
+   {
+    "end": 53.401,
+    "line": 10,
+    "phoneme": "D",
+    "source": "dict",
+    "start": 53.338,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "surrendered"
+   },
+   {
+    "end": 53.496,
+    "line": 10,
+    "phoneme": "ER",
+    "source": "dict",
+    "start": 53.401,
+    "talk": 0.65,
+    "viseme": "E",
+    "word": "surrendered"
+   },
+   {
+    "end": 53.56,
+    "line": 10,
+    "phoneme": "D",
+    "source": "dict",
+    "start": 53.496,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "surrendered"
+   },
+   {
+    "end": 53.762,
+    "line": 10,
+    "phoneme": "AE",
+    "source": "dict",
+    "start": 53.6,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "after"
+   },
+   {
+    "end": 53.87,
+    "line": 10,
+    "phoneme": "F",
+    "source": "dict",
+    "start": 53.762,
+    "talk": 0.3,
+    "viseme": "ff",
+    "word": "after"
+   },
+   {
+    "end": 53.978,
+    "line": 10,
+    "phoneme": "T",
+    "source": "dict",
+    "start": 53.87,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "after"
+   },
+   {
+    "end": 54.14,
+    "line": 10,
+    "phoneme": "ER",
+    "source": "dict",
+    "start": 53.978,
+    "talk": 0.65,
+    "viseme": "E",
+    "word": "after"
+   },
+   {
+    "end": 54.45,
+    "line": 10,
+    "phoneme": "T",
+    "source": "number",
+    "start": 54.18,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "29"
+   },
+   {
+    "end": 54.45,
+    "line": 10,
+    "phoneme": "W",
+    "source": "number",
+    "start": 54.18,
+    "talk": 0.6,
+    "viseme": "U",
+    "word": "29"
+   },
+   {
+    "end": 54.45,
+    "line": 10,
+    "phoneme": "EH",
+    "source": "number",
+    "start": 54.18,
+    "talk": 0.65,
+    "viseme": "E",
+    "word": "29"
+   },
+   {
+    "end": 54.45,
+    "line": 10,
+    "phoneme": "N",
+    "source": "number",
+    "start": 54.18,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "29"
+   },
+   {
+    "end": 54.45,
+    "line": 10,
+    "phoneme": "T",
+    "source": "number",
+    "start": 54.18,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "29"
+   },
+   {
+    "end": 54.45,
+    "line": 10,
+    "phoneme": "IY",
+    "source": "number",
+    "start": 54.18,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "29"
+   },
+   {
+    "end": 54.72,
+    "line": 10,
+    "phoneme": "N",
+    "source": "number",
+    "start": 54.45,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "29"
+   },
+   {
+    "end": 54.72,
+    "line": 10,
+    "phoneme": "AY",
+    "source": "number",
+    "start": 54.45,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "29"
+   },
+   {
+    "end": 54.72,
+    "line": 10,
+    "phoneme": "N",
+    "source": "number",
+    "start": 54.45,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "29"
+   },
+   {
+    "end": 54.849,
+    "line": 10,
+    "phoneme": "Y",
+    "source": "dict",
+    "start": 54.76,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "years."
+   },
+   {
+    "end": 54.982,
+    "line": 10,
+    "phoneme": "IH",
+    "source": "dict",
+    "start": 54.849,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "years."
+   },
+   {
+    "end": 55.071,
+    "line": 10,
+    "phoneme": "R",
+    "source": "dict",
+    "start": 54.982,
+    "talk": 0.45,
+    "viseme": "rr",
+    "word": "years."
+   },
+   {
+    "end": 55.16,
+    "line": 10,
+    "phoneme": "Z",
+    "source": "dict",
+    "start": 55.071,
+    "talk": 0.22,
+    "viseme": "ss",
+    "word": "years."
+   },
+   {
+    "end": 55.66,
+    "line": 11,
+    "phoneme": "IY",
+    "source": "dict",
+    "start": 55.58,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "He"
+   },
+   {
+    "end": 55.729,
+    "line": 11,
+    "phoneme": "W",
+    "source": "dict",
+    "start": 55.7,
+    "talk": 0.6,
+    "viseme": "U",
+    "word": "wasn't"
+   },
+   {
+    "end": 55.771,
+    "line": 11,
+    "phoneme": "AH",
+    "source": "dict",
+    "start": 55.729,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "wasn't"
+   },
+   {
+    "end": 55.8,
+    "line": 11,
+    "phoneme": "Z",
+    "source": "dict",
+    "start": 55.771,
+    "talk": 0.22,
+    "viseme": "ss",
+    "word": "wasn't"
+   },
+   {
+    "end": 55.843,
+    "line": 11,
+    "phoneme": "AH",
+    "source": "dict",
+    "start": 55.8,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "wasn't"
+   },
+   {
+    "end": 55.871,
+    "line": 11,
+    "phoneme": "N",
+    "source": "dict",
+    "start": 55.843,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "wasn't"
+   },
+   {
+    "end": 55.9,
+    "line": 11,
+    "phoneme": "T",
+    "source": "dict",
+    "start": 55.871,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "wasn't"
+   },
+   {
+    "end": 56.048,
+    "line": 11,
+    "phoneme": "AY",
+    "source": "dict",
+    "start": 55.94,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "hiding"
+   },
+   {
+    "end": 56.092,
+    "line": 11,
+    "phoneme": "D",
+    "source": "dict",
+    "start": 56.048,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "hiding"
+   },
+   {
+    "end": 56.157,
+    "line": 11,
+    "phoneme": "IH",
+    "source": "dict",
+    "start": 56.092,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "hiding"
+   },
+   {
+    "end": 56.2,
+    "line": 11,
+    "phoneme": "NG",
+    "source": "dict",
+    "start": 56.157,
+    "talk": 0.5,
+    "viseme": "kk",
+    "word": "hiding"
+   },
+   {
+    "end": 56.302,
+    "line": 11,
+    "phoneme": "F",
+    "source": "dict",
+    "start": 56.24,
+    "talk": 0.3,
+    "viseme": "ff",
+    "word": "from"
+   },
+   {
+    "end": 56.364,
+    "line": 11,
+    "phoneme": "R",
+    "source": "dict",
+    "start": 56.302,
+    "talk": 0.45,
+    "viseme": "rr",
+    "word": "from"
+   },
+   {
+    "end": 56.458,
+    "line": 11,
+    "phoneme": "AH",
+    "source": "dict",
+    "start": 56.364,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "from"
+   },
+   {
+    "end": 56.52,
+    "line": 11,
+    "phoneme": "M",
+    "source": "dict",
+    "start": 56.458,
+    "talk": 0.02,
+    "viseme": "pp",
+    "word": "from"
+   },
+   {
+    "end": 56.608,
+    "line": 11,
+    "phoneme": "DH",
+    "source": "dict",
+    "start": 56.56,
+    "talk": 0.4,
+    "viseme": "th",
+    "word": "the"
+   },
+   {
+    "end": 56.68,
+    "line": 11,
+    "phoneme": "AH",
+    "source": "dict",
+    "start": 56.608,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "the"
+   },
+   {
+    "end": 56.8,
+    "line": 11,
+    "phoneme": "W",
+    "source": "dict",
+    "start": 56.72,
+    "talk": 0.6,
+    "viseme": "U",
+    "word": "war."
+   },
+   {
+    "end": 56.92,
+    "line": 11,
+    "phoneme": "AO",
+    "source": "dict",
+    "start": 56.8,
+    "talk": 0.85,
+    "viseme": "O",
+    "word": "war."
+   },
+   {
+    "end": 57.0,
+    "line": 11,
+    "phoneme": "R",
+    "source": "dict",
+    "start": 56.92,
+    "talk": 0.45,
+    "viseme": "rr",
+    "word": "war."
+   },
+   {
+    "end": 57.46,
+    "line": 11,
+    "phoneme": "IY",
+    "source": "dict",
+    "start": 57.18,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "He"
+   },
+   {
+    "end": 57.511,
+    "line": 11,
+    "phoneme": "W",
+    "source": "dict",
+    "start": 57.5,
+    "talk": 0.6,
+    "viseme": "U",
+    "word": "was"
+   },
+   {
+    "end": 57.529,
+    "line": 11,
+    "phoneme": "AH",
+    "source": "dict",
+    "start": 57.511,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "was"
+   },
+   {
+    "end": 57.54,
+    "line": 11,
+    "phoneme": "Z",
+    "source": "dict",
+    "start": 57.529,
+    "talk": 0.22,
+    "viseme": "ss",
+    "word": "was"
+   },
+   {
+    "end": 57.611,
+    "line": 11,
+    "phoneme": "JH",
+    "source": "dict",
+    "start": 57.58,
+    "talk": 0.55,
+    "viseme": "ch",
+    "word": "just"
+   },
+   {
+    "end": 57.658,
+    "line": 11,
+    "phoneme": "AH",
+    "source": "dict",
+    "start": 57.611,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "just"
+   },
+   {
+    "end": 57.689,
+    "line": 11,
+    "phoneme": "S",
+    "source": "dict",
+    "start": 57.658,
+    "talk": 0.22,
+    "viseme": "ss",
+    "word": "just"
+   },
+   {
+    "end": 57.72,
+    "line": 11,
+    "phoneme": "T",
+    "source": "dict",
+    "start": 57.689,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "just"
+   },
+   {
+    "end": 57.831,
+    "line": 11,
+    "phoneme": "S",
+    "source": "dict",
+    "start": 57.76,
+    "talk": 0.22,
+    "viseme": "ss",
+    "word": "still"
+   },
+   {
+    "end": 57.902,
+    "line": 11,
+    "phoneme": "T",
+    "source": "dict",
+    "start": 57.831,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "still"
+   },
+   {
+    "end": 58.009,
+    "line": 11,
+    "phoneme": "IH",
+    "source": "dict",
+    "start": 57.902,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "still"
+   },
+   {
+    "end": 58.08,
+    "line": 11,
+    "phoneme": "L",
+    "source": "dict",
+    "start": 58.009,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "still"
+   },
+   {
+    "end": 58.164,
+    "line": 11,
+    "phoneme": "L",
+    "source": "dict",
+    "start": 58.12,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "loyal"
+   },
+   {
+    "end": 58.23,
+    "line": 11,
+    "phoneme": "OY",
+    "source": "dict",
+    "start": 58.164,
+    "talk": 0.85,
+    "viseme": "O",
+    "word": "loyal"
+   },
+   {
+    "end": 58.296,
+    "line": 11,
+    "phoneme": "AH",
+    "source": "dict",
+    "start": 58.23,
+    "talk": 1.0,
+    "viseme": "A",
+    "word": "loyal"
+   },
+   {
+    "end": 58.34,
+    "line": 11,
+    "phoneme": "L",
+    "source": "dict",
+    "start": 58.296,
+    "talk": 0.4,
+    "viseme": "nn",
+    "word": "loyal"
+   },
+   {
+    "end": 58.492,
+    "line": 11,
+    "phoneme": "T",
+    "source": "dict",
+    "start": 58.38,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "to"
+   },
+   {
+    "end": 58.66,
+    "line": 11,
+    "phoneme": "UW",
+    "source": "dict",
+    "start": 58.492,
+    "talk": 0.6,
+    "viseme": "U",
+    "word": "to"
+   },
+   {
+    "end": 58.832,
+    "line": 11,
+    "phoneme": "IH",
+    "source": "dict",
+    "start": 58.7,
+    "talk": 0.5,
+    "viseme": "I",
+    "word": "it."
+   },
+   {
+    "end": 58.92,
+    "line": 11,
+    "phoneme": "T",
+    "source": "dict",
+    "start": 58.832,
+    "talk": 0.35,
+    "viseme": "dd",
+    "word": "it."
+   }
+  ],
+  "speakerWorkaround": "single narrator \u2014 words.json and lines.json carry no speaker field (W12); every word is attributed to the one --target node",
+  "target": "narrator",
+  "tool": "tools/lipsync/build_visemes.py (W23)"
+ },
+ "name": "lipsync \u2014 lipsync-onoda (built by tools/lipsync/build_visemes.py)",
+ "nodes": [
+  {
+   "clip": "lipsync-onoda",
+   "clipTime": {
+    "loop": "clamp",
+    "offset": 0.0,
+    "rate": 1.0
+   },
+   "name": "narrator",
+   "state": {
+    "talk": 0
+   },
+   "type": "character"
+  }
+ ],
+ "version": 2
+}
