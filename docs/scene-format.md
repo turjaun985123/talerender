@@ -394,8 +394,8 @@ world.ts sunlight):
             "shadow": true, "shadowBox": 17, "far": 80,
             "bias": -0.0006, "normalBias": 0.02 },
   "rim":  { "color": "#FFFFFF", "intensity": 0.4, "position": [-3, 3, -3] },
-  "hemisphere": { "sky": "#DCECD2", "ground": "#46603A", "intensity": 1.15 },
-  "points": [ { "color": "#FF9A3C", "intensity": 5.0,
+  "hemisphere": { "sky": "#CFE6FF", "ground": "#C48A5A", "intensity": 1.25 },
+  "points": [ { "color": "#FF9A3C", "intensity": 4.6,
                 "position": [-1.35, 0.6, -2.45], "distance": 7, "decay": 1.6 } ],
   "envIntensity": 0.25
 }
@@ -455,6 +455,54 @@ Proof: `scenes/character-v2.scene.json` (the S01 staging as
 data: character node + keys + the noon JG rig) and the loader
 unit tests (`v2_keys_lights_and_character_node`,
 `v1_file_with_v2_fields_is_rejected`).
+
+### 14.5 Integration rulings (2026-11-14, wave Batch 1)
+
+**R1 — `lights` blocks carry POST-atmosphere values.** Chrome
+renders what `applyAtmosphere` leaves behind: it overwrites the
+key colour/intensity, the rim intensity and both hemisphere
+colours from the atmosphere preset (env.ts), replacing the set's
+own `sunlight()` values. Scene files therefore record the
+post-atmosphere rig (noon: key #FFF0D6 ×2.6, rim #FFFFFF ×0.4,
+hemisphere #CFE6FF/#C48A5A ×1.25 — env.ts `noon`), never the
+pre-atmosphere sunlight values (#DCECD2/#46603A ×1.15). The fire
+point light likewise records its **rendered** basis, not its
+constructor arguments: `fireLevel` (shots.ts) overwrites the
+intensity every frame with
+`(4.6 + 0.7·sin(17t) + 0.5·sin(7.3t)) · level`, so the block
+carries intensity basis **4.6** with distance 7 / decay 1.6
+(the constructor's 5.0 is never rendered). The §14.2 example
+above is corrected to match. (Cross-check: t = 1.5, level 1 →
+4.3519, the M5 ab1 value.)
+
+**R2 — `attachments` lives ON the character node.** A held
+attachment (e.g. `{ "kind": "rifle", "hand": "R",
+"offset": [0, 0.03, 0.07] }`) is a property of the character
+instance that carries it; the loader consumes it from the
+character node. There is no top-level `attachments` block.
+(The offset is the staging's syncAttachments card-space offset;
+the hand anchor comes from the painted card, as in film.rs.)
+
+**R3 — GRADE grain time is 0 for the whole film.** No path in
+the source ever sets the grade's time uniform, so the grain is
+a fixed spatial pattern across all frames. The film renderer
+pins the grade time to 0 (src/film.rs, the composer's GradeParams
+time field). Any time-animated grain would diverge from Chrome
+on every frame by the grain term.
+
+**R4 — Source wins over the evaluator on staging constants.**
+Where a scene file and src/film.rs disagree with shots.ts,
+shots.ts is ground truth and the wrong side is fixed, never
+averaged. Batch-1 instances, both fixed in film.rs: S06's
+companion walks use `walkBob(ph, 5)` (film.rs had 6.0), and
+POSES.mourn's lean 5 / headTilt −4 / bob 4 apply in BOTH the
+standing and sitting branches of S06 (the set() arm override
+[16,−6]/[8,5] likewise applies in both); sitting adds only
+legs/sitOn 0.34 and the settle squash. Preserved source
+mismatch (do not "fix"): in S06 the scene fog is replaced by
+Fog(#C9CFC2, 4.5, 20) in the same draw call, while the
+character tint's fog colour stays the fog preset's #E6E9EA
+(fogMix 0.35).
 
 ## 13. What M4 / M5 must add
 

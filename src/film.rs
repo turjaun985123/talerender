@@ -1604,7 +1604,7 @@ fn s06(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
         let mut st = fs();
         let ph = walk_phase(dist, 0.62);
         st.phase = ph as f32;
-        st.bob = walk_bob(ph, 6.0) as f32;
+        st.bob = walk_bob(ph, 5.0) as f32;
         st.legs = if wk >= 1.0 { Legs::Stand } else { Legs::Walk };
         st.mood = mood;
         st.head_tilt = -4.0;
@@ -1617,15 +1617,17 @@ fn s06(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
     cb.blink = Blinker { seed: 11.0 }.at(t) as f32;
     char(&mut f, COMPB, [(0.2 - 2.8 * wk) as f32, 0.0, (-5.6 - 5.3 * wk) as f32], cb, tint_fog(), false);
     let oz = lerp(-1.48, -1.76, seg(lt, sit_at - 0.15, sit_at + 0.25));
+    // shots.ts:419: POSES.mourn is spread in BOTH branches (lean 5,
+    // headTilt -4, bob 4 survive sitting); the set() then overrides
+    // the arms in both branches; sitting only adds legs/sitOn and
+    // the settle squash.
     let mut onoda = fs();
-    if lt < sit_at {
-        pose_mourn(&mut onoda);
-    } else {
-        onoda.mood = Mood::Sad;
+    pose_mourn(&mut onoda);
+    onoda.arm_r = (16.0, -6.0);
+    onoda.arm_l = (8.0, 5.0);
+    if lt >= sit_at {
         onoda.legs = Legs::Sit;
         onoda.sit_drop = Some((0.34 * 1024.0 / (1.75 / 0.96)) as f32);
-        onoda.arm_r = (16.0, -6.0);
-        onoda.arm_l = (8.0, 5.0);
         onoda.squash = (-0.04 * (seg(lt, sit_at, sit_at + 0.3) * std::f64::consts::PI).sin()) as f32;
     }
     onoda.blink = Blinker { seed: 3.0 }.at(t) as f32;

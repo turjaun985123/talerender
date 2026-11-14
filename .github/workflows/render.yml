@@ -1,0 +1,77 @@
+name: Render (dispatch)
+
+# Manual render jobs on the CI lavapipe (ubuntu-22.04, Mesa 23.2) —
+# the environment the milestone A/B proofs were produced on. The
+# development VM's llvmpipe JIT segfaults compiling shader_pbr.wgsl
+# on its CPU (reproduced on Mesa 23.2/24.0/25.2, all binaries back
+# to M3), so PBR-path renders run here; CPU-side modes (telemetry)
+# and the m1/dof paths also run locally.
+#
+# Modes:
+#   ab1        — the M5 A/B still (regression oracle for the PBR path)
+#   dof-chart  — the M3 chart
+#   film       — a frame range of the Onoda film (--from/--to)
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Render mode"
+        type: choice
+        options: [ab1, dof-chart, film]
+        default: ab1
+      from:
+        description: "film: first frame (inclusive)"
+        type: string
+        default: "0"
+      to:
+        description: "film: last frame (exclusive, 0 = end)"
+        type: string
+        default: "0"
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+  RUSTFLAGS: "-C link-arg=-fuse-ld=mold"
+
+jobs:
+  render:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+      - name: Install mold + lavapipe
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mold mesa-vulkan-drivers vulkan-tools
+          ICD=$(ls /usr/share/vulkan/icd.d/lvp_icd*.json | head -n 1)
+          echo "VK_ICD_FILENAMES=$ICD" >> "$GITHUB_ENV"
+          echo "lavapipe ICD: $ICD"
+      - name: Build
+        run: cargo build --release
+      - name: Render
+        run: |
+          mkdir -p render-out
+          case "${{ inputs.mode }}" in
+            ab1)
+              ./target/release/talerender --scene ab1 --out render-out/ab1.png
+              ;;
+            dof-chart)
+              ./target/release/talerender --scene dof-chart --out render-out/dof-chart.png
+              ;;
+            film)
+              ./target/release/talerender --film film --out render-out/frames \
+                --from "${{ inputs.from }}" --to "${{ inputs.to }}"
+              ;;
+          esac
+          ls -la render-out | head -20
+      - name: Upload render output
+        uses: actions/upload-artifact@v4
+        with:
+          name: render-${{ inputs.mode }}-${{ inputs.from }}-${{ inputs.to }}
+          path: render-out
+          retention-days: 7
