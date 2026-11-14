@@ -48,7 +48,7 @@ struct FrameU {
     // x: point distance (cutoff), y: point decay, z: env_intensity,
     // w: shadow bias
     point_misc: vec4f,
-    // x: shadow texel size (1/2048), y: shadow map size (2048)
+    // x: shadow texel size (1/size), y: shadow map size (size)
     shadow_misc: vec4f,
     // Integration extension (film mode): two more point slots in
     // the same folded form; a slot with cutoff (misc.x) <= 0 is

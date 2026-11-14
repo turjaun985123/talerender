@@ -655,6 +655,9 @@ pub fn ab1_full_chain() -> GraphBuilder {
     b.add_resource(ResourceDesc::external_texture("caption_strip", TexFormat::Rgba8Unorm, SizeClass::Native));
 
     // Graph-produced resources.
+    // NOTE (knobs phase 3): these Fixed(2048, 2048) sizes describe
+    // the pre-knob renderer. If this graph is ever adopted beside
+    // the composer it must read Knobs.shadow instead.
     b.add_resource(ResourceDesc::texture("shadow_map", TexFormat::Rgba8Unorm, SizeClass::Fixed(2048, 2048)));
     b.add_resource(ResourceDesc::texture("shadow_depth", TexFormat::Depth32Float, SizeClass::Fixed(2048, 2048)));
     b.add_resource(ResourceDesc::texture("packed_depth", TexFormat::PackedDepth, SizeClass::FullFrame));

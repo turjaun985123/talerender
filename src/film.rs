@@ -2426,6 +2426,7 @@ pub(crate) struct Renderer {
     width: u32,
     height: u32,
     samples: u32,
+    shadow_size: u32,
     bgl_unif: wgpu::BindGroupLayout,
     bgl_basic: wgpu::BindGroupLayout,
     bgl_shadow_card: wgpu::BindGroupLayout,
@@ -2468,6 +2469,7 @@ pub(crate) struct Renderer {
 impl Renderer {
     pub(crate) async fn new(width: u32, height: u32, sign: &(Vec<u8>, u32, u32), knobs: crate::Knobs) -> crate::errors::TaleResult<Renderer> {
         let samples = knobs.samples();
+        let shadow_size = knobs.shadow;
         let instance = crate::gpucore::new_instance();
         let adapter = crate::gpucore::request_adapter(&instance).await?;
         let info = adapter.get_info();
@@ -2612,10 +2614,10 @@ impl Renderer {
                 wgpu::BindGroupLayoutEntry { binding: 4, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering), count: None },
             ],
         });
-        let shadow_map = crate::gpucore::make_target(&device, 2048, 2048, wgpu::TextureFormat::Rgba8Unorm, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING, "key shadow map");
+        let shadow_map = crate::gpucore::make_target(&device, shadow_size, shadow_size, wgpu::TextureFormat::Rgba8Unorm, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING, "key shadow map");
         let shadow_map_view = shadow_map.create_view(&wgpu::TextureViewDescriptor::default());
         tex_keep.push(shadow_map);
-        let shadow_depth = crate::composer::make_rt(&device, 2048, 2048, wgpu::TextureFormat::Depth32Float, "shadow depth");
+        let shadow_depth = crate::composer::make_rt(&device, shadow_size, shadow_size, wgpu::TextureFormat::Depth32Float, "shadow depth");
         let shadow_depth_view = shadow_depth.create_view(&wgpu::TextureViewDescriptor::default());
         tex_keep.push(shadow_depth);
         let depth_format = if std::env::var("TALERENDER_DOF_DEPTH_FORMAT").is_ok_and(|v| v == "halffloat") {
@@ -2807,6 +2809,7 @@ impl Renderer {
             width,
             height,
             samples,
+            shadow_size,
             bgl_unif,
             bgl_basic,
             bgl_shadow_card,
@@ -2923,7 +2926,7 @@ impl Renderer {
         vecs.push(p1[0]);
         vecs.push(p1[1]);
         vecs.push([l.points[0].dist, l.points[0].decay, l.env, l.key_bias]);
-        vecs.push([1.0 / 2048.0, 2048.0, 0.0, 0.0]);
+        vecs.push([1.0 / self.shadow_size as f32, self.shadow_size as f32, 0.0, 0.0]);
         for p in [&l.points[1], &l.points[2]] {
             let pp = pt(p);
             vecs.extend_from_slice(&pp);

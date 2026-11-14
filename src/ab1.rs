@@ -589,6 +589,7 @@ pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str, pos
         String::new()
     };
     let samples = knobs.samples();
+    let shadow_size = knobs.shadow;
     let instance = crate::gpucore::new_instance();
     let adapter = crate::gpucore::request_adapter(&instance).await?;
     let info = adapter.get_info();
@@ -655,7 +656,7 @@ pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str, pos
         [-1.35, 0.60, -2.45, 1.0],
         v4(scale3(hex_lin("#FF9A3C"), fire_i)),
         [7.0, 1.6, 0.25, -0.0006], // distance, decay, env intensity, shadow bias
-        [1.0 / 2048.0, 2048.0, 0.0, 0.0],
+        [1.0 / shadow_size as f32, shadow_size as f32, 0.0, 0.0],
         // Integration extension fields (points 2/3, fog, camera
         // forward): all zero — point slots skipped (cutoff 0),
         // fog disabled — so this path renders exactly as before
@@ -814,7 +815,7 @@ pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str, pos
     // ---- targets ----
     let shadow_map = device.create_texture(&wgpu::TextureDescriptor {
         label: Some("key shadow map"),
-        size: wgpu::Extent3d { width: 2048, height: 2048, depth_or_array_layers: 1 },
+        size: wgpu::Extent3d { width: shadow_size, height: shadow_size, depth_or_array_layers: 1 },
         mip_level_count: 1,
         sample_count: 1,
         dimension: wgpu::TextureDimension::D2,
@@ -823,7 +824,7 @@ pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str, pos
         view_formats: &[],
     });
     let shadow_map_view = shadow_map.create_view(&wgpu::TextureViewDescriptor::default());
-    let shadow_depth = composer::make_rt(&device, 2048, 2048, wgpu::TextureFormat::Depth32Float, "shadow depth");
+    let shadow_depth = composer::make_rt(&device, shadow_size, shadow_size, wgpu::TextureFormat::Depth32Float, "shadow depth");
     let shadow_depth_view = shadow_depth.create_view(&wgpu::TextureViewDescriptor::default());
 
     let depth_format = if std::env::var("TALERENDER_DOF_DEPTH_FORMAT").is_ok_and(|v| v == "halffloat") {
