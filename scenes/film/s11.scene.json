@@ -11073,8 +11073,7 @@
       }
      ]
     }
-   ],
-   "note": "makeRifle() (shots.ts): modelled along +Y with the grip at the origin (butt -0.44, muzzle +0.68); castShadow/receiveShadow on every part in the source (the format carries no per-node shadow flags). The group's static transform is its state at first visibility (drop start, u = 0); before dropT the node is invisible and the SAME rifle renders as Onoda's hand attachment."
+   ]
   }
  ],
  "captionsNote": "chunk 62 ('to the island.', 49.63-50.69) starts in S10 and is owned by s10 under the manifest start-time rule (scenes/film/film.json); it bleeds 0.042 s into this shot's head and is not listed here (seat W31). Captions are film-global, drawn by time.",

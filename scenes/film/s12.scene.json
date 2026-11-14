@@ -10464,8 +10464,7 @@
       1.5707963267948966
      ]
     }
-   ],
-   "note": "makeRifle() (shots.ts:74) at its resting transform: position/rotation from the construction (shots.ts:256) with the S11 drop animation settled (y 0.32 -> 0.07, rotation.z -> PI/2) and re-pinned verbatim by the S12 draw (shots.ts:531). Modelled along +Y, grip at the group origin (butt -0.44, muzzle +0.68)."
+   ]
   },
   {
    "type": "character",
@@ -10534,12 +10533,11 @@
       ],
       [
        2.5,
-       3.5,
+       2.1,
        0.45
       ]
      ],
-     "apply": "lean = bowA * 0.6",
-     "law": "bowA = poseTrack(keys, lt) (core/motion.ts poseTrack); key time = wLoyal - st - 0.1 = 2.5 lt"
+     "law": "BAKED (W52): the former apply 'lean = bowA * 0.6' is multiplied through these keys (film.rs S12: onoda.lean = (0.6 * bow) as f32); pre-bake law: bowA = poseTrack(keys, lt) (core/motion.ts poseTrack); key time = wLoyal - st - 0.1 = 2.5 lt"
     },
     "headTilt": {
      "kind": "poseTrack",
@@ -10550,12 +10548,11 @@
       ],
       [
        2.5,
-       3.5,
+       -3.5,
        0.45
       ]
      ],
-     "apply": "headTilt = -bowA",
-     "law": "the same bow track, negated (shots.ts S12 draw)"
+     "law": "BAKED (W52): the former apply 'headTilt = -bowA' is multiplied through these keys (film.rs S12: onoda.head_tilt = (-bow) as f32); pre-bake law: the same bow track, negated (shots.ts S12 draw)"
     },
     "blink": {
      "kind": "blinkDirector",

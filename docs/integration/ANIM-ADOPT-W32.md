@@ -217,6 +217,14 @@ measure): 172 channel records + 14 camera blocks.
   swaps. These were never key data; W15 §5.3 already ruled they
   stay code.
 - **Blocked: 2 records (1%)** — s12's `apply` pair (§4).
+  *Resolution pointer (F3-b/c + s12 adoption landing): the
+  data side is ADOPTED — the factors are baked into
+  `scenes/film/s12.scene.json` (S12-BAKE-W52 /
+  S12-ADOPT-W83), so s12 now converts; the film.rs code-side
+  retirement (fn s12's `bow` evaluation) is NOT part of that
+  landing and rides §15 step 2, byte-probe gated (W83 §2.4
+  item 3) — retiring it before the evaluator seam exists
+  would silently delete the shot's bow.*
 
 Of the records that *carry key data* (65), **63 convert
 mechanically (97%)**. The boundary of the claim: film.rs also

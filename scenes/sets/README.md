@@ -329,6 +329,16 @@ are stable, not knife-edge.
   [+x, −x, +y, −y, +z, −z]; the loader's §3.3 type-check covers
   only the single `material` form today, so the arrays are
   carried as data (unknown-field law, §1) for the film/PBR path.
+  **Amended at the F3-b/c landing (F3BC-W88 §2):** the set file
+  now carries the two nodes in the corpus's canonical
+  decomposed form (the s10 form: a group whose box child holds
+  the singular `material` and whose quad child carries the
+  mapped face as its `texture`) — every array value survives
+  (both colours, the roughness, the map binding, the +z face
+  as structure). The material-array form is **not** part of
+  the format; do not re-add it in future transcriptions. The
+  array's contents remain described by this bullet's prose
+  (group order above) and inventory rows 22–23.
 - **B3 — basic materials.** Three BK materials are
   MeshBasicMaterial in the source and ignore lighting: the
   window view plane (`toneMapped: false` — its `#BFE4F7` is

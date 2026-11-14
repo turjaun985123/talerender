@@ -218,8 +218,7 @@
    "canvas": [
     256,
     256
-   ],
-   "motifLaw": "motif = shade(ceiling, 1.25) — three.js Color multiplyScalar in linear space (world.ts interior ceil)"
+   ]
   },
   {
    "id": "planks-floor",
@@ -233,8 +232,7 @@
    "canvas": [
     512,
     512
-   ],
-   "note": "the source sets map.rotation = PI/2 on the floor material (world.ts interior); film.rs emulates it with the swapped repeat [3.6, 3.2]"
+   ]
   },
   {
    "id": "planks-wainscot-window",
@@ -379,8 +377,7 @@
    "canvas": [
     1,
     1
-   ],
-   "note": "the window view is a MeshBasicMaterial colour plane in the source (toneMapped: false) — a flat colour, no painted depth (INVENTORY BK row)"
+   ]
   },
   {
    "id": "book-open",

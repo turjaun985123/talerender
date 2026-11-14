@@ -17,8 +17,7 @@
    "repeat": [
     1.7142857313156128,
     3
-   ],
-   "note": "back-wall segments: T.wallpaper(wall, motif, [len/1.4, h/1.4]) at len = (w-ww)/2 = 2.4 (world.ts:302). The above-window band calls wp(ww) at len 3.2 -> repeat [2.2857143878936768, 3] (world.ts:303); see the README wallpaper-repeat note"
+   ]
   },
   {
    "id": "wallpaper-sides",
@@ -32,8 +31,7 @@
    "repeat": [
     6.4285712242126465,
     3
-   ],
-   "note": "side walls: clone repeat set to [(depth+2)/1.4, h/1.4] (world.ts:309)"
+   ]
   },
   {
    "id": "wallpaper-ceiling",
@@ -47,8 +45,7 @@
    "repeat": [
     6.666666507720947,
     7.500000476837158
-   ],
-   "note": "ceiling: T.wallpaper(ceiling, shade(ceiling, 1.25), [w/1.2, (depth+2)/1.2]) (world.ts:313); motif is the source shade() result, computed with three.js colour management"
+   ]
   },
   {
    "id": "planks-floor",
@@ -62,8 +59,7 @@
     3.200000047683716,
     3.5999999046325684
    ],
-   "rotation": 1.5707963705062866,
-   "note": "floor: T.planks(floor, [w/2.5, (depth+2)/2.5]) then texture rotation = PI/2 about the centre (world.ts:296-297)"
+   "rotation": 1.5707963705062866
   },
   {
    "id": "planks-wainscot-back",
@@ -76,8 +72,7 @@
    "repeat": [
     1,
     0.5
-   ],
-   "note": "back-wall wainscot strips: wain(2) = [len/2, 0.5] — len hardcoded to 2 at world.ts:311, whatever the segment length"
+   ]
   },
   {
    "id": "planks-wainscot-sides",
@@ -90,8 +85,7 @@
    "repeat": [
     4.5,
     0.5
-   ],
-   "note": "side wainscot: wain(depth+2) = [len/2, 0.5] (world.ts:310)"
+   ]
   },
   {
    "id": "planks-wainscot-under-window",
@@ -104,8 +98,7 @@
    "repeat": [
     1.600000023841858,
     0.5
-   ],
-   "note": "the under-window board's own wain(ww) call: [ww/2, 0.5] with ww = 3.2 (world.ts:303)"
+   ]
   },
   {
    "id": "planks-counter",
@@ -118,8 +111,7 @@
    "repeat": [
     1,
     2
-   ],
-   "note": "counter body: T.planks('#7A3E24', [1, 2]) (world.ts:317)"
+   ]
   },
   {
    "id": "planks-desk",
@@ -132,8 +124,7 @@
    "repeat": [
     1,
     1
-   ],
-   "note": "desk wood: T.planks('#6B3E26', [1, 1]) (props.ts:163)"
+   ]
   },
   {
    "id": "felt-counter",
@@ -146,8 +137,7 @@
    "repeat": [
     1,
     1
-   ],
-   "note": "counter top: T.felt('#1F5A45') (world.ts:318)"
+   ]
   },
   {
    "id": "felt-desk",
@@ -160,8 +150,7 @@
    "repeat": [
     1,
     1
-   ],
-   "note": "desk top: T.felt('#2E5A44') (props.ts:164) — a different green from the counter felt"
+   ]
   },
   {
    "id": "picture",
@@ -169,8 +158,7 @@
    "canvas": [
     256,
     200
-   ],
-   "note": "the framed line-drawing: paper #E9DCC0, ink #3A2A22 quadratic hill strokes, sun disc #C9603F r 22 at (190, 60) (world.ts:322)"
+   ]
   },
   {
    "id": "sign",
@@ -182,8 +170,7 @@
    "canvas": [
     440,
     80
-   ],
-   "note": "signBoard(signText, { w: 2.2, h: 0.4, bg: '#3A2A2A', fg: '#F2E6CF' }) (world.ts:324); font rule: 700 Caladea/Georgia serif starting at 40 px, shrunk by 2 until the text fits 86% of the board width (world.ts:143)"
+   ]
   },
   {
    "id": "parcel-plain",
@@ -193,8 +180,7 @@
    "canvas": [
     256,
     256
-   ],
-   "note": "parcel(w, h, d, false): base #C8935A, 30 fibre streaks #B07A48 (rnd-seeded), tape cross #E9D7A5; the label block is NOT drawn at label:false (props.ts:159)"
+   ]
   }
  ],
  "lights": {
@@ -850,16 +836,8 @@
    ]
   },
   {
-   "type": "mesh",
-   "geometry": {
-    "kind": "box",
-    "size": [
-     0.8999999761581421,
-     0.699999988079071,
-     0.05000000074505806
-    ]
-   },
-   "name": "picture frame",
+   "type": "group",
+   "name": "picture",
    "transform": [
     {
      "translate": [
@@ -872,43 +850,46 @@
      "rotate_y": 1.5707963705062866
     }
    ],
-   "materials": [
+   "children": [
     {
-     "color": "#C9A13B",
-     "roughness": 0.8500000238418579
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.8999999761581421,
+       0.699999988079071,
+       0.05000000074505806
+      ]
+     },
+     "name": "picture frame",
+     "material": {
+      "color": "#C9A13B",
+      "roughness": 0.8500000238418579
+     }
     },
     {
-     "color": "#C9A13B",
-     "roughness": 0.8500000238418579
-    },
-    {
-     "color": "#C9A13B",
-     "roughness": 0.8500000238418579
-    },
-    {
-     "color": "#C9A13B",
-     "roughness": 0.8500000238418579
-    },
-    {
-     "map": "picture",
-     "roughness": 0.8500000238418579
-    },
-    {
-     "color": "#C9A13B",
-     "roughness": 0.8500000238418579
+     "type": "mesh",
+     "name": "picture canvas",
+     "geometry": {
+      "kind": "quad",
+      "width": 0.8999999761581421,
+      "height": 0.699999988079071
+     },
+     "texture": "picture",
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.0,
+        0.026000000536441803
+       ]
+      }
+     ]
     }
    ]
   },
   {
-   "type": "mesh",
-   "geometry": {
-    "kind": "box",
-    "size": [
-     2.200000047683716,
-     0.4000000059604645,
-     0.05000000074505806
-    ]
-   },
+   "type": "group",
    "name": "sign board",
    "transform": [
     {
@@ -922,30 +903,41 @@
      "rotate_y": -1.5707963705062866
     }
    ],
-   "materials": [
+   "children": [
     {
-     "color": "#302222",
-     "roughness": 0.8500000238418579
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       2.200000047683716,
+       0.4000000059604645,
+       0.05000000074505806
+      ]
+     },
+     "name": "sign board body",
+     "material": {
+      "color": "#302222",
+      "roughness": 0.8500000238418579
+     }
     },
     {
-     "color": "#302222",
-     "roughness": 0.8500000238418579
-    },
-    {
-     "color": "#302222",
-     "roughness": 0.8500000238418579
-    },
-    {
-     "color": "#302222",
-     "roughness": 0.8500000238418579
-    },
-    {
-     "map": "sign",
-     "roughness": 0.8500000238418579
-    },
-    {
-     "color": "#302222",
-     "roughness": 0.8500000238418579
+     "type": "mesh",
+     "name": "sign face",
+     "geometry": {
+      "kind": "quad",
+      "width": 2.200000047683716,
+      "height": 0.4000000059604645
+     },
+     "texture": "sign",
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.0,
+        0.026000000536441803
+       ]
+      }
+     ]
     }
    ]
   },
