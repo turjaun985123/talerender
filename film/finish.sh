@@ -28,7 +28,7 @@ ffmpeg -y -v error -stats \
   -c:v libx264 -preset slow -crf 18 -pix_fmt yuv420p \
   -color_primaries bt709 -color_trc bt709 -colorspace bt709 \
   -x264-params "colorprim=bt709:transfer=bt709:colormatrix=bt709" \
-  -c:a aac -b:a 192k \
+  -c:a aac -b:a 256k \
   -movflags +faststart "$PART"
 mv "$PART" "$OUT"
 echo "finished: $OUT"

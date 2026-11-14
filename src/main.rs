@@ -63,10 +63,13 @@ MODES (choose one; the default is a built-in scene render):
     --film <DIR>            Render a whole film: DIR holds the
                             film data (film.json — the generic
                             entry; onoda.json accepted for this
-                            film) + an assets/ dir; segment scenes
-                            resolve from scenes/film/. Frames are
-                            written to --out as frame_%05d.png;
-                            existing frames are skipped (resume).
+                            film) + an assets/ dir; the segment
+                            shots are staged by the driver in
+                            code (scenes/film/ is the tools'
+                            manifest copy — --film never reads
+                            it). Frames are written to --out as
+                            frame_%05d.png; existing frames are
+                            skipped (resume).
     --film-telemetry <DIR>  Native telemetry gate over a film
                             directory (CPU only, no GPU). The
                             verdict is the printed line
@@ -131,9 +134,12 @@ EXIT CODES:
     0   Success.
     1   --film-telemetry QA verdict: CHECK FAILED (the printed
         line carries the counts and stays authoritative).
-    2   Command-line error (unknown flag, bad or missing value).
+    2   Command-line error (unknown flag, bad or missing value);
+        also film or scene data that fails to load.
     3   --film-telemetry could not run (film data unreadable;
-        the reason is printed on stderr, no verdict line).
+        the reason is printed on stderr, no verdict line);
+        also GPU initialisation or render failure in any mode.
+    4   Image I/O failure (reading or writing a PNG).
 
 The renderer actually used is printed on every run — a hardware
 GPU or a software Vulkan driver such as lavapipe. Nothing claims
