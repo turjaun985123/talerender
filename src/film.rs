@@ -2079,7 +2079,11 @@ impl PaintCache {
         let v = std::rc::Rc::new(paint_toon_full(look, st));
         self.map.insert(key.clone(), v.clone());
         self.order.push_back(key);
-        while self.map.len() > 160 {
+        // TALERENDER_PAINT_CACHE overrides the cap for memory-tight
+        // runs (telemetry on a shared VM): eviction is pixel-neutral.
+        let cap: usize = std::env::var("TALERENDER_PAINT_CACHE").ok()
+            .and_then(|v| v.parse().ok()).unwrap_or(160);
+        while self.map.len() > cap {
             let old = self.order.pop_front().expect("cache order");
             self.map.remove(&old);
         }
@@ -3537,7 +3541,12 @@ pub(crate) fn run_film_telemetry(dir: &Path) -> Result<(), String> {
     let mut audit = Audit::new(shots);
     let mut cache = PaintCache::new();
     let mut t = 0.0f64;
+    let mut sample_no = 0u32;
     while t < data.duration {
+        sample_no += 1;
+        if sample_no % 20 == 0 {
+            eprintln!("film-telemetry: sample {sample_no} (t={t:.2})");
+        }
         let mut spec = eval_frame(&data, &looks, t);
         let cam = ProjCamera {
             eye: [spec.eye[0] as f64, spec.eye[1] as f64, spec.eye[2] as f64],
