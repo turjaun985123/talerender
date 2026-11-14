@@ -2714,7 +2714,7 @@ impl Renderer {
             multiview: None,
         });
         let post = PostChain::new(&device);
-        Renderer {
+        Ok(Renderer {
             device,
             queue,
             width,
@@ -3266,7 +3266,7 @@ impl Renderer {
         queue.submit(Some(encoder.finish()));
         let pixels = rb.collect(device)?;
         drop(dyn_keep);
-        pixels
+        Ok(pixels)
     }
 }
 
