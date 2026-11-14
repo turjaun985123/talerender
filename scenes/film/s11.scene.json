@@ -1,7 +1,7 @@
 {
  "format": "talerender-scene",
  "version": 2,
- "name": "S11 \u2014 dusk, the clearing: the order is given; Onoda lays his rifle on the ground and stands at attention \u2014 the pose holds (film 50.648\u201355.52 s)",
+ "name": "S11 — dusk, the clearing: the order is given; Onoda lays his rifle on the ground and stands at attention — the pose holds (film 50.648–55.52 s)",
  "time": 0,
  "duration": 4.872,
  "shot": {
@@ -37,7 +37,7 @@
     "gain": 0.5
    }
   ],
-  "note": "DUSK, the clearing: the order is given; Onoda lays his rifle on the ground and stands at attention \u2014 the pose holds"
+  "note": "DUSK, the clearing: the order is given; Onoda lays his rifle on the ground and stands at attention — the pose holds"
  },
  "atmosphere": "dusk",
  "camera": {
@@ -189,6 +189,42 @@
   {
    "id": "cloud",
    "generator": "cloud"
+  },
+  {
+   "id": "grass-hills",
+   "generator": "grass",
+   "base": "#5E8F52",
+   "repeat": [
+    6.0,
+    3.0
+   ]
+  },
+  {
+   "id": "planks-crate",
+   "generator": "planks",
+   "base": "#B07A48",
+   "repeat": [
+    0.5,
+    0.5
+   ]
+  },
+  {
+   "id": "planks-barrel",
+   "generator": "planks",
+   "base": "#9A6337",
+   "repeat": [
+    1.0,
+    1.0
+   ]
+  },
+  {
+   "id": "planks-roof",
+   "generator": "planks",
+   "base": "#8A6B42",
+   "repeat": [
+    1.0,
+    1.0
+   ]
   }
  ],
  "nodes": [
@@ -208,7 +244,7 @@
    "geometry": {
     "kind": "ground-disc",
     "radius": 80.0,
-    "segments": 48,
+    "segments": 40,
     "uvRepeat": 48.0
    },
    "name": "grass ground",
@@ -226,7 +262,8 @@
    },
    "name": "dirt patch",
    "material": {
-    "color": "#86714C"
+    "color": "#86714C",
+    "roughness": 1.0
    },
    "transform": [
     {
@@ -243,7 +280,7 @@
    "geometry": {
     "kind": "sphere",
     "radius": 1.0,
-    "widthSegments": 24,
+    "widthSegments": 32,
     "heightSegments": 16
    },
    "name": "hill 0",
@@ -255,7 +292,8 @@
       "base": 0.92,
       "span": 0.16
      }
-    }
+    },
+    "map": "grass-hills"
    },
    "transform": [
     {
@@ -284,7 +322,7 @@
       "radiusTop": 0.21851931512355804,
       "radiusBottom": 0.32777899503707886,
       "height": 2.913591146469116,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -467,7 +505,7 @@
       "radiusTop": 0.14305447041988373,
       "radiusBottom": 0.2145817130804062,
       "height": 1.9073928594589233,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -650,7 +688,7 @@
       "radiusTop": 0.21649131178855896,
       "radiusBottom": 0.32473698258399963,
       "height": 2.8865509033203125,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -833,7 +871,7 @@
       "radiusTop": 0.19849655032157898,
       "radiusBottom": 0.29774484038352966,
       "height": 2.646620750427246,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -1016,7 +1054,7 @@
       "radiusTop": 0.2142098993062973,
       "radiusBottom": 0.32131487131118774,
       "height": 2.8561322689056396,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -1199,7 +1237,7 @@
       "radiusTop": 0.19138747453689575,
       "radiusBottom": 0.28708121180534363,
       "height": 2.551832914352417,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -1377,7 +1415,7 @@
    "geometry": {
     "kind": "sphere",
     "radius": 1.0,
-    "widthSegments": 24,
+    "widthSegments": 32,
     "heightSegments": 16
    },
    "name": "hill 1",
@@ -1389,7 +1427,8 @@
       "base": 0.92,
       "span": 0.16
      }
-    }
+    },
+    "map": "grass-hills"
    },
    "transform": [
     {
@@ -1418,7 +1457,7 @@
       "radiusTop": 0.21851931512355804,
       "radiusBottom": 0.32777899503707886,
       "height": 2.913591146469116,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -1601,7 +1640,7 @@
       "radiusTop": 0.14305447041988373,
       "radiusBottom": 0.2145817130804062,
       "height": 1.9073928594589233,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -1784,7 +1823,7 @@
       "radiusTop": 0.21649131178855896,
       "radiusBottom": 0.32473698258399963,
       "height": 2.8865509033203125,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -1967,7 +2006,7 @@
       "radiusTop": 0.19849655032157898,
       "radiusBottom": 0.29774484038352966,
       "height": 2.646620750427246,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -2150,7 +2189,7 @@
       "radiusTop": 0.2142098993062973,
       "radiusBottom": 0.32131487131118774,
       "height": 2.8561322689056396,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -2333,7 +2372,7 @@
       "radiusTop": 0.19138747453689575,
       "radiusBottom": 0.28708121180534363,
       "height": 2.551832914352417,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -2511,7 +2550,7 @@
    "geometry": {
     "kind": "sphere",
     "radius": 1.0,
-    "widthSegments": 24,
+    "widthSegments": 32,
     "heightSegments": 16
    },
    "name": "hill 2",
@@ -2523,7 +2562,8 @@
       "base": 0.92,
       "span": 0.16
      }
-    }
+    },
+    "map": "grass-hills"
    },
    "transform": [
     {
@@ -2552,7 +2592,7 @@
       "radiusTop": 0.21851931512355804,
       "radiusBottom": 0.32777899503707886,
       "height": 2.913591146469116,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -2735,7 +2775,7 @@
       "radiusTop": 0.14305447041988373,
       "radiusBottom": 0.2145817130804062,
       "height": 1.9073928594589233,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -2918,7 +2958,7 @@
       "radiusTop": 0.21649131178855896,
       "radiusBottom": 0.32473698258399963,
       "height": 2.8865509033203125,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -3101,7 +3141,7 @@
       "radiusTop": 0.19849655032157898,
       "radiusBottom": 0.29774484038352966,
       "height": 2.646620750427246,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -3284,7 +3324,7 @@
       "radiusTop": 0.2142098993062973,
       "radiusBottom": 0.32131487131118774,
       "height": 2.8561322689056396,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -3467,7 +3507,7 @@
       "radiusTop": 0.19138747453689575,
       "radiusBottom": 0.28708121180534363,
       "height": 2.551832914352417,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -3645,7 +3685,7 @@
    "geometry": {
     "kind": "sphere",
     "radius": 1.0,
-    "widthSegments": 24,
+    "widthSegments": 32,
     "heightSegments": 16
    },
    "name": "hill 3",
@@ -3657,7 +3697,8 @@
       "base": 0.92,
       "span": 0.16
      }
-    }
+    },
+    "map": "grass-hills"
    },
    "transform": [
     {
@@ -3686,7 +3727,7 @@
       "radiusTop": 0.21851931512355804,
       "radiusBottom": 0.32777899503707886,
       "height": 2.913591146469116,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -3869,7 +3910,7 @@
       "radiusTop": 0.14305447041988373,
       "radiusBottom": 0.2145817130804062,
       "height": 1.9073928594589233,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -4052,7 +4093,7 @@
       "radiusTop": 0.21649131178855896,
       "radiusBottom": 0.32473698258399963,
       "height": 2.8865509033203125,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -4235,7 +4276,7 @@
       "radiusTop": 0.19849655032157898,
       "radiusBottom": 0.29774484038352966,
       "height": 2.646620750427246,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -4418,7 +4459,7 @@
       "radiusTop": 0.2142098993062973,
       "radiusBottom": 0.32131487131118774,
       "height": 2.8561322689056396,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -4601,7 +4642,7 @@
       "radiusTop": 0.19138747453689575,
       "radiusBottom": 0.28708121180534363,
       "height": 2.551832914352417,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -4784,7 +4825,7 @@
       "radiusTop": 0.17999999225139618,
       "radiusBottom": 0.27000001072883606,
       "height": 2.4000000953674316,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -4970,7 +5011,7 @@
       "radiusTop": 0.15599998831748962,
       "radiusBottom": 0.23399999737739563,
       "height": 2.0799999237060547,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -5040,7 +5081,7 @@
       "radiusTop": 0.20399999618530273,
       "radiusBottom": 0.3060000240802765,
       "height": 2.7200000286102295,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -5226,7 +5267,7 @@
       "radiusTop": 0.17999999225139618,
       "radiusBottom": 0.27000001072883606,
       "height": 2.4000000953674316,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -5412,7 +5453,7 @@
       "radiusTop": 0.21599999070167542,
       "radiusBottom": 0.3240000009536743,
       "height": 2.879999876022339,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -5482,7 +5523,7 @@
       "radiusTop": 0.19200000166893005,
       "radiusBottom": 0.2880000174045563,
       "height": 2.56000018119812,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -5668,7 +5709,7 @@
       "radiusTop": 0.16200000047683716,
       "radiusBottom": 0.24300001561641693,
       "height": 2.1600000858306885,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -5738,7 +5779,7 @@
       "radiusTop": 0.20999999344348907,
       "radiusBottom": 0.3149999976158142,
       "height": 2.799999952316284,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -5924,7 +5965,7 @@
       "radiusTop": 0.17999999225139618,
       "radiusBottom": 0.27000001072883606,
       "height": 2.4000000953674316,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -6110,7 +6151,7 @@
       "radiusTop": 0.2279999852180481,
       "radiusBottom": 0.34200000762939453,
       "height": 3.0399999618530273,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -6180,7 +6221,7 @@
       "radiusTop": 0.19200000166893005,
       "radiusBottom": 0.2880000174045563,
       "height": 2.56000018119812,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -6366,7 +6407,7 @@
       "radiusTop": 0.18599998950958252,
       "radiusBottom": 0.27900001406669617,
       "height": 2.4800000190734863,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -6552,7 +6593,7 @@
       "radiusTop": 0.2279999852180481,
       "radiusBottom": 0.34200000762939453,
       "height": 3.0399999618530273,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -6738,7 +6779,7 @@
       "radiusTop": 0.19200000166893005,
       "radiusBottom": 0.2880000174045563,
       "height": 2.56000018119812,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -6924,7 +6965,7 @@
       "radiusTop": 0.20399999618530273,
       "radiusBottom": 0.3060000240802765,
       "height": 2.7200000286102295,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -7110,7 +7151,7 @@
       "radiusTop": 0.15599998831748962,
       "radiusBottom": 0.23399999737739563,
       "height": 2.0799999237060547,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -7296,7 +7337,7 @@
       "radiusTop": 0.14999999105930328,
       "radiusBottom": 0.22500000894069672,
       "height": 2.0,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -7366,7 +7407,7 @@
       "radiusTop": 0.17999999225139618,
       "radiusBottom": 0.27000001072883606,
       "height": 2.4000000953674316,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -7552,7 +7593,7 @@
       "radiusTop": 0.17399999499320984,
       "radiusBottom": 0.26100000739097595,
       "height": 2.320000171661377,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -7742,7 +7783,8 @@
      },
      "name": "trunk",
      "material": {
-      "color": "#7A6248"
+      "color": "#7A6248",
+      "roughness": 0.95
      },
      "transform": [
       {
@@ -7764,7 +7806,8 @@
      },
      "name": "frond 0",
      "material": {
-      "color": "#3F7D33"
+      "color": "#4C8A3A",
+      "roughness": 0.9
      },
      "transform": [
       {
@@ -7791,12 +7834,13 @@
      "geometry": {
       "kind": "sphere",
       "radius": 1.0,
-      "widthSegments": 10,
-      "heightSegments": 6
+      "widthSegments": 8,
+      "heightSegments": 5
      },
      "name": "frond tip 0",
      "material": {
-      "color": "#3F7D33"
+      "color": "#3F7D33",
+      "roughness": 0.9
      },
      "transform": [
       {
@@ -7832,7 +7876,8 @@
      },
      "name": "frond 1",
      "material": {
-      "color": "#4C8A3A"
+      "color": "#3F7D33",
+      "roughness": 0.9
      },
      "transform": [
       {
@@ -7859,12 +7904,13 @@
      "geometry": {
       "kind": "sphere",
       "radius": 1.0,
-      "widthSegments": 10,
-      "heightSegments": 6
+      "widthSegments": 8,
+      "heightSegments": 5
      },
      "name": "frond tip 1",
      "material": {
-      "color": "#4C8A3A"
+      "color": "#4C8A3A",
+      "roughness": 0.9
      },
      "transform": [
       {
@@ -7900,7 +7946,8 @@
      },
      "name": "frond 2",
      "material": {
-      "color": "#3F7D33"
+      "color": "#4C8A3A",
+      "roughness": 0.9
      },
      "transform": [
       {
@@ -7927,12 +7974,13 @@
      "geometry": {
       "kind": "sphere",
       "radius": 1.0,
-      "widthSegments": 10,
-      "heightSegments": 6
+      "widthSegments": 8,
+      "heightSegments": 5
      },
      "name": "frond tip 2",
      "material": {
-      "color": "#3F7D33"
+      "color": "#3F7D33",
+      "roughness": 0.9
      },
      "transform": [
       {
@@ -7968,7 +8016,8 @@
      },
      "name": "frond 3",
      "material": {
-      "color": "#4C8A3A"
+      "color": "#3F7D33",
+      "roughness": 0.9
      },
      "transform": [
       {
@@ -7995,12 +8044,13 @@
      "geometry": {
       "kind": "sphere",
       "radius": 1.0,
-      "widthSegments": 10,
-      "heightSegments": 6
+      "widthSegments": 8,
+      "heightSegments": 5
      },
      "name": "frond tip 3",
      "material": {
-      "color": "#4C8A3A"
+      "color": "#4C8A3A",
+      "roughness": 0.9
      },
      "transform": [
       {
@@ -8036,7 +8086,8 @@
      },
      "name": "frond 4",
      "material": {
-      "color": "#3F7D33"
+      "color": "#4C8A3A",
+      "roughness": 0.9
      },
      "transform": [
       {
@@ -8063,12 +8114,13 @@
      "geometry": {
       "kind": "sphere",
       "radius": 1.0,
-      "widthSegments": 10,
-      "heightSegments": 6
+      "widthSegments": 8,
+      "heightSegments": 5
      },
      "name": "frond tip 4",
      "material": {
-      "color": "#3F7D33"
+      "color": "#3F7D33",
+      "roughness": 0.9
      },
      "transform": [
       {
@@ -8104,7 +8156,8 @@
      },
      "name": "frond 5",
      "material": {
-      "color": "#4C8A3A"
+      "color": "#3F7D33",
+      "roughness": 0.9
      },
      "transform": [
       {
@@ -8131,12 +8184,13 @@
      "geometry": {
       "kind": "sphere",
       "radius": 1.0,
-      "widthSegments": 10,
-      "heightSegments": 6
+      "widthSegments": 8,
+      "heightSegments": 5
      },
      "name": "frond tip 5",
      "material": {
-      "color": "#4C8A3A"
+      "color": "#4C8A3A",
+      "roughness": 0.9
      },
      "transform": [
       {
@@ -8172,7 +8226,8 @@
      },
      "name": "frond 6",
      "material": {
-      "color": "#3F7D33"
+      "color": "#4C8A3A",
+      "roughness": 0.9
      },
      "transform": [
       {
@@ -8199,12 +8254,13 @@
      "geometry": {
       "kind": "sphere",
       "radius": 1.0,
-      "widthSegments": 10,
-      "heightSegments": 6
+      "widthSegments": 8,
+      "heightSegments": 5
      },
      "name": "frond tip 6",
      "material": {
-      "color": "#3F7D33"
+      "color": "#3F7D33",
+      "roughness": 0.9
      },
      "transform": [
       {
@@ -8240,7 +8296,8 @@
      },
      "name": "coconut",
      "material": {
-      "color": "#6B4A2E"
+      "color": "#6B4A2E",
+      "roughness": 0.9
      },
      "transform": [
       {
@@ -8262,7 +8319,8 @@
      },
      "name": "coconut",
      "material": {
-      "color": "#6B4A2E"
+      "color": "#6B4A2E",
+      "roughness": 0.9
      },
      "transform": [
       {
@@ -8284,7 +8342,8 @@
      },
      "name": "coconut",
      "material": {
-      "color": "#6B4A2E"
+      "color": "#6B4A2E",
+      "roughness": 0.9
      },
      "transform": [
       {
@@ -8335,7 +8394,8 @@
      },
      "name": "trunk",
      "material": {
-      "color": "#7A6248"
+      "color": "#7A6248",
+      "roughness": 0.95
      },
      "transform": [
       {
@@ -8357,7 +8417,8 @@
      },
      "name": "frond 0",
      "material": {
-      "color": "#3F7D33"
+      "color": "#4C8A3A",
+      "roughness": 0.9
      },
      "transform": [
       {
@@ -8384,12 +8445,13 @@
      "geometry": {
       "kind": "sphere",
       "radius": 1.0,
-      "widthSegments": 10,
-      "heightSegments": 6
+      "widthSegments": 8,
+      "heightSegments": 5
      },
      "name": "frond tip 0",
      "material": {
-      "color": "#3F7D33"
+      "color": "#3F7D33",
+      "roughness": 0.9
      },
      "transform": [
       {
@@ -8425,7 +8487,8 @@
      },
      "name": "frond 1",
      "material": {
-      "color": "#4C8A3A"
+      "color": "#3F7D33",
+      "roughness": 0.9
      },
      "transform": [
       {
@@ -8452,12 +8515,13 @@
      "geometry": {
       "kind": "sphere",
       "radius": 1.0,
-      "widthSegments": 10,
-      "heightSegments": 6
+      "widthSegments": 8,
+      "heightSegments": 5
      },
      "name": "frond tip 1",
      "material": {
-      "color": "#4C8A3A"
+      "color": "#4C8A3A",
+      "roughness": 0.9
      },
      "transform": [
       {
@@ -8493,7 +8557,8 @@
      },
      "name": "frond 2",
      "material": {
-      "color": "#3F7D33"
+      "color": "#4C8A3A",
+      "roughness": 0.9
      },
      "transform": [
       {
@@ -8520,12 +8585,13 @@
      "geometry": {
       "kind": "sphere",
       "radius": 1.0,
-      "widthSegments": 10,
-      "heightSegments": 6
+      "widthSegments": 8,
+      "heightSegments": 5
      },
      "name": "frond tip 2",
      "material": {
-      "color": "#3F7D33"
+      "color": "#3F7D33",
+      "roughness": 0.9
      },
      "transform": [
       {
@@ -8561,7 +8627,8 @@
      },
      "name": "frond 3",
      "material": {
-      "color": "#4C8A3A"
+      "color": "#3F7D33",
+      "roughness": 0.9
      },
      "transform": [
       {
@@ -8588,12 +8655,13 @@
      "geometry": {
       "kind": "sphere",
       "radius": 1.0,
-      "widthSegments": 10,
-      "heightSegments": 6
+      "widthSegments": 8,
+      "heightSegments": 5
      },
      "name": "frond tip 3",
      "material": {
-      "color": "#4C8A3A"
+      "color": "#4C8A3A",
+      "roughness": 0.9
      },
      "transform": [
       {
@@ -8629,7 +8697,8 @@
      },
      "name": "frond 4",
      "material": {
-      "color": "#3F7D33"
+      "color": "#4C8A3A",
+      "roughness": 0.9
      },
      "transform": [
       {
@@ -8656,12 +8725,13 @@
      "geometry": {
       "kind": "sphere",
       "radius": 1.0,
-      "widthSegments": 10,
-      "heightSegments": 6
+      "widthSegments": 8,
+      "heightSegments": 5
      },
      "name": "frond tip 4",
      "material": {
-      "color": "#3F7D33"
+      "color": "#3F7D33",
+      "roughness": 0.9
      },
      "transform": [
       {
@@ -8697,7 +8767,8 @@
      },
      "name": "frond 5",
      "material": {
-      "color": "#4C8A3A"
+      "color": "#3F7D33",
+      "roughness": 0.9
      },
      "transform": [
       {
@@ -8724,12 +8795,13 @@
      "geometry": {
       "kind": "sphere",
       "radius": 1.0,
-      "widthSegments": 10,
-      "heightSegments": 6
+      "widthSegments": 8,
+      "heightSegments": 5
      },
      "name": "frond tip 5",
      "material": {
-      "color": "#4C8A3A"
+      "color": "#4C8A3A",
+      "roughness": 0.9
      },
      "transform": [
       {
@@ -8765,7 +8837,8 @@
      },
      "name": "frond 6",
      "material": {
-      "color": "#3F7D33"
+      "color": "#4C8A3A",
+      "roughness": 0.9
      },
      "transform": [
       {
@@ -8792,12 +8865,13 @@
      "geometry": {
       "kind": "sphere",
       "radius": 1.0,
-      "widthSegments": 10,
-      "heightSegments": 6
+      "widthSegments": 8,
+      "heightSegments": 5
      },
      "name": "frond tip 6",
      "material": {
-      "color": "#3F7D33"
+      "color": "#3F7D33",
+      "roughness": 0.9
      },
      "transform": [
       {
@@ -8833,7 +8907,8 @@
      },
      "name": "coconut",
      "material": {
-      "color": "#6B4A2E"
+      "color": "#6B4A2E",
+      "roughness": 0.9
      },
      "transform": [
       {
@@ -8855,7 +8930,8 @@
      },
      "name": "coconut",
      "material": {
-      "color": "#6B4A2E"
+      "color": "#6B4A2E",
+      "roughness": 0.9
      },
      "transform": [
       {
@@ -8877,7 +8953,8 @@
      },
      "name": "coconut",
      "material": {
-      "color": "#6B4A2E"
+      "color": "#6B4A2E",
+      "roughness": 0.9
      },
      "transform": [
       {
@@ -8928,7 +9005,8 @@
      },
      "name": "trunk",
      "material": {
-      "color": "#7A6248"
+      "color": "#7A6248",
+      "roughness": 0.95
      },
      "transform": [
       {
@@ -8950,7 +9028,8 @@
      },
      "name": "frond 0",
      "material": {
-      "color": "#3F7D33"
+      "color": "#4C8A3A",
+      "roughness": 0.9
      },
      "transform": [
       {
@@ -8977,12 +9056,13 @@
      "geometry": {
       "kind": "sphere",
       "radius": 1.0,
-      "widthSegments": 10,
-      "heightSegments": 6
+      "widthSegments": 8,
+      "heightSegments": 5
      },
      "name": "frond tip 0",
      "material": {
-      "color": "#3F7D33"
+      "color": "#3F7D33",
+      "roughness": 0.9
      },
      "transform": [
       {
@@ -9018,7 +9098,8 @@
      },
      "name": "frond 1",
      "material": {
-      "color": "#4C8A3A"
+      "color": "#3F7D33",
+      "roughness": 0.9
      },
      "transform": [
       {
@@ -9045,12 +9126,13 @@
      "geometry": {
       "kind": "sphere",
       "radius": 1.0,
-      "widthSegments": 10,
-      "heightSegments": 6
+      "widthSegments": 8,
+      "heightSegments": 5
      },
      "name": "frond tip 1",
      "material": {
-      "color": "#4C8A3A"
+      "color": "#4C8A3A",
+      "roughness": 0.9
      },
      "transform": [
       {
@@ -9086,7 +9168,8 @@
      },
      "name": "frond 2",
      "material": {
-      "color": "#3F7D33"
+      "color": "#4C8A3A",
+      "roughness": 0.9
      },
      "transform": [
       {
@@ -9113,12 +9196,13 @@
      "geometry": {
       "kind": "sphere",
       "radius": 1.0,
-      "widthSegments": 10,
-      "heightSegments": 6
+      "widthSegments": 8,
+      "heightSegments": 5
      },
      "name": "frond tip 2",
      "material": {
-      "color": "#3F7D33"
+      "color": "#3F7D33",
+      "roughness": 0.9
      },
      "transform": [
       {
@@ -9154,7 +9238,8 @@
      },
      "name": "frond 3",
      "material": {
-      "color": "#4C8A3A"
+      "color": "#3F7D33",
+      "roughness": 0.9
      },
      "transform": [
       {
@@ -9181,12 +9266,13 @@
      "geometry": {
       "kind": "sphere",
       "radius": 1.0,
-      "widthSegments": 10,
-      "heightSegments": 6
+      "widthSegments": 8,
+      "heightSegments": 5
      },
      "name": "frond tip 3",
      "material": {
-      "color": "#4C8A3A"
+      "color": "#4C8A3A",
+      "roughness": 0.9
      },
      "transform": [
       {
@@ -9222,7 +9308,8 @@
      },
      "name": "frond 4",
      "material": {
-      "color": "#3F7D33"
+      "color": "#4C8A3A",
+      "roughness": 0.9
      },
      "transform": [
       {
@@ -9249,12 +9336,13 @@
      "geometry": {
       "kind": "sphere",
       "radius": 1.0,
-      "widthSegments": 10,
-      "heightSegments": 6
+      "widthSegments": 8,
+      "heightSegments": 5
      },
      "name": "frond tip 4",
      "material": {
-      "color": "#3F7D33"
+      "color": "#3F7D33",
+      "roughness": 0.9
      },
      "transform": [
       {
@@ -9290,7 +9378,8 @@
      },
      "name": "frond 5",
      "material": {
-      "color": "#4C8A3A"
+      "color": "#3F7D33",
+      "roughness": 0.9
      },
      "transform": [
       {
@@ -9317,12 +9406,13 @@
      "geometry": {
       "kind": "sphere",
       "radius": 1.0,
-      "widthSegments": 10,
-      "heightSegments": 6
+      "widthSegments": 8,
+      "heightSegments": 5
      },
      "name": "frond tip 5",
      "material": {
-      "color": "#4C8A3A"
+      "color": "#4C8A3A",
+      "roughness": 0.9
      },
      "transform": [
       {
@@ -9358,7 +9448,8 @@
      },
      "name": "frond 6",
      "material": {
-      "color": "#3F7D33"
+      "color": "#4C8A3A",
+      "roughness": 0.9
      },
      "transform": [
       {
@@ -9385,12 +9476,13 @@
      "geometry": {
       "kind": "sphere",
       "radius": 1.0,
-      "widthSegments": 10,
-      "heightSegments": 6
+      "widthSegments": 8,
+      "heightSegments": 5
      },
      "name": "frond tip 6",
      "material": {
-      "color": "#3F7D33"
+      "color": "#3F7D33",
+      "roughness": 0.9
      },
      "transform": [
       {
@@ -9426,7 +9518,8 @@
      },
      "name": "coconut",
      "material": {
-      "color": "#6B4A2E"
+      "color": "#6B4A2E",
+      "roughness": 0.9
      },
      "transform": [
       {
@@ -9448,7 +9541,8 @@
      },
      "name": "coconut",
      "material": {
-      "color": "#6B4A2E"
+      "color": "#6B4A2E",
+      "roughness": 0.9
      },
      "transform": [
       {
@@ -9470,7 +9564,8 @@
      },
      "name": "coconut",
      "material": {
-      "color": "#6B4A2E"
+      "color": "#6B4A2E",
+      "roughness": 0.9
      },
      "transform": [
       {
@@ -9544,7 +9639,8 @@
    },
    "name": "fire stone 0",
    "material": {
-    "color": "#8B8B84"
+    "color": "#8B8B84",
+    "roughness": 0.95
    },
    "transform": [
     {
@@ -9566,7 +9662,8 @@
    },
    "name": "fire stone 1",
    "material": {
-    "color": "#8B8B84"
+    "color": "#8B8B84",
+    "roughness": 0.95
    },
    "transform": [
     {
@@ -9588,7 +9685,8 @@
    },
    "name": "fire stone 2",
    "material": {
-    "color": "#8B8B84"
+    "color": "#8B8B84",
+    "roughness": 0.95
    },
    "transform": [
     {
@@ -9610,7 +9708,8 @@
    },
    "name": "fire stone 3",
    "material": {
-    "color": "#8B8B84"
+    "color": "#8B8B84",
+    "roughness": 0.95
    },
    "transform": [
     {
@@ -9632,7 +9731,8 @@
    },
    "name": "fire stone 4",
    "material": {
-    "color": "#8B8B84"
+    "color": "#8B8B84",
+    "roughness": 0.95
    },
    "transform": [
     {
@@ -9654,7 +9754,8 @@
    },
    "name": "fire stone 5",
    "material": {
-    "color": "#8B8B84"
+    "color": "#8B8B84",
+    "roughness": 0.95
    },
    "transform": [
     {
@@ -9676,7 +9777,8 @@
    },
    "name": "fire stone 6",
    "material": {
-    "color": "#8B8B84"
+    "color": "#8B8B84",
+    "roughness": 0.95
    },
    "transform": [
     {
@@ -9698,7 +9800,8 @@
    },
    "name": "fire stone 7",
    "material": {
-    "color": "#8B8B84"
+    "color": "#8B8B84",
+    "roughness": 0.95
    },
    "transform": [
     {
@@ -9721,7 +9824,8 @@
    },
    "name": "fire log 0",
    "material": {
-    "color": "#7A5A38"
+    "color": "#7A5A38",
+    "roughness": 0.95
    },
    "transform": [
     {
@@ -9751,7 +9855,8 @@
    },
    "name": "fire log 1",
    "material": {
-    "color": "#7A5A38"
+    "color": "#7A5A38",
+    "roughness": 0.95
    },
    "transform": [
     {
@@ -9781,7 +9886,8 @@
    },
    "name": "fire log 2",
    "material": {
-    "color": "#7A5A38"
+    "color": "#7A5A38",
+    "roughness": 0.95
    },
    "transform": [
     {
@@ -9810,7 +9916,8 @@
    },
    "name": "flame",
    "material": {
-    "color": "#FF8A30"
+    "color": "#FF8A30",
+    "roughness": 1.0
    },
    "transform": [
     {
@@ -9839,7 +9946,8 @@
    },
    "name": "flame inner",
    "material": {
-    "color": "#FFD23C"
+    "color": "#FFD23C",
+    "roughness": 1.0
    },
    "transform": [
     {
@@ -9869,7 +9977,8 @@
    },
    "name": "seat log",
    "material": {
-    "color": "#7A5A38"
+    "color": "#7A5A38",
+    "roughness": 0.95
    },
    "transform": [
     {
@@ -9899,7 +10008,8 @@
    },
    "name": "lean-to pole",
    "material": {
-    "color": "#7A5A38"
+    "color": "#7A5A38",
+    "roughness": 0.95
    },
    "transform": [
     {
@@ -9922,7 +10032,8 @@
    },
    "name": "lean-to pole",
    "material": {
-    "color": "#7A5A38"
+    "color": "#7A5A38",
+    "roughness": 0.95
    },
    "transform": [
     {
@@ -9946,7 +10057,8 @@
    },
    "name": "lean-to roof",
    "material": {
-    "color": "#8A6B42"
+    "map": "planks-roof",
+    "roughness": 0.95
    },
    "transform": [
     {
@@ -9962,121 +10074,169 @@
    ]
   },
   {
-   "type": "mesh",
-   "geometry": {
-    "kind": "box",
-    "size": [
-     0.55,
-     0.55,
-     0.55
-    ]
-   },
-   "name": "crate",
-   "material": {
-    "color": "#B07A48"
-   },
+   "type": "group",
+   "name": "crate 0.55",
    "transform": [
     {
      "translate": [
       -2.35,
-      0.275,
+      0.0,
       -3.15
+     ]
+    }
+   ],
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.55,
+       0.55,
+       0.55
+      ]
+     },
+     "name": "crate",
+     "material": {
+      "map": "planks-crate"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.2750000059604645,
+        0.0
+       ]
+      }
      ]
     }
    ]
   },
   {
-   "type": "mesh",
-   "geometry": {
-    "kind": "box",
-    "size": [
-     0.42,
-     0.42,
-     0.42
-    ]
-   },
-   "name": "crate (stacked)",
-   "material": {
-    "color": "#B07A48"
-   },
+   "type": "group",
+   "name": "crate 0.42",
    "transform": [
     {
      "translate": [
       -2.3,
-      0.7599999904632568,
+      0.550000011920929,
       -3.12
      ]
     },
     {
      "rotate_y": 0.4
     }
+   ],
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.42,
+       0.42,
+       0.42
+      ]
+     },
+     "name": "crate",
+     "material": {
+      "map": "planks-crate"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.20999999344348907,
+        0.0
+       ]
+      }
+     ]
+    }
    ]
   },
   {
-   "type": "mesh",
-   "geometry": {
-    "kind": "cylinder",
-    "radiusTop": 0.33,
-    "radiusBottom": 0.33,
-    "height": 0.8,
-    "segments": 16
-   },
+   "type": "group",
    "name": "barrel",
-   "material": {
-    "color": "#6E4525"
-   },
    "transform": [
     {
      "translate": [
-      -3.05,
-      0.4,
-      -2.2
+      -3.049999952316284,
+      0.0,
+      -2.200000047683716
      ]
     }
-   ]
-  },
-  {
-   "type": "mesh",
-   "geometry": {
-    "kind": "cylinder",
-    "radiusTop": 0.345,
-    "radiusBottom": 0.345,
-    "height": 0.05,
-    "segments": 16
-   },
-   "name": "barrel band",
-   "material": {
-    "color": "#3A3A3F"
-   },
-   "transform": [
+   ],
+   "children": [
     {
-     "translate": [
-      -3.05,
-      0.12,
-      -2.2
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.33,
+      "radiusBottom": 0.33,
+      "height": 0.8,
+      "segments": 16
+     },
+     "name": "barrel body",
+     "material": {
+      "color": "#9A6337",
+      "map": "planks-barrel"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.4000000059604645,
+        0.0
+       ]
+      }
      ]
-    }
-   ]
-  },
-  {
-   "type": "mesh",
-   "geometry": {
-    "kind": "cylinder",
-    "radiusTop": 0.345,
-    "radiusBottom": 0.345,
-    "height": 0.05,
-    "segments": 16
-   },
-   "name": "barrel band",
-   "material": {
-    "color": "#3A3A3F"
-   },
-   "transform": [
+    },
     {
-     "translate": [
-      -3.05,
-      0.68,
-      -2.2
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.345,
+      "radiusBottom": 0.345,
+      "height": 0.05,
+      "segments": 16
+     },
+     "name": "barrel band",
+     "material": {
+      "color": "#3A3A3F",
+      "metalness": 0.4
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.11999999731779099,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.345,
+      "radiusBottom": 0.345,
+      "height": 0.05,
+      "segments": 16
+     },
+     "name": "barrel band",
+     "material": {
+      "color": "#3A3A3F",
+      "metalness": 0.4
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.6800000071525574,
+        0.0
+       ]
+      }
      ]
     }
    ]
@@ -10093,7 +10253,8 @@
    },
    "name": "bedroll",
    "material": {
-    "color": "#77805E"
+    "color": "#77805E",
+    "roughness": 1.0
    },
    "transform": [
     {
@@ -10223,7 +10384,7 @@
       2.922000000000004
      ],
      "clock": "lt",
-     "source": "jgStage({onoda: t < dropT, ...}) \u2014 at dropT the stage swaps to the rifle-less second instance (shots.ts S11)"
+     "source": "jgStage({onoda: t < dropT, ...}) — at dropT the stage swaps to the rifle-less second instance (shots.ts S11)"
     },
     "position": {
      "kind": "segLerp",
@@ -10276,7 +10437,7 @@
      "kind": "blinkDirector",
      "directorSeed": 3,
      "evaluatedAt": "film t",
-     "law": "blink = blinkDirector(3)(t) (motion.ts) \u2014 deterministic blink pulses; state.blink is the value at the file time (0 at shot start, verified against the director's interval pattern)"
+     "law": "blink = blinkDirector(3)(t) (motion.ts) — deterministic blink pulses; state.blink is the value at the file time (0 at shot start, verified against the director's interval pattern)"
     }
    },
    "rifleNote": {
@@ -10346,7 +10507,7 @@
       null
      ],
      "clock": "lt",
-     "source": "jgStage({onoda2: t >= dropT, ...}) \u2014 the same registered cast identity as 'Onoda' (registerCast 'onoda', identical look + shade); only the instance (and its missing rifle) differs"
+     "source": "jgStage({onoda2: t >= dropT, ...}) — the same registered cast identity as 'Onoda' (registerCast 'onoda', identical look + shade); only the instance (and its missing rifle) differs"
     },
     "armR": {
      "kind": "poseTrack",
@@ -10375,7 +10536,7 @@
        ]
       ]
      },
-     "law": "att = poseTrack([[0, 34], [dropT - st + 0.55, 7, 0.45]], lt), attE = poseTrack([[0, 0], [dropT - st + 0.55, 3, 0.45]], lt) (motion.ts: the move into a key ends at the key time) \u2014 the arm comes down to attention after the rifle lands; armL static [8, 4]"
+     "law": "att = poseTrack([[0, 34], [dropT - st + 0.55, 7, 0.45]], lt), attE = poseTrack([[0, 0], [dropT - st + 0.55, 3, 0.45]], lt) (motion.ts: the move into a key ends at the key time) — the arm comes down to attention after the rifle lands; armL static [8, 4]"
     },
     "mood": {
      "kind": "step",
@@ -10403,7 +10564,7 @@
        0
       ]
      ],
-     "law": "lean = t >= dropT + 0.55 (film 54.12) ? 0 : 1 \u2014 a STEP (ternary on t in shots.ts), not an ease; it flips at the same instant the arm track lands"
+     "law": "lean = t >= dropT + 0.55 (film 54.12) ? 0 : 1 — a STEP (ternary on t in shots.ts), not an ease; it flips at the same instant the arm track lands"
     },
     "blink": {
      "kind": "blinkDirector+blinkAt",
@@ -10416,7 +10577,7 @@
       }
      ],
      "evaluatedAt": "film t",
-     "law": "blink = max(blinkDirector(3)(t), blinkAt(t, [Wd('surrendered', 10)])); the blinkAt window [53.02, 53.14) ends 0.43 s before this instance becomes visible, so that term never renders \u2014 recorded because the source sets it"
+     "law": "blink = max(blinkDirector(3)(t), blinkAt(t, [Wd('surrendered', 10)])); the blinkAt window [53.02, 53.14) ends 0.43 s before this instance becomes visible, so that term never renders — recorded because the source sets it"
     }
    }
   },
@@ -10497,7 +10658,7 @@
       ]
      ],
      "elbow": -8,
-     "law": "orderArm = poseTrack([[0, 12], [Wd('order', 10) - st - 0.13, 112, 0.32], [Wd('surrendered', 10) - st + 0.7, 14, 0.5]], lt) \u2014 the point lands 0.13 s before 'order' and the arm returns after 'surrendered'; armL static [12, 6]"
+     "law": "orderArm = poseTrack([[0, 12], [Wd('order', 10) - st - 0.13, 112, 0.32], [Wd('surrendered', 10) - st + 0.7, 14, 0.5]], lt) — the point lands 0.13 s before 'order' and the arm returns after 'surrendered'; armL static [12, 6]"
     },
     "lean": {
      "kind": "poseTrack",
@@ -10512,7 +10673,7 @@
        0.5
       ]
      ],
-     "law": "bow = poseTrack([[0, 0], [dropT - st + 1.15, 7, 0.5]], lt) \u2014 the bow deepens after the drop and holds 7 to the cut"
+     "law": "bow = poseTrack([[0, 0], [dropT - st + 1.15, 7, 0.5]], lt) — the bow deepens after the drop and holds 7 to the cut"
     },
     "headTilt": {
      "kind": "derived",
@@ -10670,7 +10831,7 @@
      ],
      "clock": "lt",
      "interpolation": "linear",
-     "source": "shots.ts S11: if (t >= dropT) { u = seg(t, dropT, dropT + 0.3); rifleDown.position.y = lerp(0.32, 0.07, eo(u)) } \u2014 x/z constant 0.62 / -0.1 (the creation transform); keys sampled from the closed form every 0.025 s (max deviation in y 0.00125 m)"
+     "source": "shots.ts S11: if (t >= dropT) { u = seg(t, dropT, dropT + 0.3); rifleDown.position.y = lerp(0.32, 0.07, eo(u)) } — x/z constant 0.62 / -0.1 (the creation transform); keys sampled from the closed form every 0.025 s (max deviation in y 0.00125 m)"
     },
     "euler": {
      "keys": [
@@ -10781,7 +10942,7 @@
      ],
      "clock": "lt",
      "interpolation": "linear",
-     "source": "shots.ts S11: rifleDown.rotation.z = PI/2 - 0.1 * (1 - eo(u)); rotation.x 0, rotation.y -0.5 (creation) constant; at rest (u = 1) euler = [0, -0.5, PI/2], position.y 0.07 \u2014 the transform S12 opens with"
+     "source": "shots.ts S11: rifleDown.rotation.z = PI/2 - 0.1 * (1 - eo(u)); rotation.x 0, rotation.y -0.5 (creation) constant; at rest (u = 1) euler = [0, -0.5, PI/2], position.y 0.07 — the transform S12 opens with"
     }
    },
    "children": [

@@ -280,7 +280,7 @@
       "radiusTop": 0.12,
       "radiusBottom": 0.18,
       "height": 1.6,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -470,7 +470,7 @@
       "radiusTop": 0.12,
       "radiusBottom": 0.18,
       "height": 1.6,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -660,7 +660,7 @@
       "radiusTop": 0.12,
       "radiusBottom": 0.18,
       "height": 1.6,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -850,7 +850,7 @@
       "radiusTop": 0.12,
       "radiusBottom": 0.18,
       "height": 1.6,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -1040,7 +1040,7 @@
       "radiusTop": 0.12,
       "radiusBottom": 0.18,
       "height": 1.6,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -1230,7 +1230,7 @@
       "radiusTop": 0.12,
       "radiusBottom": 0.18,
       "height": 1.6,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -1456,7 +1456,7 @@
       "radiusTop": 0.12,
       "radiusBottom": 0.18,
       "height": 1.6,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -1646,7 +1646,7 @@
       "radiusTop": 0.12,
       "radiusBottom": 0.18,
       "height": 1.6,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -1836,7 +1836,7 @@
       "radiusTop": 0.12,
       "radiusBottom": 0.18,
       "height": 1.6,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -2026,7 +2026,7 @@
       "radiusTop": 0.12,
       "radiusBottom": 0.18,
       "height": 1.6,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -2216,7 +2216,7 @@
       "radiusTop": 0.12,
       "radiusBottom": 0.18,
       "height": 1.6,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -2406,7 +2406,7 @@
       "radiusTop": 0.12,
       "radiusBottom": 0.18,
       "height": 1.6,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -2632,7 +2632,7 @@
       "radiusTop": 0.12,
       "radiusBottom": 0.18,
       "height": 1.6,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -2822,7 +2822,7 @@
       "radiusTop": 0.12,
       "radiusBottom": 0.18,
       "height": 1.6,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -3012,7 +3012,7 @@
       "radiusTop": 0.12,
       "radiusBottom": 0.18,
       "height": 1.6,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -3202,7 +3202,7 @@
       "radiusTop": 0.12,
       "radiusBottom": 0.18,
       "height": 1.6,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -3392,7 +3392,7 @@
       "radiusTop": 0.12,
       "radiusBottom": 0.18,
       "height": 1.6,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -3582,7 +3582,7 @@
       "radiusTop": 0.12,
       "radiusBottom": 0.18,
       "height": 1.6,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -3808,7 +3808,7 @@
       "radiusTop": 0.12,
       "radiusBottom": 0.18,
       "height": 1.6,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -3998,7 +3998,7 @@
       "radiusTop": 0.12,
       "radiusBottom": 0.18,
       "height": 1.6,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -4188,7 +4188,7 @@
       "radiusTop": 0.12,
       "radiusBottom": 0.18,
       "height": 1.6,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -4378,7 +4378,7 @@
       "radiusTop": 0.12,
       "radiusBottom": 0.18,
       "height": 1.6,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -4568,7 +4568,7 @@
       "radiusTop": 0.12,
       "radiusBottom": 0.18,
       "height": 1.6,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -4758,7 +4758,7 @@
       "radiusTop": 0.12,
       "radiusBottom": 0.18,
       "height": 1.6,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -4948,7 +4948,7 @@
       "radiusTop": 0.12,
       "radiusBottom": 0.18,
       "height": 1.6,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -5138,7 +5138,7 @@
       "radiusTop": 0.12,
       "radiusBottom": 0.18,
       "height": 1.6,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -5212,7 +5212,7 @@
       "radiusTop": 0.12,
       "radiusBottom": 0.18,
       "height": 1.6,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -5402,7 +5402,7 @@
       "radiusTop": 0.12,
       "radiusBottom": 0.18,
       "height": 1.6,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -5476,7 +5476,7 @@
       "radiusTop": 0.12,
       "radiusBottom": 0.18,
       "height": 1.6,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -5666,7 +5666,7 @@
       "radiusTop": 0.12,
       "radiusBottom": 0.18,
       "height": 1.6,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {
@@ -5740,7 +5740,7 @@
       "radiusTop": 0.12,
       "radiusBottom": 0.18,
       "height": 1.6,
-      "segments": 7
+      "segments": 12
      },
      "name": "trunk",
      "material": {

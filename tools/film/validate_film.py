@@ -9,8 +9,15 @@ consistency rules the wave works under:
   2. version        format == 'talerender-scene' and version == 2
   3. f32            every number under `lights`, `camera`, and each
                     character node (nodes[] with type == 'character')
-                    round-trips exactly through f32 (struct
-                    pack/unpack compare) — the §11 f32 data law
+                    is checked against the §11 f32 data law in two
+                    classes: a number that round-trips exactly
+                    through f32 passes outright; a number that does
+                    not must be a SOURCE LITERAL — a short decimal
+                    (<= 6 significant digits) that appears as a
+                    literal in the project's source tree
+                    (<project>/src, grep by float value) — anything
+                    else is a COMPUTED value written rounded and
+                    FAILs, listed verbatim
   4. attachments    §14.5 R2: attachments live ON character nodes;
                     a top-level `attachments` key is an error
   5. captions       caption chunk ids across all present segment
@@ -19,12 +26,16 @@ consistency rules the wave works under:
   6. durations      segment durations x fps round to the manifest
                     totalFrames, and the manifest frame ranges tile
                     [0, totalFrames) with no gaps or overlaps
-  7. atmosphere     the atmosphere each file declares (top-level
-                    `atmosphere`, else `shot.atmosphere`) is one of
-                    the filmLooks keys of scenes/atmospheres.json
-                    (strict check, as specified); the derived
-                    (set, preset) -> filmLook mapping is reported
-                    as context
+  7. atmosphere     ruling R5: scene files name atmosphere PRESETS,
+                    not filmLooks keys. The preset each file declares
+                    (top-level `atmosphere`, else `shot.atmosphere`)
+                    must equal the manifest's preset for the segment,
+                    and the (set, preset) pair must resolve to a
+                    filmLook via scenes/atmospheres.json — each
+                    filmLooks entry lists the shots it covers, so the
+                    segment's shot id ('S' + manifest id minus its
+                    leading 's') must appear in exactly the look the
+                    manifest names
 
 Usage: python3 tools/film/validate_film.py [--root DIR]
 Exit code: 0 = all checks PASS, 1 = any check FAIL.
@@ -68,6 +79,44 @@ def chunk_id(entry):
             if m:
                 return int(m.group(1))
     return None
+
+
+NUM_TOKEN = re.compile(r"-?\d+\.\d+(?:[eE][+-]?\d+)?"
+                       r"|-?\.\d+(?:[eE][+-]?\d+)?"
+                       r"|-?\d+(?:[eE][+-]?\d+)?")
+
+
+def source_literal_values(src_dir):
+    """Float values of every numeric token in the project's source tree.
+
+    Grep semantics, as specified for the f32 check's SOURCE LITERAL
+    class: tokens are matched wherever they appear (code, strings,
+    comments). Returns (set_of_floats, files_scanned).
+    """
+    vals = set()
+    nfiles = 0
+    for dirpath, _dirs, files in os.walk(src_dir):
+        for fn in sorted(files):
+            try:
+                text = open(os.path.join(dirpath, fn),
+                            encoding="utf-8", errors="ignore").read()
+            except OSError:
+                continue
+            nfiles += 1
+            for tok in NUM_TOKEN.findall(text):
+                try:
+                    vals.add(float(tok))
+                except ValueError:
+                    pass
+    return vals, nfiles
+
+
+def sig_digits(v):
+    """Significant digits of a JSON number's shortest decimal form."""
+    r = repr(abs(float(v)))
+    mant = r.split("e")[0].split("E")[0]
+    digits = mant.replace(".", "").strip("0")
+    return len(digits) if digits else 1
 
 
 def main():
@@ -125,8 +174,12 @@ def main():
     results.append(("2 version", not bad,
                     "%d files checked, %d wrong" % (len(docs), len(bad)), bad))
 
-    # ---- 3 f32 round-trip -----------------------------------------------------
+    # ---- 3 f32 data law (two classes) -----------------------------------------
+    src_dir = os.path.join(manifest["project"], "src")
+    src_literals, src_files = source_literal_values(src_dir)
     total_nums = 0
+    n_exact = 0
+    n_literal = 0
     bad = []
     for seg in segments:
         d = docs.get(seg["id"])
@@ -145,13 +198,25 @@ def main():
             for path, v in numbers(scope, name):
                 total_nums += 1
                 fv = f32(float(v))
-                if fv != float(v):
-                    bad.append("%s: %s = %r -> f32 %r"
+                if fv == float(v):
+                    n_exact += 1
+                elif sig_digits(v) <= 6 and float(v) in src_literals:
+                    n_literal += 1
+                else:
+                    bad.append("%s: %s = %r -> f32 %r "
+                               "(computed value, not a source literal)"
                                % (seg["scene"], path, v, fv))
     bad.sort()
+    lines = list(bad)
+    if not src_files:
+        lines.append("NOTE: no source files scanned under %s — the "
+                     "SOURCE LITERAL class is empty for this run" % src_dir)
     results.append(("3 f32", not bad,
-                    "%d numbers checked, %d do not round-trip as f32"
-                    % (total_nums, len(bad)), bad))
+                    "%d numbers checked: %d exact f32, %d source literals "
+                    "(pass), %d computed values not round-tripping (fail); "
+                    "literals grepped from %d source files under %s"
+                    % (total_nums, n_exact, n_literal, len(bad),
+                       src_files, src_dir), lines))
 
     # ---- 4 attachments placement (§14.5 R2) -----------------------------------
     bad = []
@@ -236,34 +301,52 @@ def main():
                     % (dur_sum, rounded, total_frames,
                        "exact" if not bad else "broken"), bad))
 
-    # ---- 7 atmosphere ------------------------------------------------------------
+    # ---- 7 atmosphere (ruling R5: presets resolve via filmLooks) -----------------
+    # Each filmLooks entry lists the shots it covers; that list is the
+    # (set, preset) resolution table — a segment's shot id must appear
+    # in exactly the filmLook the manifest names for it.
+    shot_to_look = {}
+    for key in filmlook_keys:
+        entry = atmos["filmLooks"][key]
+        if isinstance(entry, dict):
+            for shot in entry.get("shots", []):
+                shot_to_look[shot] = key
     bad = []
     info = []
+    n_preset_ok = 0
+    n_resolved = 0
     for seg in segments:
+        shot_id = "S" + seg["id"][1:]
+        derived = shot_to_look.get(shot_id)
+        if derived is not None and derived == seg["filmLook"]:
+            n_resolved += 1
+            info.append("%s: set %s x preset %r -> filmLook %r "
+                        "(atmospheres.json shots list)"
+                        % (seg["id"], seg["set"], seg["atmosphere"], derived))
+        else:
+            bad.append("segment %s: (set %s, preset %r) resolves to %r via "
+                       "atmospheres.json, manifest names %r"
+                       % (seg["id"], seg["set"], seg["atmosphere"],
+                          derived, seg["filmLook"]))
         d = docs.get(seg["id"])
         if d is None:
             continue
         declared = d.get("atmosphere")
         if declared is None and isinstance(d.get("shot"), dict):
             declared = d["shot"].get("atmosphere")
-        if declared not in filmlook_keys:
-            bad.append("%s: declared atmosphere %r is not a filmLooks key "
-                       "(keys: %s)" % (seg["scene"], declared,
-                                       ", ".join(filmlook_keys)))
-        if seg["filmLook"] in filmlook_keys:
-            info.append("%s: preset %r on set %s -> filmLook %r exists"
-                        % (seg["id"], seg["atmosphere"], seg["set"],
-                           seg["filmLook"]))
+        if declared == seg["atmosphere"]:
+            n_preset_ok += 1
         else:
-            info.append("%s: derived filmLook %r NOT in atmospheres.json"
-                        % (seg["id"], seg["filmLook"]))
+            bad.append("%s: declared atmosphere preset %r, manifest "
+                       "preset is %r (R5: files name presets)"
+                       % (seg["scene"], declared, seg["atmosphere"]))
+    bad.sort()
     results.append(("7 atmosphere", not bad,
-                    "%d files checked, %d declarations not filmLooks keys "
-                    "(strict); derived (set, preset) mapping resolves for "
-                    "%d/%d segments"
-                    % (len(docs), len(bad),
-                       sum(1 for s in segments if s["filmLook"] in filmlook_keys),
-                       len(segments)), bad + ["-- derived mapping (context) --"] + info))
+                    "R5: declared presets match the manifest for %d/%d "
+                    "files; (set, preset) -> filmLook resolves via "
+                    "atmospheres.json for %d/%d segments"
+                    % (n_preset_ok, len(docs), n_resolved, len(segments)),
+                    bad + ["-- derived mapping (context) --"] + info))
 
     # ---- report -------------------------------------------------------------------
     print("validate_film.py — %s (%d segments, %d fps, %d frames)"

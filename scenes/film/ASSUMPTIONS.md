@@ -2662,3 +2662,150 @@ mapped boxes are film-evaluator data, as in S02/S03.
   triple, rifle_down_draws' drop law and part geometry,
   Taniguchi's tracks and talk window, the camera and the
   gradeOf post) and agrees.
+
+## CAPTION OWNERSHIP + VALIDATOR v2 — seat W27
+
+### Caption ownership (manifest start-time rule)
+- Rule (`scenes/film/film.json`): a caption chunk belongs to the
+  segment containing its START; the neighbour it bleeds into
+  keeps a bleed note, not a listing — the S04/S09 convention
+  (chunk 20 noted in S04's section, chunk 47 in S09's).
+- `s06.scene.json`: chunk 31 ("trick.", line 4, 25.57–26.19)
+  REMOVED from `captions`. It starts in S05b (24.56–26.129)
+  and is owned by s05b (manifest chunk range 30–31); it ends
+  0.06 s into S06's head. A top-level `captionsNote` in the
+  file records the bleed. S06 now lists chunks 32–39, exactly
+  the manifest range. (This supersedes the S06 section above,
+  which recorded chunks 31–39 as copied.)
+- `s07.scene.json`: chunk 39 ("for decades,", line 6,
+  30.29–31.55) REMOVED from `captions`. It starts in S06
+  (26.129–30.39) and is owned by s06 (manifest chunk range
+  32–39); it stays on screen for S07's first 1.16 s. A
+  top-level `captionsNote` in the file records the bleed.
+  S07 now lists chunks 40–41, exactly the manifest range.
+- Chunk starts read first-hand from `film/onoda.json`
+  captions[31] (s = 25.57) and captions[39] (s = 30.29).
+- NOT fixed here (outside this seat's file scope — flagged
+  for a follow-up seat): the identical double-listing exists
+  for chunk 46 (listed by s08 + s08b; starts 39.95, owned by
+  s08) and chunk 56 (listed by s10 + s11; starts 49.63,
+  owned by s10). The validator's captions check still FAILs
+  on exactly those two chunks.
+
+### Validator v2 (`tools/film/validate_film.py`)
+- Check 3 (f32) is now two-class: a number that round-trips
+  exactly through f32 passes outright; a non-round-tripping
+  number passes as a SOURCE LITERAL when it has ≤ 6
+  significant digits AND its float value appears as a numeric
+  token in the project's source tree (`<project>/src`, grep
+  semantics; 15 files scanned this run); anything else is a
+  COMPUTED value written rounded and FAILs, listed verbatim.
+- Check 7 (atmosphere) implements ruling R5: scene files
+  name presets, not filmLooks keys. The declared preset must
+  equal the manifest's preset for the segment, and the
+  (set, preset) pair must resolve to the manifest's filmLook
+  via `scenes/atmospheres.json` — each filmLooks entry's
+  `shots` list is the resolution table.
+- New run recorded in `tools/film/VALIDATION.md`: **5/7
+  PASS** (parse 14/14, version, attachments, durations,
+  atmosphere R5). Remaining failures: the 69 computed f32
+  values and caption chunks 46 + 56, all listed verbatim
+  there.
+
+## JG/SH CORRECTIONS — seat W26
+
+Applied the jungle set's corrections C1–C9 (`scenes/sets/README.md`,
+Jungle part, seat W18) to the film shot files. All edits are
+node-level: each shot's own atmosphere re-dress, lights block,
+flames-at-time, characters, channels and captions are untouched,
+and every value taken from the corrected set file
+(`scenes/sets/jungle.scene.json`) was cross-checked against the
+file's own nodes first (camp world positions in all 11 JG files
+matched the set file exactly). Roughness values are written as
+the plain decimals (0.95 / 0.9 / 1.0) — the same f32s the set
+file spells in expanded form.
+
+The 11 JG files were uniform: all carried the full ab1 form.
+Per file, the same correction counts apply unless noted:
+**C1** 21 fronds (7 per palm × 3 palms) re-coloured to the
+source parity (odd → leaf `#3F7D33`, even → leaf2 `#4C8A3A`,
+`shots.ts:93`); the frond **tips already carried the correct
+parity** in every file (ab1's tips matched the source) — only
+their segments changed. **C2** 21 tips 10×6 → 8×5
+(`shots.ts:95`). **C3** 4 hills 24 → 32 wide segments
+(`world.ts:182`). **C4** 43 tree trunks (24 hill + 19 ring)
+7 → 12 segments (the `cyl()` default, `world.ts:54`); palm
+trunks verified 8 and untouched. **C5** ground disc 48 → 40
+(`shots.ts:146`; `uvRepeat` 48 kept). **C6** 4 hills regained
+`material.map = "grass-hills"` (`world.ts:183`) + the
+`grass-hills` texture entry. **C7** both crates regrouped to
+the source group form (group at the base position derived
+from each file's own flat mesh, child box at y = size/2,
+map-only `planks-crate`); the barrel's flat body (`#6E4525`)
+and its two band meshes regrouped into one barrel group —
+body `#9A6337` × `planks-barrel`, bands regain metalness 0.4;
+the lean-to roof's flat `#8A6B42` replaced by map-only
+`planks-roof` at roughness 0.95; texture entries
+`planks-crate` / `planks-barrel` / `planks-roof` added.
+**C8** roughness restored: dirt 1, fire stones / fire logs /
+seat log / lean-to poles 0.95, bedroll 1, palm bark 0.95,
+fronds / tips / coconuts 0.9, flames 1 — 72 additions per
+file (70 where the shot has no flame nodes).
+
+### C9 verdicts (flame bake vs the file's own time)
+
+`fireTo` (source): flame scaleY = f(t) = 1 + 0.16·sin(13t) +
+0.07·sin(29t + 1) on the FILM clock; inner = 2 − f(t).
+
+- `s01` — **FIXED.** The file's state is evaluated at its
+  `time` 0.0 (film t 0.0), but the flames blindly carried the
+  ab1 t = 1.5 bake (1.13146 / 0.86854). Re-baked at t = 0:
+  flame 1.0589029788970947, inner 0.9410970211029053
+  (f32-exact f(0) / 2 − f(0)). The only C9 edit.
+- `s04` — verified: 0.94566 / 1.05434 = f(18.67), the file's
+  film time. Unchanged.
+- `s05a` — n/a: no flame nodes (fire out, `fireLevel` 0).
+  Unchanged.
+- `s05b` — verified: 1.108893 / 0.891107 = f(25.31).
+  Unchanged.
+- `s06` — verified in its dying-fire form: the flame scales
+  are level × f, with level 0.13333 (the seat's S06 section)
+  and f = f(29.73) = 1.036782 at the file's film instant
+  (at 26.13 + lt 3.60); inner = level × (2 − f). Not a blind
+  carry. Unchanged.
+- `s07` — n/a: no flame nodes (cones omitted by seat W09,
+  `fireLevel(0)`). Unchanged.
+- `s08` — verified: 0.943707 / 1.056293 = f(37.209).
+  Unchanged.
+- `s08b` — verified: 0.883656 / 1.116344 = f(41.046). The
+  file's `time` is shot-local (lt 0.686); the bake is on the
+  film clock, as the source's `fireTo`. Unchanged.
+- `s09` — verified: 0.833593 / 1.166407 = f(43.92).
+  Unchanged.
+- `s11` — verified: 0.813480 / 1.186520 = f(50.648)
+  (at 50.648 + lt 0). Unchanged. Note: S11's rifle part is
+  also named `barrel` (steel `#3A3D42`); the C7 regroup keyed
+  on the camp barrel's `#6E4525` body, so the rifle was not
+  touched.
+- `s12` — verified: 1.081500 / 0.918500 = f(59.0)
+  (at 55.52 + lt 3.48). Unchanged.
+
+### SH files (vs `scenes/sets/shore.scene.json`)
+
+- `s02` — **no changes; already correct** on every class this
+  seat was tasked to check: palm frond/tip parity correct,
+  tips already 8×5, palm roughness present, hills already 32
+  wide, all 31 tree trunks already 12, sand disc already 40.
+- `s03` — **one class fixed:** all 31 tree trunks (24 hill
+  trees + 7 shore trees) 7 → 12 segments. Palms, hills (32)
+  and the sand disc (40) were already correct, as in s02.
+- Observed in BOTH SH files but NOT corrected (outside this
+  seat's SH scope, which was palm parity + segment counts —
+  flagged for the integrator / a follow-up seat): the hills
+  carry no `grass-hills` map (the shore set file carries it,
+  C6 class) and the crates / barrel are flat colour meshes,
+  not the shore set's planks group forms (C7 class).
+
+All edited files re-parse as JSON and were re-audited after
+the edits: zero remaining C1–C8 violations in the JG files,
+and the C9 numbers above re-derived from the written files.
