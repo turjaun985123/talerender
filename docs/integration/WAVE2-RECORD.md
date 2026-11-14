@@ -176,6 +176,15 @@ caption content — that cost is known and accepted by the order.
 **The user can veto at wave close** and revert to the waiver
 state (the 66-chunk data remains in git history).
 
+> **CLOSED BY DATA (lead, 2026-11-14):** the re-chunk's driver
+> leg landed as `5e90d7e` (film/onoda.json + film/assets
+> regenerated to 73 chunks; bridge repackaged, packager's own
+> verification 21/21). The telemetry gate re-run at the
+> regenerated data prints **`FILM TELEMETRY: CHECK OK`** with
+> exit 0 — the seven failures are resolved at the data level,
+> the 850 px threshold untouched. The waiver above remains the
+> documented fallback if the user vetoes at wave close.
+
 ## 6. Exit-code contract (lead design, Phase 1)
 
 Audit §D's table, adopted with one clarification (film-telemetry
@@ -193,12 +202,13 @@ Binding constraints:
 - The verdict **line is printed verbatim to stdout in all cases**
   and remains the authoritative signal; exit codes are additive.
 - The skill adapter (work copy, W02) gates on the line today and
-  treats non-zero how? — to be confirmed with W02's seat before
-  the film-telemetry code lands; the adapter may need a matching
-  update so a CHECK FAILED run (exit 1) is still read as a gate
-  verdict, not a crash. Both adapter directions (pass/fail) get
-  re-proven after the change (Wave-1 W99 method: real binary,
-  stale-binary refusal intact).
+  treats non-zero how? — **RESOLVED (W02 + lead re-proof):** the
+  work-copy adapter implements the dual convention (accepts
+  FAILED at exit 0 or 1, OK only at 0, fails closed on any
+  disagreement or missing line; stub-proven 10/10 by W02 and
+  re-proven by the lead with the REAL binary at the exit-code
+  head — FAILED direction §7; OK/old-binary directions appended
+  there as they land).
 - `main.rs` dispatch today: `run_film_telemetry` returns
   `Result<(), String>`; the lead will change it to surface the
   verdict (`Ok(passed: bool)`) so main can exit 0/1, with `Err`
@@ -210,14 +220,82 @@ Binding constraints:
 | When | What | Verdict |
 |---|---|---|
 | Launch | HEAD `d7bebdd` CI (run 43614468709, from Wave-1 record) | SUCCESS |
+| B1 push | HEAD `3a36f1f` CI (43617243966) + Tools CI (43617243900) | SUCCESS / SUCCESS |
+| E6 | **Determinism (dispatch) run 43617370962** at `3a36f1f` — the pack's CI-lavapipe leg (W04 workflow, W96 route 1) | **SUCCESS — DETERMINISM pack PASS on CI lavapipe.** RADV leg still owed on the user's PC (prepared, not claimed) |
+| Lead | Exit codes `aa10b13` CI (43617609513) | SUCCESS |
+| Lead | **Caption driver leg `5e90d7e`: telemetry re-run (exit-code binary, local CPU) — `FILM TELEMETRY: CHECK OK`, exit 0** (0 overflow / 0 continuity / **0 caption failures**; 241 samples; max on-screen caption width 928 px). Watch item closed: the tightest unsplit chunk ("Onoda still refused", driver ink 844 pre-regen per GATE2-W10 §2.3) passes the audit's floor in the regenerated set — zero chunks over the bar | **PHASE-1 HEADLINE GATE: GREEN** |
+| Lead | Errors step 1 + `mod errors` `ba88596`: CI (43618555381) + Tools CI (43618555345) | SUCCESS / SUCCESS |
+| B2 push | HEAD `1a62161` CI (43618849875) + Tools CI (43618849888) | SUCCESS / SUCCESS |
+| Lead | Adapter re-proof, real binary (`ba88596` build) vs 66-chunk fixture: binary prints the FAILED line (7 caption failures — the pre-rechunk verdict reproduced) and exits **1**; work-copy adapter relays `CHECK FAILED`, rc 1 | PASS (FAILED direction, new generation). OK direction + old-binary direction re-proofs run at the same head — rows appended when they land |
+| Lead | Module registration `2328e6f` CI (43619241590): 174 passed / **1 failed** — `gpucore::tests::strip_padding_drops_sentinels` (first-ever execution of W07's CI-pending tests; the test's payload pattern aliased its own 0xEE sentinel at x=238 — a seat test bug, not a module defect) | FAILURE → fixed `38930fa` |
+| Lead | PaintBudget + RunLog wiring `86f0c81` CI (43619649089) — suite 175/175 incl. the fixed gpucore test | SUCCESS |
 
-*(Rows are appended as verdicts are checked, pass or fail.)*
+**Watch items / flags recorded by the lead:**
+- **Painter panic observed once, not reproduced.** The first
+  telemetry run at the exit-code binary (66-chunk driver data,
+  scenes side already at 73 — the half-migrated tree) panicked at
+  `src/painters/cutout_build.rs:44` ("skin paint panicked: fill
+  contour start outside painted skin area"), exit 101. The
+  post-regen run over the consistent 73/73 tree completed all 241
+  samples with CHECK OK. No root cause is claimed; if it recurs
+  it is a painter-robustness finding. (Three concurrent local
+  telemetry processes from the lead's own attempts also contended
+  for this VM's CPUs during that window; the stale two were
+  killed.)
+- **PERF.md §1 dated correction owed** (W02 §3d): the "binary
+  exits 0 on pass, fail, and error alike" sentence is stale
+  since `aa10b13` — the line is still the verdict; the exit code
+  now agrees with it. For the doc seat / orchestrator (PERF.md
+  is not lead-owned).
+- **render.yml lead edit** (`paint_budget_mb` dispatch input,
+  additive, empty = default) — made so the W06 byte-probe's
+  forced-eviction leg is dispatchable; flagged for the
+  orchestrator's ratification.
 
 ## 8. Batch ledger
 
 | Batch | Seats | Scope (short) | Seat handoffs received | Lead integration | CI |
 |---|---|---|---|---|---|
-| 1 | W01–W10 | Phase 1 + foundations | — | — | — |
-| 2–10 | — | per orchestrator boards | — | — | — |
+| 1 | W01–W10 | Phase 1 + foundations | Gate PASS (GATE2-W10) | Exit codes ✓; caption driver leg ✓ CHECK OK; errors step 1 ✓; paintbudget/runlog/gpucore registered ✓ (wiring: paintbudget ✓, runlog ✓, gpucore per-site in progress); pins pending (post-re-render sequencing, GOLDEN-RESTAGE-W03 §4.3) | green at `86f0c81` |
+| 2 | W11–W20 | Phase 4/5 foundations: anim, charanim, rendergraph, format extensions, visual-regression CI, bench, atlas, bufferpool | Gate PASS (GATE2-W20) | All 5 modules registered ✓ (+65 tests in suite); adoption decisions recorded §9; format fold-ins + per-site adoptions in progress | green at `1a62161` |
+| 3 | W21–W30 | film/scene modularisation blueprints, lip-sync data, locomotion, camera moves, validators, planners, checkers | seats running at this record's writing | — | — |
+| 4–10 | — | per orchestrator boards | — | — | — |
+
+## 9. Lead decisions (Batch-2 adoption, recorded 2026-11-14)
+
+1. **Colour/step anim lane (the batch's one unowned gap) —
+   DECIDED:** the evaluator extension is `AnimValue::Color`
+   (linear-space `[f32; 3]`, converted from authored hex by the
+   loader's existing hex→linear law before the track carries it,
+   per W15 §4's colour law) plus a **step sampling mode** on
+   tracks (hold the leaving key's value; no interpolation) for
+   enum/string channels (`mood`, `legs`). String values ride a
+   side channel keyed like the numeric tracks — they never route
+   through numeric interpolation. Implementation lands with the
+   clips loader adoption; the decision is recorded in
+   scene-format §15's fold-in so the format text and the code
+   agree from the start.
+2. **Ease-direction bridge — RATIFIED:** W11 §4.1's rule applies
+   to clips exactly as to §14.4 camera keys (loader remaps
+   format key[i+1].ease → anim key[i].ease). Recorded in §15.
+3. **W12/W11 layering — RATIFIED as independent/complementary**
+   (GATE2-W20 §4.4): charanim's procedural channels stay
+   closed-form; authored character channels keyframe through
+   W11 tracks at clips adoption. No future seat should merge
+   them by assumption.
+4. **W18 atlas — adoption rule ACCEPTED as the gate:** wire
+   only with the probation admission policy (Dyn first paint,
+   atlas slot on second hit, lazy pages to `max_pages`, no
+   mid-film eviction) and discharge pixel-neutrality by
+   ATLAS-W18 §7's byte-probes post-wiring. Never pack-everything.
+5. **W16 first dispatch expectation — NOTED:** FAIL on
+   `ab1-composer` + `s28-onoda-t150` (stale pre-shade-fix pins)
+   with `dof-chart` as clean control is the expected first red,
+   per the workflow's own annotation — not new drift. The 80 dB
+   band is not widened; pins move only by the human pin acts.
+6. **Wrap/duration placement (W15 §7 flag 1) — RATIFIED:**
+   duration on the clip, wrap on the instance (`clipTime`),
+   bridged mechanically by the loader; anim's per-track
+   duration/wrap remains the evaluator's internal shape.
 
 *(Filled per batch as the orchestrator hands over.)*
