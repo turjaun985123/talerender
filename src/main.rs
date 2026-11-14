@@ -49,6 +49,7 @@ fn main() {
     let mut captions_path: Option<String> = None;
     let mut cutouts_out: Option<String> = None;
     let mut film_dir: Option<String> = None;
+    let mut film_telemetry_dir: Option<String> = None;
     let mut film_from: u32 = 0;
     let mut film_to: u32 = 0;
     let mut i = 1;
@@ -94,6 +95,10 @@ fn main() {
                 i += 1;
                 cutouts_out = Some(args.get(i).expect("missing value for --cutouts-out").clone());
             }
+            "--film-telemetry" => {
+                i += 1;
+                film_telemetry_dir = Some(args.get(i).expect("missing value for --film-telemetry").clone());
+            }
             "--film" => {
                 i += 1;
                 film_dir = Some(args.get(i).expect("missing value for --film").clone());
@@ -122,6 +127,15 @@ fn main() {
             captions_path.as_deref(),
             cutouts_out.as_deref(),
         ));
+    }
+    if let Some(dir) = &film_telemetry_dir {
+        // Native telemetry gate over the whole film (M6 semantics,
+        // 0.25 s sampling) — no GPU needed.
+        match film::run_film_telemetry(std::path::Path::new(dir)) {
+            Ok(()) => {}
+            Err(e) => eprintln!("film telemetry failed: {e}"),
+        }
+        return;
     }
     if let Some(dir) = &film_dir {
         // Production integration: the complete film, frame range

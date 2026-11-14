@@ -2039,6 +2039,20 @@ pub(crate) fn load_assets(dir: &Path, data: &FilmData) -> Result<Assets, String>
 }
 
 type Painted = (Vec<u8>, u32, u32, (f32, f32), (f32, f32));
+
+/// Per-character render record for the telemetry audit: the card's
+/// world model, the painted canvas, and the pose-summary fields.
+pub(crate) struct CharInfo {
+    pub look: usize,
+    pub model: Mat4,
+    pub painted: std::rc::Rc<Painted>,
+    pub mood: Mood,
+    pub arm_l: (f32, f32),
+    pub arm_r: (f32, f32),
+    pub legs: Legs,
+    pub head_tilt: f32,
+    pub head_turn: f32,
+}
 type PaintCache = HashMap<String, std::rc::Rc<Painted>>;
 
 fn state_key(look: usize, st: &FullState, hold_l: Option<&str>, hold_r: Option<&str>) -> String {
@@ -2066,8 +2080,9 @@ fn resolve_chars(
     looks: &[(FullLook, bool, f64)],
     assets: &Assets,
     cache: &mut PaintCache,
-) -> Vec<std::rc::Rc<Painted>> {
+) -> (Vec<std::rc::Rc<Painted>>, Vec<CharInfo>) {
     let mut dyn_tex: Vec<std::rc::Rc<Painted>> = Vec::new();
+    let mut infos: Vec<CharInfo> = Vec::new();
     let chars = std::mem::take(&mut f.chars);
     for c in &chars {
         let (look, _, _) = &looks[c.look];
@@ -2097,6 +2112,21 @@ fn resolve_chars(
         };
         st.hold_l = plate_of(c.hold_l);
         st.hold_r = plate_of(c.hold_r);
+        // Perspective instances: the model pitch and the painter's
+        // camPitch are the same angle (Toon setCamPitch + group
+        // rotation.x in the staging), computed centrally here.
+        let (_, persp, _) = &looks[c.look];
+        let mut pitch = c.pitch;
+        if *persp {
+            let p = crate::telemetry::cam_pitch_of(
+                [c.pos[0] as f64, c.pos[1] as f64, c.pos[2] as f64],
+                [f.eye[0] as f64, f.eye[1] as f64, f.eye[2] as f64],
+                1.75,
+                true,
+            );
+            st.cam_pitch = p as f32;
+            pitch = p as f32;
+        }
         let key = state_key(c.look, &st, c.hold_l, c.hold_r);
         let entry = cache
             .entry(key)
@@ -2122,8 +2152,19 @@ fn resolve_chars(
         });
         let card_model = math::mul(
             &t3(c.pos[0], c.pos[1], c.pos[2]),
-            &math::mul(&math::rotate_y(c.yaw), &math::rotate_x(c.pitch)),
+            &math::mul(&math::rotate_y(c.yaw), &math::rotate_x(pitch)),
         );
+        infos.push(CharInfo {
+            look: c.look,
+            model: card_model,
+            painted: entry.clone(),
+            mood: st.mood,
+            arm_l: st.arm_l,
+            arm_r: st.arm_r,
+            legs: st.legs,
+            head_tilt: st.head_tilt,
+            head_turn: st.head_turn,
+        });
         let slot = dyn_tex.len();
         dyn_tex.push(entry);
         f.basics.push(BasicDraw {
@@ -2158,7 +2199,7 @@ fn resolve_chars(
             }
         }
     }
-    dyn_tex
+    (dyn_tex, infos)
 }
 
 // ---------------------------------------------------------------------
@@ -3079,6 +3120,13 @@ impl Renderer {
                 pass.draw_indexed(0..p.n, 0, 0..1);
             }
         }
+        let mut bg1_map: HashMap<(Option<usize>, bool), wgpu::BindGroup> = HashMap::new();
+        for d in &spec.texmapped {
+            bg1_map.entry((Some(d.tex), d.repeat)).or_insert_with(|| bg1(self, Some(d.tex), d.repeat));
+        }
+        for (i, _) in spec.mapped.iter().enumerate() {
+            bg1_map.entry((Some(spec.map_tex[i]), true)).or_insert_with(|| bg1(self, Some(spec.map_tex[i]), true));
+        }
         {
             let clear = wgpu::Color { r: spec.clear[0] as f64, g: spec.clear[1] as f64, b: spec.clear[2] as f64, a: 1.0 };
             let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
@@ -3099,9 +3147,9 @@ impl Renderer {
             pass.set_pipeline(&self.pbr_tex_pipeline);
             pass.set_bind_group(1, &bg1_std, &[]);
             for (p, d) in tex_p.iter().zip(spec.texmapped.iter()) {
-                let bg = bg1(self, Some(d.tex), d.repeat);
+                let bg = &bg1_map[&(Some(d.tex), d.repeat)];
                 pass.set_bind_group(0, p.bg0.as_ref().unwrap(), &[]);
-                pass.set_bind_group(1, &bg, &[]);
+                pass.set_bind_group(1, bg, &[]);
                 pass.set_vertex_buffer(0, p.vb.slice(..));
                 pass.set_index_buffer(p.ib.slice(..), wgpu::IndexFormat::Uint32);
                 pass.draw_indexed(0..p.n, 0, 0..1);
@@ -3116,9 +3164,9 @@ impl Renderer {
             }
             pass.set_pipeline(&self.pbr_map_pipeline);
             for (i, p) in map_p.iter().enumerate() {
-                let bg = bg1(self, Some(spec.map_tex[i]), true);
+                let bg = &bg1_map[&(Some(spec.map_tex[i]), true)];
                 pass.set_bind_group(0, p.bg0.as_ref().unwrap(), &[]);
-                pass.set_bind_group(1, &bg, &[]);
+                pass.set_bind_group(1, bg, &[]);
                 pass.set_vertex_buffer(0, p.vb.slice(..));
                 pass.set_index_buffer(p.ib.slice(..), wgpu::IndexFormat::Uint32);
                 pass.draw_indexed(0..p.n, 0, 0..1);
@@ -3357,7 +3405,7 @@ pub(crate) async fn run_film(width: u32, height: u32, film_dir: &str, out_dir: &
         }
         let t = n as f64 / 30.0;
         let mut spec = eval_frame(&data, &looks, t);
-        let dyn_tex = resolve_chars(&mut spec, &looks, &assets, &mut cache);
+        let (dyn_tex, _) = resolve_chars(&mut spec, &looks, &assets, &mut cache);
         let mut px = renderer.render(&spec, &dyn_tex);
         if let Some(cal) = &spec.calendar {
             overlay_calendar(&mut px, width, height, &assets, cal);
@@ -3376,4 +3424,192 @@ pub(crate) async fn run_film(width: u32, height: u32, film_dir: &str, out_dir: &
         }
     }
     println!("film render complete: {done} rendered, {skipped} skipped (resume), range {from}..{to}");
+}
+
+// ---------------------------------------------------------------------
+// Film telemetry: the M6 audit semantics over the whole film —
+// 0.25 s sampling of eval_frame, per-character cutouts from the real
+// painted canvases + projected card boxes, the Audit's overflow /
+// edge / continuity / composition derivations, and the strict
+// caption audit. Caption widths are measured from the film's own
+// rendered caption strips (ink bounding box; PIL metrics — the
+// declared approximation of docs/integration/README.md).
+// ---------------------------------------------------------------------
+
+fn tel_look(l: &FullLook) -> crate::telemetry::Look {
+    fn lk(s: &str) -> &'static str {
+        Box::leak(s.to_string().into_boxed_str())
+    }
+    fn lko(s: &Option<String>) -> Option<&'static str> {
+        s.as_ref().map(|v| lk(v))
+    }
+    crate::telemetry::Look {
+        body: Some(lk(&l.body)),
+        pattern: Some(lk(&l.pattern)),
+        pat_col: lko(&l.pat_col),
+        hat: Some(lk(&l.hat)),
+        hat_col: lko(&l.hat_col),
+        band: lko(&l.band),
+        neck: Some(lk(&l.neck)),
+        neck_col: lko(&l.neck_col),
+        head: Some(lk(&l.head)),
+        kid: l.kid,
+        extra: Vec::new(),
+    }
+}
+
+fn mood_name(m: Mood) -> &'static str {
+    match m {
+        Mood::Neutral => "neutral",
+        Mood::Happy => "happy",
+        Mood::Determined => "determined",
+        Mood::Sad => "sad",
+        Mood::Worried => "worried",
+        Mood::Tired => "tired",
+        Mood::Surprised => "surprised",
+        Mood::Angry => "angry",
+        Mood::Proud => "proud",
+        Mood::Awe => "awe",
+        Mood::Laugh => "laugh",
+        Mood::Cry => "cry",
+        Mood::Stern => "stern",
+        Mood::Calm => "calm",
+        Mood::Embarrassed => "embarrassed",
+        Mood::Thinking => "thinking",
+        Mood::Hopeful => "hopeful",
+    }
+}
+
+fn legs_name(l: Legs) -> &'static str {
+    match l {
+        Legs::Stand => "stand",
+        Legs::Walk => "walk",
+        Legs::Run => "run",
+        Legs::Sit => "sit",
+        Legs::Jump => "jump",
+    }
+}
+
+/// Registry instance -> cutout identity (the same person keeps one
+/// id across sets; continuity = the look signature staying stable
+/// under that id).
+const INSTANCE_IDS: [&str; 11] = [
+    "onoda", "compA", "compB", "suzuki", "tani", "onoda", "compA", "compB", "tani", "tani", "onoda",
+];
+
+pub(crate) fn run_film_telemetry(dir: &Path) -> Result<(), String> {
+    use crate::telemetry::*;
+    let data = load_film_data(dir)?;
+    let looks = look_registry();
+    let assets = load_assets(dir, &data)?;
+    let tels: Vec<Look> = looks.iter().map(|(l, _, _)| tel_look(l)).collect();
+    let l0 = |i: usize| data.lines[i].0 - 0.06;
+    let shots = vec![
+        ShotInfo { id: "S01".into(), at: l0(0) },
+        ShotInfo { id: "S02".into(), at: l0(1) },
+        ShotInfo { id: "S03".into(), at: l0(2) },
+        ShotInfo { id: "S04".into(), at: l0(3) },
+        ShotInfo { id: "S05a".into(), at: l0(4) },
+        ShotInfo { id: "S05b".into(), at: data.anchors["thought4"] - 0.12 },
+        ShotInfo { id: "S06".into(), at: l0(5) },
+        ShotInfo { id: "S07".into(), at: data.anchors["decades6"] - 0.25 },
+        ShotInfo { id: "S08".into(), at: l0(7) },
+        ShotInfo { id: "S08b".into(), at: data.anchors["refused7"] - 0.1 },
+        ShotInfo { id: "S09".into(), at: l0(8) },
+        ShotInfo { id: "S10".into(), at: l0(9) },
+        ShotInfo { id: "S11".into(), at: l0(10) },
+        ShotInfo { id: "S12".into(), at: l0(11) },
+    ];
+    let mut audit = Audit::new(shots);
+    let mut cache: PaintCache = HashMap::new();
+    let mut t = 0.0f64;
+    while t < data.duration {
+        let mut spec = eval_frame(&data, &looks, t);
+        let cam = ProjCamera {
+            eye: [spec.eye[0] as f64, spec.eye[1] as f64, spec.eye[2] as f64],
+            target: [spec.target[0] as f64, spec.target[1] as f64, spec.target[2] as f64],
+            up: [0.0, 1.0, 0.0],
+            fov_deg: spec.fov as f64,
+            aspect: 1080.0 / 1920.0,
+            near: 0.05,
+            far: 800.0,
+        };
+        let (_, infos) = resolve_chars(&mut spec, &looks, &assets, &mut cache);
+        let cuts: Vec<Cutout> = infos
+            .iter()
+            .map(|ci| {
+                let tl = &tels[ci.look];
+                Cutout {
+                    id: INSTANCE_IDS[ci.look].to_string(),
+                    desc: describe(tl),
+                    pose: pose_summary(&PoseState {
+                        mood: mood_name(ci.mood),
+                        arm_l: (ci.arm_l.0 as f64, ci.arm_l.1 as f64),
+                        arm_r: (ci.arm_r.0 as f64, ci.arm_r.1 as f64),
+                        legs: legs_name(ci.legs),
+                        head_tilt: ci.head_tilt as f64,
+                        head_turn: ci.head_turn as f64,
+                    }),
+                    overflow: Some(scan_canvas_overflow(&ci.painted.0, ci.painted.1 as usize, ci.painted.2 as usize, 2.0)),
+                    box_: Some(project_box(&model_from_f32(&ci.model), &cam, 1.75)),
+                    sig: look_signature(tl),
+                }
+            })
+            .collect();
+        audit.sample(t, &cuts);
+        t += 0.25;
+    }
+    // Caption audit: rendered width = ink bbox of the film's own
+    // strip; raw width = rendered / fit.
+    let mut caps: Vec<CaptionInfo> = Vec::new();
+    for (i, c) in data.captions.iter().enumerate() {
+        let strip = &assets.strips[i];
+        let (mut x0, mut x1) = (i64::MAX, -1i64);
+        for y in 0..strip.2 as i64 {
+            for x in 0..strip.1 as i64 {
+                let a = strip.0[((y * strip.1 as i64 + x) as usize) * 4 + 3];
+                if a > 32 {
+                    x0 = x0.min(x);
+                    x1 = x1.max(x);
+                }
+            }
+        }
+        let rendered = if x1 >= 0 { (x1 - x0 + 1) as f64 } else { 0.0 };
+        let line = data
+            .lines
+            .iter()
+            .rposition(|&(s, _)| s <= c.s + 0.05)
+            .unwrap_or(0) as i64;
+        caps.push(CaptionInfo {
+            line,
+            s: c.s,
+            e: c.e,
+            text: c.text.clone(),
+            auto: true,
+            raw_w: if c.fit > 0.0 { rendered / c.fit } else { rendered },
+            fit: c.fit,
+            rendered_w: rendered,
+        });
+    }
+    let mut out: Vec<String> = Vec::new();
+    out.push("FILM TELEMETRY — THE SOLDIER WHO DIDN'T KNOW THE WAR WAS OVER (native, 0.25 s sampling)".to_string());
+    audit.print_audit(false, &mut out);
+    audit.print_continuity(&mut out);
+    audit.print_composition(&mut out);
+    let cap_fails = print_caption_audit(&caps, true, &mut out);
+    let bad = audit.overflow_len() + audit.violations_len() + cap_fails;
+    out.push(if bad == 0 {
+        "FILM TELEMETRY: CHECK OK".to_string()
+    } else {
+        format!(
+            "FILM TELEMETRY: CHECK FAILED ({} overflow groups, {} continuity violations, {} caption failures)",
+            audit.overflow_len(),
+            audit.violations_len(),
+            cap_fails
+        )
+    });
+    for line in &out {
+        println!("{line}");
+    }
+    Ok(())
 }
