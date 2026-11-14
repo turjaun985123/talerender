@@ -1,13 +1,13 @@
 # TaleRender Production Integration — 100-Agent Wave: Final Report (DRAFT)
 
-> **Status of this document:** draft assembled at Batch 7 (seat W69).
-> Sections tagged **[TO COMPLETE]** are filled by Batches 8–10 from
+> **Status of this document:** draft assembled at Batch 7 (seat W69);
+> completion pass at Batch 8 (seat W75) brought it to current truth
+> at HEAD `3781eb2` (70 of 100 seats complete). Sections tagged
+> **[TO COMPLETE]** are filled by the remaining batches from
 > evidence as it lands; nothing in them is asserted yet. Every other
 > number in this report was verified against the tree or the git log
-> at writing time (HEAD `ce06011`, working tree clean except the
-> lead's in-progress `src/film.rs` edits). Where a figure is taken
-> from a wave record rather than re-measured here, the record is
-> cited.
+> at writing time. Where a figure is taken from a wave record rather
+> than re-measured here, the record is cited.
 
 ---
 
@@ -136,8 +136,14 @@ approximation; PIL plates remain the reference).
 module and calendar's film-path wiring point. `painters/TEST-RUN.md`:
 **41/41 painter tests pass** in a combined scratch harness against
 the repo's real scene.rs/math.rs (52/52 including baseline module
-tests). These verify in CI cargo tests once the lead wires the arms
-(§4).
+tests, as measured on the Batch-4 tree). The wiring has since landed
+(§3, `c74cf0c`): the six texture painters are pasted into
+`src/scene.rs` with their 41 pinned tests, where they now verify as
+CI cargo tests. One of the 52 harness assertions — felt's shade
+cross-check — pinned the pre-fix divergence the lead's shade
+root-fix abolished; the red team caught the resulting 51/52 at
+`ce06011` and the lead re-pinned the production copy (`d8fbe83`);
+the full account is in §2.7.
 
 ### 2.3 Fog package + verification chart
 
@@ -154,8 +160,19 @@ scene-file loader's `fog` block; FOG.md §8 specifies that wiring.
 3/6/10/15/25 m with analytic expected factors 0 / 0.0263 / 0.2884 /
 0.7550 / 1.0 and a ±2 sRGB-code pass bar. The classic ramp misses
 those centres by 27/12/8 codes, so the chart genuinely discriminates
-between the two formulas. **The chart is built but not yet run**
-(prerequisites in §4).
+between the two formulas. **The Chrome side has now been run** (W66,
+`tools/fog-chart/chrome/VERIFY.md`): the harness was assembled and
+statically verified 144/144, then captured headless on this VM —
+the basic panels match the analytic smoothstep expectations to
+**≤ 1 sRGB code at every depth** (vs the classic ramp's 26/12/8-code
+misses at 6/10/15 m), confirming three's formula empirically on the
+reference side. The standard panels' large offset from the analytic
+column is fully explained and is not fog: predicting them with the
+house front-face factor divided by π (0.6988266044899671 / π)
+reproduces every sampled centre to ≤ 2 codes — the Chrome rig's
+effective light factor measures as house/π, consistent with three
+r170's physical light convention. The native side of the chart
+still awaits the loader-lane fog wiring (§4.1).
 
 ### 2.4 Tooling: A/B, golden, bridge, hardening, tools CI
 
@@ -192,8 +209,12 @@ between the two formulas. **The chart is built but not yet run**
   visible warning rather than a silent pass.
 - **Format fixtures** (`scenes/fixtures/`): minimal valid v2 files
   per feature plus a census of what the loader consumes today —
-  6/7 fixtures load; `fx-textures` fails exactly where designed (it
-  names the unwired generators) and is the wiring's acceptance test.
+  6/7 fixtures load; `fx-textures` failed exactly where designed (it
+  names the unwired generators) and was the wiring's acceptance
+  test. Since `c74cf0c` every generator it names has a
+  `resolve_texture` arm (verified by source inspection), so the
+  designed failure condition is removed; a load run against a
+  current binary has not been executed on this VM.
 
 ### 2.5 Skill wiring — in a work copy, shipped skill untouched
 
@@ -253,7 +274,7 @@ progress lines, cache statistics, telemetry exit codes).
 
 ### 2.7 Audits — the wave checked its own data
 
-Two independent audit seats recomputed sampled values first-hand
+Three independent audit seats recomputed sampled values first-hand
 from the project sources, reading each file's ASSUMPTIONS section
 only after their own computation:
 
@@ -261,9 +282,10 @@ only after their own computation:
 |---|---|---|---|
 | W40 (s03, s07, s11 × 30) | 90 | 87 | 3 |
 | W42 (other 11 segments × 15) | 165 | 162 | 3 |
-| **Total** | **255** | **249** | **6** |
+| W61 (all 14 × 10, unsampled categories) | 140 | 138 | 2 |
+| **Total** | **395** | **387** | **8** |
 
-Disposition of all six mismatches:
+Disposition of all eight mismatches:
 
 - **Grade time (W40 M1/M2)** — `post.grade.time` carried the film
   time in s03/s07 instead of 0 (R3). W41 swept **all 14 files: 7
@@ -287,16 +309,63 @@ Disposition of all six mismatches:
   to the last digit). W51 also corrected two errors in its own
   brief/audit (the duration derivation and an f32 parenthetical) —
   the target values were right, the stated reasons were not.
+- **Sea metalness (W61 M1)** — the SH sea's `metalness` (source
+  0.08) was carried in neither s02 nor s03. It was a *declared*
+  omission (ASSUMPTIONS' SH notes), but the declaration's premise
+  does not hold generally: the corpus carries metalness in data
+  everywhere else (barrel bands 0.4 in all 13 outdoor files, s10
+  brass rail 0.6, s05a plane 0.25), so the sea was the only PBR
+  value dropped rather than carried. The impact is latent — the
+  loader consumes metalness nowhere today — but the value would be
+  unrecoverable from scene data if a future loader started
+  consuming it. The fix (one field in two files, plus the stale
+  ASSUMPTIONS sentence) was assigned to seat W73 this batch and is
+  in the working tree at this writing, pending the Batch-8 central
+  commit.
 - **Cross-cutting, not counted above:** the grade-saturation key
   defect (W40 §4) — files write `saturation`/`exposure`, the loader
-  reads only `sat`. Census (W58): 12 of 14 files use `saturation`,
-  7 carry `exposure`; all values are correct. Still open as a lead
-  decision (§4).
+  read only `sat`. The lead's decision has since landed (`c74cf0c`):
+  the canonical grade keys are **sat/warm/exposure/time**, and
+  `exposure` is now parsed and wired to the composer's OutputPass
+  uniform. One mechanical residue remains, verified first-hand for
+  this pass: 12 of 14 files' `post.grade` blocks still spell the
+  key `saturation` (only s03 and s06 use `sat`), which the loader
+  does not read — on the loader lane those segments still grade at
+  the 1.12 default until the data is renamed to the canonical
+  spelling. All values are correct; the film lane is unaffected
+  (film.rs computes its own grade).
 
 A third review (W50, `docs/integration/REVIEW-W50.md`) read the
 whole doc set as a stranger: 20 findings (6 contradictions, 11
 stale, 1 broken reference, 2 missing), corrected in Batch 6 (W52)
 except three that live in the lead-owned integration README (§4).
+
+**Consolidated gate (W62, `docs/integration/GATE-W62.md`)** —
+the whole local verification suite re-run first-hand at HEAD
+`381ff47`: **7/7 PASS** (validator 7/7; caption regeneration
+byte-identical; golden verify 4 OK / 0 STALE / 14 MISSING; bridge
+packager 21/21 with the adapter accepting the package as data and
+failing closed on the stale binary; 32/32 scene JSONs parse; film
+manifest tiling exact by independent recompute).
+
+**Red team (W70, `docs/integration/RED-TEAM-W70.md`)** — the
+wave's headline claims re-run adversarially at `ce06011`:
+**7 reproduced, 1 refuted.** The refutation: the "painter tests
+52/52" claim no longer held at that HEAD — the re-run read
+**51/52**, because felt's `shade_is_the_three_linear_multiply`
+test asserted that felt's `shade_three` *differs* from
+`scene::shade_rgb`, a divergence the lead's shade root-fix
+(`c00897d`) abolished on purpose; post-fix the two agree at
+(28, 83, 64), which is the source's value, and the painter's own
+pin still passes. The claim had been accurate for the tree W39
+measured; as a present-tense claim it was stale. **Resolution:**
+the lead re-pinned the production copy in `src/scene.rs`
+(`d8fbe83`) — the assertion now pins the post-fix agreement, with
+the reasoning in the commit message. One residue is named: the
+wave's staging copy `painters/felt.rs` still carries the superseded
+`assert_ne!`, so a fresh run of the wave's scratch harness over
+`painters/` still reads 51/52 until that copy is reconciled; the
+production tests are correct.
 
 ### 2.8 The wave record
 
@@ -348,12 +417,38 @@ The lead integrated throughout, in its own commits:
 - **Paint-cache cap by env** (`e5860b4`): `TALERENDER_PAINT_CACHE`
   (24 entries ≈ 700 MB for shared-VM telemetry vs the ~4.6 GB
   worst case at 160), plus film-telemetry progress to stderr.
+- **Divergence register closed** (`381ff47`): every open entry in
+  WAVE-RECORD §5 resolved in `film.rs` under R4 (source wins) —
+  D6 (S02 march clamp), D7 (S03 rifle hidden), D8/D9 (shore-tree
+  rotation and round/even swap), D10 (palm parity and tips), D11
+  (shelf_unit, 8 points including the inverted gap predicate),
+  D12 (S10 Tani stand timing), D14 (S11 lean as a step at
+  dropT+0.55), D15 (S11 arm poses), D17 (cloud tint #EFF4EA), D19
+  (calendar rule colour #8B8378; the 4 calendar plates
+  regenerated). D13 was the shade root-fix (`c00897d`); D16 is
+  benign and D18 equivalent, as registered. The commit declares
+  that a full film re-render follows from it, so every frame
+  carries one provenance.
+- **Loader lane wired** (`c74cf0c`): the six registry painters
+  pasted into `src/scene.rs` per `painters/INDEX.md` — with their
+  41 pinned tests — plus `resolve_texture` arms for all six and
+  the `solid` arm (64×64 flat, the fog-chart spec), so no
+  data-named generator fails a file at load any more.
+  `post.grade.exposure` is parsed and wired to the composer
+  OutputPass uniform (absent grade = 1.0, the old hardcoded output
+  bit-for-bit), and the canonical grade keys are declared:
+  sat/warm/exposure/time (the data-side rename residue is in
+  §2.7).
+- **Felt shade test re-pinned** (`d8fbe83`): the red team's one
+  refutation (§2.7) closed in the production copy — the test now
+  asserts `shade_three == shade_rgb`, the post-root-fix truth,
+  with the inversion explained in the commit message.
 
-At this writing the lead is still working — `src/film.rs` carries
-uncommitted changes and its production-integration completion
-report has not landed. **[TO COMPLETE: the lead's final state —
-wiring landed, film render, telemetry verdict — as reported by the
-lead and verified by CI.]**
+At this writing the lead's declared next step — the full film
+re-render from `381ff47`, followed by the whole-film telemetry
+verdict and ffmpeg finishing — is in progress. **[TO COMPLETE:
+the render, telemetry verdict, and finished MP4 evidence, as
+reported by the lead and verified by CI.]**
 
 ---
 
@@ -361,35 +456,32 @@ lead and verified by CI.]**
 
 ### 4.1 Lead-side wiring (code, `src/`)
 
-From the fixtures census and RENDER-READINESS, verified at HEAD:
+Closed since the draft of this report:
 
-- **Painter arms ×7**: `resolve_texture` knows `file` + 6
-  generators; 7 data-named generators have no arm — planks (54 uses
-  in the data), solid (11), wallpaper (7), felt (4), parcel,
-  picture, sign — and resolution is eager, so any file naming one
-  fails whole at load today. The painters are written, tested
-  (41/41), and specified for paste-in (`painters/INDEX.md`);
-  `fx-textures.scene.json` is the acceptance test. Calendar wires
-  on the film path (call point specified in the same index).
-- **Fog loader wiring**: the scene-file loader reads zero fog
-  fields; the data carries fog blocks in s06/s07/s11/s12. Spec:
-  FOG.md §8, plus the one-line `solid` arm the fog chart needs.
-  Until both land, the fog chart renders unfogged and its control
-  column is the diagnostic.
-- **Saturation key decision**: 12 of 14 files write `saturation`
-  (and 7 write `exposure`); the loader reads only `sat` (default
-  1.12) and has no exposure field — stills through the loader path
-  currently render at the wrong saturation. Options: loader accepts
-  both spellings, or the data is rewritten. The lead's call; the
-  wave recommends neither.
-- **film.rs divergence register**: of the 20 entries in WAVE-RECORD
-  §5, 5 were fixed by the lead during the wave. Of the remainder,
-  RENDER-READINESS re-marks **8 as fidelity-blocking** for a faithful
-  film-lane render (D6 S02 march clamp, D7 S03 rifle drawn, D8/D9
-  shore-tree staging, D10 palm parity, D11 shelf_unit incl. an
-  inverted gap predicate, D14 S11 lean step, D15 S11 arms), 2 minor,
-  1 benign. The register gives each a source citation and the
-  correct value, so the fixes are mechanical.
+- **Painter arms — LANDED** (`c74cf0c`, §3): all six registry
+  painters plus the `solid` arm are in `resolve_texture`; no
+  data-named generator fails a file at load any more, and the
+  `fx-textures` acceptance condition is removed by source
+  inspection (a current-binary load run is still unexecuted here).
+- **film.rs divergence register — CLOSED** (`381ff47`, §3): all
+  20 WAVE-RECORD §5 entries are resolved, benign, or equivalent,
+  including the 8 RENDER-READINESS had marked fidelity-blocking
+  (D6, D7, D8, D9, D10, D11, D14, D15).
+- **Saturation key decision — DECIDED** (`c74cf0c`): canonical
+  keys sat/warm/exposure/time; exposure parsed and wired. The
+  remaining piece is data-side, not a decision: 12 of 14 files'
+  `post.grade` blocks still spell `saturation` and are not read on
+  the loader lane until renamed (§2.7).
+
+Still open:
+
+- **Fog loader wiring**: the scene-file loader still reads zero
+  fog fields (verified at HEAD for this pass); the data carries
+  fog blocks in s06/s07/s11/s12. Spec: FOG.md §8. The `solid` arm
+  the fog chart also needed has landed (`c74cf0c`), so this wiring
+  is now the chart's only native-side prerequisite; until it lands,
+  the native chart renders unfogged and its control column is the
+  diagnostic.
 
 ### 4.2 The proof run — PENDING
 
@@ -427,10 +519,18 @@ Per the runner's analysis (`docs/golden/RUNNER.md`, addendum in
 expected STALE (certain / same mechanism); `stroke-toon` expected
 STALE (confined — its painter routes through the same helper);
 `dof-chart` NOT expected stale (no `shade()` in its pattern; if it
-ever goes STALE, that is drift, not this fix). For `ab1-composer`
-the evidence packet exists (`docs/ab/composer-v2/`: post-fix frame,
-hash `a415ead8…`, metrics, recommendation). Re-pinning remains a
-deliberate human act; the runner refuses `--pin`.
+ever goes STALE, that is drift, not this fix). Evidence packets
+for all four now exist (`docs/golden/repin-packets/`, Batch 7):
+`ab1-composer` has its candidate in hand (post-fix frame, hash
+`a415ead8…`, measured 23.96 dB — also in `docs/ab/composer-v2/`)
+and is ready for the human re-pin; the `s28-onoda-t150` packet
+recommends **not** re-pinning from its candidate, which differs
+structurally (21.711 dB, max Δ 206) — the §28 pin is a historical
+prototype artifact, not a regression target for the current chain;
+`stroke-toon` is pending a post-fix candidate; `dof-chart` is
+pending-not-required (no re-pin owed unless a verification
+re-render drifts). Re-pinning remains a deliberate human act; the
+runner refuses `--pin`.
 
 **[TO COMPLETE: re-pin decisions and outcomes for the three
 expected-STALE references.]**
@@ -441,12 +541,19 @@ The skill wiring lives only in the work copy; the shipped skill is
 untouched (0-file drift, §2.5). ADOPTION-REVIEW-W59 sets out the
 decision as the user's: adopt as an opt-in alternative now, or wait
 for the §4.2 proof; adoption is not defaulting — the backend
-becomes default only on accepted proof. The review also lists 8
-adoption gaps (binary provisioning and binary↔bridge era-pairing —
-the discovery fallback silently selected the stale build in every
-local run — retrofit instructions for existing projects, the
-selftest's home, version discipline). **[TO COMPLETE: the user's
-adoption decision, when given.]**
+becomes default only on accepted proof. Of the review's 8 adoption
+gaps, five were closed in the work copy during Batch 7 (W64/W65):
+G1 binary provisioning (exact CI-artifact commands; the discovery
+fallback had silently selected the stale build in every local run)
+and the binary↔bridge era-pairing rule, G2 retrofit instructions
+for existing projects, G5 the dry-run record's freshness header,
+G7 version discipline, and G8 the env-table correction. One
+document defect is being repaired this batch: the on-disk
+ADOPTION-REVIEW-W59.md itself is truncated (it ends mid-sentence
+in §2; the gap list survives only in W59's completion report) —
+restoration of §§3–4 from that report, marked as restored, is
+assigned to seat W72. **[TO COMPLETE: the user's adoption
+decision, when given.]**
 
 ### 4.5 Smaller open items
 
@@ -462,11 +569,14 @@ adoption decision, when given.]**
   §4): S06 fog fidelity, the caption PIL-vs-Skia bound (≤0.15 px),
   calendar glyphs as approximation vs PIL plates, RADV fp16
   rounding unverified from this VM.
-- Push state: the last pushed HEAD is `e5860b4` (CI run 43569768582
-  success, as recorded in RENDER-READINESS). Local commits since —
-  Batches 5–7 and this report — push at wave close per the user's
-  order. **[TO COMPLETE: final push commit + CI verdicts, including
-  the new tools-ci workflow's first run.]**
+- Push state: the lead's commits are pushed through `d8fbe83`
+  (the local remote-tracking ref shows `origin/main` at `d8fbe83`;
+  its CI run for `e5860b4`, 43569768582, was success as recorded in
+  RENDER-READINESS). Local `main` is ahead by the Batch-7 commit
+  `3781eb2`, with Batches 8–10 still to land; the remaining commits
+  push at wave close per the user's order. **[TO COMPLETE: final
+  push commit + CI verdicts on the final HEAD, including the new
+  tools-ci workflow.]**
 
 ---
 
@@ -482,17 +592,17 @@ adoption decision, when given.]**
 | 4 | W31–W40 | 10 | `c7db74d` |
 | 5 | W41–W50 | 10 | `dbf90b9` |
 | 6 | W51–W60 | 10 | `ce06011` |
-| 7 | W61–W70 | 10 (incl. this report) | [TO COMPLETE] |
+| 7 | W61–W70 | 10 seats (13 runs — W62, W67, W68 each needed a replacement or finisher after silent endings) | `3781eb2` |
 | 8 | W71–W80 | [TO COMPLETE] | [TO COMPLETE] |
 | 9 | W81–W90 | [TO COMPLETE] | [TO COMPLETE] |
 | 10 | W91–W100 | [TO COMPLETE] | [TO COMPLETE] |
 | **Total ordered** | | **100** | |
 
-Lead commits in the wave window (since base `34d7882`): 8 —
+Lead commits in the wave window (since base `34d7882`): 11 —
 `5e5b0a0`, `1475b66`, `4c06a1e`, `b3f3c0a`, `12c7a5e` (TEMP
 diagnostics, superseded by `3e88c60`), `3e88c60`, `c00897d`,
-`e5860b4`. Wave batch commits: 6 (above). Total commits since base
-at this writing: 14.
+`e5860b4`, `381ff47`, `c74cf0c`, `d8fbe83`. Wave batch commits:
+7 (above). Total commits since base at this writing: 18.
 
 ### 5.2 Verification state at this writing (all re-run or re-read
 for this report unless noted)
@@ -500,10 +610,13 @@ for this report unless noted)
 | Check | Result |
 |---|---|
 | Film validator (`tools/film/validate_film.py`) | **7/7 PASS** — 883 exact f32 + 506 literals + 0 failures; captions 66/66/0/0; tiling exact, 1,811 frames |
-| Painter tests (scratch harness, TEST-RUN.md) | **41/41** painter; 52/52 with baseline |
+| Painter tests (scratch harness, TEST-RUN.md) | **41/41** painter; 52/52 with baseline as measured on the Batch-4 tree — red team read **51/52** at `ce06011` (one felt assertion pinned the abolished pre-fix divergence); production copy re-pinned by the lead (`d8fbe83`), staging copy residue named in §2.7 |
+| Consolidated gate (W62, at `381ff47`) | **7/7 PASS** — validator, caption determinism, golden verify, bridge + adapter fail-closed, JSON sweep, manifest tiling |
+| Red team (W70, at `ce06011`) | **7 reproduced / 1 refuted** — the refutation (painter 52/52) resolved by `d8fbe83` (§2.7) |
+| Fog chart, Chrome side (W66) | Static verify **144/144**; basic panels **≤ 1 sRGB code** vs analytic smoothstep at all depths; standard-panel offset explained as house/π (≤ 2 codes) |
 | Bridge packager self-verification | **21/21 PASS**, 94 files hash-verified |
 | Golden pack verify | **4 OK / 0 STALE / 14 MISSING** of 18 |
-| Independent data audits | **255 sampled, 249 match, 6 mismatch — all resolved or reclassified (§2.7)** |
+| Independent data audits | **395 sampled, 387 match, 8 mismatch — all resolved, reclassified, or fix-landed (§2.7)** |
 | A/B tool control | Reproduces committed packages digit-for-digit (23.850 / 21.820 / 84.486 dB) |
 | ab1 A/B, post-shade-fix (CI lavapipe, at `c00897d`) | **23.96 dB** (pre-fix 23.850); mean \|Δ\| 4.82505; %px >10 11.44483 |
 | Skill work copy drift vs shipped skill | **0 files differ**; 7 additions |

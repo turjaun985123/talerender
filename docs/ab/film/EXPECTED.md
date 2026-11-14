@@ -10,6 +10,21 @@ numbers are low *and* whose risk note predicts the observed delta
 pattern has an explained result; a low number with a different
 pattern is a new finding.
 
+> **Measured 2026-11-14 (W77).** The render existed: ten CI
+> "Render (dispatch)" runs at head `381ff47` (see `RESULTS.md`
+> for the run/artifact record). Results: `ab-report.md` /
+> `ab-report.json` beside this file; the disposition of every
+> hypothesis below: `RESULTS.md`. Headline: **60/60 pairs,
+> 0 missing; overall PSNR min 18.378 / mean 21.836 dB**
+> (native CI lavapipe vs Chrome SwiftShader review stills,
+> reported per decision (B), never gated). In brief: the s01
+> anchor holds (t = 1.50 pair 24.094 dB vs the M5 chain's
+> 23.850); the s06 fog risk did **not** materialize; the open
+> items are the s08–s09 broad-delta cluster (s09 is the new
+> finding this file said to treat one as) and s11, still the
+> lowest segment even though its register items closed in the
+> rendering commit itself.
+
 ## Reference set — verified first-hand (2026-11-14)
 
 `~/faceless-shorts/the-soldier-who-didnt-know/review/frames/`:

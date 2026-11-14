@@ -367,6 +367,22 @@ already forwards to the PBR `FrameU` and basic `DrawU` fields
 described in §4, with `fog2.y = 1`. Absent block → `None` → the
 bit-identical no-fog path.
 
+> **Status note (W74, 2026-11-14, HEAD `3781eb2`) — still unwired,
+> and one premise above corrected.** Verified first-hand: the loader
+> ignores the `fog` block entirely (no parse, no `Loaded` field, no
+> error — verdict (c) in `docs/integration/FOG-STATUS-W74.md`). The
+> `solid` prerequisite has landed (`c74cf0c`), so this wiring is the
+> only remaining fog-chart prerequisite. But the "no shader change"
+> premise does **not** hold at HEAD: the loader forwards to neither
+> the PBR nor the basic pipeline — `src/scenefile.rs` renders only
+> through `src/shader_scene3d.wgsl` and `src/shader_tex.wgsl`, and
+> neither carries a fog uniform or term. The wiring therefore also
+> adds the §3 fog fields + tail application (frame-host form, via
+> world position — both shaders already have `model`) to those two
+> shaders, plus the packing in `run_direct`/`run_composer`.
+> Mechanical checklist + the native acceptance procedure:
+> `docs/integration/FOG-STATUS-W74.md` §2–§3.
+
 ## 9. Residual risks
 
 - **llvmpipe vs RADV fp16** (from M3): fog arithmetic is f32

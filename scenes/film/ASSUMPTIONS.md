@@ -175,6 +175,16 @@ evaluator in src/film.rs s04, lines 1475–1503):
   plane's y, top face 0.01 above it. Sea metalness 0.08 is not
   a format material field (only `roughness` is carried,
   `src/scenefile.rs:497–500`) — recorded here only.
+  [W73 correction, 2026-11-14: the two sentences above are
+  stale. `metalness` IS a carried format material field — the
+  corpus carries it in data (barrel bands 0.4 in all 13 outdoor
+  files, s10 brass rail 0.6, s05a plane 0.25) — and the sea now
+  carries `metalness: 0.08` in s02.scene.json and
+  s03.scene.json, matching the source (`shots.ts:205`:
+  `WD.mat({ color: '#4E86AC', roughness: 0.35, metalness:
+  0.08 })`). Impact is latent today: per the W47 census the
+  loader consumes metalness nowhere yet, but the value is now
+  recoverable from scene data.]
 - Hills: the source hill material also carries a grass map
   (`T.grass(col, [6, 3])`, `core/world.ts:183`); a
   colour-pipeline sphere cannot carry a texture in v2, so the
@@ -206,7 +216,10 @@ evaluator in src/film.rs s04, lines 1475–1503):
   stand-in colour `#6E4525` follows the established
   transcription (s04.scene.json; `src/film.rs` build_sh).
   Barrel band metalness 0.4 is not a format field — recorded
-  here only. `roughness` is written wherever the source sets
+  here only. [W73 correction, 2026-11-14: superseded — the
+  files DO carry barrel-band `metalness: 0.4` in data (e.g.
+  the barrel band materials in s02.scene.json and
+  s03.scene.json); see the W73 note at the sea bullet above.] `roughness` is written wherever the source sets
   it explicitly (sand 1, sea 0.35, foam 0.9, hull 0.9, palm
   bark 0.95, leaves/nuts 0.9); materials at the `mat()` default
   0.85 (`core/world.ts:44`) omit it.

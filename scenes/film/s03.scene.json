@@ -225,7 +225,8 @@
    "name": "sea (plane stand-in)",
    "material": {
     "color": "#4E86AC",
-    "roughness": 0.35
+    "roughness": 0.35,
+    "metalness": 0.08
    },
    "transform": [
     {

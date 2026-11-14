@@ -1,6 +1,11 @@
 # docs/ab/film — the whole-film A/B proof package (SKELETON)
 
-**Status: SKELETON — no native film frames exist yet.** This package
+**Status: MEASURED — film A/B filled in 2026-11-14 (W77);
+telemetry verdict, golden staging, and MP4 evidence still
+pending.** The full film was rendered natively in CI at head
+`381ff47` (ten dispatch runs, 1,811 frames) and measured:
+`ab-report.md` / `ab-report.json` + `RESULTS.md` in this
+directory. This package
 is the acceptance evidence for TaleRender production integration:
 the complete Onoda film ("THE SOLDIER WHO DIDN'T KNOW THE WAR WAS
 OVER", 14 segments, 1,811 frames at 30 fps, narration 60.357 s)
@@ -164,12 +169,47 @@ project at `~/faceless-shorts/the-soldier-who-didnt-know`.
      /tmp/onoda-native.mp4
    ```
 
-## Results (to be filled by the procedure above)
+## Results (filled 2026-11-14, W77 — see `RESULTS.md`)
 
-- Telemetry verdict: _pending_
-- Renderer of record for the native frames: _pending_
-- Pairs measured: _pending_ / 60 (missing listed in ab-report.md)
-- Per-shot summary: _paste from ab-report.md_
-- Worst-3 pairs + their risk-note disposition: _pending_
-- Golden verify (14 film mids): _pending_
-- MP4 evidence: see `MP4-EVIDENCE.md` — _pending_
+- Telemetry verdict: _pending_ (not run by the fill-in seat;
+  the verdict line for head `381ff47` is the lead's to record)
+- Renderer of record for the native frames: **talerender
+  (CI lavapipe, head `381ff47`)** — ten "Render (dispatch)"
+  runs, mode `film`; references are the Chrome (SwiftShader)
+  project review stills. Run/artifact record: `RESULTS.md`.
+- Pairs measured: **60 / 60** (missing: none — `ab-report.md`)
+- Per-shot summary (verbatim from `ab-report.md`):
+
+| segment | set | atmosphere | pairs | PSNR min (dB) | PSNR mean (dB) | mean \|d\| | %px > 10 (mean) |
+|---|---|---|---|---|---|---|---|
+| s01 | JG | noon | 6 | 24.094 | 25.005 | 4.86742 | 12.21615 |
+| s02 | SH | noon | 7 | 21.034 | 22.623 | 5.04955 | 10.0241 |
+| s03 | SH | noon | 3 | 20.492 | 20.776 | 9.54173 | 36.01273 |
+| s04 | JG | noon | 5 | 22.558 | 23.0 | 6.46579 | 25.84367 |
+| s05a | JG | noon | 4 | 20.588 | 21.466 | 11.79834 | 62.83133 |
+| s05b | JG | noon | 1 | 19.363 | 19.363 | 9.15144 | 21.23563 |
+| s06 | JG | fog | 4 | 23.878 | 24.77 | 4.83212 | 17.93833 |
+| s07 | JG | golden | 4 | 21.424 | 22.191 | 6.86003 | 36.1841 |
+| s08 | JG | noon | 6 | 19.332 | 20.347 | 17.5514 | 87.2398 |
+| s08b | JG | noon | 2 | 18.952 | 19.401 | 19.39113 | 82.95816 |
+| s09 | JG | noon | 3 | 18.902 | 19.302 | 19.66499 | 82.57612 |
+| s10 | BK | noon | 6 | 21.238 | 21.816 | 7.66262 | 23.16945 |
+| s11 | JG | dusk | 5 | 18.378 | 18.523 | 14.62819 | 61.1964 |
+| s12 | JG | dusk | 4 | 19.695 | 22.275 | 9.78313 | 57.61859 |
+
+  Overall: PSNR min 18.378 / mean 21.836 dB (reported per
+  decision (B), never gated — see `RESULTS.md` for the
+  per-hypothesis dispositions: anchor holds, s06 fog risk
+  refuted, s08–s09 broad-delta cluster and s11 open).
+- Worst-3 pairs + their risk-note disposition: all **s11**
+  (t 52.50 / 53.50 / 55.50; 18.378–18.574 dB) — images in this
+  directory. Disposition: **open** — the segment's register
+  items (D14/D15) closed in the rendering commit itself, yet
+  the gap persists with a broad (%px > 10 ≈ 61%) component;
+  referred to the lead with the diff images (`RESULTS.md`).
+- Golden verify (14 film mids): _pending_ staging — mid
+  frames harvested, sha256 recorded in `RESULTS.md` (pinning
+  is a human act; note the chunk-offset caveat there for
+  frames 560 / 760 / 969 / 1593)
+- MP4 evidence: see `MP4-EVIDENCE.md` — _pending_ (no finished
+  MP4 exists yet)

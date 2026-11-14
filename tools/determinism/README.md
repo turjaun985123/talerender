@@ -134,3 +134,39 @@ cache-cap section differs, against the cache's pixel-neutrality),
 and the kept frame dirs + `tools/ab/measure_ab.py` are the next
 diagnostic step. Until at least the first PASS exists, the honest
 state remains the TBD.
+
+## Currency check — 2026-11-14 (W78, HEAD `3781eb2`)
+
+The pack was written against the `e5860b4`-era source; since then
+`381ff47` (film.rs register fixes), `c74cf0c` (loader lane) and
+`d8fbe83` landed. Every assumption the script makes was re-verified
+first-hand against the current source — **no drift found, no script
+change required**:
+
+- Flags: `--film`/`--out`/`--from`/`--to`/`--width`/`--height` all
+  parsed globally in `src/main.rs` (:58–:113) before the film
+  dispatch (:137–141); unknown arguments still print
+  `unknown argument: {other}` and exit 2 (:115–116).
+- Completion line **format unchanged**: `film render complete:
+  {done} rendered, {skipped} skipped (resume), range {from}..{to}`
+  (`src/film.rs:3456`) — the script's parser needed no update.
+- Frame naming `frame_{n:05}.png` (film.rs:3431); existing files are
+  skipped (film.rs:3432–3435), which is what the `0 skipped`
+  assertion reads.
+- `renderer:` line printed by `Renderer::new` (film.rs:2326),
+  constructed on every `run_film` (film.rs:3422).
+- `TALERENDER_PAINT_CACHE` still read in film.rs (:2096), parse
+  failure falls back to the default cap 160; eviction unchanged.
+- Probe path unchanged: `load_film_data` is `run_film`'s first
+  statement (film.rs:3417, panic `film data: {e}` → exit 101),
+  before any GPU work or file writes; it reads
+  `<dir>/onoda.json` (film.rs:64), matching the script's own
+  film-dir check.
+
+Stub-binary re-test against the unmodified script (stub mirrors
+the formats above): identical bytes → `DETERMINISM: PASS`, exit 0;
+one flipped byte (frame 117) → named in both sections,
+`DETERMINISM: FAIL (2 differ)`, exit 1; stale binary →
+`REFUSAL: stale binary … does not know --film`, exit 2, no
+artifacts. The results-file format is unchanged, so the discharge
+criteria above stand as written.
