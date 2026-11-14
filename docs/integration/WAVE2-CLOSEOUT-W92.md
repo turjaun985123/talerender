@@ -1,12 +1,16 @@
 # TaleRender Wave 2 — Close-Out Report
 
-> **STATUS: DRAFT.** Written by seat W92 (Batch 10, the final batch)
-> at HEAD `9380b01` on 2026-11-15. This draft becomes final only
-> when seat W100's closing gate has verified it. Every claim below
-> was checked against the repository, the wave record
-> (`docs/integration/WAVE2-RECORD.md`), the batch gates, or a live
-> CI query at writing time — where a check could not be made, the
-> text says so instead of guessing.
+> **STATUS: FINAL.** Written by seat W92 (Batch 10, the final
+> batch) at HEAD `9380b01` on 2026-11-15; verified by seat
+> W100's closing gate (**COMPLETE-WITH-WAIVERS**) and finalised
+> by the lead at wave close (HEAD `c297692` + the final
+> fold-in). Two statements in the draft were superseded after
+> writing — the CI-red note (§§4/6) and the W77 note (§4) —
+> and are corrected in place below, marked as superseded.
+> Every claim was checked against the repository, the wave
+> record (`docs/integration/WAVE2-RECORD.md`), the batch
+> gates, or a live CI query at writing time — where a check
+> could not be made, the text says so instead of guessing.
 
 ---
 
@@ -342,14 +346,14 @@ how it was caught and what fixed it.
   later sections invoke `./talerender-bin/talerender` from the
   repo root, which fails (exit 127, reproduced). The fix pack is
   a Batch-10 item (seat W96).
-- **W77's exporter note is still owed.** The acceptance harness
-  exists and its self-test passed 3/3 at the Batch 8 gate; the
-  explanatory note has not landed, and the tool file shows an
-  uncommitted modification at writing — the seat appears still to
-  be iterating. The harness's claims about a real binary remain
-  ungated until the note lands.
-- **The current head is CI-red on one unit test** — see §6. The
-  wave does not close green until that is fixed and re-proven.
+- **W77's exporter note landed after this draft was written**
+  (committed in `cc38b03`; gate-accepted by W100 with the
+  self-test re-run 3/3). The draft's "still owed" statement is
+  superseded; no waiver is entered for it.
+- **The CI-red unit test noted in §6 was fixed after writing**
+  (`2f5c708` — the test fixture was wrong, not the code; see
+  the wave record §7) and CI is green at the closing heads.
+  The draft's "does not close green" precondition is met.
 - **The goal stays open.** Goal `goal_b21124e71eb3` (TaleRender
   as the native renderer) remains OPEN after this wave. What it
   still owes: the PC RADV evidence session (above), the
@@ -385,12 +389,14 @@ brief stays the decision document:
 
 - **Seats:** 100 of 100 across 10 batches. Batch gates: Batch 1
   PASS, Batch 2 PASS, Batches 3–9 PASS-WITH-NOTES (Batch 9 gate:
-  `GATE2-W90.md`). Batch 10's gate (seat W100) is what turns this
-  draft final.
+  `GATE2-W90.md`); Batch 10's gate (seat W100) returned
+  **COMPLETE-WITH-WAIVERS** (waivers W-1..W-12), which is what
+  makes this report final.
 - **Commits:** 144 on `main` in total; **54 since the v1.0.0
   release**, of which **53 are Wave 2** (from the wave-record
-  commit `6f00400` through HEAD `9380b01`, inclusive). HEAD and
-  `origin/main` agree at `9380b01`.
+  commit `6f00400` through HEAD `9380b01`, inclusive) — counts
+  as of writing; the wave then closed at HEAD `c297692` plus
+  the lead's final fold-in.
 - **CI conclusions at close** (checked live at writing; the
   Batch-10 final sweep — seat W99 — had **not** landed as a
   document at writing, so these are the heads checked here):
@@ -404,8 +410,20 @@ brief stays the decision document:
     before it could report — this Batch-9 run is the first CI
     verdict on that code, and it is red. **Fixing it is a
     precondition for calling the wave closed-green.**
+    *Superseded at finalisation: the diagnosis was that the
+    test fixture (copied from TABLES-IMPL-W85 §6.1) was wrong —
+    its `0..200` counting range never reaches the 14.78 s
+    fixture beat; the implementation transcribes `blink_at`
+    exactly, and W93's diff-check reached the same conclusion
+    independently. Fix `2f5c708` (range `0..600` only):
+    **CI SUCCESS 180/180 (run `43630186620`) + Tools CI SUCCESS
+    (`43630186614`)**; CI + Tools CI also SUCCESS at `cc38b03`
+    (runs `43630790697` / `43630790659`). A §6.1 spec erratum
+    is owed in the waivers queue.*
   - Tools CI: SUCCESS at `3223509` (run `43629625142`). The last
-    head with **both** CI and Tools CI SUCCESS is `2fcffc0`.
+    head with **both** CI and Tools CI SUCCESS at writing was
+    `2fcffc0`; at finalisation, both are SUCCESS at `2f5c708`
+    and at `cc38b03` (above).
   - Knobs gate: two dispatches, both SUCCESS, at `c440d90`
     (runs `43628289244`, `43628339967`) — the F4 acceptance.
   - Determinism (CI lavapipe leg): SUCCESS (run `43617370962`).
@@ -415,6 +433,15 @@ brief stays the decision document:
   - Several runs in the list show **cancelled** — those are
     concurrency supersessions (a newer push cancelling an older
     run), not failures, and are not counted as red.
+  - Battery leg (established after writing, `c9b4d86`): first
+    dispatch `43630694752` reported `BATTERY: FAIL (7/46)` —
+    classified from the run's own artifact as the workflow's
+    expectation defect, not a renderer defect (the run
+    completed cleanly and wrote exactly the 7 named cards
+    `src/battery.rs` defines; 46 is the M4 stroke-case count
+    inside them). Verdict corrected (`6e4fe3c`); the split
+    programmes' battery precondition discharges when a dispatch
+    reports the corrected pass.
 - **Golden pack:** 18 OK / 0 STALE / 0 MISSING.
 - **Film gate:** `FILM TELEMETRY: CHECK OK`, exit 0, on the
   73-chunk data.
@@ -423,7 +450,7 @@ brief stays the decision document:
 
 ---
 
-*End of draft. Companion documents: the wave record
-(`WAVE2-RECORD.md`), the batch gates (`GATE2-W10` … `GATE2-W90`),
+*End of report. Companion documents: the wave record
+(`WAVE2-RECORD.md`), the batch gates (`GATE2-W10` … `GATE2-W100`),
 the decisions brief (seat W94), and the per-item packs cited
 inline throughout.*
