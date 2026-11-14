@@ -1,0 +1,10062 @@
+{
+ "format": "talerender-scene",
+ "version": 2,
+ "name": "S10 — the bookshop: the news reaches Taniguchi (BK interior, noon)",
+ "time": 48.6,
+ "duration": 5.2829999923706055,
+ "shot": {
+  "id": "S10",
+  "at": 45.365,
+  "end": 50.648,
+  "duration": 5.2829999923706055,
+  "line": 9,
+  "atmosphere": "noon",
+  "grade": "shop",
+  "cameraTrack": {
+   "kind": "camK",
+   "hold": 0.1
+  },
+  "cues": [
+   {
+    "t": 49.63999938964844,
+    "type": "plop",
+    "gain": 0.3
+   }
+  ],
+  "note": "the bookshop: Taniguchi among his shelves; the news reaches him; he closes the book and stands"
+ },
+ "atmosphere": "noon",
+ "camera": {
+  "eye": [
+   0.7,
+   1.95,
+   1.6
+  ],
+  "target": [
+   -1.5,
+   1.45,
+   -5.3
+  ],
+  "fovY": 46,
+  "keys": [
+   {
+    "t": 45.3650016784668,
+    "eye": [
+     0.7,
+     1.95,
+     1.6
+    ],
+    "target": [
+     -1.5,
+     1.45,
+     -5.3
+    ],
+    "fovY": 46
+   },
+   {
+    "t": 50.64799880981445,
+    "eye": [
+     0.35,
+     1.85,
+     0.4
+    ],
+    "target": [
+     -1.5,
+     1.45,
+     -5.3
+    ],
+    "fovY": 46
+   }
+  ]
+ },
+ "clear": "#1A1418",
+ "lights": {
+  "key": {
+   "color": "#FFE4B8",
+   "intensity": 2.4,
+   "position": [
+    -2,
+    6,
+    -13
+   ],
+   "target": [
+    0.5,
+    0,
+    -1
+   ],
+   "shadow": true,
+   "shadowBox": 8,
+   "far": 30,
+   "bias": -0.0006,
+   "normalBias": 0
+  },
+  "hemisphere": {
+   "sky": "#FFE9D2",
+   "ground": "#5A3A2A",
+   "intensity": 1.1
+  },
+  "points": [
+   {
+    "color": "#FFD9A8",
+    "intensity": 6,
+    "position": [
+     0,
+     3.2,
+     -1
+    ],
+    "distance": 12,
+    "decay": 1.4
+   },
+   {
+    "color": "#FFD9A0",
+    "intensity": 3,
+    "position": [
+     -1.5,
+     3.05,
+     -2.2
+    ],
+    "distance": 6,
+    "decay": 1.6
+   },
+   {
+    "color": "#FFD9A0",
+    "intensity": 3,
+    "position": [
+     1.6,
+     3.05,
+     -4.5
+    ],
+    "distance": 6,
+    "decay": 1.6
+   }
+  ],
+  "envIntensity": 0.35
+ },
+ "post": {
+  "bokeh": {
+   "aperture": 0.001,
+   "focus": 6.319650650024414,
+   "maxblur": 0.008
+  },
+  "bloom": {
+   "threshold": 0.85,
+   "strength": 0.3,
+   "radius": 0.6
+  },
+  "grade": {
+   "sat": 0.78,
+   "warm": 0.06,
+   "vignette": 0.26,
+   "grain": 0.012,
+   "exposure": 1.0,
+   "time": 0
+  },
+  "focusChannel": {
+   "kind": "eyeTargetDistance",
+   "formula": "|eye - target| per frame (shoot() default; the camera target is constant in this shot)",
+   "atStart": 7.259476661682129,
+   "atEnd": 6.006038665771484,
+   "note": "post.bokeh.focus carries the value at the file's time (48.6)"
+  }
+ },
+ "resolution": {
+  "width": 1080,
+  "height": 1920
+ },
+ "textures": [
+  {
+   "id": "wallpaper-back",
+   "generator": "wallpaper",
+   "base": "#5A4632",
+   "motif": "#6B5638",
+   "repeat": [
+    1.7142857313156128,
+    3.0
+   ],
+   "canvas": [
+    256,
+    256
+   ]
+  },
+  {
+   "id": "wallpaper-back-top",
+   "generator": "wallpaper",
+   "base": "#5A4632",
+   "motif": "#6B5638",
+   "repeat": [
+    2.2857143878936768,
+    3.0
+   ],
+   "canvas": [
+    256,
+    256
+   ]
+  },
+  {
+   "id": "wallpaper-side",
+   "generator": "wallpaper",
+   "base": "#5A4632",
+   "motif": "#6B5638",
+   "repeat": [
+    6.4285712242126465,
+    3.0
+   ],
+   "canvas": [
+    256,
+    256
+   ]
+  },
+  {
+   "id": "wallpaper-ceiling",
+   "generator": "wallpaper",
+   "base": "#3A2E22",
+   "motif": "#413427",
+   "repeat": [
+    6.666666507720947,
+    7.5
+   ],
+   "canvas": [
+    256,
+    256
+   ]
+  },
+  {
+   "id": "planks-floor",
+   "generator": "planks",
+   "base": "#7A5230",
+   "repeat": [
+    3.200000047683716,
+    3.5999999046325684
+   ],
+   "rotation": 1.5707963705062866,
+   "canvas": [
+    512,
+    512
+   ]
+  },
+  {
+   "id": "planks-wainscot-window",
+   "generator": "planks",
+   "base": "#6B3E26",
+   "repeat": [
+    1.6,
+    0.5
+   ],
+   "canvas": [
+    512,
+    512
+   ]
+  },
+  {
+   "id": "planks-wainscot-back",
+   "generator": "planks",
+   "base": "#6B3E26",
+   "repeat": [
+    1.0,
+    0.5
+   ],
+   "canvas": [
+    512,
+    512
+   ]
+  },
+  {
+   "id": "planks-wainscot-side",
+   "generator": "planks",
+   "base": "#6B3E26",
+   "repeat": [
+    4.5,
+    0.5
+   ],
+   "canvas": [
+    512,
+    512
+   ]
+  },
+  {
+   "id": "planks-counter",
+   "generator": "planks",
+   "base": "#7A3E24",
+   "repeat": [
+    1,
+    2
+   ],
+   "canvas": [
+    512,
+    512
+   ]
+  },
+  {
+   "id": "planks-desk",
+   "generator": "planks",
+   "base": "#6B3E26",
+   "repeat": [
+    1,
+    1
+   ],
+   "canvas": [
+    512,
+    512
+   ]
+  },
+  {
+   "id": "felt-counter",
+   "generator": "felt",
+   "base": "#1F5A45",
+   "canvas": [
+    256,
+    256
+   ]
+  },
+  {
+   "id": "felt-desk",
+   "generator": "felt",
+   "base": "#2E5A44",
+   "canvas": [
+    256,
+    256
+   ]
+  },
+  {
+   "id": "parcel",
+   "generator": "parcel",
+   "canvas": [
+    256,
+    256
+   ],
+   "label": false,
+   "sourceDrawing": {
+    "fn": "parcel(w, h, d, label=false) texture painter (core/props.ts:159, canvasTex 'parcelfalse')",
+    "ops": [
+     "base fill #C8935A",
+     "30 streaks: fillRect(rnd(i)*256, rnd(i*3)*256, 40, 2) fill #B07A48",
+     "tape: fillRect(120, 0, 16, 256) + fillRect(0, 120, 256, 16) fill #E9D7A5",
+     "label=false: no label rect, no stamp"
+    ]
+   }
+  },
+  {
+   "id": "picture",
+   "generator": "picture",
+   "canvas": [
+    256,
+    200
+   ],
+   "sourceDrawing": {
+    "fn": "canvasTex 'pic' painter (core/world.ts interior)",
+    "ops": [
+     "base fill #E9DCC0 (256x200)",
+     "stroke #3A2A22 lw 6: moveTo(40,140) quadraticCurveTo(90,60 -> 140,120) quadraticCurveTo(170,80 -> 220,140)",
+     "sun: arc(190, 60, r22) fill #C9603F"
+    ]
+   }
+  },
+  {
+   "id": "sign",
+   "generator": "sign",
+   "text": "TANIGUCHI BOOKS",
+   "bg": "#3A2A2A",
+   "fg": "#F2E6CF",
+   "canvas": [
+    440,
+    80
+   ],
+   "sourceDrawing": {
+    "fn": "signBoard(text, {w: 2.2, h: 0.4, bg: '#3A2A2A', fg: '#F2E6CF'}) (core/world.ts:137)",
+    "ops": [
+     "base fill bg",
+     "border: strokeRect(10, 10, cw-20, ch-20) stroke fg lw 6",
+     "text: 700 {fs}px Caladea, Georgia, serif, centred; fs starts at ch*0.5 = 40 and shrinks by 2 until measureText <= 0.86*cw"
+    ]
+   }
+  },
+  {
+   "id": "view",
+   "generator": "solid",
+   "color": "#BFE4F7",
+   "canvas": [
+    1,
+    1
+   ]
+  },
+  {
+   "id": "book-open",
+   "file": "../../film/assets/book-open.png",
+   "sourceDrawing": {
+    "fn": "PROPS.book('LEDGER', 1) (core/toon.ts:469); plate pre-rendered by film/gen_assets.py; origin x0/y0 from film/assets/plates.json",
+    "ops": [
+     "translate(x, y - 70)",
+     "pages: rect(-110, -70, 110, 140) + rect(0, -70, 110, 140), fill #F4EFE4, stroke ink #1F1C33 lw 6",
+     "text lines #9B958A: 6 rows, fillRect(-96, -50 + i*20, 82, 6) and fillRect(14, -50 + i*20, 82, 6)"
+    ]
+   }
+  },
+  {
+   "id": "book-closed",
+   "file": "../../film/assets/book-closed.png",
+   "sourceDrawing": {
+    "fn": "PROPS.book('LEDGER', 0) (core/toon.ts:469); plate pre-rendered by film/gen_assets.py; origin x0/y0 from film/assets/plates.json",
+    "ops": [
+     "translate(x, y - 70)",
+     "cover: roundRect(-80, -100, 160, 200, 8), fill #8A2E2E, stroke ink #1F1C33 lw 6",
+     "title: 'LEDGER' 900 30px Inter, fill #E2B33C, centred at (0, -20)",
+     "rule: fillRect(-50, 10, 100, 6) fill #E2B33C"
+    ]
+   }
+  }
+ ],
+ "nodes": [
+  {
+   "type": "mesh",
+   "name": "floor",
+   "geometry": {
+    "kind": "flat-quad",
+    "width": 8.0,
+    "depth": 9.0
+   },
+   "texture": "planks-floor",
+   "transform": [
+    {
+     "translate": [
+      0.0,
+      0.0,
+      -2.5
+     ]
+    }
+   ]
+  },
+  {
+   "type": "group",
+   "name": "back wall (window)",
+   "transform": [
+    {
+     "translate": [
+      0.0,
+      0.0,
+      -7.0
+     ]
+    }
+   ],
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       2.4000000953674316,
+       4.199999809265137,
+       0.20000000298023224
+      ]
+     },
+     "name": "wall L of window",
+     "material": {
+      "map": "wallpaper-back"
+     },
+     "transform": [
+      {
+       "translate": [
+        -2.799999952316284,
+        2.0999999046325684,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       2.4000000953674316,
+       4.199999809265137,
+       0.20000000298023224
+      ]
+     },
+     "name": "wall R of window",
+     "material": {
+      "map": "wallpaper-back"
+     },
+     "transform": [
+      {
+       "translate": [
+        2.799999952316284,
+        2.0999999046325684,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       3.200000047683716,
+       1.100000023841858,
+       0.20000000298023224
+      ]
+     },
+     "name": "wall below window (wainscot)",
+     "material": {
+      "map": "planks-wainscot-window"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.550000011920929,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       3.200000047683716,
+       1.2000000476837158,
+       0.20000000298023224
+      ]
+     },
+     "name": "wall above window",
+     "material": {
+      "map": "wallpaper-back-top"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        3.5999999046325684,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       3.4000000953674316,
+       0.14000000059604645,
+       0.30000001192092896
+      ]
+     },
+     "name": "window sill",
+     "material": {
+      "color": "#2F5C52"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        1.100000023841858,
+        0.05000000074505806
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       3.4000000953674316,
+       0.14000000059604645,
+       0.30000001192092896
+      ]
+     },
+     "name": "window head",
+     "material": {
+      "color": "#2F5C52"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        3.0,
+        0.05000000074505806
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.11999999731779099,
+       1.899999976158142,
+       0.30000001192092896
+      ]
+     },
+     "name": "window jamb L",
+     "material": {
+      "color": "#2F5C52"
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.600000023841858,
+        2.049999952316284,
+        0.05000000074505806
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.11999999731779099,
+       1.899999976158142,
+       0.30000001192092896
+      ]
+     },
+     "name": "window jamb R",
+     "material": {
+      "color": "#2F5C52"
+     },
+     "transform": [
+      {
+       "translate": [
+        1.600000023841858,
+        2.049999952316284,
+        0.05000000074505806
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.05999999865889549,
+       1.899999976158142,
+       0.10000000149011612
+      ]
+     },
+     "name": "window mullion",
+     "material": {
+      "color": "#2F5C52"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        2.049999952316284,
+        0.05000000074505806
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "name": "window view plane",
+     "geometry": {
+      "kind": "quad",
+      "width": 8.319999694824219,
+      "height": 4.940000057220459
+     },
+     "texture": "view",
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        2.049999952316284,
+        -2.5
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "type": "mesh",
+   "geometry": {
+    "kind": "box",
+    "size": [
+     0.20000000298023224,
+     4.199999809265137,
+     9.0
+    ]
+   },
+   "name": "side wall L",
+   "material": {
+    "map": "wallpaper-side"
+   },
+   "transform": [
+    {
+     "translate": [
+      -4.0,
+      2.0999999046325684,
+      -2.5
+     ]
+    }
+   ]
+  },
+  {
+   "type": "mesh",
+   "geometry": {
+    "kind": "box",
+    "size": [
+     0.23999999463558197,
+     1.0,
+     9.0
+    ]
+   },
+   "name": "side wainscot L",
+   "material": {
+    "map": "planks-wainscot-side"
+   },
+   "transform": [
+    {
+     "translate": [
+      -3.9800000190734863,
+      0.5,
+      -2.5
+     ]
+    }
+   ]
+  },
+  {
+   "type": "mesh",
+   "geometry": {
+    "kind": "box",
+    "size": [
+     2.4000000953674316,
+     1.0,
+     0.23999999463558197
+    ]
+   },
+   "name": "back wainscot L",
+   "material": {
+    "map": "planks-wainscot-back"
+   },
+   "transform": [
+    {
+     "translate": [
+      -2.799999952316284,
+      0.5,
+      -6.980000019073486
+     ]
+    }
+   ]
+  },
+  {
+   "type": "mesh",
+   "geometry": {
+    "kind": "box",
+    "size": [
+     0.20000000298023224,
+     4.199999809265137,
+     9.0
+    ]
+   },
+   "name": "side wall R",
+   "material": {
+    "map": "wallpaper-side"
+   },
+   "transform": [
+    {
+     "translate": [
+      4.0,
+      2.0999999046325684,
+      -2.5
+     ]
+    }
+   ]
+  },
+  {
+   "type": "mesh",
+   "geometry": {
+    "kind": "box",
+    "size": [
+     0.23999999463558197,
+     1.0,
+     9.0
+    ]
+   },
+   "name": "side wainscot R",
+   "material": {
+    "map": "planks-wainscot-side"
+   },
+   "transform": [
+    {
+     "translate": [
+      3.9800000190734863,
+      0.5,
+      -2.5
+     ]
+    }
+   ]
+  },
+  {
+   "type": "mesh",
+   "geometry": {
+    "kind": "box",
+    "size": [
+     2.4000000953674316,
+     1.0,
+     0.23999999463558197
+    ]
+   },
+   "name": "back wainscot R",
+   "material": {
+    "map": "planks-wainscot-back"
+   },
+   "transform": [
+    {
+     "translate": [
+      2.799999952316284,
+      0.5,
+      -6.980000019073486
+     ]
+    }
+   ]
+  },
+  {
+   "type": "mesh",
+   "geometry": {
+    "kind": "box",
+    "size": [
+     8.0,
+     0.20000000298023224,
+     9.0
+    ]
+   },
+   "name": "ceiling",
+   "material": {
+    "map": "wallpaper-ceiling"
+   },
+   "transform": [
+    {
+     "translate": [
+      0.0,
+      4.300000190734863,
+      -2.5
+     ]
+    }
+   ]
+  },
+  {
+   "type": "mesh",
+   "geometry": {
+    "kind": "box",
+    "size": [
+     8.0,
+     0.1599999964237213,
+     0.30000001192092896
+    ]
+   },
+   "name": "cornice",
+   "material": {
+    "color": "#E8DCC0"
+   },
+   "transform": [
+    {
+     "translate": [
+      0.0,
+      4.119999885559082,
+      -6.900000095367432
+     ]
+    }
+   ]
+  },
+  {
+   "type": "group",
+   "name": "counter",
+   "transform": [
+    {
+     "translate": [
+      2.700000047683716,
+      0.0,
+      -2.9000000953674316
+     ]
+    }
+   ],
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       1.0,
+       1.100000023841858,
+       5.5
+      ]
+     },
+     "name": "counter body",
+     "material": {
+      "map": "planks-counter"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.550000011920929,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       1.2000000476837158,
+       0.07999999821186066,
+       5.699999809265137
+      ]
+     },
+     "name": "counter top (felt)",
+     "material": {
+      "map": "felt-counter"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        1.1399999856948853,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.10000000149011612,
+       0.05999999865889549,
+       5.699999809265137
+      ]
+     },
+     "name": "counter brass rail",
+     "material": {
+      "color": "#C9A13B",
+      "roughness": 0.3,
+      "metalness": 0.6
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.6200000047683716,
+        1.1200000047683716,
+        0.0
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "type": "group",
+   "name": "picture",
+   "transform": [
+    {
+     "translate": [
+      -3.869999885559082,
+      2.4000000953674316,
+      -3.5
+     ]
+    },
+    {
+     "rotate_y": 1.5707963705062866
+    }
+   ],
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.8999999761581421,
+       0.699999988079071,
+       0.05000000074505806
+      ]
+     },
+     "name": "picture frame",
+     "material": {
+      "color": "#C9A13B"
+     }
+    },
+    {
+     "type": "mesh",
+     "name": "picture canvas",
+     "geometry": {
+      "kind": "quad",
+      "width": 0.9,
+      "height": 0.7
+     },
+     "texture": "picture",
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.0,
+        0.026000000536441803
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "type": "group",
+   "name": "sign board",
+   "transform": [
+    {
+     "translate": [
+      3.869999885559082,
+      2.9000000953674316,
+      -2.9000000953674316
+     ]
+    },
+    {
+     "rotate_y": -1.5707963705062866
+    }
+   ],
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       2.200000047683716,
+       0.4000000059604645,
+       0.05000000074505806
+      ]
+     },
+     "name": "sign board body",
+     "material": {
+      "color": "#302222"
+     }
+    },
+    {
+     "type": "mesh",
+     "name": "sign face",
+     "geometry": {
+      "kind": "quad",
+      "width": 2.2,
+      "height": 0.4
+     },
+     "texture": "sign",
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.0,
+        0.026000000536441803
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "type": "mesh",
+   "name": "bulb 1 cord",
+   "geometry": {
+    "kind": "cylinder",
+    "radiusTop": 0.008,
+    "radiusBottom": 0.008,
+    "height": 1.0,
+    "segments": 4
+   },
+   "material": {
+    "color": "#C9A13B",
+    "basic": true
+   },
+   "transform": [
+    {
+     "translate": [
+      -1.5,
+      3.700000047683716,
+      -2.200000047683716
+     ]
+    }
+   ]
+  },
+  {
+   "type": "mesh",
+   "name": "bulb 1",
+   "geometry": {
+    "kind": "sphere",
+    "radius": 0.1,
+    "widthSegments": 12,
+    "heightSegments": 8
+   },
+   "material": {
+    "color": "#FFF6DA",
+    "emissive": "#FFE7A0",
+    "emissiveIntensity": 2.2
+   },
+   "transform": [
+    {
+     "translate": [
+      -1.5,
+      3.1500000953674316,
+      -2.200000047683716
+     ]
+    }
+   ]
+  },
+  {
+   "type": "mesh",
+   "name": "bulb 2 cord",
+   "geometry": {
+    "kind": "cylinder",
+    "radiusTop": 0.008,
+    "radiusBottom": 0.008,
+    "height": 1.0,
+    "segments": 4
+   },
+   "material": {
+    "color": "#C9A13B",
+    "basic": true
+   },
+   "transform": [
+    {
+     "translate": [
+      1.600000023841858,
+      3.700000047683716,
+      -4.5
+     ]
+    }
+   ]
+  },
+  {
+   "type": "mesh",
+   "name": "bulb 2",
+   "geometry": {
+    "kind": "sphere",
+    "radius": 0.1,
+    "widthSegments": 12,
+    "heightSegments": 8
+   },
+   "material": {
+    "color": "#FFF6DA",
+    "emissive": "#FFE7A0",
+    "emissiveIntensity": 2.2
+   },
+   "transform": [
+    {
+     "translate": [
+      1.600000023841858,
+      3.1500000953674316,
+      -4.5
+     ]
+    }
+   ]
+  },
+  {
+   "type": "group",
+   "name": "shelf unit 1 (seed 1)",
+   "transform": [
+    {
+     "translate": [
+      -1.7999999523162842,
+      0.0,
+      -6.550000190734863
+     ]
+    }
+   ],
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.05999999865889549,
+       2.5,
+       0.3400000035762787
+      ]
+     },
+     "name": "shelf upright L",
+     "material": {
+      "color": "#5A4630",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.7000000476837158,
+        1.25,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.05999999865889549,
+       2.5,
+       0.3400000035762787
+      ]
+     },
+     "name": "shelf upright R",
+     "material": {
+      "color": "#5A4630",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        1.7000000476837158,
+        1.25,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       3.4000000953674316,
+       0.05999999865889549,
+       0.3400000035762787
+      ]
+     },
+     "name": "shelf top",
+     "material": {
+      "color": "#5A4630",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        2.4700000286102295,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       3.4000000953674316,
+       0.05999999865889549,
+       0.30000001192092896
+      ]
+     },
+     "name": "shelf bottom",
+     "material": {
+      "color": "#5A4630",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.029999999329447746,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       3.4000000953674316,
+       0.05000000074505806,
+       0.3199999928474426
+      ]
+     },
+     "name": "shelf board r0",
+     "material": {
+      "color": "#5A4630",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.11999999731779099,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.08667866885662079,
+       0.3988412618637085,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i0",
+     "material": {
+      "color": "#4A5A6A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.5366606712341309,
+        0.3494206368923187,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.056993868201971054,
+       0.3475465774536133,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i1",
+     "material": {
+      "color": "#6A6248",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.452824354171753,
+        0.3237732946872711,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.07300054281949997,
+       0.38156503438949585,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i2",
+     "material": {
+      "color": "#54455E",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.3758271932601929,
+        0.3407825231552124,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.092241570353508,
+       0.34913817048072815,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i3",
+     "material": {
+      "color": "#77603A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.2812061309814453,
+        0.32456907629966736,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.056916456669569016,
+       0.4542349874973297,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i4",
+     "material": {
+      "color": "#3F5A50",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.1946271657943726,
+        0.37711748480796814,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.10442008078098297,
+       0.36072874069213867,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i5",
+     "material": {
+      "color": "#83584A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.1019588708877563,
+        0.3303643763065338,
+        0.019999999552965164
+       ]
+      },
+      {
+       "rotate_z": 0.10000000149011612
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.05756539851427078,
+       0.4312937259674072,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i6",
+     "material": {
+      "color": "#5E5142",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.008966088294983,
+        0.3656468689441681,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.07033567875623703,
+       0.3578987419605255,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i7",
+     "material": {
+      "color": "#7A4A3A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.9330155849456787,
+        0.32894936203956604,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09926961362361908,
+       0.43504878878593445,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i8",
+     "material": {
+      "color": "#4A5A6A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.8362129330635071,
+        0.3675243854522705,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.061478182673454285,
+       0.35848915576934814,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i9",
+     "material": {
+      "color": "#6A6248",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.7438390254974365,
+        0.32924458384513855,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.0695565938949585,
+       0.3823396861553192,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i11",
+     "material": {
+      "color": "#77603A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.5711435675621033,
+        0.3411698639392853,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.07870391011238098,
+       0.43778806924819946,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i13",
+     "material": {
+      "color": "#83584A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.39025741815567017,
+        0.3688940405845642,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09145640581846237,
+       0.34286677837371826,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i14",
+     "material": {
+      "color": "#5E5142",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.2931772470474243,
+        0.3214333951473236,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.08695033192634583,
+       0.37455976009368896,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i15",
+     "material": {
+      "color": "#7A4A3A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.19197387993335724,
+        0.33727988600730896,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.07763125747442245,
+       0.421176552772522,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i16",
+     "material": {
+      "color": "#4A5A6A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.09768309444189072,
+        0.36058828234672546,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.06600098311901093,
+       0.408914178609848,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i17",
+     "material": {
+      "color": "#6A6248",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.013866975903511047,
+        0.3544570803642273,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.08510857075452805,
+       0.3569435477256775,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i18",
+     "material": {
+      "color": "#54455E",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.07368779927492142,
+        0.3284717798233032,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.05790252611041069,
+       0.4186513125896454,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i19",
+     "material": {
+      "color": "#77603A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.1571933478116989,
+        0.35932567715644836,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.0709865465760231,
+       0.4540381133556366,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i22",
+     "material": {
+      "color": "#5E5142",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.39173832535743713,
+        0.3770190477371216,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.10312961041927338,
+       0.4035184383392334,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i23",
+     "material": {
+      "color": "#7A4A3A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.49079641699790955,
+        0.3517592251300812,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.06486722826957703,
+       0.38951465487480164,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i24",
+     "material": {
+      "color": "#4A5A6A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.5867948532104492,
+        0.3447573184967041,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.058514684438705444,
+       0.4486698508262634,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i25",
+     "material": {
+      "color": "#6A6248",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.6604858040809631,
+        0.3743349313735962,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.077203668653965,
+       0.3899492025375366,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i26",
+     "material": {
+      "color": "#54455E",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.7403449416160583,
+        0.3449746072292328,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.07632625102996826,
+       0.44664105772972107,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i27",
+     "material": {
+      "color": "#77603A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.8291099071502686,
+        0.3733205199241638,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.098936527967453,
+       0.46834665536880493,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i28",
+     "material": {
+      "color": "#3F5A50",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.9287412762641907,
+        0.38417333364486694,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.08146917819976807,
+       0.44465917348861694,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i29",
+     "material": {
+      "color": "#83584A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        1.0309441089630127,
+        0.37232959270477295,
+        0.019999999552965164
+       ]
+      },
+      {
+       "rotate_z": 0.10000000149011612
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.06297259032726288,
+       0.41169044375419617,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i31",
+     "material": {
+      "color": "#7A4A3A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        1.2182306051254272,
+        0.35584521293640137,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.08732107281684875,
+       0.3417390286922455,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i33",
+     "material": {
+      "color": "#6A6248",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        1.4135620594024658,
+        0.320869505405426,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09011296927928925,
+       0.3795858919620514,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i34",
+     "material": {
+      "color": "#54455E",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        1.5142790079116821,
+        0.339792937040329,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       3.4000000953674316,
+       0.05000000074505806,
+       0.3199999928474426
+      ]
+     },
+     "name": "shelf board r1",
+     "material": {
+      "color": "#5A4630",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.699999988079071,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.06600098311901093,
+       0.46513697504997253,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i0",
+     "material": {
+      "color": "#77603A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.546999454498291,
+        0.9625685214996338,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.08510857075452805,
+       0.3977295160293579,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i1",
+     "material": {
+      "color": "#3F5A50",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.4594447612762451,
+        0.9288647770881653,
+        0.019999999552965164
+       ]
+      },
+      {
+       "rotate_z": 0.10000000149011612
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.05790252611041069,
+       0.40881985425949097,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i2",
+     "material": {
+      "color": "#83584A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.375939130783081,
+        0.9344099164009094,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.07822827249765396,
+       0.44707998633384705,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i3",
+     "material": {
+      "color": "#5E5142",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.295873761177063,
+        0.953540027141571,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.05587216839194298,
+       0.45782670378685,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i4",
+     "material": {
+      "color": "#7A4A3A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.2168235778808594,
+        0.9589133262634277,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.0709865465760231,
+       0.40718480944633484,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i5",
+     "material": {
+      "color": "#4A5A6A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.1413942575454712,
+        0.9335923790931702,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.10312961041927338,
+       0.4560515582561493,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i6",
+     "material": {
+      "color": "#6A6248",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.042336106300354,
+        0.9580258131027222,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.077203668653965,
+       0.45957985520362854,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i9",
+     "material": {
+      "color": "#3F5A50",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.7927876114845276,
+        0.9597899317741394,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.07632625102996826,
+       0.3429693281650543,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i10",
+     "material": {
+      "color": "#83584A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.7040226459503174,
+        0.9014846682548523,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.098936527967453,
+       0.4620307683944702,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i11",
+     "material": {
+      "color": "#5E5142",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.6043912172317505,
+        0.9610154032707214,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.08146917819976807,
+       0.43750450015068054,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i12",
+     "material": {
+      "color": "#7A4A3A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.5021883845329285,
+        0.948752224445343,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09106554836034775,
+       0.43759867548942566,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i13",
+     "material": {
+      "color": "#4A5A6A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.4039210081100464,
+        0.9487993121147156,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.06297259032726288,
+       0.36440035700798035,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i14",
+     "material": {
+      "color": "#6A6248",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.3149019479751587,
+        0.9122001528739929,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.0961846187710762,
+       0.36980101466178894,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i15",
+     "material": {
+      "color": "#54455E",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.22332334518432617,
+        0.9149004817008972,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.08732107281684875,
+       0.43641477823257446,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i16",
+     "material": {
+      "color": "#77603A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.11957050114870071,
+        0.9482073783874512,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.10031796246767044,
+       0.4381904602050781,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i18",
+     "material": {
+      "color": "#83584A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.08836198598146439,
+        0.9490952491760254,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.06188412755727768,
+       0.3594411611557007,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i20",
+     "material": {
+      "color": "#7A4A3A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.28145402669906616,
+        0.9097205996513367,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.08084031194448471,
+       0.40862470865249634,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i21",
+     "material": {
+      "color": "#4A5A6A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.36481624841690063,
+        0.9343123435974121,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09987682104110718,
+       0.44242626428604126,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i22",
+     "material": {
+      "color": "#6A6248",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.46717479825019836,
+        0.9512131214141846,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09155722707509995,
+       0.3474227488040924,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i23",
+     "material": {
+      "color": "#54455E",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.5748918056488037,
+        0.9037113785743713,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09963522106409073,
+       0.3888837993144989,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i24",
+     "material": {
+      "color": "#77603A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.6824880242347717,
+        0.9244418740272522,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.05573970824480057,
+       0.40052348375320435,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i25",
+     "material": {
+      "color": "#3F5A50",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.7721754908561707,
+        0.9302617311477661,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.06211121380329132,
+       0.40068501234054565,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i26",
+     "material": {
+      "color": "#83584A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.8431009650230408,
+        0.9303424954414368,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09029453992843628,
+       0.4582286775112152,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i27",
+     "material": {
+      "color": "#5E5142",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.931303858757019,
+        0.9591143131256104,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.06829405575990677,
+       0.36708155274391174,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i28",
+     "material": {
+      "color": "#7A4A3A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        1.022598147392273,
+        0.913540780544281,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.08938182145357132,
+       0.44185036420822144,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i29",
+     "material": {
+      "color": "#4A5A6A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        1.1134361028671265,
+        0.9509251713752747,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.10026286542415619,
+       0.3562341332435608,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i30",
+     "material": {
+      "color": "#6A6248",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        1.2202584743499756,
+        0.9081170558929443,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09867676347494125,
+       0.4109172224998474,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i31",
+     "material": {
+      "color": "#54455E",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        1.331728219985962,
+        0.9354586005210876,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.07128450274467468,
+       0.3861187696456909,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i32",
+     "material": {
+      "color": "#77603A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        1.4287089109420776,
+        0.9230594038963318,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.10099224746227264,
+       0.34553244709968567,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i33",
+     "material": {
+      "color": "#3F5A50",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        1.526847243309021,
+        0.902766227722168,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       3.4000000953674316,
+       0.05000000074505806,
+       0.3199999928474426
+      ]
+     },
+     "name": "shelf board r2",
+     "material": {
+      "color": "#5A4630",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        1.2799999713897705,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09011296927928925,
+       0.43377041816711426,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i0",
+     "material": {
+      "color": "#5E5142",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.5349434614181519,
+        1.5268852710723877,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.10031796246767044,
+       0.42403480410575867,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i1",
+     "material": {
+      "color": "#7A4A3A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.4277280569076538,
+        1.5220173597335815,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.08799099177122116,
+       0.42577657103538513,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i2",
+     "material": {
+      "color": "#4A5A6A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.3215736150741577,
+        1.5228883028030396,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.06188412755727768,
+       0.45667973160743713,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i3",
+     "material": {
+      "color": "#6A6248",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.2346360683441162,
+        1.5383398532867432,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09987682104110718,
+       0.374564528465271,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i5",
+     "material": {
+      "color": "#77603A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.0489152669906616,
+        1.4972822666168213,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09963522106409073,
+       0.45600882172584534,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i7",
+     "material": {
+      "color": "#83584A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.8336020112037659,
+        1.5380043983459473,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.05573970824480057,
+       0.3459106385707855,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i8",
+     "material": {
+      "color": "#5E5142",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.7439145445823669,
+        1.4829553365707397,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.06211121380329132,
+       0.42971286177635193,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i9",
+     "material": {
+      "color": "#7A4A3A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.6729890704154968,
+        1.524856448173523,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09029453992843628,
+       0.40395882725715637,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i10",
+     "material": {
+      "color": "#4A5A6A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.5847861766815186,
+        1.5119794607162476,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.06829405575990677,
+       0.46471595764160156,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i11",
+     "material": {
+      "color": "#6A6248",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.49349188804626465,
+        1.5423579216003418,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.08938182145357132,
+       0.4464387595653534,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i12",
+     "material": {
+      "color": "#54455E",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.4026539623737335,
+        1.533219337463379,
+        0.019999999552965164
+       ]
+      },
+      {
+       "rotate_z": 0.10000000149011612
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.10026286542415619,
+       0.4578937590122223,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i13",
+     "material": {
+      "color": "#77603A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.2958316206932068,
+        1.5389468669891357,
+        0.019999999552965164
+       ]
+      },
+      {
+       "rotate_z": 0.10000000149011612
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09867676347494125,
+       0.3514453172683716,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i14",
+     "material": {
+      "color": "#3F5A50",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.1843618005514145,
+        1.4857226610183716,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.07128450274467468,
+       0.3829463720321655,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i15",
+     "material": {
+      "color": "#83584A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.08738116174936295,
+        1.5014731884002686,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.10099224746227264,
+       0.41199272871017456,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i16",
+     "material": {
+      "color": "#5E5142",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.010757213458418846,
+        1.5159963369369507,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09961877018213272,
+       0.35380080342292786,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i17",
+     "material": {
+      "color": "#7A4A3A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.12306272238492966,
+        1.4869004487991333,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.10482039302587509,
+       0.40961751341819763,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i18",
+     "material": {
+      "color": "#4A5A6A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.23728230595588684,
+        1.5148087739944458,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.05614204704761505,
+       0.3749936819076538,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i19",
+     "material": {
+      "color": "#6A6248",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.3297635316848755,
+        1.4974968433380127,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.05727332457900047,
+       0.3447827398777008,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i20",
+     "material": {
+      "color": "#54455E",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.3984712064266205,
+        1.482391357421875,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09261079877614975,
+       0.388468474149704,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i21",
+     "material": {
+      "color": "#77603A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.4854132831096649,
+        1.5042341947555542,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.08950494974851608,
+       0.4466142952442169,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i23",
+     "material": {
+      "color": "#83584A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.7024060487747192,
+        1.5333071947097778,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.056102603673934937,
+       0.36190468072891235,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i24",
+     "material": {
+      "color": "#5E5142",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.7872098684310913,
+        1.4909523725509644,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09250172972679138,
+       0.3799242377281189,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i25",
+     "material": {
+      "color": "#7A4A3A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.8735120296478271,
+        1.4999620914459229,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.0795995444059372,
+       0.34169209003448486,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i26",
+     "material": {
+      "color": "#4A5A6A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.9715626239776611,
+        1.4808460474014282,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09253794699907303,
+       0.4551313519477844,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i28",
+     "material": {
+      "color": "#54455E",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        1.14992356300354,
+        1.5375657081604004,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.08622175455093384,
+       0.38444119691848755,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i30",
+     "material": {
+      "color": "#3F5A50",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        1.3662711381912231,
+        1.502220630645752,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.06438475102186203,
+       0.42768335342407227,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i31",
+     "material": {
+      "color": "#83584A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        1.4535744190216064,
+        1.5238417387008667,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09593798965215683,
+       0.4328147768974304,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i32",
+     "material": {
+      "color": "#5E5142",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        1.5457357168197632,
+        1.5264073610305786,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       3.4000000953674316,
+       0.05000000074505806,
+       0.3199999928474426
+      ]
+     },
+     "name": "shelf board r3",
+     "material": {
+      "color": "#5A4630",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        1.8600000143051147,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09961877018213272,
+       0.3578987419605255,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i0",
+     "material": {
+      "color": "#6A6248",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.5301905870437622,
+        2.0689494609832764,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.10482039302587509,
+       0.43504878878593445,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i1",
+     "material": {
+      "color": "#54455E",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.415971040725708,
+        2.1075243949890137,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.05614204704761505,
+       0.35848915576934814,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i2",
+     "material": {
+      "color": "#77603A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.323489785194397,
+        2.069244623184204,
+        0.019999999552965164
+       ]
+      },
+      {
+       "rotate_z": 0.10000000149011612
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.05727332457900047,
+       0.4293927252292633,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i3",
+     "material": {
+      "color": "#3F5A50",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.2547820806503296,
+        2.104696273803711,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09261079877614975,
+       0.3823396861553192,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i4",
+     "material": {
+      "color": "#83584A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.1678401231765747,
+        2.081169843673706,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.10193491727113724,
+       0.4695330262184143,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i5",
+     "material": {
+      "color": "#5E5142",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.0585671663284302,
+        2.1247665882110596,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.08950494974851608,
+       0.43778806924819946,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i6",
+     "material": {
+      "color": "#7A4A3A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.9508472681045532,
+        2.108894109725952,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.056102603673934937,
+       0.34286677837371826,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i7",
+     "material": {
+      "color": "#4A5A6A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.8660435080528259,
+        2.0614333152770996,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09250172972679138,
+       0.37455976009368896,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i8",
+     "material": {
+      "color": "#6A6248",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.7797413468360901,
+        2.077279806137085,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.06829222291707993,
+       0.408914178609848,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i10",
+     "material": {
+      "color": "#77603A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.595744788646698,
+        2.0944571495056152,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09253794699907303,
+       0.3569435477256775,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i11",
+     "material": {
+      "color": "#3F5A50",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.5033297538757324,
+        2.068471670150757,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.10296767950057983,
+       0.4186513125896454,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i12",
+     "material": {
+      "color": "#83584A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.3935769200325012,
+        2.099325656890869,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.08622175455093384,
+       0.3815833032131195,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i13",
+     "material": {
+      "color": "#5E5142",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.2869822084903717,
+        2.080791711807251,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09593798965215683,
+       0.4540381133556366,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i15",
+     "material": {
+      "color": "#4A5A6A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.10751757770776749,
+        2.117018938064575,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.06646192818880081,
+       0.38951465487480164,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i17",
+     "material": {
+      "color": "#54455E",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.07918783277273178,
+        2.0847573280334473,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.10034375637769699,
+       0.4486698508262634,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i18",
+     "material": {
+      "color": "#77603A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.17459067702293396,
+        2.11433482170105,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.06151674687862396,
+       0.3899492025375366,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i19",
+     "material": {
+      "color": "#3F5A50",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.267520934343338,
+        2.084974527359009,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09208261221647263,
+       0.44664105772972107,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i20",
+     "material": {
+      "color": "#83584A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.3563206195831299,
+        2.1133205890655518,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.05940204858779907,
+       0.46834665536880493,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i21",
+     "material": {
+      "color": "#5E5142",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.4440629482269287,
+        2.124173402786255,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.08525051176548004,
+       0.44465917348861694,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i22",
+     "material": {
+      "color": "#7A4A3A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.5283892154693604,
+        2.1123294830322266,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.07151783257722855,
+       0.41169044375419617,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i24",
+     "material": {
+      "color": "#6A6248",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.7058070302009583,
+        2.0958452224731445,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.0709935799241066,
+       0.408855140209198,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i25",
+     "material": {
+      "color": "#54455E",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.7890627384185791,
+        2.0944275856018066,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09276556968688965,
+       0.3417390286922455,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i26",
+     "material": {
+      "color": "#77603A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.8829423189163208,
+        2.0608694553375244,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.08268950879573822,
+       0.3795858919620514,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i27",
+     "material": {
+      "color": "#3F5A50",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.9826698899269104,
+        2.0797929763793945,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.06956399977207184,
+       0.38707080483436584,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i28",
+     "material": {
+      "color": "#83584A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        1.0707966089248657,
+        2.0835354328155518,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09886080771684647,
+       0.43444710969924927,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i31",
+     "material": {
+      "color": "#4A5A6A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        1.3105216026306152,
+        2.1072235107421875,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.062477368861436844,
+       0.3911403715610504,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i32",
+     "material": {
+      "color": "#6A6248",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        1.4031907320022583,
+        2.0855700969696045,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.0817759707570076,
+       0.35333961248397827,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i33",
+     "material": {
+      "color": "#54455E",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        1.4873173236846924,
+        2.0666697025299072,
+        0.019999999552965164
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "type": "group",
+   "name": "shelf unit 2 (seed 2)",
+   "transform": [
+    {
+     "translate": [
+      1.899999976158142,
+      0.0,
+      -6.550000190734863
+     ]
+    }
+   ],
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.05999999865889549,
+       2.5,
+       0.3400000035762787
+      ]
+     },
+     "name": "shelf upright L",
+     "material": {
+      "color": "#5A4630",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.2000000476837158,
+        1.25,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.05999999865889549,
+       2.5,
+       0.3400000035762787
+      ]
+     },
+     "name": "shelf upright R",
+     "material": {
+      "color": "#5A4630",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        1.2000000476837158,
+        1.25,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       2.4000000953674316,
+       0.05999999865889549,
+       0.3400000035762787
+      ]
+     },
+     "name": "shelf top",
+     "material": {
+      "color": "#5A4630",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        2.4700000286102295,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       2.4000000953674316,
+       0.05999999865889549,
+       0.30000001192092896
+      ]
+     },
+     "name": "shelf bottom",
+     "material": {
+      "color": "#5A4630",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.029999999329447746,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       2.4000000953674316,
+       0.05000000074505806,
+       0.3199999928474426
+      ]
+     },
+     "name": "shelf board r0",
+     "material": {
+      "color": "#5A4630",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.11999999731779099,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.0961846187710762,
+       0.4464387595653534,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i1",
+     "material": {
+      "color": "#54455E",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.9569351077079773,
+        0.37321937084198,
+        0.019999999552965164
+       ]
+      },
+      {
+       "rotate_z": 0.10000000149011612
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.08732107281684875,
+       0.4578937590122223,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i2",
+     "material": {
+      "color": "#77603A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.8531822562217712,
+        0.37894687056541443,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09011296927928925,
+       0.3514453172683716,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i3",
+     "material": {
+      "color": "#3F5A50",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.7524652481079102,
+        0.32572266459465027,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.10031796246767044,
+       0.3829463720321655,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i4",
+     "material": {
+      "color": "#83584A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.6452497839927673,
+        0.34147319197654724,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.08799099177122116,
+       0.41199272871017456,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i5",
+     "material": {
+      "color": "#5E5142",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.5390952825546265,
+        0.35599637031555176,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.06188412755727768,
+       0.35380080342292786,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i6",
+     "material": {
+      "color": "#7A4A3A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.45215773582458496,
+        0.3269003927707672,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.08084031194448471,
+       0.40961751341819763,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i7",
+     "material": {
+      "color": "#4A5A6A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.3687955141067505,
+        0.3548087477684021,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09987682104110718,
+       0.3749936819076538,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i8",
+     "material": {
+      "color": "#6A6248",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.26643696427345276,
+        0.3374968469142914,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09155722707509995,
+       0.3447827398777008,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i9",
+     "material": {
+      "color": "#54455E",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.15871992707252502,
+        0.3223913609981537,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09963522106409073,
+       0.388468474149704,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i10",
+     "material": {
+      "color": "#77603A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.05112370476126671,
+        0.3442342281341553,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.05573970824480057,
+       0.4520493745803833,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i11",
+     "material": {
+      "color": "#3F5A50",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.03856375813484192,
+        0.37602469325065613,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.06211121380329132,
+       0.4466142952442169,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i12",
+     "material": {
+      "color": "#83584A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.10948921740055084,
+        0.37330713868141174,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09029453992843628,
+       0.36190468072891235,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i13",
+     "material": {
+      "color": "#5E5142",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.19769209623336792,
+        0.33095234632492065,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.06829405575990677,
+       0.3799242377281189,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i14",
+     "material": {
+      "color": "#7A4A3A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.2889863848686218,
+        0.3399621248245239,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.08938182145357132,
+       0.34169209003448486,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i15",
+     "material": {
+      "color": "#4A5A6A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.37982434034347534,
+        0.3208460509777069,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.10026286542415619,
+       0.38269129395484924,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i16",
+     "material": {
+      "color": "#6A6248",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.4866466820240021,
+        0.3413456380367279,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09867676347494125,
+       0.4551313519477844,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i17",
+     "material": {
+      "color": "#54455E",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.5981164574623108,
+        0.3775656819343567,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.07128450274467468,
+       0.4018141031265259,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i18",
+     "material": {
+      "color": "#77603A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.6950970888137817,
+        0.3509070575237274,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.10099224746227264,
+       0.38444119691848755,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i19",
+     "material": {
+      "color": "#3F5A50",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.7932354807853699,
+        0.34222060441970825,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09961877018213272,
+       0.42768335342407227,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i20",
+     "material": {
+      "color": "#83584A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.9055410027503967,
+        0.3638416826725006,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.10482039302587509,
+       0.4328147768974304,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i21",
+     "material": {
+      "color": "#5E5142",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        1.0197606086730957,
+        0.3664073944091797,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       2.4000000953674316,
+       0.05000000074505806,
+       0.3199999928474426
+      ]
+     },
+     "name": "shelf board r1",
+     "material": {
+      "color": "#5A4630",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.699999988079071,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09867676347494125,
+       0.3569435477256775,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i0",
+     "material": {
+      "color": "#3F5A50",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.0306615829467773,
+        0.9084717631340027,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.07128450274467468,
+       0.4186513125896454,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i1",
+     "material": {
+      "color": "#83584A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.9336810111999512,
+        0.9393256902694702,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.10099224746227264,
+       0.3815833032131195,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i2",
+     "material": {
+      "color": "#5E5142",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.835542619228363,
+        0.9207916259765625,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09961877018213272,
+       0.3778664171695709,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i3",
+     "material": {
+      "color": "#7A4A3A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.7232370972633362,
+        0.9189332127571106,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.10482039302587509,
+       0.4540381133556366,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i4",
+     "material": {
+      "color": "#4A5A6A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.6090174913406372,
+        0.957019031047821,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.05614204704761505,
+       0.4035184383392334,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i5",
+     "material": {
+      "color": "#6A6248",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.516536295413971,
+        0.931759238243103,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.05727332457900047,
+       0.38951465487480164,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i6",
+     "material": {
+      "color": "#54455E",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.44782862067222595,
+        0.9247573614120483,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09261079877614975,
+       0.4486698508262634,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i7",
+     "material": {
+      "color": "#77603A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.3608865439891815,
+        0.9543349146842957,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.10193491727113724,
+       0.3899492025375366,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i8",
+     "material": {
+      "color": "#3F5A50",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.25161370635032654,
+        0.9249746203422546,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.08950494974851608,
+       0.44664105772972107,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i9",
+     "material": {
+      "color": "#83584A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.143893763422966,
+        0.9533205032348633,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.056102603673934937,
+       0.46834665536880493,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i10",
+     "material": {
+      "color": "#5E5142",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.05908998101949692,
+        0.9641733169555664,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09250172972679138,
+       0.44465917348861694,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i11",
+     "material": {
+      "color": "#7A4A3A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.02721218392252922,
+        0.9523295760154724,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.0795995444059372,
+       0.3765377700328827,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i12",
+     "material": {
+      "color": "#4A5A6A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.12526282668113708,
+        0.9182689189910889,
+        0.019999999552965164
+       ]
+      },
+      {
+       "rotate_z": 0.10000000149011612
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.06829222291707993,
+       0.41169044375419617,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i13",
+     "material": {
+      "color": "#6A6248",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.21120870113372803,
+        0.9358451962471008,
+        0.019999999552965164
+       ]
+      },
+      {
+       "rotate_z": 0.10000000149011612
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09253794699907303,
+       0.408855140209198,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i14",
+     "material": {
+      "color": "#54455E",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.3036237955093384,
+        0.9344275593757629,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.10296767950057983,
+       0.3417390286922455,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i15",
+     "material": {
+      "color": "#77603A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.4133765995502472,
+        0.9008694887161255,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.08622175455093384,
+       0.3795858919620514,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i16",
+     "material": {
+      "color": "#3F5A50",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.5199713110923767,
+        0.9197929501533508,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09593798965215683,
+       0.3764825165271759,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i18",
+     "material": {
+      "color": "#5E5142",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.6994359493255615,
+        0.9182412624359131,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.08150545507669449,
+       0.39479249715805054,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i19",
+     "material": {
+      "color": "#7A4A3A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.8001576662063599,
+        0.9273962378501892,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.10034375637769699,
+       0.3911403715610504,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i21",
+     "material": {
+      "color": "#6A6248",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.9815441966056824,
+        0.9255701899528503,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       2.4000000953674316,
+       0.05000000074505806,
+       0.3199999928474426
+      ]
+     },
+     "name": "shelf board r2",
+     "material": {
+      "color": "#5A4630",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        1.2799999713897705,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.06438475102186203,
+       0.4381904602050781,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i0",
+     "material": {
+      "color": "#7A4A3A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.0478075742721558,
+        1.5290952920913696,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09593798965215683,
+       0.35093191266059875,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i1",
+     "material": {
+      "color": "#4A5A6A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.955646276473999,
+        1.4854660034179688,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.08150545507669449,
+       0.3594411611557007,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i2",
+     "material": {
+      "color": "#6A6248",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.8549245595932007,
+        1.4897205829620361,
+        0.019999999552965164
+       ]
+      },
+      {
+       "rotate_z": 0.10000000149011612
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.06646192818880081,
+       0.40862470865249634,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i3",
+     "material": {
+      "color": "#54455E",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.7689408659934998,
+        1.5143123865127563,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.06151674687862396,
+       0.3474227488040924,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i5",
+     "material": {
+      "color": "#3F5A50",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.5806077718734741,
+        1.4837113618850708,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09208261221647263,
+       0.3888837993144989,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i6",
+     "material": {
+      "color": "#83584A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.49180808663368225,
+        1.5044418573379517,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.08525051176548004,
+       0.40068501234054565,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i8",
+     "material": {
+      "color": "#7A4A3A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.3197394609451294,
+        1.5103424787521362,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.07503367215394974,
+       0.4582286775112152,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i9",
+     "material": {
+      "color": "#4A5A6A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.22759737074375153,
+        1.5391143560409546,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.07151783257722855,
+       0.36708155274391174,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i10",
+     "material": {
+      "color": "#6A6248",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.1423216164112091,
+        1.4935407638549805,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.0709935799241066,
+       0.44185036420822144,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i11",
+     "material": {
+      "color": "#54455E",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.059065915644168854,
+        1.5309251546859741,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09276556968688965,
+       0.3562341332435608,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i12",
+     "material": {
+      "color": "#77603A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.03481365740299225,
+        1.4881170988082886,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.08268950879573822,
+       0.4109172224998474,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i13",
+     "material": {
+      "color": "#3F5A50",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.13454119861125946,
+        1.515458583831787,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.06956399977207184,
+       0.3861187696456909,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i14",
+     "material": {
+      "color": "#83584A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.22266794741153717,
+        1.5030593872070312,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09886080771684647,
+       0.3413383662700653,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i17",
+     "material": {
+      "color": "#4A5A6A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.4623929262161255,
+        1.4806691408157349,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.062477368861436844,
+       0.37060126662254333,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i18",
+     "material": {
+      "color": "#6A6248",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.5550620555877686,
+        1.4953006505966187,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.0817759707570076,
+       0.3554202616214752,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i19",
+     "material": {
+      "color": "#54455E",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.6391887068748474,
+        1.4877101182937622,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.07943017035722733,
+       0.4354229271411896,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i20",
+     "material": {
+      "color": "#77603A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.7317917943000793,
+        1.5277115106582642,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.06845911592245102,
+       0.4367736577987671,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i22",
+     "material": {
+      "color": "#83584A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.9111305475234985,
+        1.5283868312835693,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.07404410094022751,
+       0.45880281925201416,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i23",
+     "material": {
+      "color": "#5E5142",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.9943821430206299,
+        1.5394014120101929,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       2.4000000953674316,
+       0.05000000074505806,
+       0.3199999928474426
+      ]
+     },
+     "name": "shelf board r3",
+     "material": {
+      "color": "#5A4630",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        1.8600000143051147,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09886080771684647,
+       0.40961751341819763,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i0",
+     "material": {
+      "color": "#54455E",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.0305695533752441,
+        2.09480881690979,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.062477368861436844,
+       0.3749936819076538,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i1",
+     "material": {
+      "color": "#77603A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.9379004836082458,
+        2.0774967670440674,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.08139411360025406,
+       0.4520493745803833,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i4",
+     "material": {
+      "color": "#5E5142",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.6687586307525635,
+        2.1160247325897217,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.06845911592245102,
+       0.4466142952442169,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i5",
+     "material": {
+      "color": "#7A4A3A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.5818319916725159,
+        2.113307237625122,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.07404410094022751,
+       0.36190468072891235,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i6",
+     "material": {
+      "color": "#4A5A6A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.4985803961753845,
+        2.0709524154663086,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09439471364021301,
+       0.3799242377281189,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i7",
+     "material": {
+      "color": "#6A6248",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.4023610055446625,
+        2.0799620151519775,
+        0.019999999552965164
+       ]
+      },
+      {
+       "rotate_z": 0.10000000149011612
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09679609537124634,
+       0.38269129395484924,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i9",
+     "material": {
+      "color": "#77603A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.22592607140541077,
+        2.081345558166504,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.05785490199923515,
+       0.4551313519477844,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i10",
+     "material": {
+      "color": "#3F5A50",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.1366005688905716,
+        2.117565631866455,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.07364172488451004,
+       0.4018141031265259,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i11",
+     "material": {
+      "color": "#83584A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.058852266520261765,
+        2.090907096862793,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.0742112323641777,
+       0.38444119691848755,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i12",
+     "material": {
+      "color": "#5E5142",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.027074212208390236,
+        2.0822205543518066,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.07380145788192749,
+       0.42768335342407227,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i13",
+     "material": {
+      "color": "#7A4A3A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.11308056116104126,
+        2.103841781616211,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09601578861474991,
+       0.3527291715145111,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i15",
+     "material": {
+      "color": "#6A6248",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.3200850784778595,
+        2.0663645267486572,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.07827826589345932,
+       0.4221494495868683,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i16",
+     "material": {
+      "color": "#54455E",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.4192321300506592,
+        2.101074695587158,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09600549191236496,
+       0.3562036454677582,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i17",
+     "material": {
+      "color": "#77603A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.5183740258216858,
+        2.0681018829345703,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.10436410456895828,
+       0.38856860995292664,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i18",
+     "material": {
+      "color": "#3F5A50",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.6305587887763977,
+        2.0842843055725098,
+        0.019999999552965164
+       ]
+      },
+      {
+       "rotate_z": 0.10000000149011612
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.07834039628505707,
+       0.3755832016468048,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i19",
+     "material": {
+      "color": "#83584A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.7339110374450684,
+        2.077791690826416,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.06342487037181854,
+       0.38597068190574646,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i20",
+     "material": {
+      "color": "#5E5142",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.81679368019104,
+        2.0829854011535645,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09525353461503983,
+       0.3841008245944977,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i21",
+     "material": {
+      "color": "#7A4A3A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.9081329107284546,
+        2.082050323486328,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.10047256946563721,
+       0.3463594317436218,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i22",
+     "material": {
+      "color": "#4A5A6A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        1.0179959535598755,
+        2.0631797313690186,
+        0.019999999552965164
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "type": "group",
+   "name": "shelf unit 3 (seed 3)",
+   "transform": [
+    {
+     "translate": [
+      -3.819999933242798,
+      0.0,
+      -3.5999999046325684
+     ]
+    },
+    {
+     "rotate_y": 1.5707963705062866
+    }
+   ],
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.05999999865889549,
+       2.5,
+       0.3400000035762787
+      ]
+     },
+     "name": "shelf upright L",
+     "material": {
+      "color": "#5A4630",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.600000023841858,
+        1.25,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.05999999865889549,
+       2.5,
+       0.3400000035762787
+      ]
+     },
+     "name": "shelf upright R",
+     "material": {
+      "color": "#5A4630",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        1.600000023841858,
+        1.25,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       3.200000047683716,
+       0.05999999865889549,
+       0.3400000035762787
+      ]
+     },
+     "name": "shelf top",
+     "material": {
+      "color": "#5A4630",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        2.4700000286102295,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       3.200000047683716,
+       0.05999999865889549,
+       0.30000001192092896
+      ]
+     },
+     "name": "shelf bottom",
+     "material": {
+      "color": "#5A4630",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.029999999329447746,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       3.200000047683716,
+       0.05000000074505806,
+       0.3199999928474426
+      ]
+     },
+     "name": "shelf board r0",
+     "material": {
+      "color": "#5A4630",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.11999999731779099,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09253794699907303,
+       0.44185036420822144,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i0",
+     "material": {
+      "color": "#54455E",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.4337310791015625,
+        0.3709251880645752,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.08622175455093384,
+       0.4109172224998474,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i2",
+     "material": {
+      "color": "#3F5A50",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.2173835039138794,
+        0.3554586172103882,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.06438475102186203,
+       0.3861187696456909,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i3",
+     "material": {
+      "color": "#83584A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.130080223083496,
+        0.34305939078330994,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09593798965215683,
+       0.34553244709968567,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i4",
+     "material": {
+      "color": "#5E5142",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.0379189252853394,
+        0.3227662146091461,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.08150545507669449,
+       0.3814486265182495,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i5",
+     "material": {
+      "color": "#7A4A3A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.9371971487998962,
+        0.34072431921958923,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.06646192818880081,
+       0.3413383662700653,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i6",
+     "material": {
+      "color": "#4A5A6A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.8512134552001953,
+        0.32066917419433594,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.10034375637769699,
+       0.37060126662254333,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i7",
+     "material": {
+      "color": "#6A6248",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.7558106184005737,
+        0.33530062437057495,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.05940204858779907,
+       0.39697518944740295,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i10",
+     "material": {
+      "color": "#3F5A50",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.486338347196579,
+        0.34848758578300476,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.07503367215394974,
+       0.45880281925201416,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i12",
+     "material": {
+      "color": "#5E5142",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.30987000465393066,
+        0.37940141558647156,
+        0.019999999552965164
+       ]
+      },
+      {
+       "rotate_z": 0.10000000149011612
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.07151783257722855,
+       0.4035438597202301,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i13",
+     "material": {
+      "color": "#7A4A3A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.22459423542022705,
+        0.35177192091941833,
+        0.019999999552965164
+       ]
+      },
+      {
+       "rotate_z": 0.10000000149011612
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.0709935799241066,
+       0.4315972626209259,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i14",
+     "material": {
+      "color": "#4A5A6A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.1413385421037674,
+        0.3657986521720886,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09276556968688965,
+       0.40190476179122925,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i15",
+     "material": {
+      "color": "#6A6248",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.047458961606025696,
+        0.3509523868560791,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.08268950879573822,
+       0.45723769068717957,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i16",
+     "material": {
+      "color": "#54455E",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.05226857587695122,
+        0.37861883640289307,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.06956399977207184,
+       0.41509562730789185,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i17",
+     "material": {
+      "color": "#77603A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.14039532840251923,
+        0.3575478196144104,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.0592045821249485,
+       0.4555874168872833,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i18",
+     "material": {
+      "color": "#3F5A50",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.21677961945533752,
+        0.37779369950294495,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.060308005660772324,
+       0.3636956512928009,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i19",
+     "material": {
+      "color": "#83584A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.2885359227657318,
+        0.33184781670570374,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09886080771684647,
+       0.4185645878314972,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i20",
+     "material": {
+      "color": "#5E5142",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.38012033700942993,
+        0.3592822849750519,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.062477368861436844,
+       0.4614916145801544,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i21",
+     "material": {
+      "color": "#7A4A3A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.4727894067764282,
+        0.3807457983493805,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.0817759707570076,
+       0.43298742175102234,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i22",
+     "material": {
+      "color": "#4A5A6A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.5569160580635071,
+        0.36649370193481445,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.07943017035722733,
+       0.44540858268737793,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i23",
+     "material": {
+      "color": "#6A6248",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.649519145488739,
+        0.37270429730415344,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.06845911592245102,
+       0.36416640877723694,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i25",
+     "material": {
+      "color": "#77603A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.8288578987121582,
+        0.33208319544792175,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.07404410094022751,
+       0.3738955557346344,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i26",
+     "material": {
+      "color": "#3F5A50",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.9121094942092896,
+        0.3369477689266205,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09439471364021301,
+       0.4229932427406311,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i27",
+     "material": {
+      "color": "#83584A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        1.008328914642334,
+        0.36149662733078003,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.05683951824903488,
+       0.4047771692276001,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i28",
+     "material": {
+      "color": "#5E5142",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        1.0959460735321045,
+        0.3523885905742645,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09679609537124634,
+       0.35888803005218506,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i29",
+     "material": {
+      "color": "#7A4A3A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        1.184763789176941,
+        0.329444020986557,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.05785490199923515,
+       0.44963306188583374,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i30",
+     "material": {
+      "color": "#4A5A6A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        1.2740893363952637,
+        0.37481653690338135,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.07364172488451004,
+       0.4047418534755707,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i31",
+     "material": {
+      "color": "#6A6248",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        1.3518376350402832,
+        0.3523709177970886,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.0742112323641777,
+       0.3833475112915039,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r0 i32",
+     "material": {
+      "color": "#54455E",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        1.4377641677856445,
+        0.34167376160621643,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       3.200000047683716,
+       0.05000000074505806,
+       0.3199999928474426
+      ]
+     },
+     "name": "shelf board r1",
+     "material": {
+      "color": "#5A4630",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.699999988079071,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.06956399977207184,
+       0.4018141031265259,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i0",
+     "material": {
+      "color": "#83584A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.4452179670333862,
+        0.9309070706367493,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.0592045821249485,
+       0.38444119691848755,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i1",
+     "material": {
+      "color": "#5E5142",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.3688336610794067,
+        0.9222205877304077,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.060308005660772324,
+       0.42768335342407227,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i2",
+     "material": {
+      "color": "#7A4A3A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.2970774173736572,
+        0.9438416957855225,
+        0.019999999552965164
+       ]
+      },
+      {
+       "rotate_z": 0.10000000149011612
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09886080771684647,
+       0.4328147768974304,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i3",
+     "material": {
+      "color": "#4A5A6A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.2054929733276367,
+        0.9464073777198792,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.062477368861436844,
+       0.3527291715145111,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i4",
+     "material": {
+      "color": "#6A6248",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.1128239631652832,
+        0.9063645601272583,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.0817759707570076,
+       0.4221494495868683,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i5",
+     "material": {
+      "color": "#54455E",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.0286972522735596,
+        0.9410747289657593,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.07943017035722733,
+       0.3562036454677582,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i6",
+     "material": {
+      "color": "#77603A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.9360941648483276,
+        0.9081018567085266,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.08139411360025406,
+       0.38856860995292664,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i7",
+     "material": {
+      "color": "#3F5A50",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.843682050704956,
+        0.9242842793464661,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.06845911592245102,
+       0.3755832016468048,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i8",
+     "material": {
+      "color": "#83584A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.7567554116249084,
+        0.9177916049957275,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.07404410094022751,
+       0.38597068190574646,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i9",
+     "material": {
+      "color": "#5E5142",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.6735038161277771,
+        0.922985315322876,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09439471364021301,
+       0.3841008245944977,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i10",
+     "material": {
+      "color": "#7A4A3A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.5772843956947327,
+        0.922050416469574,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09679609537124634,
+       0.3843021094799042,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i12",
+     "material": {
+      "color": "#6A6248",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.40084949135780334,
+        0.9221510291099548,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.05785490199923515,
+       0.3917314112186432,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i13",
+     "material": {
+      "color": "#54455E",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.31152400374412537,
+        0.9258657097816467,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.07364172488451004,
+       0.4074692726135254,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i14",
+     "material": {
+      "color": "#77603A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.23377567529678345,
+        0.933734655380249,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.0742112323641777,
+       0.44191697239875793,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i15",
+     "material": {
+      "color": "#3F5A50",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.1478492021560669,
+        0.9509584903717041,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.07380145788192749,
+       0.4111844599246979,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i16",
+     "material": {
+      "color": "#83584A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.06184285506606102,
+        0.9355922341346741,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09809590876102448,
+       0.43605107069015503,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i17",
+     "material": {
+      "color": "#5E5142",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.03610583022236824,
+        0.9480255246162415,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09601578861474991,
+       0.4342716932296753,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i18",
+     "material": {
+      "color": "#7A4A3A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.1451616734266281,
+        0.947135865688324,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.07827826589345932,
+       0.38257426023483276,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i19",
+     "material": {
+      "color": "#4A5A6A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.2443087100982666,
+        0.9212871193885803,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09600549191236496,
+       0.46319666504859924,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i20",
+     "material": {
+      "color": "#6A6248",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.3434505760669708,
+        0.9615983366966248,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.10436410456895828,
+       0.3713262975215912,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i21",
+     "material": {
+      "color": "#54455E",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.4556353986263275,
+        0.9156631827354431,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.07834039628505707,
+       0.43941769003868103,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i22",
+     "material": {
+      "color": "#77603A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.5589876174926758,
+        0.9497088193893433,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.06342487037181854,
+       0.40267297625541687,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i23",
+     "material": {
+      "color": "#3F5A50",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.6418702602386475,
+        0.9313364624977112,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.10047256946563721,
+       0.3540281653404236,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i25",
+     "material": {
+      "color": "#5E5142",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.8430725336074829,
+        0.9070140719413757,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.07035548239946365,
+       0.4540935158729553,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i26",
+     "material": {
+      "color": "#7A4A3A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.9404865503311157,
+        0.9570467472076416,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.06905299425125122,
+       0.35646361112594604,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i27",
+     "material": {
+      "color": "#4A5A6A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        1.022190809249878,
+        0.908231794834137,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.06541597843170166,
+       0.38249239325523376,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i28",
+     "material": {
+      "color": "#6A6248",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        1.101425290107727,
+        0.9212461709976196,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.05565080791711807,
+       0.3442994952201843,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i29",
+     "material": {
+      "color": "#54455E",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        1.173958659172058,
+        0.9021497368812561,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.08257324248552322,
+       0.42152950167655945,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i30",
+     "material": {
+      "color": "#77603A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        1.255070686340332,
+        0.9407647252082825,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09417321532964706,
+       0.4140988290309906,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i31",
+     "material": {
+      "color": "#3F5A50",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        1.3554439544677734,
+        0.9370494484901428,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.07141973078250885,
+       0.3649352490901947,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r1 i32",
+     "material": {
+      "color": "#83584A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        1.4502403736114502,
+        0.9124676585197449,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       3.200000047683716,
+       0.05000000074505806,
+       0.3199999928474426
+      ]
+     },
+     "name": "shelf board r2",
+     "material": {
+      "color": "#5A4630",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        1.2799999713897705,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09809590876102448,
+       0.3764825165271759,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i0",
+     "material": {
+      "color": "#4A5A6A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.4309520721435547,
+        1.4982413053512573,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09601578861474991,
+       0.39479249715805054,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i1",
+     "material": {
+      "color": "#6A6248",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.3218961954116821,
+        1.5073962211608887,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.07827826589345932,
+       0.43444710969924927,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i2",
+     "material": {
+      "color": "#54455E",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.22274911403656,
+        1.5272235870361328,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09600549191236496,
+       0.3911403715610504,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i3",
+     "material": {
+      "color": "#77603A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.1236072778701782,
+        1.5055701732635498,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.10436410456895828,
+       0.35333961248397827,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i4",
+     "material": {
+      "color": "#3F5A50",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.0114225149154663,
+        1.4866697788238525,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.07834039628505707,
+       0.4329161047935486,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i5",
+     "material": {
+      "color": "#83584A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.9080702662467957,
+        1.5264580249786377,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.06342487037181854,
+       0.4044502079486847,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i6",
+     "material": {
+      "color": "#5E5142",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.825187623500824,
+        1.5122251510620117,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09525353461503983,
+       0.35142356157302856,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i7",
+     "material": {
+      "color": "#7A4A3A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.7338483929634094,
+        1.4857118129730225,
+        0.019999999552965164
+       ]
+      },
+      {
+       "rotate_z": 0.10000000149011612
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.10047256946563721,
+       0.4518353044986725,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i8",
+     "material": {
+      "color": "#4A5A6A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.6239853501319885,
+        1.5359176397323608,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.07035548239946365,
+       0.3405907154083252,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i9",
+     "material": {
+      "color": "#6A6248",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.5265713334083557,
+        1.4802953004837036,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.06905299425125122,
+       0.44134026765823364,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i10",
+     "material": {
+      "color": "#54455E",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.4448671042919159,
+        1.530670166015625,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.05565080791711807,
+       0.41785985231399536,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i12",
+     "material": {
+      "color": "#3F5A50",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.29309922456741333,
+        1.5189299583435059,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.08257324248552322,
+       0.4608719050884247,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i13",
+     "material": {
+      "color": "#83584A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.2119871973991394,
+        1.5404359102249146,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09417321532964706,
+       0.39061617851257324,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i14",
+     "material": {
+      "color": "#5E5142",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.11161395907402039,
+        1.5053080320358276,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.07141973078250885,
+       0.4078844487667084,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i15",
+     "material": {
+      "color": "#7A4A3A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.016817493364214897,
+        1.5139422416687012,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.08148274570703506,
+       0.3688405454158783,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i16",
+     "material": {
+      "color": "#4A5A6A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.07163374125957489,
+        1.4944202899932861,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.061243899166584015,
+       0.40829983353614807,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i17",
+     "material": {
+      "color": "#6A6248",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.1549970656633377,
+        1.5141499042510986,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09928128868341446,
+       0.4443645179271698,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i18",
+     "material": {
+      "color": "#54455E",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.24725966155529022,
+        1.532182216644287,
+        0.019999999552965164
+       ]
+      },
+      {
+       "rotate_z": 0.10000000149011612
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.05566885694861412,
+       0.349346399307251,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i19",
+     "material": {
+      "color": "#77603A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.33673474192619324,
+        1.4846731424331665,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.08227585256099701,
+       0.35308411717414856,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i20",
+     "material": {
+      "color": "#3F5A50",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.41770708560943604,
+        1.4865421056747437,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.07877464592456818,
+       0.4139746427536011,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i21",
+     "material": {
+      "color": "#83584A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.5102323293685913,
+        1.5169873237609863,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.07022534310817719,
+       0.4554680287837982,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i22",
+     "material": {
+      "color": "#5E5142",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.5967323184013367,
+        1.537734031677246,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.07310415059328079,
+       0.43826964497566223,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i25",
+     "material": {
+      "color": "#6A6248",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.8492278456687927,
+        1.5291348695755005,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.05712786316871643,
+       0.40084925293922424,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i26",
+     "material": {
+      "color": "#54455E",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.9263438582420349,
+        1.5104246139526367,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.08872436732053757,
+       0.39602166414260864,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i27",
+     "material": {
+      "color": "#77603A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        1.0112699270248413,
+        1.5080108642578125,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.0690317302942276,
+       0.4033935070037842,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i28",
+     "material": {
+      "color": "#3F5A50",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        1.1021480560302734,
+        1.5116968154907227,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.07094178348779678,
+       0.41818544268608093,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i29",
+     "material": {
+      "color": "#83584A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        1.1841347217559814,
+        1.5190926790237427,
+        0.019999999552965164
+       ]
+      },
+      {
+       "rotate_z": 0.10000000149011612
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.0760740339756012,
+       0.34908396005630493,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i31",
+     "material": {
+      "color": "#7A4A3A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        1.3723406791687012,
+        1.4845420122146606,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.055514756590127945,
+       0.39453282952308655,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r2 i32",
+     "material": {
+      "color": "#4A5A6A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        1.4501351118087769,
+        1.5072664022445679,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       3.200000047683716,
+       0.05000000074505806,
+       0.3199999928474426
+      ]
+     },
+     "name": "shelf board r3",
+     "material": {
+      "color": "#5A4630",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        1.8600000143051147,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.061243899166584015,
+       0.37060126662254333,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i0",
+     "material": {
+      "color": "#77603A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.4493780136108398,
+        2.075300693511963,
+        0.019999999552965164
+       ]
+      },
+      {
+       "rotate_z": 0.10000000149011612
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09928128868341446,
+       0.3554202616214752,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i1",
+     "material": {
+      "color": "#3F5A50",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.3571155071258545,
+        2.0677101612091064,
+        0.019999999552965164
+       ]
+      },
+      {
+       "rotate_z": 0.10000000149011612
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.05566885694861412,
+       0.4354229271411896,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i2",
+     "material": {
+      "color": "#83584A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.2676403522491455,
+        2.1077115535736084,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.08227585256099701,
+       0.39697518944740295,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i3",
+     "material": {
+      "color": "#5E5142",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.186668038368225,
+        2.0884876251220703,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.07877464592456818,
+       0.4367736577987671,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i4",
+     "material": {
+      "color": "#7A4A3A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.0941427946090698,
+        2.108386754989624,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.07022534310817719,
+       0.45880281925201416,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i5",
+     "material": {
+      "color": "#4A5A6A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.0076427459716797,
+        2.119401454925537,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.07273799180984497,
+       0.4035438597202301,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i6",
+     "material": {
+      "color": "#6A6248",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.9241611361503601,
+        2.0917718410491943,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.07209276407957077,
+       0.4315972626209259,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i7",
+     "material": {
+      "color": "#54455E",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.8397457599639893,
+        2.1057987213134766,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.07310415059328079,
+       0.40190476179122925,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i8",
+     "material": {
+      "color": "#77603A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.7551472783088684,
+        2.0909523963928223,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.05712786316871643,
+       0.45723769068717957,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i9",
+     "material": {
+      "color": "#3F5A50",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.6780312657356262,
+        2.1186187267303467,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.07094178348779678,
+       0.3636956512928009,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i12",
+     "material": {
+      "color": "#7A4A3A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.4202403426170349,
+        2.071847915649414,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.0906979888677597,
+       0.4185645878314972,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i13",
+     "material": {
+      "color": "#4A5A6A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.3274204730987549,
+        2.0992822647094727,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.0760740339756012,
+       0.4614916145801544,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i14",
+     "material": {
+      "color": "#6A6248",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.23203444480895996,
+        2.120745897293091,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.055514756590127945,
+       0.43298742175102234,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i15",
+     "material": {
+      "color": "#54455E",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.15424005687236786,
+        2.1064937114715576,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.0598958358168602,
+       0.44540858268737793,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i16",
+     "material": {
+      "color": "#77603A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.08453475683927536,
+        2.112704277038574,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.06676971912384033,
+       0.36416640877723694,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i18",
+     "material": {
+      "color": "#83584A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.09412384033203125,
+        2.0720832347869873,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.08659593760967255,
+       0.3738955557346344,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i19",
+     "material": {
+      "color": "#5E5142",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.18280667066574097,
+        2.0769476890563965,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.07466936856508255,
+       0.4229932427406311,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i20",
+     "material": {
+      "color": "#7A4A3A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.2754393219947815,
+        2.101496696472168,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.060930874198675156,
+       0.4047771692276001,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i21",
+     "material": {
+      "color": "#4A5A6A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.3552394509315491,
+        2.09238862991333,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.061232175678014755,
+       0.35888803005218506,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i22",
+     "material": {
+      "color": "#6A6248",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.428320974111557,
+        2.069443941116333,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.06013061851263046,
+       0.44963306188583374,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i23",
+     "material": {
+      "color": "#54455E",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.5010023713111877,
+        2.114816427230835,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09170112013816833,
+       0.4047418534755707,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i24",
+     "material": {
+      "color": "#77603A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.5889182090759277,
+        2.0923709869384766,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.07368023693561554,
+       0.3833475112915039,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i25",
+     "material": {
+      "color": "#3F5A50",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.683608889579773,
+        2.0816738605499268,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.09073696285486221,
+       0.43782198429107666,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i26",
+     "material": {
+      "color": "#83584A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.7778174877166748,
+        2.1089110374450684,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.07691353559494019,
+       0.41296878457069397,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i27",
+     "material": {
+      "color": "#5E5142",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.8736427426338196,
+        2.096484422683716,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.0686858519911766,
+       0.3712162971496582,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i28",
+     "material": {
+      "color": "#7A4A3A",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        0.9584424495697021,
+        2.075608253479004,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.07268102467060089,
+       0.3959222733974457,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i31",
+     "material": {
+      "color": "#54455E",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        1.2371350526809692,
+        2.087961196899414,
+        0.019999999552965164
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.10069338977336884,
+       0.3602297604084015,
+       0.20000000298023224
+      ]
+     },
+     "name": "book r3 i33",
+     "material": {
+      "color": "#3F5A50",
+      "roughness": 0.85
+     },
+     "transform": [
+      {
+       "translate": [
+        1.40721595287323,
+        2.070114850997925,
+        0.019999999552965164
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "type": "group",
+   "name": "desk",
+   "transform": [
+    {
+     "translate": [
+      -1.5,
+      0.0,
+      -3.4000000953674316
+     ]
+    },
+    {
+     "rotate_y": 0.15000000596046448
+    }
+   ],
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       1.600000023841858,
+       0.07999999821186066,
+       1.0
+      ]
+     },
+     "name": "desk top (felt)",
+     "material": {
+      "map": "felt-desk"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.8399999737739563,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       1.7000000476837158,
+       0.05999999865889549,
+       1.100000023841858
+      ]
+     },
+     "name": "desk rim",
+     "material": {
+      "map": "planks-desk"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.7799999713897705,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.5,
+       0.7599999904632568,
+       0.949999988079071
+      ]
+     },
+     "name": "desk pedestal L",
+     "material": {
+      "map": "planks-desk"
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.5,
+        0.3799999952316284,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.5,
+       0.7599999904632568,
+       0.949999988079071
+      ]
+     },
+     "name": "desk pedestal R",
+     "material": {
+      "map": "planks-desk"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.5,
+        0.3799999952316284,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.6000000238418579,
+       0.6000000238418579,
+       0.05999999865889549
+      ]
+     },
+     "name": "desk back panel",
+     "material": {
+      "map": "planks-desk"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.44999998807907104,
+        -0.44999998807907104
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "type": "group",
+   "name": "parcel (lower, on desk)",
+   "transform": [
+    {
+     "translate": [
+      -1.399999976158142,
+      0.800000011920929,
+      -3.3499999046325684
+     ]
+    },
+    {
+     "rotate_y": 0.4000000059604645
+    }
+   ],
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.5,
+       0.1599999964237213,
+       0.36000001430511475
+      ]
+     },
+     "name": "parcel lower",
+     "material": {
+      "map": "parcel"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.07999999821186066,
+        0.0
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "type": "group",
+   "name": "parcel (upper, on desk)",
+   "transform": [
+    {
+     "translate": [
+      -1.350000023841858,
+      0.949999988079071,
+      -3.299999952316284
+     ]
+    },
+    {
+     "rotate_y": 0.15000000596046448
+    }
+   ],
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.4399999976158142,
+       0.12999999523162842,
+       0.3199999928474426
+      ]
+     },
+     "name": "parcel upper",
+     "material": {
+      "map": "parcel"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.06499999761581421,
+        0.0
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "type": "character",
+   "name": "Taniguchi (bookshop)",
+   "id": "taniguchi",
+   "position": [
+    -1.7000000476837158,
+    0,
+    -5.5
+   ],
+   "height": 1.75,
+   "perspective": false,
+   "look": {
+    "body": "#4A4560",
+    "pattern": "vest",
+    "patCol": "#33304A",
+    "hat": "bowler",
+    "hatCol": "#2E2A3A",
+    "neck": "tie",
+    "neckCol": "#7A2E3A",
+    "extra": [
+     "glasses",
+     "mustache"
+    ],
+    "mustacheCol": "#C9C9D2"
+   },
+   "state": {
+    "mood": "awe",
+    "look": [
+     0,
+     0
+    ],
+    "blink": 0,
+    "talk": 0,
+    "armL": [
+     14,
+     8
+    ],
+    "armR": [
+     42.0,
+     -28
+    ],
+    "legs": "stand",
+    "phase": 0,
+    "bob": 3,
+    "lean": 0,
+    "squash": 0,
+    "headTilt": 0,
+    "headTurn": 0.3,
+    "camPitch": 0,
+    "holdR": {
+     "plate": "book-open",
+     "x0": -170,
+     "y0": -180
+    }
+   },
+   "channels": {
+    "mood": {
+     "kind": "step",
+     "clock": "film t",
+     "steps": [
+      [
+       45.3650016784668,
+       "neutral"
+      ],
+      [
+       48.15999984741211,
+       "awe"
+      ],
+      [
+       49.220001220703125,
+       "determined"
+      ]
+     ],
+     "law": "mood = t >= wFlew ? 'determined' : t >= wBooks ? 'awe' : 'neutral' (shots.ts S10 set())"
+    },
+    "headTurn": {
+     "kind": "step",
+     "clock": "film t",
+     "law": "0.3 while wBooks <= t < wFlew, else 0"
+    },
+    "armR": {
+     "kind": "poseTrack",
+     "keys": [
+      [
+       0,
+       42
+      ],
+      [
+       3.8550000190734863,
+       17,
+       0.5
+      ]
+     ],
+     "clock": "lt",
+     "law": "armR = poseTrack([[0,42],[wFlew-st,17,0.5]], lt); second component static -28"
+    },
+    "holdR": {
+     "kind": "step",
+     "clock": "film t",
+     "at": 49.220001220703125,
+     "from": {
+      "plate": "book-open",
+      "v": "bkOpen"
+     },
+     "to": {
+      "plate": "book-closed",
+      "v": "bkClosed"
+     },
+     "law": "holdR = PROPS.book('LEDGER', t >= wFlew ? 0 : 1); the book closes ON the word 'flew'"
+    },
+    "position": {
+     "kind": "segLerp",
+     "clock": "film t",
+     "segment": [
+      49.720001220703125,
+      50.91999816894531
+     ],
+     "from": [
+      -1.7,
+      0,
+      -5.5
+     ],
+     "to": [
+      -1.7,
+      0,
+      -4.95
+     ],
+     "law": "wk = seg(t, wFlew+0.5, wFlew+1.7); at(-1.7, 0, lerp(-5.5, -4.95, wk)). wk reaches only 0.7733 at the cut (50.648) — the walk is unfinished inside the shot, as staged"
+    },
+    "phase": {
+     "kind": "walkPhase",
+     "law": "phase = (wk * 0.55) / 0.58 * PI (travelled = wk * 0.55, stride 0.58)",
+     "stride": 0.58
+    },
+    "bob": {
+     "kind": "walkBob",
+     "amp": 3,
+     "law": "bob = 3 * (1 - |sin(phase)|); the staging passes bob in every state, standing included (bob = 3 at phase 0)"
+    },
+    "legs": {
+     "kind": "step",
+     "law": "legs = 0 < wk < 1 ? 'walk' : 'stand' (source; film.rs s10 uses wk >= 1 ? 'stand' : 'walk' — see ASSUMPTIONS divergence 2)"
+    },
+    "blink": {
+     "kind": "blinkDirector",
+     "directorSeed": 9,
+     "beats": [
+      48.15999984741211
+     ],
+     "law": "blink = max(blinkDirector(9)(t), blinkAt(t, [wBooks]))"
+    }
+   }
+  }
+ ],
+ "captionsNote": "chunk 56 ('ordered it.', 44.43-45.395) starts in S09 and is owned by s09 under the manifest start-time rule (scenes/film/film.json); it bleeds 0.03 s into this shot's head and is not listed here (seat W55). Captions are film-global, drawn by time.",
+ "captions": [
+  {
+   "index": 57,
+   "id": "cap_057",
+   "line": 9,
+   "s": 45.394999999999996,
+   "e": 46.39,
+   "text": "So Japan found",
+   "width": 682.92,
+   "fit": 1.0,
+   "strip": "cap_057.png"
+  },
+  {
+   "index": 58,
+   "id": "cap_058",
+   "line": 9,
+   "s": 46.39,
+   "e": 46.93,
+   "text": "his old",
+   "width": 290.33,
+   "fit": 1.0,
+   "strip": "cap_058.png"
+  },
+  {
+   "index": 59,
+   "id": "cap_059",
+   "line": 9,
+   "s": 46.93,
+   "e": 47.769999999999996,
+   "text": "commander,",
+   "width": 559.44,
+   "fit": 1.0,
+   "strip": "cap_059.png"
+  },
+  {
+   "index": 60,
+   "id": "cap_060",
+   "line": 9,
+   "s": 47.769999999999996,
+   "e": 48.93,
+   "text": "now a bookseller,",
+   "width": 772.3,
+   "fit": 1.0,
+   "strip": "cap_060.png"
+  },
+  {
+   "index": 61,
+   "id": "cap_061",
+   "line": 9,
+   "s": 48.93,
+   "e": 49.629999999999995,
+   "text": "and flew him",
+   "width": 560.62,
+   "fit": 1.0,
+   "strip": "cap_061.png"
+  },
+  {
+   "index": 62,
+   "id": "cap_062",
+   "line": 9,
+   "s": 49.629999999999995,
+   "e": 50.69,
+   "text": "to the island.",
+   "width": 573.62,
+   "fit": 1.0,
+   "strip": "cap_062.png"
+  }
+ ]
+}
