@@ -129,7 +129,7 @@ cache, appends blob/card/rifle draws, returns
 ### C13 · The GPU renderer — 2309–3332
 `struct Renderer` 2309–2351 (pub(crate); ~40 wgpu fields);
 `impl Renderer` #1: `async fn new` 2353–2790 (pub(crate); 437 lines
-— adapter via `crate::request_adapter`, static texture table
+— adapter via `crate::gpucore::request_adapter`, static texture table
 `textures_px` 2390–2412, all pipelines/targets);
 `struct Prepared` 2791–2801 (private);
 `impl Renderer` #2: `fn upload_dyn` 2803–2821 (private),
@@ -334,10 +334,20 @@ the only external consumer (`film::run_film`,
 `pub(crate) use <child>::{…};` block per child module — so every
 `crate::film::<name>` path that exists today keeps resolving.
 This costs ~15 lines and makes the split invisible to the rest of
-the crate, present and future. `crate::request_adapter`
-(main.rs:301) stays the renderer's adapter source — gpucore.rs's
-duplicate is a different wiring track (GPU-CORE-W07); do not
-re-point during the split.
+the crate, present and future.
+
+**Adapter (amended, SPLIT-AMEND-W82):** there is no adapter
+decision in this split. The re-point the original text forbade
+already happened outside the split (`aadc193`, gpucore site
+5/5): main.rs's `request_adapter` helper is **deleted**, the
+single implementation is `crate::gpucore::request_adapter`
+(gpucore.rs:63), and every site calls it — film.rs (inside
+`Renderer::new`), main.rs, scenefile.rs, ab1.rs, dof.rs. The
+call inside `Renderer::new` is ordinary moved code in step 8;
+it moves verbatim like everything else. (Residue, not split
+business: gpucore.rs's header comment still credits
+`crate::request_adapter` — a stale comment in a file this
+programme does not touch.)
 
 ---
 
@@ -352,11 +362,15 @@ re-point during the split.
   **795–814** (20/20), **1195–1204** (10/10) — the E4 probe set
   from DETERMINISM-CONTRACT-W04 at the final wave-1 head.
 - **G-TEL** — `--film-telemetry` verdict line reproduced
-  **verbatim**: `FILM TELEMETRY: CHECK FAILED (0 overflow groups,
-  0 continuity violations, 7 caption failures)` (the standing,
-  waiver-covered record) and exit code 1. Counts moving in *either*
-  direction = stop and investigate; "improvement" is also a
-  regression signal in a pure move.
+  **verbatim**: `FILM TELEMETRY: CHECK OK` (the standing record
+  since the caption re-chunk, `5e90d7e`; the pre-re-chunk
+  CHECK FAILED line with 7 caption failures and its waiver are
+  history, superseded by the Wave-2 re-chunk) and exit code 0.
+  Exit wiring, unchanged in form: main.rs maps `Ok(true)` → 0,
+  `Ok(false)` → 1, `Err` → 3. The verdict moving in *either*
+  direction = stop and investigate; a return to CHECK FAILED
+  is a regression signal in a pure move, exactly as an
+  unexpected "improvement" was under the old wording.
 - **G-VAL** — `tools/film/validate_film.py` 7/7 (with the standing
   `--no-source` coverage caveat on runners).
 - **G-AB** — A/B spot pairs from the wave's 60-pair set
@@ -386,7 +400,7 @@ against §3 before proceeding.
 | 7 | `film::staging` | Largest move (~925 lines) deliberately late: by now every provider it imports (motion, data, sets, parent types) has a settled path. Includes `add_clouds` + `s3/x3/n3`, rigs, poses, all 14 shot fns, `eval_frame`. | G-CI, G-PROBE, G-TEL, G-AB: S01, S02, S07 (golden JG), S10, S11 (dusk) pairs |
 | 8 | `film::render` | GPU chain moves as one block (pack helpers + Renderer + Prepared). Nothing else remains that render depends on except `chars::Painted` (settled in step 4) and painters (step 3). | G-CI, G-PROBE, G-AB: 6 pairs across sets. Optional-but-recommended at this step only: full 60-pair A/B + one full-film re-render, since this is the production chain itself |
 | 9 | `film::overlay` | Pure CPU post-readback; widenings #4–#5. **G-TEL is not evidence here** (telemetry never runs overlays) — the gate is direct frame comparison. | G-CI + byte-compare pre/post of one S07 calendar frame (≈ frame 950, calendar active) and one captioned frame — sha256 equal |
-| 10 | `film::telemetry` + `film::driver` | Entry points move last, onto fully settled providers; film.rs reaches its final shape (types + mods + re-exports). | G-CI, G-TEL (both directions of the contract: line verbatim + exit 1), CLI smoke: `--film` short range (e.g. `--from 195 --to 205`) renders + skips on re-run |
+| 10 | `film::telemetry` + `film::driver` | Entry points move last, onto fully settled providers; film.rs reaches its final shape (types + mods + re-exports). | G-CI, G-TEL (both halves of the contract: line verbatim — `FILM TELEMETRY: CHECK OK` — + exit 0), CLI smoke: `--film` short range (e.g. `--from 195 --to 205`) renders + skips on re-run |
 
 After step 10: one closing commit may update the film.rs header
 docs to describe the module layout (docs-only, no code motion).

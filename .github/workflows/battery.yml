@@ -1,0 +1,66 @@
+name: Stroke battery (dispatch)
+
+# The M4 stroke-battery leg, established by the Wave-2 lead as
+# the standing invocation SPLIT-AMEND-W82 §5.3 requires before
+# the scene.rs split steps S2/S4/S5 may start: those steps gate
+# on "Battery 46/46", and until this workflow existed no CI job
+# ran the battery at all (it is a binary scene mode —
+# `--scene stroke-battery` -> battery::run_battery — not a
+# render.yml mode, and cargo test does not cover it).
+#
+# The battery is the CPU painter (src/scene.rs Painter); no GPU
+# is involved. The leg's verdict is the count: the run must
+# complete and write exactly 46 cards. A panic or early exit
+# fails the run step itself; a short count fails the verdict
+# step. Environment mirrors knobs.yml (ubuntu-22.04, mold,
+# rust-cache) for build parity.
+
+on:
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+  RUSTFLAGS: "-C link-arg=-fuse-ld=mold"
+
+jobs:
+  battery:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+      - name: Install mold
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mold
+      - name: Build
+        run: cargo build --release
+      - name: Run the stroke battery
+        run: |
+          mkdir -p "$RUNNER_TEMP/battery"
+          ./target/release/talerender --scene stroke-battery \
+            --out "$RUNNER_TEMP/battery/cards" \
+            > "$RUNNER_TEMP/battery/battery.log" 2>&1
+          cat "$RUNNER_TEMP/battery/battery.log"
+      - name: Verdict (46 cards or the leg fails)
+        run: |
+          n=$(find "$RUNNER_TEMP/battery/cards" -name '*.png' | wc -l)
+          echo "cards written: $n"
+          grep -q "TaleRender CPU painter" "$RUNNER_TEMP/battery/battery.log"
+          if [ "$n" -eq 46 ]; then
+            echo "BATTERY: 46/46"
+          else
+            echo "BATTERY: FAIL ($n/46 cards)"
+            exit 1
+          fi
+      - name: Upload battery output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: battery-${{ github.run_id }}
+          path: ${{ runner.temp }}/battery
+          retention-days: 7

@@ -126,6 +126,14 @@ cluster). The F2 manifest-isation, when the lead lands it, will
 touch C1/C10 data paths and this staging count — another reason
 it must not interleave with split steps (§6).
 
+> **SUPERSEDED (SPLIT-AMEND-W82 §3):** the F2 migration has
+> landed (`2c41313`). `calendar_state` is now
+> `fn calendar_state(lt_cal: f64, years: usize)` with the
+> zero-years guard, called with `data.calendar_years.len()` —
+> there is no hardcoded count to preserve and no dedup owed by
+> the split; step 7 moves the data-driven form exactly as it
+> stands.
+
 **(d) Errors step 2 changed C13's signatures.** `Renderer::new`
 (film.rs:2405) returns `crate::errors::TaleResult<Renderer>`
 with the `Ok(Renderer { … })` wrap at 2739; `render` (2817)
@@ -224,7 +232,7 @@ more code.
 | 4 | `film::chars` | READY-WITH-UPDATED-CITES | `Assets`→step-2-side anchors in §2; cluster items: `Painted` 2081→**2112**, `CharInfo` 2085→**2116**, `PaintCache` 2104→**2137**, `state_key` 2132–2160→**2183** (frozen, §1), `resolve_chars` 2162→**2213**. Widenings #1–#3 still exactly as §4 lists. Carries the new `crate::paintbudget` edge (§3e) as an existing import-in-code. Re-word G-TEL. |
 | 5 | Paint-budget wiring | **DONE** | Landed as `86f0c81` (+`2328e6f`, `fbf37c0`); verified §4 above. Remove from the programme. |
 | 6 | `film::sets` | READY-WITH-UPDATED-CITES | `t3` 654→**673**, `add_clouds` 790→**809** (stays behind for step 7, as designed), `add_sky` 825→**844**, `JgDyn` 864→**883**, `build_jg` 870→**889**, `shelf_unit` 1004→**1023**, `build_bk` 1037→**1056**. Gates unchanged. |
-| 7 | `film::staging` | READY-WITH-UPDATED-CITES | All +19: `sub3`-companions stay in parent as designed; `fold` 1148→**1167**, `rig_noon` 1191→**1210**, `finish_chars` 1352→**1371**, `char` 1382→**1401**, `blink_of` 1391→**1410**, `s01` 1395→**1414**, `plane_extras` 1519→**1538**, `s05a` 1561→**1580**, `calendar_state` 1659→**1678**, `s07` 1680→**1699**, `s12` 1946→**1965**, `eval_frame` 1986→**2005**. T4 dispatch offsets verified (§3g). `calendar_state`'s hardcoded `years = 4` (§3c) moves as-is — dedup is F2 business, not split business. Re-word G-TEL. |
+| 7 | `film::staging` | READY-WITH-UPDATED-CITES | All +19: `sub3`-companions stay in parent as designed; `fold` 1148→**1167**, `rig_noon` 1191→**1210**, `finish_chars` 1352→**1371**, `char` 1382→**1401**, `blink_of` 1391→**1410**, `s01` 1395→**1414**, `plane_extras` 1519→**1538**, `s05a` 1561→**1580**, `calendar_state` 1659→**1678**, `s07` 1680→**1699**, `s12` 1946→**1965**, `eval_frame` 1986→**2005**. T4 dispatch offsets verified (§3g). `calendar_state`'s hardcoded `years = 4` (§3c) moves as-is — dedup is F2 business, not split business. **[SUPERSEDED by SPLIT-AMEND-W82 §3: F2 landed (`2c41313`); `calendar_state` is data-driven (`years: usize` from `data.calendar_years.len()`) — step 7 moves it exactly as it stands, no dedup owed.]** Re-word G-TEL. |
 | 8 | `film::render` | READY-WITH-UPDATED-CITES | `Renderer` 2309→**2360**, `new` 2353→**2405** (now `TaleResult<Renderer>`, §3d), `textures_px` 2390→**2419**, DOF env read 2527→**2556**, `Prepared` 2791→**2785**, `render` 2823→**2817** (now `TaleResult<Vec<u8>>`). **§4's adapter paragraph is void (§3a)** — the gpucore edge is already in the code and moves with it. Function sizes: new ~437→~380 lines, render ~510→~475. |
 | 9 | `film::overlay` | READY-WITH-UPDATED-CITES | All −33: `sample_bilinear` 3334→**3301**, `overlay_calendar` 3370→**3337**, `overlay_caption` 3420→**3387**, `apply_fade` 3441→**3408**. Widenings #4–#5 still exact. Driver call order verified unchanged in `run_film`: calendar → fade → caption. Gate (byte-compare) unchanged. |
 | 10 | `film::telemetry` + `film::driver` | READY-WITH-UPDATED-CITES | `run_film` 3454→**3421** (carries `RunClock` 3436 + stats print 3469, §3e), `tel_look` 3509→**3484**, `INSTANCE_IDS` 3566→**3541**, `run_film_telemetry` 3570→**3545** (still `Result<bool, String>`; exit mapping in main.rs 266–281). External cites: main.rs 253→**272**, 267→**286**. G-TEL re-worded per §3f — this step's gate is the contract both ways: CHECK OK + exit 0. |
