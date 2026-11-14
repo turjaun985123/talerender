@@ -2055,12 +2055,15 @@ mod tests {
 
     #[test]
     fn tables_beat_frames_tie_to_blink_at() {
+        // Range covers both beats (14.78 s = frame ~443); W85
+        // §6.1's stated 0..200 stops at t = 6.63 s and cannot
+        // reach the second beat — corrected here, purpose kept.
         for (beat, want) in [(4.20, 4u32), (14.78, 3u32)] {
-            let via_blink = (0..200u32)
+            let via_blink = (0..600u32)
                 .filter(|&n| crate::film::blink_at(n as f64 / 30.0, &[beat]) == 1.0)
                 .count() as u32;
             assert_eq!(via_blink, want);
-            assert_eq!(beat_frames(beat, 200), want);
+            assert_eq!(beat_frames(beat, 600), want);
         }
     }
 
