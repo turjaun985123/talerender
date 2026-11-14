@@ -1630,7 +1630,7 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded) {
             entry_point: "fs_main",
             targets: &[Some(wgpu::ColorTargetState {
                 format: wgpu::TextureFormat::Rgba16Float,
-                blend: Some(wgpu::BlendState::REPLACE),
+                blend: Some(wgpu::BlendState::ALPHA_BLENDING),
                 write_mask: wgpu::ColorWrites::ALL,
             })],
             compilation_options: Default::default(),
