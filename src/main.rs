@@ -16,11 +16,19 @@
 //! acceleration it cannot prove.
 
 mod ab1;
+mod anim;
+mod atlas;
 mod battery;
+mod bufferpool;
+mod charanim;
 mod composer;
 mod dof;
 mod errors;
+mod gpucore;
 mod math;
+mod paintbudget;
+mod rendergraph;
+mod runlog;
 mod scene;
 mod scenefile;
 mod telemetry;
