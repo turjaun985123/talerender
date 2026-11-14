@@ -412,7 +412,7 @@ pub(crate) fn paint_toon_full(
     }
     // Shade + highlight, clipped.
     let (shx, shy) = px(bx + bw + 40.0, (top + bot) / 2.0 + 20.0);
-    let shade_col = match look.shade {
+    let shade_col = match &look.shade {
         Some(s) => rgba(s.as_str()),
         None => shade_rgba(&look.body, 0.8),
     };
