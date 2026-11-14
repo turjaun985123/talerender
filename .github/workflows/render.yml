@@ -32,6 +32,10 @@ on:
         description: "scene-file: path to the scene JSON"
         type: string
         default: "scenes/character-v2.scene.json"
+      paint_budget_mb:
+        description: "film: TALERENDER_PAINT_BUDGET_MB (empty = binary default; lead's byte-budget probe, Wave 2)"
+        type: string
+        default: ""
 
 env:
   CARGO_TERM_COLOR: always
@@ -68,6 +72,10 @@ jobs:
               ./target/release/talerender --scene dof-chart --out render-out/dof-chart.png
               ;;
             film)
+              if [ -n "${{ inputs.paint_budget_mb }}" ]; then
+                export TALERENDER_PAINT_BUDGET_MB="${{ inputs.paint_budget_mb }}"
+                echo "paint budget override: ${TALERENDER_PAINT_BUDGET_MB} MiB"
+              fi
               ./target/release/talerender --film film --out render-out/frames \
                 --from "${{ inputs.from }}" --to "${{ inputs.to }}"
               ;;
