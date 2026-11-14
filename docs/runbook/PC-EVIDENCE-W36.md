@@ -84,6 +84,8 @@ the results files record the binary's sha256 either way.
 
 ```bash
 gh run list --repo turjaun985123/talerender --workflow CI --limit 5
+# pick a completed / success row — an in-progress run has no artifact
+# yet, and a cancelled run's artifact may predate its head's verdict
 gh run download <run-id> --repo turjaun985123/talerender \
     -n talerender-binary -D ~/talerender-bin
 chmod +x ~/talerender-bin/talerender
@@ -95,7 +97,13 @@ sha256sum ~/talerender-bin/talerender    # record it (legs below do too)
 
 Run PERF.md §1 verbatim — it writes `perf/env.txt` (date,
 kernel, RAM, ICD list, Vulkan summary, binary sha256, CI run
-id):
+id). One prerequisite: the Vulkan summary comes from
+`vulkaninfo`, package **`vulkan-tools`** — if the tool is
+absent the `== vulkan ==` section is silently empty (the
+block still exits 0), so install it first
+(`sudo apt install vulkan-tools`). The §0.4 adapter proof
+does not depend on it; §0.4's wrong-adapter fallback and
+this section do:
 
 ```bash
 mkdir -p perf
@@ -127,7 +135,7 @@ it must **not** name llvmpipe / Lavapipe / device type `Cpu`.
 Smoke-render one scene file and check the line (USER-PC §3):
 
 ```bash
-./talerender-bin/talerender --scene-file scenes/character-v2.scene.json --out /tmp/scene.png
+~/talerender-bin/talerender --scene-file scenes/character-v2.scene.json --out /tmp/scene.png
 ```
 
 If the line names the software device, pin the RADV ICD and
@@ -187,8 +195,13 @@ frame, A vs B and A vs C. 90 frames rendered in total.
   output root.
 - Runs A/B use the driver's **default paint-cache cap by
   design** — that is part of what is being tested. **RAM flag:**
-  one painted canvas is ~29 MB and the default cap's worst
-  case is ≈4.6 GB on this ~6.7 GiB machine (PERF §4). The pack
+  one painted canvas is ~29 MB; the entry cap alone (160)
+  would allow ≈4.6 GB, but since `86f0c81` a byte budget of
+  min(cap × canvas, 2048 MiB) (`src/paintbudget.rs:54`) makes
+  the live bound at the default cap **2 GiB** (~74 canvases)
+  on this ~6.7 GiB machine (PERF §4). The binary prints the
+  live bound itself — `budget_bytes=` in the paint-cache
+  stats; check it in the run's log. The pack
   renders only 30-frame ranges, but watch the run; do **not**
   pre-shrink the cap — a PASS at a shrunken cap is not the E7
   verdict. Run C is the tight-cap run.
@@ -308,9 +321,9 @@ rule, and all. In outline, so the sitting can be planned:
 3. **§4 memory** — film telemetry under both cache
    configurations, `/usr/bin/time -v` wrapped:
    - **A. default cap (160):**
-     `./talerender-bin/talerender --film-telemetry film`
+     `~/talerender-bin/talerender --film-telemetry film`
    - **B. tight cap:**
-     `TALERENDER_PAINT_CACHE=24 ./talerender-bin/talerender --film-telemetry film`
+     `TALERENDER_PAINT_CACHE=24 ~/talerender-bin/talerender --film-telemetry film`
    
    (full command lines with their `.log`/`.err`/`.time` files
    are PERF §4 verbatim.) A and B must reach the **same verdict
@@ -333,8 +346,11 @@ rule, and all. In outline, so the sitting can be planned:
 
 **RAM flag (§4A is the sharp edge):** telemetry at the default
 cap touches every character state in the film at 0.25 s
-sampling; the cache's worst case (≈4.6 GB) plus renderer and
-system on ~6.7 GiB is a genuine OOM risk — PERF §4 says so and
+sampling; the cache's live bound at the default cap is the
+2 GiB byte budget (PERF §4 — the ≈4.6 GB figure is the
+pre-budget entry-cap term), and 2 GiB of cache plus renderer
+and system on ~6.7 GiB is still a genuine OOM risk — PERF §4
+says so and
 §7 gives the failure protocol (exit 137, `Killed`, dmesg
 excerpt; re-run at cap 24 and record that the mitigation was
 required — that fact is part of the result). Run §4 on an
@@ -410,7 +426,7 @@ USER-PC §4's command, with the exit code captured per §2.1's
 dated note:
 
 ```bash
-./talerender-bin/talerender --film-telemetry film \
+~/talerender-bin/talerender --film-telemetry film \
     > perf/film-telemetry-radv.log 2> perf/film-telemetry-radv.err
 echo "exit: $?"
 tail -n 1 perf/film-telemetry-radv.log
@@ -432,24 +448,37 @@ different verdict here is a finding: send the full stdout
 ### 3.2 The render
 
 ```bash
-./talerender-bin/talerender --film film --out radv-frames/ \
+~/talerender-bin/talerender --film film --out radv-frames/ \
     > perf/film-full-radv.log 2> perf/film-full-radv.err
 echo "exit: $?"
 ```
 
 - 1,811 frames, 1080×1920 @ 30 fps, `radv-frames/frame_00000.png`
   … `frame_01810.png` (frame *n* is t = n/30 s). Progress
-  prints every 25 frames; the final line reads
-  `film render complete: 1811 rendered, 0 skipped (resume), range 0..1811`.
+  prints every 25 frames; the final line begins
+  `film render complete: 1811 rendered, 0 skipped (resume), range 0..1811`
+  and continues ` · <timing summary> · <paint-cache stats>`
+  (format: `src/film.rs:3557-3561`; a draft/knob run appends
+  its DRAFT tag). Match it as a prefix — the quoted part is
+  not the whole line.
 - **Resume is automatic** — existing frame files are skipped,
   and frame(t) is a pure function, so chunking
   (`--from N --to M`) and interruption change nothing about
   the bytes. If the §2.2 extrapolation says the film will not
   fit the sitting, render it in `--from/--to` chunks across
   sittings into the same directory.
-- **RAM flag:** at the default cap (160) the paint cache's
-  worst case is ≈4.6 GB (PERF §4 math: ~29 MB × 160) on a
-  ~6.7 GiB machine. USER-PC §7's guidance: prefer
+- **RAM flag:** at the default cap (160) the entry-cap term
+  is ≈4.6 GB (~29 MB × 160), but the byte budget (`86f0c81`;
+  PERF §4) clamps the live bound to min(cap × canvas,
+  2048 MiB) = **2 GiB**. Read the actual bound from this
+  render's own completion line — its last field is the
+  paint-cache stats (`peak_bytes=` / `budget_bytes=`). The
+  VM dry run's *telemetry* peak was 2,162,688,000 B against
+  that budget (PC-DRYRUN-W68 §3.1); the *render* peak is
+  measured by this run, not predicted by the telemetry
+  number. On a ~6.7 GiB machine, 2 GiB of cache plus
+  renderer and system is still the binding constraint.
+  USER-PC §7's guidance: prefer
   `TALERENDER_PAINT_CACHE=24` (≈700 MB bound) for long renders
   if the machine is doing anything else. Either cap is safe
   for §4's purposes — the cap is pixel-neutral by construction
@@ -552,9 +581,15 @@ for seg in s01 s02 s03 s04 s05a s05b s06 s07 s08 s08b s09 s10 s11 s12; do
       --pair "docs/golden/frames-f021991/$seg.png" "radv-mids/$seg.png" \
       --reference-label "f021991 candidate (CI lavapipe)" \
       --native-label "PC RADV" \
-      --out "radv-golden/$seg-ab.txt"
+      --out "radv-golden/$seg"
 done
 ```
+
+Each `--out` is a directory (`tools/ab/measure_ab.py:514`):
+`radv-golden/$seg/` holds `ab-report.json` (the PSNR is its
+`psnr_db` field; mean |Δ| is `mean_abs_delta_per_channel`),
+`ab-report.md`, `pair_diff.png` and `pair_side-by-side.png`.
+Fill the table from the `ab-report.json` files.
 
 Fill from the outputs — blank until measured:
 
@@ -619,7 +654,7 @@ From the repo checkout on the PC:
 | `perf/env.txt` | §0.3 — environment block incl. the proven adapter line, HEAD, free/disk snapshot |
 | `perf/REPORT.md` | §2.3 — the generated PERF-shaped tables |
 | `perf/*.log`, `perf/*.time`, `perf/*.err` | §§2–3 — the full raw logs (PERF's return package), incl. `film-telemetry-radv.log/.err` and `film-full-radv.log/.err` |
-| the §4 table (filled) + `radv-golden/*.txt` | §4.3 — per-mid PSNR outputs |
+| the §4 table (filled) + `radv-golden/*/ab-report.json` (+ `ab-report.md`) | §4.3 — per-mid PSNR outputs |
 | `radv-mids/*.png` (14 files) | §4.3 — the RADV mids themselves, so any number can be re-measured |
 | `onoda-native-radv.mp4` (optional) | §3.3 — the assembled proof, if the finish step ran |
 | PERF §8 summary, filled by hand | §2 — prose over the generated tables; nobody fabricates this for you |

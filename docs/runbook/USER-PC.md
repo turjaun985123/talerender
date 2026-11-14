@@ -21,9 +21,12 @@ green CI run of `turjaun985123/talerender`:
 
 ```bash
 gh run list --repo turjaun985123/talerender --workflow CI --limit 5
+# pick a completed / success row — an in-progress run has no artifact
+# yet, and a cancelled run's artifact may predate its head's verdict
 gh run download <run-id> --repo turjaun985123/talerender \
     -n talerender-binary -D ~/talerender-bin
 chmod +x ~/talerender-bin/talerender
+export TALERENDER_BIN=~/talerender-bin/talerender
 ```
 
 (`talerender-frame` is the other CI artifact — just the M1 smoke
@@ -50,6 +53,10 @@ vulkaninfo --summary        # look for the Vega 7 / RADV device
 ls /usr/share/vulkan/icd.d/ # radeon_icd*.json is the RADV ICD
 ```
 
+(`vulkaninfo` is in the `vulkan-tools` package —
+`sudo apt install vulkan-tools` if the command is missing.
+§8's troubleshooting assumes it is installed.)
+
 Pin the RADV ICD if the wrong one wins:
 
 ```bash
@@ -63,7 +70,7 @@ a long render.
 ## 3. Smoke test — one scene file
 
 ```bash
-./talerender-bin/talerender --scene-file scenes/character-v2.scene.json --out /tmp/scene.png
+~/talerender-bin/talerender --scene-file scenes/character-v2.scene.json --out /tmp/scene.png
 ```
 
 Renders the format-v2 S01 staging (character node + light rig)
@@ -73,7 +80,7 @@ at the default 1080×1920 to a single clean PNG. `--width` /
 ## 4. The telemetry gate (no GPU needed)
 
 ```bash
-./talerender-bin/talerender --film-telemetry film
+~/talerender-bin/talerender --film-telemetry film
 ```
 
 Pure CPU: the M6 audit over the whole film at 0.25 s sampling.
@@ -90,7 +97,7 @@ Judge this command by its printed line, not its exit code.
 ## 5. Render the film
 
 ```bash
-./talerender-bin/talerender --film film --out frames/
+~/talerender-bin/talerender --film film --out frames/
 ```
 
 - 1,811 frames at 1080×1920 @ 30 fps, written as
@@ -139,7 +146,11 @@ project's own master, muxed, not remixed.
   their inputs, so a smaller cap costs re-paint time, never a
   different pixel. The numbers that matter on **this machine
   (~6.7 GiB usable RAM)**: each canvas is ~29 MB, so the
-  default cap's worst case is ≈ **4.6 GB**, while
+  entry cap alone would allow ≈ **4.6 GB** — but since
+  `86f0c81` a byte budget clamps the cache to
+  min(cap × canvas, 2048 MiB), making the default cap's
+  live bound **2 GiB** (~74 canvases; the binary prints it
+  as `budget_bytes=` in its paint-cache stats), while
   `TALERENDER_PAINT_CACHE=24` bounds the cache to
   ≈ **700 MB** — the setting telemetry runs use on
   memory-tight machines. Prefer 24 for long film renders if
@@ -160,8 +171,11 @@ project's own master, muxed, not remixed.
 - **Killed mid-film / out of memory** → just re-run the same
   command; resume skips finished frames. Background: painted
   character canvases are ~29 MB each and the paint cache is
-  FIFO-capped at 160 entries (worst ≈4.6 GB, but a single
-  shot's live working set is far smaller; eviction costs time,
+  FIFO-capped at 160 entries and byte-budgeted at
+  min(cap × canvas, 2048 MiB) — a 2 GiB live bound at the
+  default cap (the ≈4.6 GB entry-cap figure predates the
+  budget); a single shot's live working set is far smaller,
+  and eviction costs time,
   never a pixel). On this ~6.7 GiB machine, rendering in
   `--from/--to` chunks keeps any one session bounded.
 - **A frame looks corrupt after a hard kill** → a PNG being

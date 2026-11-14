@@ -22,7 +22,8 @@ tables are blanks for the PC run to fill.
   `aa10b13` the exit code agrees with it (0 = CHECK OK,
   1 = CHECK FAILED, 3 = could not run) (§7).
 - All commands run from the repo root with the CI binary at
-  `./talerender-bin/talerender` (see USER-PC.md §1). The binary has
+  `~/talerender-bin/talerender` (provisioned by USER-PC.md §1;
+  `TALERENDER_BIN` names the same path). The binary has
   `-h`/`--help` and `-V`/`--version` (added after v1.0.0); unknown
   arguments print `error: …` and exit 2.
 
@@ -43,7 +44,7 @@ mkdir -p perf
   echo "== ram ==";         free -h
   echo "== icds ==";        ls /usr/share/vulkan/icd.d/
   echo "== vulkan ==";      vulkaninfo --summary 2>/dev/null | sed -n '/Devices:/,$p'
-  echo "== binary ==";      sha256sum ./talerender-bin/talerender
+  echo "== binary ==";      sha256sum ~/talerender-bin/talerender
   echo "== ci run ==";      echo "<the run id the artifact was downloaded from>"
 } > perf/env.txt 2>&1
 ```
@@ -75,14 +76,14 @@ cd ~/workspace/talerender   # repo root; the ab1 caption path is relative
 # A. ab1 — five runs, same command each time
 for i in 1 2 3 4 5; do
   /usr/bin/time -f "%e %M" -o perf/ab1-$i.time \
-    ./talerender-bin/talerender --scene ab1 --out perf/ab1-$i.png \
+    ~/talerender-bin/talerender --scene ab1 --out perf/ab1-$i.png \
     > perf/ab1-$i.log 2>&1
 done
 
 # B. one film segment still — five runs
 for i in 1 2 3 4 5; do
   /usr/bin/time -f "%e %M" -o perf/s01-$i.time \
-    ./talerender-bin/talerender --scene-file scenes/film/s01.scene.json \
+    ~/talerender-bin/talerender --scene-file scenes/film/s01.scene.json \
       --out perf/s01-$i.png \
     > perf/s01-$i.log 2>&1
 done
@@ -121,14 +122,14 @@ nothing. Each timed run uses a fresh `--out` directory.
 # Cold run (first film invocation: asset load + pipeline build included)
 rm -rf perf/chunk-cold
 /usr/bin/time -f "%e %M" -o perf/chunk-cold.time \
-  ./talerender-bin/talerender --film film --out perf/chunk-cold \
+  ~/talerender-bin/talerender --film film --out perf/chunk-cold \
     --from 1027 --to 1117 \
   > perf/chunk-cold.log 2>&1
 
 # Warm run (identical range, fresh directory)
 rm -rf perf/chunk-warm
 /usr/bin/time -f "%e %M" -o perf/chunk-warm.time \
-  ./talerender-bin/talerender --film film --out perf/chunk-warm \
+  ~/talerender-bin/talerender --film film --out perf/chunk-warm \
     --from 1027 --to 1117 \
   > perf/chunk-warm.log 2>&1
 ```
@@ -178,12 +179,12 @@ configurations:
 ```bash
 # A. Film telemetry, default paint cache (cap 160)
 /usr/bin/time -v -o perf/telemetry-default.time \
-  ./talerender-bin/talerender --film-telemetry film \
+  ~/talerender-bin/talerender --film-telemetry film \
   > perf/telemetry-default.log 2> perf/telemetry-default.err
 
 # B. Film telemetry, small cache (the memory-tight setting)
 TALERENDER_PAINT_CACHE=24 /usr/bin/time -v -o perf/telemetry-24.time \
-  ./talerender-bin/talerender --film-telemetry film \
+  ~/talerender-bin/talerender --film-telemetry film \
   > perf/telemetry-24.log 2> perf/telemetry-24.err
 
 # C. The §3 warm chunk already carries peak RSS in perf/chunk-warm.time
