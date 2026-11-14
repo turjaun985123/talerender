@@ -73,6 +73,16 @@ pub(crate) fn load_film_data(dir: &Path) -> Result<FilmData, String> {
     let text = std::fs::read_to_string(&path)
         .map_err(|e| format!("cannot read film data: {e}"))?;
     let root = crate::scene::parse_json(&text)?;
+    // §15.1 reservation guard, film-data half: the extensions'
+    // top-level blocks are reserved in every format consumer.
+    // (Film data has no node walk — its staging is in code —
+    // so the top level is the coherent surface here.)
+    if root.get("prefabs").is_some() {
+        return Err("prefab extension not supported".to_string());
+    }
+    if root.get("clips").is_some() {
+        return Err("clips extension not supported".to_string());
+    }
     let g = |k: &str| root.get(k).ok_or_else(|| format!("film data: missing {k}"));
     let mut anchors = HashMap::new();
     if let Value::Obj(m) = g("anchors")? {

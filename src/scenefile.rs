@@ -505,6 +505,16 @@ fn walk_nodes(
 ) -> Result<(), String> {
     for (i, node) in nodes.iter().enumerate() {
         let nctx = format!("{ctx}[{i}]");
+        // §15.1 reservation guard: a prefab instance or a clip
+        // field on a node names its extension instead of falling
+        // through to the misleading missing-'type' error (or, for
+        // clip, being silently ignored).
+        if node.get("prefab").is_some() {
+            return Err(err(&nctx, "prefab extension not supported"));
+        }
+        if node.get("clip").is_some() || node.get("clipTime").is_some() {
+            return Err(err(&nctx, "clips extension not supported"));
+        }
         let ty = str_field(node, "type", &nctx)?;
         match ty {
             "group" => {
@@ -838,6 +848,27 @@ fn load(path: &str) -> Result<Loaded, String> {
             ))
         }
     };
+    // §15.1 reservation guard (scene-format §15, adoption step
+    // 1): the v2 extensions' reserved keys fail LOUD with a
+    // named error — never silently ignored under §1's rule.
+    // Until the implementations land (§15.10), check_prefabs.py
+    // / check_clips.py are the only consumers of these keys.
+    if root.get("prefabs").is_some() {
+        return Err(format!("{path}: prefab extension not supported"));
+    }
+    if root.get("clips").is_some() {
+        return Err(format!("{path}: clips extension not supported"));
+    }
+    // §15.1: the instance fields "clip"/"clipTime" are reserved
+    // on the camera/lights/post/fog blocks as well as on nodes
+    // (nodes are guarded in walk_nodes).
+    for block in ["camera", "lights", "post", "fog"] {
+        if let Some(b) = root.get(block) {
+            if b.get("clip").is_some() || b.get("clipTime").is_some() {
+                return Err(format!("{path}: clips extension not supported"));
+            }
+        }
+    }
     // Format v2: the shot's evaluation time. v1 files are stills;
     // a v2 file's camera keys and character state are read at this
     // t (the state in the file is the state at t by construction).
