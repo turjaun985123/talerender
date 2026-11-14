@@ -21,8 +21,9 @@ tables are blanks for the PC run to fill.
 - Judge film telemetry by its verdict **line**, never its exit code:
   the binary exits 0 on pass, fail, and error alike (§7).
 - All commands run from the repo root with the CI binary at
-  `./talerender-bin/talerender` (see USER-PC.md §1). The binary has no
-  `--help`; unknown arguments exit 2.
+  `./talerender-bin/talerender` (see USER-PC.md §1). The binary has
+  `-h`/`--help` and `-V`/`--version` (added after v1.0.0); unknown
+  arguments print `error: …` and exit 2.
 
 **Return package.** When done, send back: the §1 environment block,
 the filled tables (§2–§6), the §8 summary, and the full logs
@@ -293,7 +294,7 @@ with different flags and report only the success.
 | **OOM kill** | exit **137**; shell may print `Killed`; `dmesg \| tail -20` or `journalctl -k -n 50` shows `Out of memory: Killed process … talerender` | The default cache cap's ~4.6 GB worst case (§4) plus renderer and system on ~6.7 GiB RAM. Re-run the failed step with `TALERENDER_PAINT_CACHE=24` and record that the mitigation was required — that fact is part of the result. Send: the dmesg/journal excerpt, `free -h` at idle, which step and how far it got. |
 | **No adapter** | panic: `no wgpu adapter found — a Vulkan driver (hardware or lavapipe) is required` | Driver/ICD configuration, not a crash. Follow USER-PC.md §2 (pin `VK_ICD_FILENAMES` to the radeon JSON), re-check `vulkaninfo --summary`, retry. Send the vulkaninfo summary if it persists. |
 | **Device failure** | panic: `request_device failed`, after a valid `renderer:`/`adapter:` line | Send the full log including the adapter line — which device failed is the diagnostic. |
-| **Bad invocation** | exit **2**, `unknown argument: …` (or `unknown scene:` / `unknown --post-stage:`) | A typo'd flag; the binary has no `--help`. Correct against USER-PC.md / this protocol and re-run; nothing to send. |
+| **Bad invocation** | exit **2**, `error: unknown argument: …` (or `unknown scene:` / `unknown --post-stage:`) + `Try 'talerender --help' …` | A typo'd flag. Run `talerender --help` for the flag reference, correct, and re-run; nothing to send. |
 | **Telemetry FAILED** | exit **0**, stdout line `FILM TELEMETRY: CHECK FAILED (<n> overflow groups, <n> continuity violations, <n> caption failures)` | A data verdict, not a crash — and not a performance result either way. Send the full telemetry stdout; the counts are the report. |
 | **Short render** | final line reports `< 90 rendered` or any `skipped` in a fresh directory | The timing is invalid. Keep the log, note the counts, send both. |
 

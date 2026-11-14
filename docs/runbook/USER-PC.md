@@ -4,9 +4,14 @@ For: the user's Linux PC — **AMD Ryzen 5 PRO 5650G, Radeon Vega 7
 iGPU, RADV Vulkan driver, Ubuntu**. This is where production film
 renders happen: the same binary CI builds, with RADV replacing
 CI's lavapipe. Everything below uses only flags the binary
-actually has (checked against `src/main.rs`). Note: **there is
-no `--help`** — an unknown argument prints `unknown argument: …`
-and exits with code 2.
+actually has (checked against `src/main.rs`). The binary has
+`-h`/`--help` (full flag reference) and `-V`/`--version`; a bad
+invocation prints `error: …` plus a help hint and exits with
+code 2 (no panics). *(Dated correction, 2026-11-14: earlier
+provisioned binaries had no `--help` — an unknown argument
+printed `unknown argument: …` and exited 2. The CLI was
+professionalised after v1.0.0; use a binary from the CI run
+that carries it.)*
 
 ## 1. Get the binary
 

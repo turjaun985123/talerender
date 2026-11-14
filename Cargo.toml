@@ -1,6 +1,6 @@
 [package]
 name = "talerender"
-version = "0.1.0"
+version = "1.0.0"
 edition = "2021"
 description = "TaleRender — native Rust + wgpu renderer for Tall Tale Shorts (no browser, no Chrome)"
 license = "MIT"

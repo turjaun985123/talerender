@@ -1,23 +1,19 @@
 //! TaleRender — native Rust + wgpu renderer for Tall Tale Shorts.
 //!
-//! Milestone 1, step 2: a real (if small) 3D scene rendered headless —
-//! a perspective camera (36 deg, the Tall Tale house FOV), a lit cube, a
-//! ground plane, and a textured character card that yaw-billboards
-//! toward the camera the way the existing engine's `face()` does.
-//! Depth-tested, offscreen, PNG out. No browser, no window, no display
-//! server. Shadows, real materials and the composer chain are later
-//! milestones — this file claims none of them.
+//! A native renderer for the Tall Tale hybrid format: expressive
+//! camera-facing 2D characters inside fully dimensional 3D
+//! environments with cinematic 3D cameras. No browser, no window,
+//! no display server — headless, offscreen, PNG out.
 //!
-//! The adapter actually used is printed: on GPU-less machines wgpu
-//! falls back to a software Vulkan driver (lavapipe/llvmpipe) and the
-//! log says so. Nothing here claims GPU acceleration it cannot prove.
+//! Modes: built-in scenes, scene-format JSON files (v1/v2), whole
+//! films (scene format v2 + the film driver), and the M6 QA
+//! telemetry gates (pure CPU). The full command surface is the
+//! `--help` text below (const HELP) — keep the two in step.
 //!
-//! Usage: talerender [--width 1080] [--height 1920] [--out frame.png]
-//!        [--scene m1|ab1|dof-chart] [--caption <caption-strip.png>]
-//!        [--scene-file <scene.json>]
-//!        [--scene stroke-battery] [--out <dir>]  (M4 battery cards)
-//!        [--telemetry ab1|ab1-file|ab1-variant] [--captions <metrics.json>]
-//!        [--cutouts-out <cutouts.json>]  (M6 QA telemetry, contract §3)
+//! The adapter actually used is printed on every run: on GPU-less
+//! machines wgpu falls back to a software Vulkan driver
+//! (lavapipe/llvmpipe) and the log says so. Nothing here claims GPU
+//! acceleration it cannot prove.
 
 mod ab1;
 mod battery;
@@ -33,8 +29,116 @@ mod toonfull;
 use math::Mat4;
 use std::borrow::Cow;
 
+const HELP: &str = "\
+TaleRender — native Rust + wgpu renderer for Tall Tale Shorts.
+No Chrome, no browser: expressive 2D characters inside dimensional
+3D environments, rendered headless to PNG (clean frames).
+
+USAGE:
+    talerender [OPTIONS]
+    talerender --scene-file <scene.json> [--out frame.png]
+    talerender --film <DIR> --out <FRAMES_DIR> [--from N] [--to N]
+    talerender --film-telemetry <DIR>
+    talerender --telemetry <MODE> [--scene-file <scene.json>]
+
+MODES (choose one; the default is a built-in scene render):
+    --scene <NAME>          Built-in scene: m1 | ab1 | dof-chart |
+                            stroke-battery (default: m1).
+                            ab1 = the §28 Onoda reference scene;
+                            dof-chart = the M3 Bokeh chart;
+                            stroke-battery writes the M4 battery
+                            cards into --out (a directory).
+    --scene-file <PATH>     Render a scene-format JSON file (v1/v2;
+                            see docs/scene-format.md). Wins over
+                            --scene when both are given.
+    --film <DIR>            Render a whole film: DIR holds film.json
+                            + its scene files (format v2, §14).
+                            Frames are written to --out as
+                            frame_%05d.png; existing frames are
+                            skipped (resume).
+    --film-telemetry <DIR>  Native telemetry gate over a film
+                            directory (CPU only, no GPU). The
+                            verdict is the printed line
+                            \"FILM TELEMETRY: CHECK OK\" /
+                            \"CHECK FAILED (...)\" — read the line.
+    --telemetry <MODE>      M6 QA telemetry (CPU only):
+                            ab1 | ab1-file | ab1-variant.
+                            Pair ab1-file with --scene-file.
+
+OPTIONS:
+    --width <PX>            Frame width (default: 1080).
+    --height <PX>           Frame height (default: 1920).
+    --out <PATH>            Output PNG file — or, for --film and
+                            stroke-battery, the output directory
+                            (default: frame.png).
+    --caption <PATH>        Caption strip PNG composited by
+                            --scene ab1 (default: the §28 strip
+                            under docs/ab/).
+    --post-stage <STAGE>    Composer ablation for --scene ab1:
+                            lighting | bloom | grade
+                            (default: grade = the full chain).
+    --captions <PATH>       Caption metrics JSON (for --telemetry).
+    --cutouts-out <PATH>    Write cutouts() JSON (with --telemetry).
+    --from <N>              First film frame to render, inclusive
+                            (default: 0).
+    --to <N>                Film frame end, exclusive; 0 = through
+                            the end (default: 0).
+
+    -h, --help              Print this help and exit.
+    -V, --version           Print the version and exit.
+
+ENVIRONMENT:
+    TALERENDER_PAINT_CACHE <N>
+                            Cap the paint cache at N entries
+                            (default: 160). Lower it on low-RAM
+                            machines; telemetry runs often use 24.
+
+EXIT CODES:
+    0   Success. (--film-telemetry always exits 0: its verdict is
+        the printed line, not the exit code.)
+    2   Command-line error (unknown flag, bad or missing value).
+
+The renderer actually used is printed on every run — a hardware
+GPU or a software Vulkan driver such as lavapipe. Nothing claims
+GPU acceleration it cannot prove.
+";
+
+/// Print a command-line error and exit 2, the way a CLI should:
+/// no panic, a hint at the help text.
+fn cli_error(msg: &str) -> ! {
+    eprintln!("error: {msg}");
+    eprintln!("Try 'talerender --help' for usage.");
+    std::process::exit(2);
+}
+
+/// The value following a flag, or a clean error if it is missing.
+fn value(args: &[String], i: usize, flag: &str) -> String {
+    args.get(i)
+        .cloned()
+        .unwrap_or_else(|| cli_error(&format!("missing value for {flag}")))
+}
+
+/// The value following a numeric flag, parsed, or a clean error.
+fn parse_u32(args: &[String], i: usize, flag: &str) -> u32 {
+    let raw = value(args, i, flag);
+    raw.parse().unwrap_or_else(|_| {
+        cli_error(&format!(
+            "invalid value for {flag}: '{raw}' (expected a non-negative integer)"
+        ))
+    })
+}
+
 fn main() {
     let args: Vec<String> = std::env::args().collect();
+    // Help and version win anywhere on the command line.
+    if args.iter().any(|a| a == "-h" || a == "--help") {
+        print!("{HELP}");
+        return;
+    }
+    if args.iter().any(|a| a == "-V" || a == "--version") {
+        println!("talerender {}", env!("CARGO_PKG_VERSION"));
+        return;
+    }
     let mut width: u32 = 1080;
     let mut height: u32 = 1920;
     let mut out = String::from("frame.png");
@@ -57,63 +161,62 @@ fn main() {
         match args[i].as_str() {
             "--width" => {
                 i += 1;
-                width = args.get(i).and_then(|v| v.parse().ok()).expect("bad --width");
+                width = parse_u32(&args, i, "--width");
             }
             "--height" => {
                 i += 1;
-                height = args.get(i).and_then(|v| v.parse().ok()).expect("bad --height");
+                height = parse_u32(&args, i, "--height");
             }
             "--out" => {
                 i += 1;
-                out = args.get(i).expect("missing value for --out").clone();
+                out = value(&args, i, "--out");
             }
             "--scene" => {
                 i += 1;
-                scene = args.get(i).expect("missing value for --scene").clone();
+                scene = value(&args, i, "--scene");
             }
             "--scene-file" => {
                 i += 1;
-                scene_file = Some(args.get(i).expect("missing value for --scene-file").clone());
+                scene_file = Some(value(&args, i, "--scene-file"));
             }
             "--caption" => {
                 i += 1;
-                caption = args.get(i).expect("missing value for --caption").clone();
+                caption = value(&args, i, "--caption");
             }
             "--post-stage" => {
                 i += 1;
-                post_stage = args.get(i).expect("missing value for --post-stage").clone();
+                post_stage = value(&args, i, "--post-stage");
             }
             "--telemetry" => {
                 i += 1;
-                telemetry_mode = Some(args.get(i).expect("missing value for --telemetry").clone());
+                telemetry_mode = Some(value(&args, i, "--telemetry"));
             }
             "--captions" => {
                 i += 1;
-                captions_path = Some(args.get(i).expect("missing value for --captions").clone());
+                captions_path = Some(value(&args, i, "--captions"));
             }
             "--cutouts-out" => {
                 i += 1;
-                cutouts_out = Some(args.get(i).expect("missing value for --cutouts-out").clone());
+                cutouts_out = Some(value(&args, i, "--cutouts-out"));
             }
             "--film-telemetry" => {
                 i += 1;
-                film_telemetry_dir = Some(args.get(i).expect("missing value for --film-telemetry").clone());
+                film_telemetry_dir = Some(value(&args, i, "--film-telemetry"));
             }
             "--film" => {
                 i += 1;
-                film_dir = Some(args.get(i).expect("missing value for --film").clone());
+                film_dir = Some(value(&args, i, "--film"));
             }
             "--from" => {
                 i += 1;
-                film_from = args.get(i).and_then(|v| v.parse().ok()).expect("bad --from");
+                film_from = parse_u32(&args, i, "--from");
             }
             "--to" => {
                 i += 1;
-                film_to = args.get(i).and_then(|v| v.parse().ok()).expect("bad --to");
+                film_to = parse_u32(&args, i, "--to");
             }
             other => {
-                eprintln!("unknown argument: {other}");
-                std::process::exit(2);
+                cli_error(&format!("unknown argument: {other}"));
             }
         }
         i += 1;
@@ -158,8 +261,9 @@ fn main() {
                 "bloom" => 2,
                 "grade" => 3,
                 other => {
-                    eprintln!("unknown --post-stage: {other} (expected lighting, bloom or grade)");
-                    std::process::exit(2);
+                    cli_error(&format!(
+                        "unknown --post-stage: {other} (expected lighting, bloom or grade)"
+                    ));
                 }
             };
             pollster::block_on(ab1::run_ab1(width, height, &out, &caption, stage))
@@ -167,8 +271,9 @@ fn main() {
         "dof-chart" => pollster::block_on(dof::run_dof(width, height, &out)),
         "stroke-battery" => battery::run_battery(&out),
         other => {
-            eprintln!("unknown scene: {other} (expected m1, ab1, dof-chart or stroke-battery)");
-            std::process::exit(2);
+            cli_error(&format!(
+                "unknown scene: {other} (expected m1, ab1, dof-chart or stroke-battery)"
+            ));
         }
     }
 }
