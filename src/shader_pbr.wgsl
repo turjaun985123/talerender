@@ -50,6 +50,21 @@ struct FrameU {
     point_misc: vec4f,
     // x: shadow texel size (1/2048), y: shadow map size (2048)
     shadow_misc: vec4f,
+    // Integration extension (film mode): two more point slots in
+    // the same folded form; a slot with cutoff (misc.x) <= 0 is
+    // skipped entirely. Zero-filled by the ab1 path, which therefore
+    // renders exactly as before.
+    point2_pos: vec4f,
+    point2_color: vec4f,
+    point2_misc: vec4f, // x: distance cutoff, y: decay
+    point3_pos: vec4f,
+    point3_color: vec4f,
+    point3_misc: vec4f,
+    // three.js Fog (fog_fragment): colour (linear) + near; far +
+    // enable flag; camera forward for the view-depth fog factor.
+    fog: vec4f, // rgb: fog colour, w: near
+    fog2: vec4f, // x: far, y: enabled (0/1)
+    cam_fwd: vec4f,
 };
 
 struct DrawU {
@@ -409,6 +424,31 @@ fn fs_main(in: Vout) -> @location(0) vec4f {
         direct_diffuse += irradiance * brdf_lambert(diffuse_color);
     }
 
+    // Extra point lights (film mode; skipped when cutoff <= 0,
+    // which is what the ab1 path's zero padding produces).
+    if (frame.point2_misc.x > 0.0) {
+        let lvec = frame.point2_pos.xyz - in.world_pos;
+        let dist = length(lvec);
+        let l = lvec / dist;
+        let att = get_distance_attenuation(dist, frame.point2_misc.x, frame.point2_misc.y);
+        let light_color = frame.point2_color.rgb * att;
+        let dot_nl = clamp(dot(normal, l), 0.0, 1.0);
+        let irradiance = dot_nl * light_color;
+        direct_specular += irradiance * brdf_ggx(l, view_dir, normal, specular_color, specular_f90, roughness);
+        direct_diffuse += irradiance * brdf_lambert(diffuse_color);
+    }
+    if (frame.point3_misc.x > 0.0) {
+        let lvec = frame.point3_pos.xyz - in.world_pos;
+        let dist = length(lvec);
+        let l = lvec / dist;
+        let att = get_distance_attenuation(dist, frame.point3_misc.x, frame.point3_misc.y);
+        let light_color = frame.point3_color.rgb * att;
+        let dot_nl = clamp(dot(normal, l), 0.0, 1.0);
+        let irradiance = dot_nl * light_color;
+        direct_specular += irradiance * brdf_ggx(l, view_dir, normal, specular_color, specular_f90, roughness);
+        direct_diffuse += irradiance * brdf_lambert(diffuse_color);
+    }
+
     // ---- indirect diffuse: hemisphere (no ambient light in the rig) ----
     {
         let hemi = mix(frame.hemi_ground.rgb, frame.hemi_sky.rgb, 0.5 * normal.y + 0.5);
@@ -438,5 +478,13 @@ fn fs_main(in: Vout) -> @location(0) vec4f {
     // composer chain — OutputPass owns it).
     let outgoing = direct_diffuse + indirect_diffuse + direct_specular + indirect_specular
         + draw.emissive.rgb;
-    return vec4f(outgoing, 1.0);
+    // fog_fragment: factor over view depth (three's vFogDepth is
+    // -mvPosition.z == distance along the camera forward axis).
+    var out_col = outgoing;
+    if (frame.fog2.y > 0.5) {
+        let fdepth = dot(in.world_pos - frame.cam_pos.xyz, frame.cam_fwd.xyz);
+        let ffactor = smoothstep(frame.fog.w, frame.fog2.x, fdepth);
+        out_col = mix(out_col, frame.fog.rgb, ffactor);
+    }
+    return vec4f(out_col, 1.0);
 }

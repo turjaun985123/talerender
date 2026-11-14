@@ -662,6 +662,12 @@ pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str, pos
         v4(scale3(hex_lin("#FF9A3C"), fire_i)),
         [7.0, 1.6, 0.25, -0.0006], // distance, decay, env intensity, shadow bias
         [1.0 / 2048.0, 2048.0, 0.0, 0.0],
+        // Integration extension fields (points 2/3, fog, camera
+        // forward): all zero — point slots skipped (cutoff 0),
+        // fog disabled — so this path renders exactly as before
+        // the extension. See shader_pbr.wgsl FrameU.
+        [0.0; 4], [0.0; 4], [0.0; 4], [0.0; 4], [0.0; 4], [0.0; 4],
+        [0.0; 4], [0.0; 4], [0.0; 4],
     ] {
         for x in v {
             frame_bytes.extend_from_slice(&x.to_ne_bytes());
@@ -1276,13 +1282,17 @@ pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str, pos
     }
     let prepare_basic = |d: &TexDraw, tint: [f32; 3], opacity: f32, alpha_test: f32, tex_view: &wgpu::TextureView, prepass: bool| -> PreparedBasic {
         let (vb, ib, n) = make_vb(&d.geo.verts, &d.geo.idx);
-        let mut bytes: Vec<u8> = Vec::with_capacity(96);
+        let mut bytes: Vec<u8> = Vec::with_capacity(192);
         bytes.extend_from_slice(&mat_bytes(&math::mul(&vp, &d.model)));
         for v in [[tint[0], tint[1], tint[2], opacity], [alpha_test, 0.0, 0.0, 0.0]] {
             for x in v {
                 bytes.extend_from_slice(&x.to_ne_bytes());
             }
         }
+        // Integration extension: model-view + fog fields, fog
+        // disabled on this path (zeros) — see shader_basic.wgsl.
+        bytes.extend_from_slice(&mat_bytes(&math::mul(&view, &d.model)));
+        bytes.extend_from_slice(&[0u8; 32]);
         let ub = make_ub(&bytes, "basic uniforms");
         let sampler = if d.repeat { &sampler_repeat } else { &sampler_clamp };
         let bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
