@@ -260,5 +260,80 @@ that its own output can never pass as a final.)
   variants' `4` arguments become `samples`. The overlay variant stays
   `1`; the `MultisampleState::default()` prepass/shadow pipelines
   stay untouched (§1.1).
--
-...[truncated 3075 chars]
+- Resolve selection: at samples > 1 the passes keep
+  `resolve_target: Some(&hdr_view)` exactly as today (§3.2).
+  At samples == 1 the pass renders directly into the resolved
+  target's view with `resolve_target: None` — wgpu forbids a
+  resolve target on a single-sample attachment, so `--aa 0`
+  cannot be had by changing counts alone (§1.1). The branch
+  is in the attachment, in these two passes; every downstream
+  consumer reads the resolved texture and does not branch.
+- Construction: build the colour attachment before the pass,
+  choosing view and resolve together — at samples > 1 the
+  constructed attachment is field-for-field today's (same
+  view, `Some` resolve, same ops); at samples == 1 it is the
+  resolved view with `None`. The depth attachment is not
+  branched: the twin is created at the same `samples`, so it
+  matches the colour attachment's count in both arms.
+- Risk, accepted: at samples == 1 the MSAA target is still
+  created (at count 1) and never bound — 16.6 MB of fp16 at
+  1080×1920, created and dropped. Only draft runs pay it;
+  making its creation conditional is not prescribed.
+
+### 4.3 `--shadow`
+
+- Thread one `shadow` size from main.rs into `run_ab1` /
+  `run_film` — the only two paths that build a shadow map
+  (§1.2); `--shadow` is inert in the other modes (§3.3). At
+  each site the size replaces the literal 2048 in both target
+  creations: ab1's inline 2048×2048 Rgba8Unorm
+  (ab1.rs:809–819) and its `composer::make_rt(2048, 2048,
+  Depth32Float)` depth (ab1.rs:820); film's
+  `gpucore::make_target(2048, 2048, Rgba8Unorm, 1, …)`
+  (film.rs:2528) and `make_rt` depth (film.rs:2531).
+- The `shadow_misc` uniform moves in lockstep (§1.2):
+  `[1.0 / 2048.0, 2048.0, 0.0, 0.0]` becomes
+  `[1.0 / size, size, 0.0, 0.0]` at ab1.rs:652 and
+  film.rs:2838. The size reaches the shader only through
+  that slot, so no WGSL changes; the `shader_pbr.wgsl:51`
+  comment is reworded to drop the baked-in numbers (§1.2).
+  At 2048 the uniform is bit-identical to today's literal.
+
+## 5. Acceptance
+
+The acceptance gate is §3.2's identity law, executed: for
+each knob singly and for all three combined, a run spelled
+at explicit defaults (`--res 1 --aa 4 --shadow 2048`) must
+produce byte-identical frames to a run with no knob flags,
+and print exactly the lines it prints today — no DRAFT tag
+at defaults (§3.4).
+
+The film legs run on `tools/ci/byte_probes.py` over the
+standing probe ranges (frames 195–204, 795–814,
+1195–1204): the no-flag and explicit-default renders must
+PASS byte-identical. Complementary smoke: a `--draft` run
+must produce frames that differ from the defaults run —
+identical output would mean the knobs are decorative — and
+must carry the DRAFT tag in its header, progress and
+completion lines (§3.4).
+
+## 6. Risks
+
+- `--aa 8` on `Rgba16Float` exceeds some adapters'
+  sample-count limits. Where it does, texture/pipeline
+  creation fails as a wgpu validation error — a hard,
+  visible failure, which is the lawful outcome: the
+  no-silent-change law cuts both ways, and 8 is never
+  clamped to 4. The §5 gate does not exercise `--aa 8`;
+  whether RADV accepts it is recorded at the PC evidence
+  session. The same applies to `--shadow 4096` on
+  downlevel-class limits — visible failure, no clamp.
+
+*Tail restored by splice (lead, Wave 2): W61's provenance-tagged
+restoration appended verbatim, including T2 — W54's tagged
+extension (the §4.2 attachment-construction shape), spliced IN
+by lead decision so the spec and KNOBS-PATCH-W54 agree; its
+provenance stays tagged in KNOBS-W43-TAIL-W61 §2. The six
+UNRECOVERABLE items are registered in that pack's §3. §0.3's
+five content spot-checks re-run at splice time: all five found
+by content (line numbers drifted, no cite contradicted).*
