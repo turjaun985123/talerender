@@ -601,6 +601,22 @@ Following the existing `CaptionInfo`-fixture pattern
    by calling film.rs's own `blink_at` (film.rs:257) — 4 and
    3 respectively — tying the new counter to the transcribed
    rule instead of restating it.
+
+   **ERRATUM (appended at the waivers-queue landing, per
+   TABLES-VERIFY-W93):** the counting range stated above is
+   wrong for the second fixture beat. Frames `0..200` span
+   t ≤ 6.63 s, so the 14.78 s beat (frame ≈ 443) is never
+   sampled: over `0..200` its count is 0 by construction, and
+   the stated expectation 3 is unreachable in that range.
+   The expectation itself is correct over a range that
+   reaches the beat — the blink window covers frames
+   444–446, count 3. The implementation (`beat_frames`)
+   transcribes `blink_at`'s window exactly and was verified
+   sound (W93's diff-check reached the same conclusion
+   independently); the landed test
+   (`tables_beat_frames_tie_to_blink_at`, fix `2f5c708`)
+   counts over `0..600`. Read item 4's range as `0..600`;
+   the 4.20 s beat's expectation (4) is unaffected.
 5. **Presence accumulator.** Synthetic sample sequence:
    an id present in 3 samples of one shot → samples 3,
    frames `(3*15+1)/2 = 23`; two same-id cutouts in one
