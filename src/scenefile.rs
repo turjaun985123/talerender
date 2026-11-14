@@ -628,7 +628,7 @@ fn walk_nodes(
                     hold_l: plate_of("holdL")?,
                     hold_r: plate_of("holdR")?,
                 };
-                let (pxbuf, pw, ph, _hl, _hr) = crate::toonfull::paint_toon_full(&look, &state);
+                let (pxbuf, pw, ph, hand_l, hand_r) = crate::toonfull::paint_toon_full(&look, &state);
                 textures.push((pxbuf, pw, ph));
                 let card_tex = textures.len() - 1;
                 textures.push(scene::paint_blob());
@@ -669,6 +669,47 @@ fn walk_nodes(
                     tex: card_tex,
                     repeat: false,
                 }));
+                // Attachments (spec §14.5 R2): declared ON the
+                // character node; the rifle is anchored at the
+                // painted hand via the syncAttachments card-space
+                // offset, exactly as the film evaluator places it.
+                if let Some(atts) = node.get("attachments").and_then(Value::as_arr) {
+                    for att in atts {
+                        let kind = str_field(att, "kind", &nctx)?;
+                        if kind != "rifle" {
+                            return Err(err(&nctx, &format!("unknown attachment kind '{kind}'")));
+                        }
+                        let (hx, hy) = if opt_str(att, "hand").as_deref() == Some("L") { hand_l } else { hand_r };
+                        let off = att.get("offset").and_then(Value::as_arr)
+                            .map(|a| -> Result<[f32; 3], String> {
+                                Ok([num(a.first().unwrap_or(&Value::Null), &nctx)? as f32,
+                                    num(a.get(1).unwrap_or(&Value::Null), &nctx)? as f32,
+                                    num(a.get(2).unwrap_or(&Value::Null), &nctx)? as f32])
+                            })
+                            .transpose()?
+                            .unwrap_or([0.0, 0.03, 0.07]);
+                        let local = [(384.0 + hx - 640.0) * su, (1256.0 - (256.0 + hy)) * su, 0.0];
+                        let rifle_model = math::mul(
+                            &model,
+                            &math::translate(local[0] + off[0], local[1] + off[1], local[2] + off[2]),
+                        );
+                        let wood = crate::scene::hex_lin("#6E4F30");
+                        let steel = crate::scene::hex_lin("#3A3D42");
+                        let parts: [(Geo, [f32; 3], [f32; 3]); 5] = [
+                            (box_geo(0.075, 0.52, 0.13, wood), [0.0, -0.17, 0.0], wood),
+                            (box_geo(0.06, 0.1, 0.09, steel), [0.0, 0.13, 0.0], steel),
+                            (crate::scene::cyl_geo(0.016, 0.016, 0.55, 8, steel), [0.0, 0.42, 0.0], steel),
+                            (box_geo(0.02, 0.05, 0.02, steel), [0.0, 0.68, 0.0], steel),
+                            (box_geo(0.05, 0.05, 0.16, wood), [0.0, -0.02, 0.05], wood),
+                        ];
+                        for (geo, pl, _c) in parts {
+                            draws.push(Draw::Colour(ColourDraw {
+                                geo,
+                                model: math::mul(&rifle_model, &math::translate(pl[0], pl[1], pl[2])),
+                            }));
+                        }
+                    }
+                }
             }
             other => return Err(err(&nctx, &format!("unknown node type '{other}'"))),
         }

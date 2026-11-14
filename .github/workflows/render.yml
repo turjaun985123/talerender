@@ -18,7 +18,7 @@ on:
       mode:
         description: "Render mode"
         type: choice
-        options: [ab1, dof-chart, film]
+        options: [ab1, dof-chart, film, scene-file]
         default: ab1
       from:
         description: "film: first frame (inclusive)"
@@ -28,6 +28,10 @@ on:
         description: "film: last frame (exclusive, 0 = end)"
         type: string
         default: "0"
+      scene:
+        description: "scene-file: path to the scene JSON"
+        type: string
+        default: "scenes/character-v2.scene.json"
 
 env:
   CARGO_TERM_COLOR: always
@@ -67,11 +71,14 @@ jobs:
               ./target/release/talerender --film film --out render-out/frames \
                 --from "${{ inputs.from }}" --to "${{ inputs.to }}"
               ;;
+            scene-file)
+              ./target/release/talerender --scene-file "${{ inputs.scene }}" --out render-out/scene.png
+              ;;
           esac
           ls -la render-out | head -20
       - name: Upload render output
         uses: actions/upload-artifact@v4
         with:
-          name: render-${{ inputs.mode }}-${{ inputs.from }}-${{ inputs.to }}
+          name: render-${{ inputs.mode }}-${{ inputs.from }}-${{ inputs.to }}-${{ github.run_id }}
           path: render-out
           retention-days: 7

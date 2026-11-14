@@ -490,6 +490,21 @@ pins the grade time to 0 (src/film.rs, the composer's GradeParams
 time field). Any time-animated grain would diverge from Chrome
 on every frame by the grain term.
 
+**R5 — Scene files name atmospheres by PRESET; the driver
+resolves (set × preset).** A scene file's `atmosphere` field
+carries the preset name (`noon`, `fog`, `golden`, …) — the
+staging's own vocabulary (`applyAtmosphere(scene, 'noon')`).
+The effective rig/grade/tint for a shot is a function of the
+shot's SET and the preset together (the same preset lands
+differently on the jungle set's sun than on the bookshop's
+interior rig), so the merge is resolved by the evaluator at
+render time (film.rs's rig builders are exactly this
+resolution), never baked into the scene file. The
+`filmLooks` table in scenes/atmospheres.json is a derived
+(set × preset) index kept for validation and diffing; it is
+not the scene-file vocabulary. All 14 segments resolve
+through it with no missing entries.
+
 **R4 — Source wins over the evaluator on staging constants.**
 Where a scene file and src/film.rs disagree with shots.ts,
 shots.ts is ground truth and the wrong side is fixed, never

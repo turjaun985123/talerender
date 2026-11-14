@@ -3401,7 +3401,7 @@ pub(crate) async fn run_film(width: u32, height: u32, film_dir: &str, out_dir: &
     let data = load_film_data(dir).unwrap_or_else(|e| panic!("film data: {e}"));
     let assets = load_assets(dir, &data).unwrap_or_else(|e| panic!("film assets: {e}"));
     let looks = look_registry();
-    let frames_total = (data.duration * 30.0).ceil() as u32 + 1;
+    let frames_total = (data.duration * 30.0).ceil() as u32;
     let to = if to == 0 { frames_total } else { to.min(frames_total) };
     let mut renderer = Renderer::new(width, height, &assets.sign).await;
     std::fs::create_dir_all(out_dir).expect("cannot create frames dir");
