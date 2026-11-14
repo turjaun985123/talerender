@@ -1,8 +1,10 @@
 # docs/ab/film — the whole-film A/B proof package (SKELETON)
 
 **Status: MEASURED — film A/B filled in 2026-11-14 (W77);
-telemetry verdict, golden staging, and MP4 evidence still
-pending.** The full film was rendered natively in CI at head
+telemetry verdict, golden staging, and MP4 evidence have
+since landed, and the golden pins have since been struck
+(see the Results section; the package's final film state is
+the `f021991` re-render, A/B mean 23.02 dB).** The full film was rendered natively in CI at head
 `381ff47` (ten dispatch runs, 1,811 frames) and measured:
 `ab-report.md` / `ab-report.json` + `RESULTS.md` in this
 directory. This package
@@ -122,8 +124,8 @@ project at `~/faceless-shorts/the-soldier-who-didnt-know`.
    ```
    cd ~/workspace/talerender
    TALERENDER_PAINT_CACHE=24 ./talerender --film-telemetry film
-   # verdict is the printed line: FILM TELEMETRY: CHECK OK
-   # (this mode exits 0 on pass, fail, and error alike)
+   # exit 0 = CHECK OK, 1 = CHECK FAILED, 3 = could not run;
+   # the printed verdict line remains authoritative
    ```
 
 2. **Render the film** (chunked/resumable; on CI dispatch the
@@ -171,8 +173,12 @@ project at `~/faceless-shorts/the-soldier-who-didnt-know`.
 
 ## Results (filled 2026-11-14, W77 — see `RESULTS.md`)
 
-- Telemetry verdict: _pending_ (not run by the fill-in seat;
-  the verdict line for head `381ff47` is the lead's to record)
+- Telemetry verdict: recorded in `TELEMETRY-W85.md` for head
+  `381ff47` (CHECK FAILED on captions only; waiver ruled in
+  `9790553`), then CLOSED BY DATA in Wave 2 — after the
+  66 → 73 chunk re-chunk (`3a36f1f`) and driver regeneration,
+  the re-run prints `FILM TELEMETRY: CHECK OK`, exit 0
+  (`5e90d7e`)
 - Renderer of record for the native frames: **talerender
   (CI lavapipe, head `381ff47`)** — ten "Render (dispatch)"
   runs, mode `film`; references are the Chrome (SwiftShader)
@@ -207,9 +213,16 @@ project at `~/faceless-shorts/the-soldier-who-didnt-know`.
   items (D14/D15) closed in the rendering commit itself, yet
   the gap persists with a broad (%px > 10 ≈ 61%) component;
   referred to the lead with the diff images (`RESULTS.md`).
-- Golden verify (14 film mids): _pending_ staging — mid
-  frames harvested, sha256 recorded in `RESULTS.md` (pinning
-  is a human act; note the chunk-offset caveat there for
-  frames 560 / 760 / 969 / 1593)
-- MP4 evidence: see `MP4-EVIDENCE.md` — _pending_ (no finished
-  MP4 exists yet)
+- Golden verify (14 film mids): staging DONE and pins
+  STRUCK — mids staged hash-verified in `docs/golden/frames/`
+  (`381ff47` set), re-staged from the `f021991` frames in
+  `docs/golden/frames-f021991/` (W03, `3a36f1f`), and pinned
+  in Golden Act 1 (`916a109`; the 3 in-window mids — frames
+  969 / 1119 / 1593 — come from the post-re-chunk render at
+  `aadc193`, so their struck hashes differ from the staged
+  table in `RESULTS.md`). Pack verifies 18 OK / 0 STALE /
+  0 MISSING.
+- MP4 evidence: see `MP4-EVIDENCE.md` — DONE (1,811 frames
+  counted; mux −14.00 LUFS vs mix −13.99; the final proof
+  MP4 from the `f021991` frames carries all-bt709 colour
+  tags after the finish.sh fix `6ca97fc`)

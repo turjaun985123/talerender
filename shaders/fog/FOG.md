@@ -383,6 +383,16 @@ bit-identical no-fog path.
 > Mechanical checklist + the native acceptance procedure:
 > `docs/integration/FOG-STATUS-W74.md` §2–§3.
 
+> **Status note (Wave 2, 2026-11-14) — WIRED.** The W74 note
+> above is superseded on its one open point: the scene-file
+> loader now parses the v2 `fog` block and applies three's
+> fog_fragment pre-bokeh via the packed-depth prepass
+> (commit `69952ab`), verified ≤1 code at every fog-chart
+> panel (`5b0889d`). The closure addendum is in
+> `docs/integration/FOG-STATUS-W74.md`. The W74 correction of
+> the "no shader change" premise stands — the wiring added
+> `shader_fog.wgsl`, as it predicted.
+
 ## 9. Residual risks
 
 - **llvmpipe vs RADV fp16** (from M3): fog arithmetic is f32

@@ -27,7 +27,9 @@ reflects the record in `docs/` and the goal ledger.)
 | M4 | Painter stroke battery (Skia parity, contract §2) | **PASS 46/46** (819ee16) — full character alpha PSNR 47.88 dB |
 | M5 | Composer completion (shadows, PMREM lighting, bloom, GRADE) | **PASS** (79aff03) — ablation on Onoda S01: 21.36 → 21.42 → 23.850 dB |
 | M6 | QA telemetry: native cutouts() vs Chrome (contract §3) | **PASS — exact agreement** (9a8cc79); JPEG q0.93 decision resolved: native frames stay clean (user decision (B), 801f85c) |
-| Production integration | Scene format v2, film driver, native telemetry gate, FFmpeg finishing, skill capture backend | **Complete, with named remainders** — the full Onoda short (14 segments, 1,811 frames @ 1080×1920, 30 fps) rendered natively in CI; final-head A/B vs Chrome: **mean 23.02 dB** (60 pairs); telemetry verdict recorded with the caption waiver ruling; finished MP4 proof delivered. Full record: [docs/integration/FINAL-REPORT.md](docs/integration/FINAL-REPORT.md), proof package in [docs/ab/film/](docs/ab/film/) |
+| Production integration | Scene format v2, film driver, native telemetry gate, FFmpeg finishing, skill capture backend | **Complete, with named remainders** — the full Onoda short (14 segments, 1,811 frames @ 1080×1920, 30 fps) rendered natively in CI; final-head A/B vs Chrome: **mean 23.02 dB** (60 pairs); telemetry gate at `FILM TELEMETRY: CHECK OK` since the
+Wave-2 caption re-chunk (`5e90d7e`; the earlier waiver
+ruling is superseded); finished MP4 proof delivered. Full record: [docs/integration/FINAL-REPORT.md](docs/integration/FINAL-REPORT.md), proof package in [docs/ab/film/](docs/ab/film/) |
 
 Architecture record: [docs/audit/](docs/audit/) (M0 findings) · [docs/ADR-001-talerender-architecture.md](docs/ADR-001-talerender-architecture.md) · [docs/compatibility-contract.md](docs/compatibility-contract.md) · [docs/risk-register.md](docs/risk-register.md)
 
@@ -36,9 +38,10 @@ What exists today is the complete native pipeline: a JSON scene format
 that renders a complete short under a telemetry gate, and FFmpeg
 finishing — proven end to end on "THE SOLDIER WHO DIDN'T KNOW THE WAR
 WAS OVER". Remaining, by design: GPU proof on the target PC (RADV —
-every number so far is CI lavapipe), the golden-frame pins (deliberate
-human acts), and the decision on adopting the native backend into the
-shipped skill (a verified work copy exists; Chrome remains the default).
+every number so far is CI lavapipe), and the decision on adopting the
+native backend into the shipped skill (a verified work copy exists;
+Chrome remains the default). The golden-frame pins were struck in
+Wave 2 (`916a109`, `166873c`).
 
 ## Honest rendering notes
 
@@ -56,6 +59,12 @@ shipped skill (a verified work copy exists; Chrome remains the default).
 cargo build --release
 ./target/release/talerender --width 1080 --height 1920 --out frame.png
 ```
+
+Run `./target/release/talerender --help` for the full flag
+reference (all modes, defaults, and exit codes) and
+`--version` for the version (`talerender 1.0.0`). Bad
+invocations print `error: …` plus a help hint and exit 2 —
+no panics on bad input.
 
 Requirements: a Vulkan driver — hardware (RADV/ANV/…) or software
 (`mesa-vulkan-drivers` / lavapipe on Ubuntu). No display server is needed.

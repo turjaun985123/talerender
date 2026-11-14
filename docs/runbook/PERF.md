@@ -18,8 +18,9 @@ tables are blanks for the PC run to fill.
   [USER-PC.md](USER-PC.md) §2 and re-check the line.
 - Report raw numbers (every run, not just the median). A median is a
   summary you add, never a replacement for the runs.
-- Judge film telemetry by its verdict **line**, never its exit code:
-  the binary exits 0 on pass, fail, and error alike (§7).
+- Judge film telemetry by its verdict **line** first; since
+  `aa10b13` the exit code agrees with it (0 = CHECK OK,
+  1 = CHECK FAILED, 3 = could not run) (§7).
 - All commands run from the repo root with the CI binary at
   `./talerender-bin/talerender` (see USER-PC.md §1). The binary has
   `-h`/`--help` and `-V`/`--version` (added after v1.0.0); unknown
@@ -192,7 +193,10 @@ grep "Maximum resident" perf/telemetry-default.time perf/telemetry-24.time
 
 **The cache math the numbers are read against.** One painted
 character canvas is 2560×2816 RGBA ≈ **29 MB**. The paint cache is
-FIFO-capped: default **160 entries → ~4.6 GB worst case**; cap 24 →
+FIFO-capped: default **160 entries**, with cached canvas
+bytes also capped by PaintBudget at **min(cap × canvas,
+2048 MiB)** since `86f0c81` (the pre-budget worst case was
+~4.6 GB); cap 24 →
 **~0.7 GB**. Eviction is pixel-neutral (painting is a pure function
 of the state), so a smaller cap costs time, never correctness. Total
 RSS also includes the renderer (GPU-mapped buffers, textures, frame
@@ -291,11 +295,13 @@ with different flags and report only the success.
 | symptom | signature | what it means / do |
 |---|---|---|
 | **Segfault** | exit **139**; shell prints `Segmentation fault (core dumped)`; log stops mid-range | On RADV this is a real defect signal. (A llvmpipe JIT segfault is a known artifact of the GPU-less VM — it must never be used to dismiss a crash on this PC.) The last progress line names the last completed 25-frame boundary. **Before any resume:** delete the highest-numbered `frame_*.png` in the out dir — resume skips by existence, and the last file may be truncated mid-save (see USER-PC.md). Send: full log, exact command, frame range, §1 env block, and whether re-running just the surrounding 25-frame block (`--from <boundary> --to <boundary+25>`) reproduces it. |
-| **OOM kill** | exit **137**; shell may print `Killed`; `dmesg \| tail -20` or `journalctl -k -n 50` shows `Out of memory: Killed process … talerender` | The default cache cap's ~4.6 GB worst case (§4) plus renderer and system on ~6.7 GiB RAM. Re-run the failed step with `TALERENDER_PAINT_CACHE=24` and record that the mitigation was required — that fact is part of the result. Send: the dmesg/journal excerpt, `free -h` at idle, which step and how far it got. |
-| **No adapter** | panic: `no wgpu adapter found — a Vulkan driver (hardware or lavapipe) is required` | Driver/ICD configuration, not a crash. Follow USER-PC.md §2 (pin `VK_ICD_FILENAMES` to the radeon JSON), re-check `vulkaninfo --summary`, retry. Send the vulkaninfo summary if it persists. |
-| **Device failure** | panic: `request_device failed`, after a valid `renderer:`/`adapter:` line | Send the full log including the adapter line — which device failed is the diagnostic. |
+| **OOM kill** | exit **137**; shell may print `Killed`; `dmesg \| tail -20` or `journalctl -k -n 50` shows `Out of memory: Killed process … talerender` | The default paint budget's ≈2 GiB cap (`86f0c81`;
+`TALERENDER_PAINT_BUDGET_MB` adjusts it) plus renderer and
+system on ~6.7 GiB RAM. Re-run the failed step with `TALERENDER_PAINT_CACHE=24` and record that the mitigation was required — that fact is part of the result. Send: the dmesg/journal excerpt, `free -h` at idle, which step and how far it got. |
+| **No adapter** | exit **3**, stderr `error: GPU initialisation failed (request_adapter (gpucore)): no wgpu adapter found — a Vulkan driver (hardware or lavapipe) is required` (a panic before errors step 2, `edb058f`; the message text is preserved verbatim as the error source) | Driver/ICD configuration, not a crash. Follow USER-PC.md §2 (pin `VK_ICD_FILENAMES` to the radeon JSON), re-check `vulkaninfo --summary`, retry. Send the vulkaninfo summary if it persists. |
+| **Device failure** | exit **3**, stderr `error: GPU device request failed (request_device (gpucore)): …`, after a valid `renderer:`/`adapter:` line (a panic before errors step 2, `edb058f`) | Send the full log including the adapter line — which device failed is the diagnostic. |
 | **Bad invocation** | exit **2**, `error: unknown argument: …` (or `unknown scene:` / `unknown --post-stage:`) + `Try 'talerender --help' …` | A typo'd flag. Run `talerender --help` for the flag reference, correct, and re-run; nothing to send. |
-| **Telemetry FAILED** | exit **0**, stdout line `FILM TELEMETRY: CHECK FAILED (<n> overflow groups, <n> continuity violations, <n> caption failures)` | A data verdict, not a crash — and not a performance result either way. Send the full telemetry stdout; the counts are the report. |
+| **Telemetry FAILED** | exit **1**, stdout line `FILM TELEMETRY: CHECK FAILED (<n> overflow groups, <n> continuity violations, <n> caption failures)` | A data verdict, not a crash — and not a performance result either way. Send the full telemetry stdout; the counts are the report. |
 | **Short render** | final line reports `< 90 rendered` or any `skipped` in a fresh directory | The timing is invalid. Keep the log, note the counts, send both. |
 
 **Send-back checklist (any failure):** §1 env block · the exact
@@ -360,3 +366,23 @@ clock, external RSS) are protocol scaffolding, not solutions.
    the only route; recorded as a blind spot, not a request — but
    any future adapter-info extension that surfaces it should be
    printed next to the `renderer:` line.
+
+**Discharge note (2026-11-14, Wave 2).** Items 1–3 were
+discharged by `86f0c81` (PaintBudget + RunLog wired into the
+film driver: cache `stats_line` at film completion and in
+telemetry post-loop; progress lines carry elapsed/ETA; the
+completion summary reports peak RSS; per-frame timing is
+behind `TALERENDER_FRAME_TIMING`). Item 4 was discharged by
+`aa10b13` (telemetry exits 0 on CHECK OK, 1 on CHECK FAILED,
+3 when it could not run; the verdict line is unchanged and
+remains authoritative). Item 5 stands.
+
+**Item 5 status (2026-11-15, Wave 2).** The blind spot now
+has a design: `docs/integration/VRAM-TELEMETRY-W56.md`
+accounts the renderer-allocation layer by byte formula
+(film lane 210.7 MiB steady / 218.7 MiB peak, including one
+frame readback in flight) and specifies the adapter-info
+extension. Status: **designed, not implemented** — no binary
+output changes yet, and the driver-internal layer remains
+unknowable from wgpu 0.20; `radeontop` on the PC remains
+the only device-side observation.

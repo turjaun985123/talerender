@@ -258,3 +258,35 @@ lead/human step; this seat staged hashes only:
 - **PC RADV evidence** — none here; all native numbers are CI
   lavapipe and are labelled as such. Grain is vendor-sensitive;
   a RADV run is separate evidence, not a replacement.
+
+---
+
+## Discharge note — 2026-11-15 (Wave 2; via DOCFIX2-W67)
+
+The "Still pending" list above was true when written (head
+`381ff47`). Its state now:
+
+- **FILM TELEMETRY verdict line — RECORDED.** The verdict for
+  the `381ff47` frames is in `TELEMETRY-W85.md` (CHECK FAILED
+  on captions only; ACCEPT WITH WAIVER ruled in `9790553`).
+  In Wave 2 the caption item was closed by data instead: the
+  66 → 73 chunk re-chunk (`3a36f1f`) plus driver regeneration
+  re-ran the gate to `FILM TELEMETRY: CHECK OK`, exit 0
+  (`5e90d7e`).
+- **Golden staging + verify — DONE, and pins STRUCK.** The
+  14 mids were staged hash-verified in `docs/golden/frames/`;
+  candidates from the later `f021991` re-render were staged
+  in `docs/golden/frames-f021991/` (`3a36f1f`); Golden Act 1
+  (`916a109`) then struck the pins — 11 from those candidates
+  and 3 in-window mids (s07 f969, s08 f1119, s11 f1593) from
+  the post-re-chunk render at `aadc193`, whose struck hashes
+  (`7f8e1555`, `3e8e703f`, `7bed0da5`) therefore differ from
+  the staged table above for those segments. Pack verifies
+  18 OK / 0 STALE / 0 MISSING.
+- **MP4 finish + `MP4-EVIDENCE.md` — DONE.** The evidence file
+  beside this one is filled (1,811 frames counted; mux
+  −14.00 LUFS against the mix's −13.99); the final proof MP4
+  was re-made from the `f021991` frames with all-bt709
+  colour tags after `6ca97fc`.
+- **PC RADV evidence — STILL NONE.** Unchanged; every native
+  number in this package remains CI lavapipe.
