@@ -27,6 +27,7 @@ mod math;
 mod scene;
 mod scenefile;
 mod telemetry;
+mod toonfull;
 
 use math::Mat4;
 use std::borrow::Cow;

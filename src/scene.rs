@@ -984,7 +984,7 @@ pub(crate) struct ToonSpec {
 
 /// Rounded-rect outline points (stage space), corners flattened with
 /// `seg` segments each — the native stand-in for ctx.roundRect.
-fn rounded_rect_pts(x: f32, y: f32, w: f32, h: f32, r: f32, seg: usize) -> Vec<(f32, f32)> {
+pub(crate) fn rounded_rect_pts(x: f32, y: f32, w: f32, h: f32, r: f32, seg: usize) -> Vec<(f32, f32)> {
     let mut pts: Vec<(f32, f32)> = Vec::new();
     let corners = [
         (x + w - r, y + r, -std::f32::consts::FRAC_PI_2),
