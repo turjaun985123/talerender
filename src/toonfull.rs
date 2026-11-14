@@ -121,19 +121,19 @@ pub(crate) struct Plate {
 }
 
 pub(crate) struct FullLook {
-    pub body: &'static str,
-    pub head: &'static str,
-    pub shade: Option<&'static str>,
-    pub pattern: &'static str, // 'plain' | 'vest' (the film's set)
-    pub pat_col: Option<&'static str>,
-    pub hat: &'static str, // 'none' | 'cap' | 'bowler'
-    pub hat_col: Option<&'static str>,
-    pub band: Option<&'static str>,
-    pub neck: &'static str, // 'none' | 'tie' | 'scarf'
-    pub neck_col: Option<&'static str>,
+    pub body: String,
+    pub head: String,
+    pub shade: Option<String>,
+    pub pattern: String, // 'plain' | 'vest' (the film's set)
+    pub pat_col: Option<String>,
+    pub hat: String, // 'none' | 'cap' | 'bowler'
+    pub hat_col: Option<String>,
+    pub band: Option<String>,
+    pub neck: String, // 'none' | 'tie' | 'scarf'
+    pub neck_col: Option<String>,
     pub glasses: bool,
     pub mustache: bool,
-    pub mustache_col: Option<&'static str>,
+    pub mustache_col: Option<String>,
     pub kid: bool,
 }
 
@@ -390,12 +390,12 @@ pub(crate) fn paint_toon_full(
     seg(flatten_cubic(px(bx - bw, bot - 50.0), px(bx - bw + 4.0, bot + 6.0), px(bx + bw - 4.0, bot + 6.0), px(bx + bw, bot - 50.0), 28));
     seg(flatten_cubic(px(bx + bw, bot - 50.0), px(bx + bw + 6.0, bot - 120.0), px(bx + 80.0, top + 40.0), px(bx + 58.0, top + 10.0), 28));
     seg(flatten_cubic(px(bx + 58.0, top + 10.0), px(bx + 30.0, top - 8.0), px(bx - 30.0, top - 8.0), px(bx - 58.0, top + 10.0), 28));
-    p.fill_polygon(&bean, rgba(look.body));
+    p.fill_polygon(&bean, rgba(&look.body));
     let mask = p.polygon_mask(&bean);
     // Pattern (clipped to the bean, as drawPattern runs inside the
     // body's clip): only 'vest' occurs in this film besides plain.
     if look.pattern == "vest" {
-        let pc = look.pat_col.unwrap_or("#3B3346");
+        let pc = look.pat_col.as_deref().unwrap_or("#3B3346");
         for s in [-1.0f32, 1.0] {
             let panel = [
                 px(bx + s * 140.0, top - 10.0),
@@ -414,7 +414,7 @@ pub(crate) fn paint_toon_full(
     let (shx, shy) = px(bx + bw + 40.0, (top + bot) / 2.0 + 20.0);
     let shade_col = match look.shade {
         Some(s) => rgba(s),
-        None => shade_rgba(look.body, 0.8),
+        None => shade_rgba(&look.body, 0.8),
     };
     p.fill_ellipse_masked(shx, shy, 70.0 * RES, 260.0 * RES, th, (shade_col.0, shade_col.1, shade_col.2, (0.85 * 255.0) as u8), &mask);
     let (hix, hiy) = px(bx - 50.0, top + 90.0);
@@ -426,9 +426,9 @@ pub(crate) fn paint_toon_full(
     }
 
     // ---- neckwear ----
-    match look.neck {
+    match look.neck.as_str() {
         "tie" => {
-            let c = look.neck_col.unwrap_or("#D8343F");
+            let c = look.neck_col.as_deref().unwrap_or("#D8343F");
             let poly = [
                 px(bx - 14.0, top + 10.0),
                 px(bx + 14.0, top + 10.0),
@@ -442,7 +442,7 @@ pub(crate) fn paint_toon_full(
             p.stroke_polyline(&ring, lw(6.0), ink);
         }
         "scarf" => {
-            let c = look.neck_col.unwrap_or("#D8343F");
+            let c = look.neck_col.as_deref().unwrap_or("#D8343F");
             let tail = [
                 px(bx + 20.0, top + 20.0),
                 px(bx + 58.0, top + 130.0),
@@ -509,12 +509,12 @@ pub(crate) fn paint_toon_full(
     let fx = hx + turn * 30.0;
     // Head outline.
     let (chx, chy) = hpt(hx, hy);
-    p.fill_ellipse(chx, chy, rp * (1.0 - 0.3 * sq) * RES, rp * 0.97 * (1.0 + sq) * RES, head_rot, rgba(look.head));
+    p.fill_ellipse(chx, chy, rp * (1.0 - 0.3 * sq) * RES, rp * 0.97 * (1.0 + sq) * RES, head_rot, rgba(&look.head));
     // Even-odd shade: inside the head ellipse, outside the offset
     // circle (coverage form, as paint_toon).
     {
         let (ccx, ccy) = hpt(hx + 52.0 + turn * 30.0, hy + 44.0);
-        let shade = shade_rgb(look.head, 0.9);
+        let shade = shade_rgb(&look.head, 0.9);
         let col = (shade.0, shade.1, shade.2, 255u8);
         let (rx_h, ry_h) = (rp * (1.0 - 0.3 * sq) * RES, rp * 0.97 * (1.0 + sq) * RES);
         let (rx_c, ry_c) = (rp * (1.0 - 0.3 * sq) * RES, rp * (1.0 + sq) * RES);
@@ -566,7 +566,7 @@ pub(crate) fn paint_toon_full(
     // Eyes.
     for s in [-1.0f32, 1.0] {
         let x = fx + s * ex;
-        let (lx, ly) = st.look;
+        let [lx, ly] = st.look;
         if m == Mood::Happy || m == Mood::Laugh || m == Mood::Relieved {
             let pts: Vec<(f32, f32)> = (0..=24)
                 .map(|i| {
@@ -618,7 +618,7 @@ pub(crate) fn paint_toon_full(
                 hpt(x + 24.0, ey - 2.0 + if m == Mood::Tired { 6.0 } else { 0.0 }),
                 hpt(x - 24.0, ey - 2.0 + if m == Mood::Tired { 6.0 } else { 0.0 }),
             ];
-            p.fill_polygon(&rect_pts, rgba(look.head));
+            p.fill_polygon(&rect_pts, rgba(&look.head));
             p.stroke_polyline(
                 &[
                     hpt(x - 20.0, ey - 2.0 + if m == Mood::Tired { 6.0 } else { 0.0 }),
@@ -754,7 +754,7 @@ pub(crate) fn paint_toon_full(
         }
     }
     if look.mustache {
-        let mc = look.mustache_col.unwrap_or("#3A2A22");
+        let mc = look.mustache_col.as_deref().unwrap_or("#3A2A22");
         let mut pts: Vec<(f32, f32)> = Vec::new();
         let mut chain = |qs: Vec<(f32, f32)>| {
             if pts.is_empty() {
@@ -795,9 +795,9 @@ pub(crate) fn paint_toon_full(
     // ---- hat (centre lags turn*18) ----
     let hatx = hx + turn * 18.0;
     let htop = hy - rp * 0.97;
-    match look.hat {
+    match look.hat.as_str() {
         "cap" => {
-            let cap_hex = look.hat_col.unwrap_or("#7A5236");
+            let cap_hex = look.hat_col.as_deref().unwrap_or("#7A5236");
             let cap = rgba(cap_hex);
             {
                 let (ccx, ccy) = hpt(hatx + 6.0, htop + 34.0);
@@ -834,7 +834,7 @@ pub(crate) fn paint_toon_full(
             }
         }
         "bowler" => {
-            let c_hex = look.hat_col.unwrap_or("#7A5236");
+            let c_hex = look.hat_col.as_deref().unwrap_or("#7A5236");
             let c = rgba(c_hex);
             // Brim: full ellipse (r*1.02, 22) at top + 26.
             let (bcx, bcy) = hpt(hatx, htop + 26.0);
@@ -856,7 +856,7 @@ pub(crate) fn paint_toon_full(
             p.stroke_polyline(&ring, lw(9.0), ink);
             // Band: rect (hx - w, top + 4 - 12, 2w, 24), w = r*0.64,
             // colour = band || shadeOf(c, 0.6), fill + stroke.
-            let band_col = look.band.map(|b| rgba(b)).unwrap_or_else(|| shade_rgba(c_hex, 0.6));
+            let band_col = look.band.as_deref().map(|b| rgba(b)).unwrap_or_else(|| shade_rgba(c_hex, 0.6));
             let w = rp * 0.64;
             let rect = [
                 hpt(hatx - w, htop + 4.0 - 12.0),

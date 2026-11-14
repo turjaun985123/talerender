@@ -367,6 +367,95 @@ existing staging must honour the law.
 9. **Caption text is a texture file**, not a text node — text
    layout belongs to the caption system, not the scene format.
 
+## 14. Format v2 (production integration)
+
+v2 is additive over v1 under the §10 rule: v1 files load
+bit-identically (the §9 proof pairs remain the regression
+anchor), and a v1 file carrying v2 fields is **rejected**, not
+reinterpreted. The v2 loader accepts versions 1 and 2 and
+rejects everything else. v2 adds exactly what the Onoda
+integration inventory (docs/integration/INVENTORY.md) demanded:
+
+### 14.1 Time
+
+Top-level `"time": <seconds>` — the shot time the file is
+evaluated at (default 0). Camera keys (14.4) are evaluated at
+this t; a `character` node's state is the state at this t.
+
+### 14.2 Lights
+
+Top-level `"lights"` — the production rig (engine.ts lightRig /
+world.ts sunlight):
+
+```jsonc
+"lights": {
+  "key":  { "color": "#FFF0D6", "intensity": 2.6,
+            "position": [7, 12, 5], "target": [0, 0, -2],
+            "shadow": true, "shadowBox": 17, "far": 80,
+            "bias": -0.0006, "normalBias": 0.02 },
+  "rim":  { "color": "#FFFFFF", "intensity": 0.4, "position": [-3, 3, -3] },
+  "hemisphere": { "sky": "#DCECD2", "ground": "#46603A", "intensity": 1.15 },
+  "points": [ { "color": "#FF9A3C", "intensity": 5.0,
+                "position": [-1.35, 0.6, -2.45], "distance": 7, "decay": 1.6 } ],
+  "envIntensity": 0.25
+}
+```
+
+Parsed and validated by the loader; consumed in full by the
+film renderer (src/film.rs). The still renderers print the rig
+in their header line and otherwise keep the v1 house light —
+the same "carried, declared" status roughness had in v1 (§4.1).
+
+### 14.3 Character node
+
+```jsonc
+{ "type": "character", "position": [0.35, 0, -0.55],
+  "height": 1.75, "perspective": true,
+  "look":  { "body": "#5C6644", "shade": "#878E6E", "pattern": "plain",
+             "hat": "cap", "hatCol": "#4C5638", "neck": "none",
+             "extra": ["glasses", "mustache"] },
+  "state": { "mood": "determined", "armL": [10, 6], "armR": [16, -6],
+             "look": [0, 0], "blink": 0, "talk": 0, "legs": "stand",
+             "phase": 0, "lean": 1, "bob": 0, "squash": 0,
+             "headTilt": 0, "headTurn": -0.025, "camPitch": 0.287,
+             "sitOn": 0.34,
+             "holdL": { "plate": "<texture id>", "x0": -160, "y0": -200 } } }
+```
+
+The node paints with the full drawToon port (src/toonfull.rs —
+all moods, walk/sit legs, vest, tie/scarf, cap/bowler, glasses,
+mustache, blink/talk/look, squash) and emits the blob shadow +
+the card, replacing both v1 `code-ref` ids. Facing follows
+`face()`: yaw toward the evaluated camera, plus the perspective
+pitch (×0.45, clamped ±0.38) when `perspective` is true.
+`sitOn` is metres, converted exactly as Toon#set converts it
+(× 1024 / H). Held props are **plates**: pre-rendered RGBA
+textures declared in `textures`, composited into the card at
+the hand; the prop text (a paper's headline, a book's title)
+therefore enters as data, as captions do (§12.9). Every prop
+this film uses ignores its angle argument, so a plate is placed
+by translation to the hand alone (declared in toonfull.rs).
+
+### 14.4 Camera keys
+
+```jsonc
+"camera": { "fovY": 44, "eye": [...], "target": [...],
+  "keys": [ { "t": 0.0, "eye": [...], "target": [...], "fovY": 44 },
+            { "t": 5.91, "eye": [...], "target": [...], "ease": "linear" } ] }
+```
+
+Keys evaluate at `time`: eye/target/fovY interpolate between
+the bracketing keys with the engine's smootherstep (motion.ts
+camK easing); a key with `"ease": "linear"` eases its incoming
+segment linearly (the S05a plane law — constant speed, no
+easing). Outside the key range the end keys hold. Static
+eye/target/fovY remain required as the base/fallback.
+
+Proof: `scenes/character-v2.scene.json` (the S01 staging as
+data: character node + keys + the noon JG rig) and the loader
+unit tests (`v2_keys_lights_and_character_node`,
+`v1_file_with_v2_fields_is_rejected`).
+
 ## 13. What M4 / M5 must add
 
 **M4 (painter):** a `character` node — card geometry + a painter

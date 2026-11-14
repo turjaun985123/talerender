@@ -76,12 +76,56 @@ enum Draw {
     Tex(TexDraw),
 }
 
+/// Format v2 light rig (spec §14): the production rig the source
+/// engine builds with lightRig()/sunlight() — parsed and validated
+/// here; the film renderer (src/film.rs) consumes it in full. The
+/// still paths consume what their shaders can express and print
+/// the rig in the scene header line.
+pub(crate) struct KeyCfg {
+    pub color: String,
+    pub intensity: f32,
+    pub position: [f32; 3],
+    pub target: [f32; 3],
+    pub shadow: bool,
+    pub shadow_box: f32,
+    pub far: f32,
+    pub bias: f32,
+    pub normal_bias: f32,
+}
+pub(crate) struct RimCfg {
+    pub color: String,
+    pub intensity: f32,
+    pub position: [f32; 3],
+}
+pub(crate) struct HemiCfg {
+    pub sky: String,
+    pub ground: String,
+    pub intensity: f32,
+}
+pub(crate) struct PointCfg {
+    pub color: String,
+    pub intensity: f32,
+    pub position: [f32; 3],
+    pub distance: f32,
+    pub decay: f32,
+}
+pub(crate) struct LightsCfg {
+    pub key: Option<KeyCfg>,
+    pub rim: Option<RimCfg>,
+    pub hemisphere: Option<HemiCfg>,
+    pub points: Vec<PointCfg>,
+    pub env_intensity: f32,
+}
+
 struct Loaded {
     name: String,
+    version: u32,
+    time: f32,
     camera: Camera,
     clear: Option<[f32; 3]>, // linearised sRGB
     light_dir: [f32; 3],
     ambient: f32,
+    lights: Option<LightsCfg>,
     textures: Vec<(Vec<u8>, u32, u32)>,
     draws: Vec<Draw>,
     bokeh: Option<Bokeh>,
@@ -383,11 +427,34 @@ fn resolve_texture(spec: &Value, scene_dir: &Path, ctx: &str) -> Result<(Vec<u8>
     })
 }
 
+fn truthy(v: Option<&Value>) -> bool {
+    matches!(v, Some(Value::Bool(true))) || v.and_then(Value::as_f64).unwrap_or(0.0) != 0.0
+}
+
+fn opt_str(v: &Value, key: &str) -> Option<String> {
+    v.get(key).and_then(Value::as_str).map(|s| s.to_string())
+}
+
+fn pair_field(v: &Value, key: &str, ctx: &str, default: (f32, f32)) -> Result<(f32, f32), String> {
+    match v.get(key) {
+        None => Ok(default),
+        Some(a) => {
+            let a = a.as_arr().ok_or_else(|| err(ctx, &format!("'{key}' must be [a, e]")))?;
+            if a.len() != 2 {
+                return Err(err(ctx, &format!("'{key}' must be [a, e]")));
+            }
+            Ok((num(&a[0], ctx)? as f32, num(&a[1], ctx)? as f32))
+        }
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
 fn walk_nodes(
     nodes: &[Value],
     parent: &Mat4,
     cam: &Camera,
     tex_index: &HashMap<String, usize>,
+    textures: &mut Vec<(Vec<u8>, u32, u32)>,
     draws: &mut Vec<Draw>,
     ctx: &str,
 ) -> Result<(), String> {
@@ -401,7 +468,7 @@ fn walk_nodes(
                 let children = req(node, "children", &nctx)?
                     .as_arr()
                     .ok_or_else(|| err(&nctx, "'children' must be an array"))?;
-                walk_nodes(children, &m, cam, tex_index, draws, &format!("{nctx}.children"))?;
+                walk_nodes(children, &m, cam, tex_index, textures, draws, &format!("{nctx}.children"))?;
             }
             "mesh" => {
                 let local = compose_transform(node.get("transform"), &nctx)?;
@@ -478,10 +545,193 @@ fn walk_nodes(
                     other => return Err(err(&nctx, &format!("unknown code-ref id '{other}'"))),
                 }
             }
+            "character" => {
+                // Format v2 (spec §14.3): a real character node —
+                // the full painter (src/toonfull.rs) replaces the
+                // v1 code-ref escape hatch. The node is evaluated
+                // at the file's `time` by construction: the state
+                // in the file IS the state at that time.
+                use crate::toonfull::{FullLook, FullState, Legs, Mood, Plate};
+                let pos = vec3_field(node, "position", &nctx)?;
+                let height = f32_field_or(node, "height", &nctx, 1.75)?;
+                let h_t = height / 0.96;
+                let perspective = truthy(node.get("perspective"));
+                let look_spec = node.get("look").cloned().unwrap_or(Value::Null);
+                let extra: Vec<String> = look_spec
+                    .get("extra")
+                    .and_then(Value::as_arr)
+                    .map(|a| a.iter().filter_map(|v| v.as_str().map(|s| s.to_string())).collect())
+                    .unwrap_or_default();
+                let look = FullLook {
+                    body: opt_str(&look_spec, "body").unwrap_or_else(|| "#E8734A".to_string()),
+                    head: opt_str(&look_spec, "head").unwrap_or_else(|| "#F7F7FA".to_string()),
+                    shade: opt_str(&look_spec, "shade"),
+                    pattern: opt_str(&look_spec, "pattern").unwrap_or_else(|| "plain".to_string()),
+                    pat_col: opt_str(&look_spec, "patCol"),
+                    hat: opt_str(&look_spec, "hat").unwrap_or_else(|| "none".to_string()),
+                    hat_col: opt_str(&look_spec, "hatCol"),
+                    band: opt_str(&look_spec, "band"),
+                    neck: opt_str(&look_spec, "neck").unwrap_or_else(|| "none".to_string()),
+                    neck_col: opt_str(&look_spec, "neckCol"),
+                    glasses: extra.iter().any(|e| e == "glasses"),
+                    mustache: extra.iter().any(|e| e == "mustache"),
+                    mustache_col: opt_str(&look_spec, "mustacheCol"),
+                    kid: truthy(look_spec.get("kid")),
+                };
+                let st_spec = node.get("state").cloned().unwrap_or(Value::Null);
+                let plate_of = |key: &str| -> Result<Option<Plate>, String> {
+                    match st_spec.get(key) {
+                        None => Ok(None),
+                        Some(h) => {
+                            let id = str_field(h, "plate", &nctx)?;
+                            let ti = tex_index.get(id).ok_or_else(|| {
+                                err(&nctx, &format!("hold plate texture '{id}' not declared"))
+                            })?;
+                            let (px, w, h) = &textures[*ti];
+                            Ok(Some(Plate {
+                                px: px.clone(),
+                                w: *w,
+                                h: *h,
+                                x0: f32_field_or(h, "x0", &nctx, 0.0)?,
+                                y0: f32_field_or(h, "y0", &nctx, 0.0)?,
+                            }))
+                        }
+                    }
+                };
+                let state = FullState {
+                    mood: Mood::from_str(opt_str(&st_spec, "mood").as_deref().unwrap_or("neutral")),
+                    look: pair_field(&st_spec, "look", &nctx, (0.0, 0.0))?,
+                    blink: f32_field_or(&st_spec, "blink", &nctx, 0.0)?,
+                    talk: f32_field_or(&st_spec, "talk", &nctx, 0.0)?,
+                    sweat: truthy(st_spec.get("sweat")),
+                    tears: truthy(st_spec.get("tears")),
+                    arm_l: pair_field(&st_spec, "armL", &nctx, (8.0, 6.0))?,
+                    arm_r: pair_field(&st_spec, "armR", &nctx, (8.0, 6.0))?,
+                    legs: match opt_str(&st_spec, "legs").as_deref() {
+                        Some("walk") => Legs::Walk,
+                        Some("run") => Legs::Run,
+                        Some("sit") => Legs::Sit,
+                        Some("jump") => Legs::Jump,
+                        _ => Legs::Stand,
+                    },
+                    phase: f32_field_or(&st_spec, "phase", &nctx, 0.0)?,
+                    lean: f32_field_or(&st_spec, "lean", &nctx, 0.0)?,
+                    bob: f32_field_or(&st_spec, "bob", &nctx, 0.0)?,
+                    squash: f32_field_or(&st_spec, "squash", &nctx, 0.0)?,
+                    head_tilt: f32_field_or(&st_spec, "headTilt", &nctx, 0.0)?,
+                    head_turn: f32_field_or(&st_spec, "headTurn", &nctx, 0.0)?,
+                    cam_pitch: f32_field_or(&st_spec, "camPitch", &nctx, 0.0)?,
+                    sit_drop: match st_spec.get("sitOn") {
+                        Some(v) => Some((num(v, &nctx)? as f32) * 1024.0 / h_t),
+                        None => None,
+                    },
+                    hold_l: plate_of("holdL")?,
+                    hold_r: plate_of("holdR")?,
+                };
+                let (pxbuf, pw, ph, _hl, _hr) = crate::toonfull::paint_toon_full(&look, &state);
+                textures.push((pxbuf, pw, ph));
+                let card_tex = textures.len() - 1;
+                textures.push(scene::paint_blob());
+                let blob_tex = textures.len() - 1;
+                // face(): yaw toward the (evaluated) camera, plus
+                // the perspective pitch when the node opts in.
+                let yaw = (cam.eye[0] - pos[0]).atan2(cam.eye[2] - pos[2]);
+                let pitch = if perspective {
+                    let dy = cam.eye[1] - (pos[1] + h_t * 0.6);
+                    let dh = ((cam.eye[0] - pos[0]).powi(2) + (cam.eye[2] - pos[2]).powi(2)).sqrt();
+                    if dh < 1e-4 {
+                        0.0
+                    } else {
+                        (dy.atan2(dh) * 0.45).clamp(-0.38, 0.38)
+                    }
+                } else {
+                    0.0
+                };
+                let model = math::mul(
+                    parent,
+                    &math::mul(
+                        &math::translate(pos[0], pos[1], pos[2]),
+                        &math::mul(&math::rotate_y(yaw), &math::rotate_x(pitch)),
+                    ),
+                );
+                let su = h_t / 1024.0;
+                let plane_w = h_t * 1280.0 / 1024.0;
+                let plane_h = h_t * 1408.0 / 1024.0;
+                draws.push(Draw::Tex(TexDraw {
+                    geo: flat_quad_geo((h_t / 2.0) * 0.9, (h_t / 2.0) * 0.34),
+                    model: math::mul(parent, &math::translate(pos[0], pos[1] + 0.01, pos[2])),
+                    tex: blob_tex,
+                    repeat: false,
+                }));
+                draws.push(Draw::Tex(TexDraw {
+                    geo: quad_geo(plane_w, plane_h, 552.0 * su - plane_h / 2.0),
+                    model,
+                    tex: card_tex,
+                    repeat: false,
+                }));
+            }
             other => return Err(err(&nctx, &format!("unknown node type '{other}'"))),
         }
     }
     Ok(())
+}
+
+/// motion.ts smootherstep (the camK easing): u^3 (u (6u - 15) + 10),
+/// clamped to [0, 1]. Computed in f64, as the source does.
+fn smootherstep(u: f64) -> f64 {
+    let u = u.clamp(0.0, 1.0);
+    u * u * u * (u * (u * 6.0 - 15.0) + 10.0)
+}
+
+/// Evaluate format v2 camera keys at `time`: returns (eye, target,
+/// fovY). Keys are { t, eye, target, fovY?, ease? }; before the
+/// first / after the last key the end key holds.
+fn eval_camera_keys(
+    keys: &[Value],
+    time: f64,
+    base: &Camera,
+) -> Result<([f32; 3], [f32; 3], f32), String> {
+    let key_at = |k: &Value| -> Result<(f64, [f32; 3], [f32; 3], f32, bool), String> {
+        let t = num_field(k, "t", "scene.camera.keys")?;
+        let eye = vec3_field(k, "eye", "scene.camera.keys")?;
+        let target = vec3_field(k, "target", "scene.camera.keys")?;
+        let fov = match k.get("fovY") {
+            Some(v) => num(v, "scene.camera.keys.fovY")? as f32,
+            None => base.fov_y_deg,
+        };
+        let linear = k.get("ease").and_then(Value::as_str) == Some("linear");
+        Ok((t, eye, target, fov, linear))
+    };
+    let first = key_at(&keys[0])?;
+    if time <= first.0 || keys.len() == 1 {
+        return Ok((first.1, first.2, first.3));
+    }
+    for w in keys.windows(2) {
+        let a = key_at(&w[0])?;
+        let b = key_at(&w[1])?;
+        if time <= b.0 {
+            let span = b.0 - a.0;
+            let raw = if span > 0.0 { (time - a.0) / span } else { 1.0 };
+            let u = if b.4 { raw.clamp(0.0, 1.0) } else { smootherstep(raw) } as f32;
+            let mix3 = |x: [f32; 3], y: [f32; 3]| {
+                [
+                    x[0] + (y[0] - x[0]) * u,
+                    x[1] + (y[1] - x[1]) * u,
+                    x[2] + (y[2] - x[2]) * u,
+                ]
+            };
+            return Ok((mix3(a.1, b.1), mix3(a.2, b.2), a.3 + (b.3 - a.3) * u));
+        }
+    }
+    let last = key_at(&keys[keys.len() - 1])?;
+    Ok((last.1, last.2, last.3))
+}
+
+fn vec3_field_or(v: &Value, key: &str, ctx: &str, default: [f32; 3]) -> Result<[f32; 3], String> {
+    match v.get(key) {
+        Some(x) => vec3(x, ctx),
+        None => Ok(default),
+    }
 }
 
 fn load(path: &str) -> Result<Loaded, String> {
@@ -493,14 +743,22 @@ fn load(path: &str) -> Result<Loaded, String> {
             return Err(format!("{path}: 'format' must be \"talerender-scene\""));
         }
     }
-    match root.get("version").and_then(Value::as_f64) {
-        Some(1.0) => {}
+    let version: u32 = match root.get("version").and_then(Value::as_f64) {
+        Some(1.0) => 1,
+        Some(2.0) => 2,
         other => {
             return Err(format!(
-                "{path}: unsupported scene format version {other:?} (this loader reads version 1)"
+                "{path}: unsupported scene format version {other:?} (this loader reads versions 1 and 2)"
             ))
         }
-    }
+    };
+    // Format v2: the shot's evaluation time. v1 files are stills;
+    // a v2 file's camera keys and character state are read at this
+    // t (the state in the file is the state at t by construction).
+    let time: f32 = match root.get("time") {
+        Some(v) => num(v, "scene.time")? as f32,
+        None => 0.0,
+    };
     let name = root
         .get("name")
         .and_then(Value::as_str)
@@ -508,7 +766,7 @@ fn load(path: &str) -> Result<Loaded, String> {
         .to_string();
 
     let cam_spec = req(&root, "camera", "scene")?;
-    let camera = Camera {
+    let mut camera = Camera {
         fov_y_deg: f32_field(cam_spec, "fovY", "scene.camera")?,
         near: match cam_spec.get("near") {
             Some(v) => num(v, "scene.camera.near")? as f32,
@@ -525,6 +783,24 @@ fn load(path: &str) -> Result<Loaded, String> {
             None => [0.0, 1.0, 0.0],
         },
     };
+    // Format v2 camera keys: keyframed eye/target/fovY evaluated
+    // at `time` (smootherstep between keys, the engine's camK
+    // easing; a key with "ease": "linear" eases its incoming
+    // segment linearly). Static eye/target remain the fallback
+    // and the value outside the key range clamps to the end keys.
+    if let Some(keys) = cam_spec.get("keys") {
+        if version < 2 {
+            return Err(err("scene.camera.keys", "camera keys are a format v2 field"));
+        }
+        let keys = keys.as_arr().ok_or_else(|| err("scene.camera.keys", "must be an array"))?;
+        if keys.is_empty() {
+            return Err(err("scene.camera.keys", "must not be empty"));
+        }
+        let eval = eval_camera_keys(keys, time as f64, &camera)?;
+        camera.eye = eval.0;
+        camera.target = eval.1;
+        camera.fov_y_deg = eval.2;
+    }
 
     let clear = match root.get("clear") {
         Some(Value::Str(hex)) => Some(hex_lin(hex)),
@@ -544,6 +820,69 @@ fn load(path: &str) -> Result<Loaded, String> {
             )
         }
         None => ([0.5, 0.8, 0.6], 0.35),
+    };
+
+    // Format v2 light rig (spec §14.2). v1 files have no `lights`
+    // block; a v1 file carrying one is rejected rather than
+    // silently reinterpreted.
+    let lights: Option<LightsCfg> = match root.get("lights") {
+        None => None,
+        Some(l) => {
+            if version < 2 {
+                return Err(err("scene.lights", "the light rig is a format v2 field"));
+            }
+            let key = match l.get("key") {
+                None => None,
+                Some(k) => Some(KeyCfg {
+                    color: opt_str(k, "color").unwrap_or_else(|| "#FFE2C2".to_string()),
+                    intensity: f32_field_or(k, "intensity", "scene.lights.key", 3.2)?,
+                    position: vec3_field_or(k, "position", "scene.lights.key", [2.5, 4.0, 3.0])?,
+                    target: vec3_field_or(k, "target", "scene.lights.key", [0.0, 1.0, 0.0])?,
+                    shadow: truthy(k.get("shadow")),
+                    shadow_box: f32_field_or(k, "shadowBox", "scene.lights.key", 3.0)?,
+                    far: f32_field_or(k, "far", "scene.lights.key", 20.0)?,
+                    bias: f32_field_or(k, "bias", "scene.lights.key", -0.0004)?,
+                    normal_bias: f32_field_or(k, "normalBias", "scene.lights.key", 0.02)?,
+                }),
+            };
+            let rim = match l.get("rim") {
+                None => None,
+                Some(r) => Some(RimCfg {
+                    color: opt_str(r, "color").unwrap_or_else(|| "#BFD8FF".to_string()),
+                    intensity: f32_field_or(r, "intensity", "scene.lights.rim", 2.2)?,
+                    position: vec3_field_or(r, "position", "scene.lights.rim", [-3.0, 3.0, -3.0])?,
+                }),
+            };
+            let hemisphere = match l.get("hemisphere") {
+                None => None,
+                Some(h) => Some(HemiCfg {
+                    sky: opt_str(h, "sky").unwrap_or_else(|| "#FFF4E6".to_string()),
+                    ground: opt_str(h, "ground").unwrap_or_else(|| "#8C6E55".to_string()),
+                    intensity: f32_field_or(h, "intensity", "scene.lights.hemisphere", 0.9)?,
+                }),
+            };
+            let mut points = Vec::new();
+            if let Some(ps) = l.get("points") {
+                let ps = ps.as_arr().ok_or_else(|| err("scene.lights.points", "must be an array"))?;
+                for (i, p) in ps.iter().enumerate() {
+                    let pctx = format!("scene.lights.points[{i}]");
+                    points.push(PointCfg {
+                        color: opt_str(p, "color").unwrap_or_else(|| "#FFFFFF".to_string()),
+                        intensity: f32_field_or(p, "intensity", &pctx, 1.0)?,
+                        position: vec3_field(p, "position", &pctx)?,
+                        distance: f32_field_or(p, "distance", &pctx, 0.0)?,
+                        decay: f32_field_or(p, "decay", &pctx, 2.0)?,
+                    });
+                }
+            }
+            Some(LightsCfg {
+                key,
+                rim,
+                hemisphere,
+                points,
+                env_intensity: f32_field_or(l, "envIntensity", "scene.lights", 0.25)?,
+            })
+        }
     };
 
     let scene_dir = Path::new(path).parent().unwrap_or_else(|| Path::new(".")).to_path_buf();
@@ -566,7 +905,7 @@ fn load(path: &str) -> Result<Loaded, String> {
     let nodes = req(&root, "nodes", "scene")?
         .as_arr()
         .ok_or_else(|| err("scene.nodes", "must be an array"))?;
-    walk_nodes(nodes, &math::identity(), &camera, &tex_index, &mut draws, "scene.nodes")?;
+    walk_nodes(nodes, &math::identity(), &camera, &tex_index, &mut textures, &mut draws, "scene.nodes")?;
 
     let bokeh = match root.get("post") {
         Some(post) => match post.get("bokeh") {
@@ -604,7 +943,7 @@ fn load(path: &str) -> Result<Loaded, String> {
         return Err(err("scene.post", "post.bloom / post.grade require post.bokeh (format v1 enters the composer path via bokeh)"));
     }
 
-    Ok(Loaded { name, camera, clear, light_dir, ambient, textures, draws, bokeh, bloom, grade })
+    Ok(Loaded { name, version, time, camera, clear, light_dir, ambient, lights, textures, draws, bokeh, bloom, grade })
 }
 
 // ---------------------------------------------------------------------
@@ -811,7 +1150,8 @@ pub async fn run_scene_file(width: u32, height: u32, out: &str, path: &str) {
 async fn run_direct(width: u32, height: u32, out: &str, scene: &Loaded) {
     let (device, queue) = make_device("talerender scene-file device").await;
     println!(
-        "scene: file — {} (format v1, direct path, {} draws, {} textures)",
+        "scene: file — {} (format v{}, direct path, {} draws, {} textures)",
+        scene.version,
         scene.name,
         scene.draws.len(),
         scene.textures.len()
@@ -1159,8 +1499,8 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded) {
     let bokeh = scene.bokeh.as_ref().expect("composer path requires post.bokeh");
     let (device, queue) = make_device("talerender scene-file composer device").await;
     println!(
-        "scene: file — {} (format v1, composer path: HalfFloat MSAA-4x -> packed-depth prepass -> r170 bokeh -> Neutral+sRGB; focus {} m, aperture {}, maxblur {})",
-        scene.name, bokeh.focus, bokeh.aperture, bokeh.maxblur
+        "scene: file — {} (format v{}, composer path: HalfFloat MSAA-4x -> packed-depth prepass -> r170 bokeh -> Neutral+sRGB; focus {} m, aperture {}, maxblur {})",
+        scene.name, scene.version, bokeh.focus, bokeh.aperture, bokeh.maxblur
     );
     let cam = &scene.camera;
     let vp = view_proj(cam, width, height);
@@ -1818,7 +2158,7 @@ mod tests {
         let mut tex_index = HashMap::new();
         tex_index.insert("chart".to_string(), 0usize);
         let mut draws = Vec::new();
-        walk_nodes(nodes, &math::identity(), &test_camera(), &tex_index, &mut draws, "t").unwrap();
+        walk_nodes(nodes, &math::identity(), &test_camera(), &tex_index, &mut Vec::new(), &mut draws, "t").unwrap();
         assert_eq!(draws.len(), 1);
         let Draw::Tex(td) = &draws[0] else { panic!("expected a textured draw") };
         // Local geometry: BL corner at (-w/2, -h/2, 0), uv (0, 1).
@@ -1837,9 +2177,9 @@ mod tests {
     #[test]
     fn load_rejects_other_versions_and_loads_a_minimal_scene() {
         let dir = std::env::temp_dir();
-        let bad = dir.join("talerender-test-v2.scene.json");
-        std::fs::write(&bad, r##"{"version": 2, "camera": {}, "nodes": []}"##).unwrap();
-        let e = load(bad.to_str().unwrap()).err().expect("version 2 must be rejected");
+        let bad = dir.join("talerender-test-v3.scene.json");
+        std::fs::write(&bad, r##"{"version": 3, "camera": {}, "nodes": []}"##).unwrap();
+        let e = load(bad.to_str().unwrap()).err().expect("version 3 must be rejected");
         assert!(e.contains("version"), "{e}");
 
         let good = dir.join("talerender-test-v1.scene.json");
@@ -1860,5 +2200,55 @@ mod tests {
         // House-light defaults.
         assert_eq!(loaded.light_dir, [0.5, 0.8, 0.6]);
         assert_eq!(loaded.ambient, 0.35);
+    }
+
+    #[test]
+    fn v2_keys_lights_and_character_node() {
+        let dir = std::env::temp_dir();
+        let f = dir.join("talerender-test-v2full.scene.json");
+        std::fs::write(
+            &f,
+            r##"{"format": "talerender-scene", "version": 2, "name": "v2proof",
+                "time": 1.0,
+                "camera": {"fovY": 40.0, "eye": [0, 2, 6], "target": [0, 1, 0],
+                           "keys": [{"t": 0.0, "eye": [0, 2, 8], "target": [0, 1, 0], "fovY": 44.0},
+                                    {"t": 2.0, "eye": [0, 2, 4], "target": [0, 1, 0], "fovY": 36.0}]},
+                "lights": {"key": {"color": "#FFF0D6", "intensity": 2.6, "position": [7, 12, 5], "target": [0, 0, -2], "shadow": true, "shadowBox": 17.0},
+                           "points": [{"color": "#FF9A3C", "intensity": 5.0, "position": [-1.35, 0.6, -2.45], "distance": 7.0, "decay": 1.6}]},
+                "nodes": [{"type": "character", "position": [0.35, 0, -0.55],
+                           "look": {"body": "#5C6644", "hat": "cap", "hatCol": "#4C5638"},
+                           "state": {"mood": "determined", "armL": [10, 6], "armR": [16, -6], "lean": 1.0}}]}"##,
+        )
+        .unwrap();
+        let loaded = load(f.to_str().unwrap()).unwrap();
+        assert_eq!(loaded.version, 2);
+        assert_eq!(loaded.time, 1.0);
+        // t = 1.0 is the smootherstep midpoint of the key segment:
+        // eye z = 8 + (4 - 8) * 0.5 = 6, fovY = 44 + (36 - 44) * 0.5 = 40.
+        assert!((loaded.camera.eye[2] - 6.0).abs() < 1e-6, "{:?}", loaded.camera.eye);
+        assert!((loaded.camera.fov_y_deg - 40.0).abs() < 1e-6);
+        let lights = loaded.lights.expect("v2 lights parsed");
+        assert_eq!(lights.key.as_ref().unwrap().intensity, 2.6);
+        assert_eq!(lights.points.len(), 1);
+        // The character node emits blob + card textured draws and
+        // appends their two textures (card, blob).
+        assert_eq!(loaded.draws.len(), 2);
+        assert_eq!(loaded.textures.len(), 2);
+    }
+
+    #[test]
+    fn v1_file_with_v2_fields_is_rejected() {
+        let dir = std::env::temp_dir();
+        let f = dir.join("talerender-test-v1keys.scene.json");
+        std::fs::write(
+            &f,
+            r##"{"format": "talerender-scene", "version": 1, "name": "bad",
+                "camera": {"fovY": 30.0, "eye": [0, 0, 0], "target": [0, 0, -1],
+                           "keys": [{"t": 0.0, "eye": [0, 0, 0], "target": [0, 0, -1]}]},
+                "nodes": []}"##,
+        )
+        .unwrap();
+        let e = load(f.to_str().unwrap()).err().expect("v1 + keys must be rejected");
+        assert!(e.contains("v2"), "{e}");
     }
 }
