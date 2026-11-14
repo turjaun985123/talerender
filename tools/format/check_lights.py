@@ -48,7 +48,7 @@ Checks (numbered like tools/film/validate_film.py):
                    vocabulary is closed — lights keys subset of
                    {key, rim, hemisphere, points, envIntensity};
                    key {color, intensity, position, target, shadow,
-                   shadowBox, far, bias, normalBias}; rim {color,
+                   shadowBox, far, near, bias, normalBias}; rim {color,
                    intensity, position}; hemisphere {sky, ground,
                    intensity}; point {color, intensity, position,
                    distance, decay, channel}. Unknown keys are the
@@ -116,7 +116,7 @@ import sys
 GRADE_KEYS = {"vignette", "grain", "warm", "sat", "exposure", "time"}
 LIGHTS_KEYS = {"key", "rim", "hemisphere", "points", "envIntensity"}
 KEY_KEYS = {"color", "intensity", "position", "target", "shadow",
-            "shadowBox", "far", "bias", "normalBias"}
+            "shadowBox", "far", "near", "bias", "normalBias"}
 RIM_KEYS = {"color", "intensity", "position"}
 HEMI_KEYS = {"sky", "ground", "intensity"}
 POINT_KEYS = {"color", "intensity", "position", "distance", "decay",
