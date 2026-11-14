@@ -1,0 +1,404 @@
+{
+  "camera": {
+    "eye": [
+      0,
+      1.6,
+      2
+    ],
+    "fovY": 40,
+    "target": [
+      0,
+      1.2,
+      -6
+    ]
+  },
+  "clear": "#20242A",
+  "format": "talerender-scene",
+  "name": "fx-textures \u2014 registry census: one quad per generator the film data names",
+  "nodes": [
+    {
+      "geometry": {
+        "height": 1.8,
+        "kind": "quad",
+        "width": 1.8,
+        "y0": -0.9
+      },
+      "name": "grass",
+      "texture": "grass",
+      "transform": [
+        {
+          "translate": [
+            -13,
+            1.2,
+            -6
+          ]
+        }
+      ],
+      "type": "mesh"
+    },
+    {
+      "geometry": {
+        "height": 1.8,
+        "kind": "quad",
+        "width": 1.8,
+        "y0": -0.9
+      },
+      "name": "sky-gradient",
+      "texture": "sky",
+      "transform": [
+        {
+          "translate": [
+            -11,
+            1.2,
+            -6
+          ]
+        }
+      ],
+      "type": "mesh"
+    },
+    {
+      "geometry": {
+        "height": 1.8,
+        "kind": "quad",
+        "width": 1.8,
+        "y0": -0.9
+      },
+      "name": "cloud",
+      "texture": "cloud",
+      "transform": [
+        {
+          "translate": [
+            -9,
+            1.2,
+            -6
+          ]
+        }
+      ],
+      "type": "mesh"
+    },
+    {
+      "geometry": {
+        "height": 1.8,
+        "kind": "quad",
+        "width": 1.8,
+        "y0": -0.9
+      },
+      "name": "blob-shadow",
+      "texture": "blob",
+      "transform": [
+        {
+          "translate": [
+            -7,
+            1.2,
+            -6
+          ]
+        }
+      ],
+      "type": "mesh"
+    },
+    {
+      "geometry": {
+        "height": 1.8,
+        "kind": "quad",
+        "width": 1.8,
+        "y0": -0.9
+      },
+      "name": "onoda-card",
+      "texture": "onoda-card",
+      "transform": [
+        {
+          "translate": [
+            -5,
+            1.2,
+            -6
+          ]
+        }
+      ],
+      "type": "mesh"
+    },
+    {
+      "geometry": {
+        "height": 1.8,
+        "kind": "quad",
+        "width": 1.8,
+        "y0": -0.9
+      },
+      "name": "dof-chart-pattern",
+      "texture": "chart",
+      "transform": [
+        {
+          "translate": [
+            -3,
+            1.2,
+            -6
+          ]
+        }
+      ],
+      "type": "mesh"
+    },
+    {
+      "geometry": {
+        "height": 1.8,
+        "kind": "quad",
+        "width": 1.8,
+        "y0": -0.9
+      },
+      "name": "file (book-open plate)",
+      "texture": "plate-book-open",
+      "transform": [
+        {
+          "translate": [
+            -1,
+            1.2,
+            -6
+          ]
+        }
+      ],
+      "type": "mesh"
+    },
+    {
+      "geometry": {
+        "height": 1.8,
+        "kind": "quad",
+        "width": 1.8,
+        "y0": -0.9
+      },
+      "name": "planks",
+      "texture": "planks-crate",
+      "transform": [
+        {
+          "translate": [
+            1,
+            1.2,
+            -6
+          ]
+        }
+      ],
+      "type": "mesh"
+    },
+    {
+      "geometry": {
+        "height": 1.8,
+        "kind": "quad",
+        "width": 1.8,
+        "y0": -0.9
+      },
+      "name": "felt",
+      "texture": "felt-counter",
+      "transform": [
+        {
+          "translate": [
+            3,
+            1.2,
+            -6
+          ]
+        }
+      ],
+      "type": "mesh"
+    },
+    {
+      "geometry": {
+        "height": 1.8,
+        "kind": "quad",
+        "width": 1.8,
+        "y0": -0.9
+      },
+      "name": "wallpaper",
+      "texture": "wallpaper-back",
+      "transform": [
+        {
+          "translate": [
+            5,
+            1.2,
+            -6
+          ]
+        }
+      ],
+      "type": "mesh"
+    },
+    {
+      "geometry": {
+        "height": 1.8,
+        "kind": "quad",
+        "width": 1.8,
+        "y0": -0.9
+      },
+      "name": "parcel",
+      "texture": "parcel",
+      "transform": [
+        {
+          "translate": [
+            7,
+            1.2,
+            -6
+          ]
+        }
+      ],
+      "type": "mesh"
+    },
+    {
+      "geometry": {
+        "height": 1.8,
+        "kind": "quad",
+        "width": 1.8,
+        "y0": -0.9
+      },
+      "name": "picture",
+      "texture": "picture",
+      "transform": [
+        {
+          "translate": [
+            9,
+            1.2,
+            -6
+          ]
+        }
+      ],
+      "type": "mesh"
+    },
+    {
+      "geometry": {
+        "height": 1.8,
+        "kind": "quad",
+        "width": 1.8,
+        "y0": -0.9
+      },
+      "name": "sign",
+      "texture": "sign",
+      "transform": [
+        {
+          "translate": [
+            11,
+            1.2,
+            -6
+          ]
+        }
+      ],
+      "type": "mesh"
+    },
+    {
+      "geometry": {
+        "height": 1.8,
+        "kind": "quad",
+        "width": 1.8,
+        "y0": -0.9
+      },
+      "name": "solid",
+      "texture": "view",
+      "transform": [
+        {
+          "translate": [
+            13,
+            1.2,
+            -6
+          ]
+        }
+      ],
+      "type": "mesh"
+    }
+  ],
+  "textures": [
+    {
+      "base": "#5B9A48",
+      "generator": "grass",
+      "id": "grass"
+    },
+    {
+      "generator": "sky-gradient",
+      "horizon": "#D8E8DA",
+      "id": "sky",
+      "top": "#6E9CC0"
+    },
+    {
+      "generator": "cloud",
+      "id": "cloud"
+    },
+    {
+      "generator": "blob-shadow",
+      "id": "blob"
+    },
+    {
+      "generator": "onoda-card",
+      "id": "onoda-card"
+    },
+    {
+      "generator": "dof-chart-pattern",
+      "id": "chart",
+      "size": 512
+    },
+    {
+      "file": "../../film/assets/book-open.png",
+      "id": "plate-book-open"
+    },
+    {
+      "base": "#B07A48",
+      "generator": "planks",
+      "id": "planks-crate",
+      "repeat": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "base": "#1F5A45",
+      "canvas": [
+        256,
+        256
+      ],
+      "generator": "felt",
+      "id": "felt-counter"
+    },
+    {
+      "base": "#5A4632",
+      "canvas": [
+        256,
+        256
+      ],
+      "generator": "wallpaper",
+      "id": "wallpaper-back",
+      "motif": "#6B5638",
+      "repeat": [
+        1.7142857313156128,
+        3.0
+      ]
+    },
+    {
+      "canvas": [
+        256,
+        256
+      ],
+      "generator": "parcel",
+      "id": "parcel",
+      "label": false
+    },
+    {
+      "canvas": [
+        256,
+        200
+      ],
+      "generator": "picture",
+      "id": "picture"
+    },
+    {
+      "bg": "#3A2A2A",
+      "canvas": [
+        440,
+        80
+      ],
+      "fg": "#F2E6CF",
+      "generator": "sign",
+      "id": "sign",
+      "text": "TANIGUCHI BOOKS"
+    },
+    {
+      "canvas": [
+        1,
+        1
+      ],
+      "color": "#BFE4F7",
+      "generator": "solid",
+      "id": "view"
+    }
+  ],
+  "version": 2
+}

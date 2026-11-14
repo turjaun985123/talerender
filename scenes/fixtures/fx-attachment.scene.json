@@ -1,0 +1,76 @@
+{
+  "camera": {
+    "eye": [
+      1.5,
+      2.2,
+      5.5
+    ],
+    "fovY": 40,
+    "target": [
+      0.35,
+      1.0,
+      -0.55
+    ]
+  },
+  "clear": "#D8E8DA",
+  "format": "talerender-scene",
+  "name": "fx-attachment \u2014 character + on-node rifle attachment (ruling R2)",
+  "nodes": [
+    {
+      "attachments": [
+        {
+          "hand": "R",
+          "kind": "rifle",
+          "offset": [
+            0,
+            0.03,
+            0.07
+          ]
+        }
+      ],
+      "height": 1.75,
+      "look": {
+        "body": "#5C6644",
+        "hat": "cap",
+        "hatCol": "#4C5638",
+        "neck": "none",
+        "pattern": "plain",
+        "shade": "#878E6E"
+      },
+      "perspective": true,
+      "position": [
+        0.35,
+        0,
+        -0.55
+      ],
+      "state": {
+        "armL": [
+          10,
+          6
+        ],
+        "armR": [
+          16,
+          -6
+        ],
+        "blink": 0,
+        "bob": 0,
+        "camPitch": 0.28747,
+        "headTilt": 0,
+        "headTurn": -0.025,
+        "lean": 1.0,
+        "legs": "stand",
+        "look": [
+          0,
+          0
+        ],
+        "mood": "determined",
+        "phase": 0,
+        "squash": 0,
+        "talk": 0
+      },
+      "type": "character"
+    }
+  ],
+  "time": 1.5,
+  "version": 2
+}

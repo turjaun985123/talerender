@@ -1,0 +1,75 @@
+{
+  "atmosphere": "fog",
+  "camera": {
+    "eye": [
+      0,
+      1.5,
+      0
+    ],
+    "fovY": 40,
+    "target": [
+      0,
+      1.0,
+      -10
+    ]
+  },
+  "clear": "#C9CFC2",
+  "fog": {
+    "color": "#C9CFC2",
+    "far": 20.0,
+    "near": 4.5
+  },
+  "format": "talerender-scene",
+  "name": "fx-fog \u2014 fog block (S06 values) + two panels at 6 m and 15 m",
+  "nodes": [
+    {
+      "geometry": {
+        "kind": "box",
+        "size": [
+          2,
+          2,
+          0.1
+        ]
+      },
+      "material": {
+        "color": "#3F6FD9"
+      },
+      "name": "panel 6 m",
+      "transform": [
+        {
+          "translate": [
+            -1.5,
+            1.0,
+            -6
+          ]
+        }
+      ],
+      "type": "mesh"
+    },
+    {
+      "geometry": {
+        "kind": "box",
+        "size": [
+          2,
+          2,
+          0.1
+        ]
+      },
+      "material": {
+        "color": "#2FA89B"
+      },
+      "name": "panel 15 m",
+      "transform": [
+        {
+          "translate": [
+            1.5,
+            1.0,
+            -15
+          ]
+        }
+      ],
+      "type": "mesh"
+    }
+  ],
+  "version": 2
+}

@@ -1,0 +1,96 @@
+{
+  "atmosphere": "noon",
+  "camera": {
+    "eye": [
+      0,
+      2.2,
+      6
+    ],
+    "fovY": 40,
+    "target": [
+      0,
+      1,
+      -2
+    ]
+  },
+  "clear": "#D8E8DA",
+  "format": "talerender-scene",
+  "lights": {
+    "envIntensity": 0.25,
+    "hemisphere": {
+      "ground": "#C48A5A",
+      "intensity": 1.25,
+      "sky": "#CFE6FF"
+    },
+    "key": {
+      "bias": -0.0006,
+      "color": "#FFF0D6",
+      "far": 80.0,
+      "intensity": 2.6,
+      "normalBias": 0.02,
+      "position": [
+        7,
+        12,
+        5
+      ],
+      "shadow": true,
+      "shadowBox": 17.0,
+      "target": [
+        0,
+        0,
+        -2
+      ]
+    },
+    "points": [
+      {
+        "color": "#FF9A3C",
+        "decay": 1.6,
+        "distance": 7.0,
+        "intensity": 4.6,
+        "position": [
+          -1.35,
+          0.6,
+          -2.45
+        ]
+      }
+    ],
+    "rim": {
+      "color": "#FFFFFF",
+      "intensity": 0.4,
+      "position": [
+        -3,
+        3,
+        -3
+      ]
+    }
+  },
+  "name": "fx-lights \u2014 production rig, POST-atmosphere noon values (ruling R1)",
+  "nodes": [
+    {
+      "geometry": {
+        "kind": "box",
+        "size": [
+          20,
+          0.1,
+          20
+        ]
+      },
+      "material": {
+        "color": "#5E8F52"
+      },
+      "name": "ground",
+      "transform": [
+        {
+          "translate": [
+            0,
+            -0.05,
+            -2
+          ]
+        }
+      ],
+      "type": "mesh"
+    }
+  ],
+  "time": 1.5,
+  "version": 2
+}

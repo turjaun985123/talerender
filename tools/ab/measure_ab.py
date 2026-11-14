@@ -39,6 +39,10 @@ Renderer labels are part of every output. Override with
 --reference-label / --native-label when the defaults do not describe
 the actual renders (e.g. native frames rendered on RADV vs lavapipe).
 
+Exit codes: 0 = measured; 2 = usage error, no pairs measurable, or
+input error (unreadable/invalid image, frame dir, or film manifest —
+one-line ERROR on stderr, no traceback).
+
 JPEG FLOOR (stated in every report): the reference carries one JPEG
 generation (Chromium toDataURL image/jpeg 0.93, measured in
 docs/ab/telemetry/jpeg-decision.md): flat/step content floors at
@@ -60,6 +64,19 @@ from PIL import Image, ImageDraw, ImageFont
 
 DIFF_AMP = 4
 LABEL_H = 30
+
+
+class InputError(Exception):
+    """Bad input data (unreadable image / dir / manifest). Reported
+    as one named line on stderr with exit 2 instead of a traceback."""
+
+
+def make_out_dir(path: str) -> None:
+    try:
+        os.makedirs(path, exist_ok=True)
+    except OSError as e:
+        raise InputError(f"cannot create output dir {path} "
+                         f"({e.strerror or e})")
 
 DEFAULT_REFERENCE_LABEL = (
     "REFERENCE — production engine (three.js r170) in headless Chrome, "
@@ -161,10 +178,18 @@ _FRAME_RE = re.compile(r"^(?:frame[-_]?|f)?(\d+)$")
 _TIME_RE = re.compile(r"^t?(\d+\.\d+)$")
 
 
+def list_dir(path: str, what: str) -> list[str]:
+    try:
+        return sorted(os.listdir(path))
+    except OSError as e:
+        raise InputError(f"cannot list {what} dir {path} "
+                         f"({e.strerror or e})")
+
+
 def discover_native(frames_dir: str, fps: float) -> dict[int, str]:
     """frame index -> path, from frame-number or time based PNG names."""
     found: dict[int, str] = {}
-    for name in sorted(os.listdir(frames_dir)):
+    for name in list_dir(frames_dir, "native frames"):
         if not name.lower().endswith(".png"):
             continue
         stem = name[:-4]
@@ -183,7 +208,7 @@ def discover_native(frames_dir: str, fps: float) -> dict[int, str]:
 def discover_review(review_dir: str) -> dict[float, str]:
     """timestamp seconds -> path, from t<seconds>.jpg/.png names."""
     found: dict[float, str] = {}
-    for name in sorted(os.listdir(review_dir)):
+    for name in list_dir(review_dir, "review frames"):
         low = name.lower()
         if not (low.endswith(".jpg") or low.endswith(".jpeg") or low.endswith(".png")):
             continue
@@ -195,7 +220,11 @@ def discover_review(review_dir: str) -> dict[float, str]:
 
 
 def load_rgb(path: str) -> Image.Image:
-    return Image.open(path).convert("RGB")
+    try:
+        with Image.open(path) as img:
+            return img.convert("RGB")
+    except (OSError, ValueError) as e:
+        raise InputError(f"cannot read image {path} ({e})")
 
 
 # ---------------------------------------------------------------- core run
@@ -238,7 +267,7 @@ def report_header_md(title: str, ref_label: str, nat_label: str) -> list[str]:
 
 def run_pair_mode(args) -> int:
     ref_path, nat_path = args.pair
-    os.makedirs(args.out, exist_ok=True)
+    make_out_dir(args.out)
     m, ref_img, nat_img, ref, nat, resize_note = measure_pair(ref_path, nat_path)
     tag = "pair"
     images = write_pair_images(args.out, tag, ref_img, nat_img, ref, nat,
@@ -288,10 +317,24 @@ def run_pair_mode(args) -> int:
 
 
 def run_film_mode(args) -> int:
-    with open(args.film) as f:
-        film = json.load(f)
+    try:
+        with open(args.film) as f:
+            film = json.load(f)
+    except OSError as e:
+        raise InputError(f"cannot read film manifest {args.film} "
+                         f"({e.strerror or e})")
+    except ValueError as e:  # JSONDecodeError + UnicodeDecodeError
+        raise InputError(f"invalid JSON in film manifest {args.film} ({e})")
+    if not isinstance(film, dict) or not isinstance(film.get("segments"), list):
+        raise InputError(f"film manifest {args.film}: 'segments' must be a list")
+    for i, seg in enumerate(film["segments"]):
+        if not isinstance(seg, dict) or "id" not in seg \
+                or not isinstance(seg.get("startS"), (int, float)) \
+                or not isinstance(seg.get("endS"), (int, float)):
+            raise InputError(f"film manifest {args.film}: segments[{i}] "
+                             f"requires 'id', 'startS' and 'endS'")
     fps = args.fps if args.fps else float(film.get("fps", 30))
-    os.makedirs(args.out, exist_ok=True)
+    make_out_dir(args.out)
 
     native = discover_native(args.native_dir, fps)
     review = discover_review(args.review_dir)
@@ -482,4 +525,8 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    except InputError as e:
+        print(f"ERROR: measure_ab.py: {e}", file=sys.stderr)
+        sys.exit(2)

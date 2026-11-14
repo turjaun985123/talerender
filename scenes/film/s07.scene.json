@@ -164,7 +164,7 @@
    "vignette": 0.24,
    "grain": 0.012,
    "exposure": 1.02,
-   "time": 30.39
+   "time": 0
   },
   "focusChannel": {
    "kind": "eyeTargetDistance",

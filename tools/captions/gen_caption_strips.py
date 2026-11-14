@@ -52,6 +52,8 @@ Usage:
   gen_caption_strips.py [--project DIR] [--out DIR] [--font FILE]
 Defaults: project ~/faceless-shorts/the-soldier-who-didnt-know,
 out <repo>/assets/captions, font <project>/fonts/Inter-Black.otf.
+Exit 2 with a one-line ERROR on stderr when the project data, font,
+or output dir is unreadable, invalid, or missing a required field.
 """
 import argparse
 import json
@@ -186,6 +188,21 @@ def render_strip(text, fit, font_path, out_path):
     img.save(out_path)
 
 
+class InputError(Exception):
+    """Bad input data (unreadable / invalid / wrong-shaped project
+    files, unusable font or output dir). Reported as one named line
+    on stderr with exit 2 instead of a traceback."""
+
+
+def load_json_input(path: Path, what: str):
+    try:
+        return json.loads(path.read_text())
+    except OSError as e:
+        raise InputError(f"cannot read {what} {path} ({e.strerror or e})")
+    except ValueError as e:  # JSONDecodeError + UnicodeDecodeError
+        raise InputError(f"invalid JSON in {what} {path} ({e})")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     repo = Path(__file__).resolve().parents[2]
@@ -200,14 +217,39 @@ def main() -> int:
     project = Path(args.project)
     out_dir = Path(args.out)
     font_path = args.font or str(project / "fonts" / "Inter-Black.otf")
-    out_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        out_dir.mkdir(parents=True, exist_ok=True)
+    except OSError as e:
+        raise InputError(f"cannot create output dir {out_dir} "
+                         f"({e.strerror or e})")
 
-    script = json.loads((project / "script.json").read_text())
-    lines_data = json.loads((project / "data" / "lines.json").read_text())
-    words = json.loads((project / "data" / "words.json").read_text())
+    script = load_json_input(project / "script.json", "script")
+    lines_data = load_json_input(project / "data" / "lines.json", "lines data")
+    words = load_json_input(project / "data" / "words.json", "words data")
+    if not isinstance(script, dict) or not isinstance(script.get("lines"), list):
+        raise InputError(f"script {project / 'script.json'}: "
+                         f"'lines' must be a list")
+    if not isinstance(lines_data, dict) \
+            or not isinstance(lines_data.get("lines"), list) \
+            or "duration" not in lines_data:
+        raise InputError(f"lines data {project / 'data' / 'lines.json'}: "
+                         f"requires a 'lines' list and a 'duration'")
+    if not isinstance(words, list):
+        raise InputError(f"words data {project / 'data' / 'words.json'}: "
+                         f"top level must be a list")
 
-    chunks = build_captions(script, lines_data, words)
-    measure_font = ImageFont.truetype(font_path, CAP_SIZE)
+    try:
+        chunks = build_captions(script, lines_data, words)
+    except (KeyError, IndexError, TypeError) as e:
+        raise InputError(f"project data is missing or mistypes a "
+                         f"required field ({e!r})")
+    if not chunks:
+        raise InputError("no caption chunks built — data/words.json "
+                         "yields no chunks for script.json's lines")
+    try:
+        measure_font = ImageFont.truetype(font_path, CAP_SIZE)
+    except OSError as e:
+        raise InputError(f"cannot open font {font_path} ({e})")
 
     entries = []
     for k, c in enumerate(chunks):
@@ -270,4 +312,8 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    except InputError as e:
+        print(f"ERROR: gen_caption_strips.py: {e}", file=sys.stderr)
+        sys.exit(2)

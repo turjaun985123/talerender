@@ -120,6 +120,14 @@ evaluator in src/film.rs s04, lines 1475–1503):
    (hand R, offset [0, 0.03, 0.07], model `makeRifle()`
    `shots.ts:74–83`, attach `shots.ts:254`) and is drawn by the
    film evaluator (src/film.rs char(..., rifle=true)).
+   **[W41 correction, 2026-11-14: the placement sentence above
+   is pre-R2 prose and no longer describes the data.** Seat W19
+   moved the rifle ONTO the Onoda character node (ruling R2):
+   `s04.scene.json` carries `attachments: [{ kind: "rifle",
+   hand: "R", offset: [0, 0.03, 0.07] }]` on the node and has
+   no top-level `attachments` key (verified first-hand by W41).
+   The prose lagged the data; the content (hand, offset, model,
+   attach call) is unchanged.**]**
 2. **Channel evaluation** (above): loader renders the state at
    `time`; the formulas exist as data but no loader code path
    evaluates them over the shot's duration.
@@ -319,7 +327,14 @@ film evaluator in `src/film.rs:1398` s02):
    top-level `attachments` field (hand R, offset [0, 0.03, 0.07],
    model `makeRifle()` `shots.ts:74`, attach `shots.ts:255`)
    and drawn by the film evaluator (`src/film.rs:1423`,
-   char(..., rifle = true)). The rifle's own geometry and
+   char(..., rifle = true)).
+   **[W41 correction, 2026-11-14: as in S04 above, the
+   "top-level" placement is pre-R2 prose.** As built (seat W19,
+   ruling R2), `s02.scene.json` carries the rifle ON the Onoda
+   character node — `attachments: [{ kind: "rifle", hand: "R",
+   offset: [0, 0.03, 0.07] }]` — and has no top-level
+   `attachments` key (verified first-hand by W41). The prose
+   lagged the data.**]** The rifle's own geometry and
    materials, recorded here since the attachment carries no
    model (modelled along +Y, grip at origin, butt −0.44 /
    muzzle +0.68): stock box(0.075, 0.52, 0.13) wood `#6E4F30`
@@ -484,6 +499,11 @@ film evaluator in src/film.rs s01):
    is drawn by the film evaluator (src/film.rs
    char(..., rifle=true)). (Placement differs from S04's
    top-level `attachments` field; same content.)
+   **[W41 correction, 2026-11-14: the parenthetical is stale —
+   since seat W19 (ruling R2) S04's rifle is also on the
+   character node, so S01's placement no longer differs from
+   S04's; all three files carry the identical on-node entry
+   (verified first-hand by W41).]**
 2. **camK hold** in camera keys (see Camera note).
 3. **Channel evaluation** (headTurn / blink / camPitch / fire
    flicker / flame scaleY / bokeh focus): the loader renders

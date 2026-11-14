@@ -21,7 +21,10 @@ measures the diff first, and commits the hash change with the reason.
 Exit code: 0 when every pinned item verifies OK (MISSING items that
 have never been pinned are reported but do not fail the run — the
 film frames are expected MISSING until the film renders); 1 when any
-pinned item is STALE (on disk but not the pinned bytes).
+pinned item is STALE (on disk but not the pinned bytes); 2 on input
+error (golden-hashes.json unreadable, invalid, or not an id->sha256
+object, or a golden path that exists but is not a file — one-line
+ERROR on stderr, no table).
 """
 
 import hashlib
@@ -114,10 +117,25 @@ def sha256_of(path):
     return h.hexdigest()
 
 
+class InputError(Exception):
+    """Bad input data (unreadable / invalid / wrong-shaped pins, or a
+    golden path that is not a file). Reported as one named line on
+    stderr with exit 2 instead of a traceback."""
+
+
 def load_pins():
-    if PIN_FILE.exists():
-        return json.loads(PIN_FILE.read_text())
-    return {}
+    if not PIN_FILE.exists():
+        return {}
+    try:
+        pins = json.loads(PIN_FILE.read_text())
+    except (OSError, ValueError) as e:  # JSON/Unicode decode + read errors
+        raise InputError("%s: cannot load pins (%s)" % (PIN_FILE.name, e))
+    if not isinstance(pins, dict) or not all(
+            isinstance(k, str) and isinstance(v, str)
+            for k, v in pins.items()):
+        raise InputError("%s: must be a JSON object mapping item id "
+                         "to sha256 hex string" % PIN_FILE.name)
+    return pins
 
 
 def main():
@@ -129,8 +147,15 @@ def main():
         for item in ITEMS:
             p = ROOT / item["path"]
             if p.exists():
+                if not p.is_file():
+                    raise InputError("golden path is not a file: %s"
+                                     % item["path"])
                 new_pins[item["id"]] = sha256_of(p)
-        PIN_FILE.write_text(json.dumps(new_pins, indent=2) + "\n")
+        try:
+            PIN_FILE.write_text(json.dumps(new_pins, indent=2) + "\n")
+        except OSError as e:
+            raise InputError("%s: cannot write pins (%s)"
+                             % (PIN_FILE.name, e))
         print(f"--pin: recorded {len(new_pins)} hashes in {PIN_FILE.name} "
               f"(re-baseline act — commit it with the measured diff and reason)")
         pins = new_pins
@@ -139,6 +164,8 @@ def main():
     manifest = []
     for item in ITEMS:
         p = ROOT / item["path"]
+        if p.exists() and not p.is_file():
+            raise InputError("golden path is not a file: %s" % item["path"])
         current = sha256_of(p) if p.exists() else None
         recorded = pins.get(item["id"])
         if current is None:
@@ -169,4 +196,8 @@ def main():
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    except InputError as e:
+        print("ERROR: make_golden.py: %s" % e, file=sys.stderr)
+        sys.exit(2)

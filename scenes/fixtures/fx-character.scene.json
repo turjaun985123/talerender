@@ -1,0 +1,65 @@
+{
+  "camera": {
+    "eye": [
+      1.5,
+      2.2,
+      5.5
+    ],
+    "fovY": 40,
+    "target": [
+      0.35,
+      1.0,
+      -0.55
+    ]
+  },
+  "clear": "#D8E8DA",
+  "format": "talerender-scene",
+  "name": "fx-character \u2014 one character node, full plain state spelled out",
+  "nodes": [
+    {
+      "height": 1.75,
+      "look": {
+        "body": "#5C6644",
+        "hat": "cap",
+        "hatCol": "#4C5638",
+        "neck": "none",
+        "pattern": "plain",
+        "shade": "#878E6E"
+      },
+      "perspective": true,
+      "position": [
+        0.35,
+        0,
+        -0.55
+      ],
+      "state": {
+        "armL": [
+          8,
+          6
+        ],
+        "armR": [
+          8,
+          6
+        ],
+        "blink": 0,
+        "bob": 0,
+        "camPitch": 0,
+        "headTilt": 0,
+        "headTurn": 0,
+        "lean": 0,
+        "legs": "stand",
+        "look": [
+          0,
+          0
+        ],
+        "mood": "neutral",
+        "phase": 0,
+        "squash": 0,
+        "talk": 0
+      },
+      "type": "character"
+    }
+  ],
+  "time": 1.5,
+  "version": 2
+}

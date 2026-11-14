@@ -253,3 +253,128 @@ today, so it is reported as a defect for the lead:
 - s11 lists cap_056 (line 9, 49.63–50.69): its s/e/text match
   onoda.json exactly. Its presence in two segments' lists is the
   already-known W27 caption-ownership item, not a value error.
+
+
+---
+
+## Resolution — seat W41 (2026-11-14)
+
+Fixes applied to the film data after this audit. Scope: scene files
++ `scenes/film/ASSUMPTIONS.md` + this addendum. `src/` untouched,
+nothing committed. Validator re-run after all edits:
+**7/7 PASS, exit 0**, with counts identical to seat W31's recorded
+run (check 3: 883 exact f32 / 506 source literals / 0 computed
+failures; check 5: 66 listings / 66 unique / 0 duplicates /
+0 uncovered) — so `tools/film/VALIDATION.md` was not modified.
+
+### M1 + M2 — `post.grade.time`: FIXED, and the sweep found five more
+
+M1 (s03) and M2 (s07) named two files. The W41 sweep of all 14
+segment files found the same defect — `post.grade.time` carrying a
+film/evaluation time instead of 0 — in **seven** files. All seven
+are now exactly `0`:
+
+| File | Was | Now |
+|---|---|---|
+| s02 | 9.484 | 0 |
+| s03 | 15.060999870300293 (M1) | 0 |
+| s04 | 18.67 | 0 |
+| s05a | 22.974 | 0 |
+| s05b | 25.31 | 0 |
+| s06 | 29.729999542236328 | 0 |
+| s07 | 30.39 (M2) | 0 |
+
+Already 0, verified and untouched: s01, s08, s08b, s09, s10, s11,
+s12. A post-edit re-scan of every `scenes/film/*.scene.json`
+confirms no nonzero `post.grade.time` remains.
+
+On WAVE-RECORD D20's "inert" framing: that holds only for the
+hardcoded `src/film.rs` path, which pins grade time 0.0 itself.
+As §M1 of this audit established, the scene-file loader reads the
+field (`src/scenefile.rs:976` → GradeParams at `:2051`), so on
+the loader path these values were live — the data fix, not the
+renderer pin, is what makes all seven segments grain-identical
+to the Chrome reference. No other pre-R3 grade leftovers were
+found in s05b/s07 (D20 names `grade.time` only; the rest of both
+grade blocks matches their looks).
+
+### M3 — s07 caption `cap_039`: NOT listed; resolved by record (read carefully)
+
+W41 did **not** add `cap_039` to `s07.scene.json`'s `captions`
+list. Doing so would have been wrong against the wave's own
+established model, for three reasons:
+
+1. **The manifest start-time rule already adjudicates this
+   chunk.** `scenes/film/film.json` assigns chunk 39 to s06
+   (s06's caption range is 32–39; s07's is exactly 40–41; the
+   ranges tile 0–65 without overlap). Seat W27's rule, recorded
+   in `scenes/film/ASSUMPTIONS.md` ("CAPTION OWNERSHIP +
+   VALIDATOR v2 — seat W27"), is: a chunk belongs to the
+   segment containing its START; *the neighbour it bleeds into
+   keeps a bleed note, not a listing* — the S04/S09 convention.
+   W27 deliberately REMOVED chunk 39 from s07 under this rule,
+   and W31 applied the identical removal to chunks 46 (s08b)
+   and 56 (s11).
+2. **The bleed is already recorded in s07 itself.** The file's
+   top-level `captionsNote` (seat W27) reads: "chunk 39 ('for
+   decades,', 30.29-31.55) starts in S06 and is owned by s06
+   under the manifest start-time rule (scenes/film/film.json);
+   it stays on screen for this shot's first 1.16 s and is not
+   listed here (seat W27). Captions are film-global, drawn by
+   time." W41 verified the note verbatim against
+   `film/onoda.json` (chunk 39: s 30.29, e 31.55; s07 starts
+   30.39, so the on-screen bleed is 31.55 − 30.39 = 1.16 s).
+   No renderer consuming the film data loses the chunk.
+3. **The validator has no bleed-entry concept.** Check 5 of
+   `tools/film/validate_film.py` counts every entry in every
+   file's `captions[]` toward coverage and duplicates; a
+   second listing of chunk 39 would fail it ("chunk 39 listed
+   2 times (in s06, s07)") and drop the validator to 6/7.
+   There is no marker field anywhere in the data model that
+   would exempt a bleed listing.
+
+The audit's supporting evidence is also superseded on one
+point: s11's listing of `cap_056`, cited in §2/§6 as the
+convention, was the double-listing itself — W31 removed it as
+an error, and s11 now carries only the note. (s03's `cap_020`
+is an owner listing whose chunk overruns the segment tail,
+not a bleed-in listing; it sets no contrary precedent.)
+
+**Recommendation to the lead:** if an in-list bleed entry is
+wanted despite the above, it is a format change, not a data
+fix — it needs a bleed marker on the entry, a matching
+exemption in validator check 5, and an amendment to the
+manifest start-time rule. Until that decision is taken, M3's
+underlying fact (cap_039 is on screen for s07's first 1.16 s)
+stands recorded in the file by the established mechanism, and
+W40's §5 observation that W09's S07 prose names cap_039 among
+the shot's captions is answered by W27's ownership section,
+which supersedes that prose.
+
+### §4 — grade key names (`saturation`/`exposure` vs loader's `sat`): NOT TOUCHED
+
+The audit itself scopes this as "a known format divergence
+awaiting a lead decision" (files vs loader). It is not M1–M3
+and no W41 edit touches it: s07 still writes `saturation`
+0.85 / `exposure` 1.02, s11 `saturation` 1.08 / `exposure`
+0.97, under keys the loader does not read. Recorded here so
+the resolution of M1–M3 is not mistaken for a resolution of
+§4.
+
+### Prose sweep — ASSUMPTIONS.md rifle placement (pre-R2 text)
+
+The S04 and S02 sections described the rifle as recorded in a
+top-level `attachments` field. As built (seat W19, ruling R2)
+the rifle lives ON the Onoda character node in both files —
+`attachments: [{ kind: "rifle", hand: "R", offset:
+[0, 0.03, 0.07] }]` — and neither file has a top-level
+`attachments` key (verified first-hand by W41; validator check
+4 likewise reports 0 top-level violations, 10 on-node
+attachments). Dated **[W41 correction, 2026-11-14 …]** notes
+were added at each passage; the original text is retained.
+A third note was added at the S01 section's parenthetical
+("(Placement differs from S04's top-level `attachments`
+field; same content.)"), which made the same stale claim
+about S04 by cross-reference: since W19, S01's placement no
+longer differs from S04's — all three files carry the
+identical on-node entry.

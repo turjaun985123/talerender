@@ -38,9 +38,11 @@ consistency rules the wave works under:
                     manifest names
 
 Usage: python3 tools/film/validate_film.py [--root DIR]
-Exit code: 0 = all checks PASS, 1 = any check FAIL.
-Output is deterministic (manifest segment order, sorted failures
-by file then path within each check).
+Exit code: 0 = all checks PASS, 1 = any check FAIL, 2 = input error
+(the manifest or atmospheres file is unreadable, invalid JSON, or
+missing/mistyping a required field — one-line ERROR on stderr,
+no report). Output is deterministic (manifest segment order,
+sorted failures by file then path within each check).
 """
 
 import argparse
@@ -52,6 +54,35 @@ import struct
 import sys
 
 EXPECTED_CHUNKS = list(range(66))  # film/onoda.json carries 66 chunks
+
+
+class InputError(Exception):
+    """Bad input data (unreadable / invalid / wrong-shaped files).
+
+    Distinct from a check FAIL: the run cannot start, so main()
+    reports one named line on stderr and exits 2 instead of
+    printing a validation report.
+    """
+
+
+def load_json_input(path, what):
+    try:
+        with open(path) as f:
+            return json.load(f)
+    except OSError as e:
+        raise InputError("%s: cannot read %s (%s)"
+                         % (what, path, e.strerror or e))
+    except ValueError as e:  # JSONDecodeError + UnicodeDecodeError
+        raise InputError("%s: invalid JSON in %s (%s)" % (what, path, e))
+
+
+def require(cond, msg):
+    if not cond:
+        raise InputError(msg)
+
+
+def is_number(v):
+    return isinstance(v, (int, float)) and not isinstance(v, bool)
 
 
 def f32(v):
@@ -126,8 +157,35 @@ def main():
     args = ap.parse_args()
     root = args.root
 
-    manifest = json.load(open(os.path.join(root, "scenes/film/film.json")))
-    atmos = json.load(open(os.path.join(root, "scenes/atmospheres.json")))
+    manifest = load_json_input(os.path.join(root, "scenes/film/film.json"),
+                               "film manifest")
+    atmos = load_json_input(os.path.join(root, "scenes/atmospheres.json"),
+                            "atmospheres")
+    require(isinstance(manifest, dict),
+            "film manifest: top level must be a JSON object")
+    require(isinstance(atmos, dict),
+            "atmospheres: top level must be a JSON object")
+    for key in ("title", "project"):
+        require(isinstance(manifest.get(key), str),
+                "film manifest: %r must be a string" % key)
+    for key in ("fps", "totalFrames"):
+        require(is_number(manifest.get(key)),
+                "film manifest: %r must be a number" % key)
+    require(isinstance(manifest.get("segments"), list),
+            "film manifest: 'segments' must be a list")
+    require(isinstance(atmos.get("filmLooks", {}), dict),
+            "atmospheres: 'filmLooks' must be an object")
+    for i, seg in enumerate(manifest["segments"]):
+        require(isinstance(seg, dict),
+                "film manifest: segments[%d] must be an object" % i)
+        for key in ("id", "scene", "set", "atmosphere", "filmLook"):
+            require(isinstance(seg.get(key), str),
+                    "film manifest: segments[%d] %r must be a string"
+                    % (i, key))
+        for key in ("startS", "endS", "startFrame", "endFrame", "frames"):
+            require(is_number(seg.get(key)),
+                    "film manifest: segments[%d] %r must be a number"
+                    % (i, key))
     filmlook_keys = sorted(k for k in atmos.get("filmLooks", {})
                            if not k.startswith("_"))
     fps = manifest["fps"]
@@ -146,7 +204,11 @@ def main():
             missing.append(seg["id"])
             continue
         try:
-            docs[seg["id"]] = json.load(open(p))
+            doc = json.load(open(p))
+            if not isinstance(doc, dict):
+                raise ValueError("top level is %s, not a JSON object"
+                                 % type(doc).__name__)
+            docs[seg["id"]] = doc
         except Exception as e:  # noqa: BLE001 - report verbatim
             parse_fail.append((seg["id"], "%s: %s" % (seg["scene"], e)))
 
@@ -226,9 +288,12 @@ def main():
         if d is None:
             continue
         if "attachments" in d:
-            bad.append("%s: top-level 'attachments' key present (%d entries)"
+            att = d["attachments"]
+            count = ("%d entries" % len(att)) if isinstance(att, list) \
+                else ("not a list (%s)" % type(att).__name__)
+            bad.append("%s: top-level 'attachments' key present (%s)"
                        " — R2 requires attachments ON character nodes"
-                       % (seg["scene"], len(d["attachments"])))
+                       % (seg["scene"], count))
         for node in d.get("nodes", []):
             if isinstance(node, dict) and node.get("type") == "character":
                 on_node += len(node.get("attachments", []))
@@ -364,4 +429,8 @@ def main():
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    except InputError as e:
+        print("ERROR: validate_film.py: %s" % e, file=sys.stderr)
+        sys.exit(2)

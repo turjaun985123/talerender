@@ -1,0 +1,75 @@
+{
+  "camera": {
+    "eye": [
+      1.5,
+      2.2,
+      5.5
+    ],
+    "fovY": 40,
+    "target": [
+      0.35,
+      1.0,
+      -0.55
+    ]
+  },
+  "clear": "#D8E8DA",
+  "format": "talerender-scene",
+  "name": "fx-channels \u2014 character + channels block (s02's marching Onoda at its file time; state is that instant, channels are the formulas)",
+  "nodes": [
+    {
+      "channels": {
+        "blink": {
+          "director": {
+            "seed": 3
+          },
+          "source": "shots.ts:41; core/motion.ts:260"
+        },
+        "bob": {
+          "formula": "walkBob(phase, 5)",
+          "source": "shots.ts:333; core/motion.ts:241"
+        },
+        "legs": {
+          "formula": "k > 0.97 ? 'stand' : 'walk'",
+          "source": "shots.ts:334"
+        },
+        "phase": {
+          "formula": "walkPhase(travelled, 0.62)",
+          "source": "shots.ts:333; core/motion.ts:228"
+        },
+        "position": {
+          "driver": "travelled = camK(lt, d, 0.03) * 6.8",
+          "formula": "at(0, 0, -11 + travelled + 0)",
+          "source": "shots.ts:333-336 (march)"
+        }
+      },
+      "look": {
+        "body": "#5C6644",
+        "hat": "cap",
+        "hatCol": "#4C5638"
+      },
+      "position": [
+        0.0,
+        0.0,
+        -7.599999904632568
+      ],
+      "state": {
+        "armL": [
+          10,
+          6
+        ],
+        "armR": [
+          16,
+          -6
+        ],
+        "blink": 0.0,
+        "bob": 0.0064174639992415905,
+        "legs": "walk",
+        "mood": "determined",
+        "phase": 17.22808837890625
+      },
+      "type": "character"
+    }
+  ],
+  "time": 9.484,
+  "version": 2
+}

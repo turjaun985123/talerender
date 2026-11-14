@@ -1,0 +1,59 @@
+{
+  "camera": {
+    "eye": [
+      0,
+      1.6,
+      0
+    ],
+    "fovY": 40,
+    "target": [
+      0,
+      1.0,
+      -6
+    ]
+  },
+  "clear": "#D8E8DA",
+  "format": "talerender-scene",
+  "name": "fx-grade \u2014 post grade in the loader's own keys (s06 values)",
+  "nodes": [
+    {
+      "geometry": {
+        "kind": "box",
+        "size": [
+          2,
+          2,
+          0.1
+        ]
+      },
+      "material": {
+        "color": "#7A8B99"
+      },
+      "name": "panel",
+      "transform": [
+        {
+          "translate": [
+            0,
+            1.0,
+            -6
+          ]
+        }
+      ],
+      "type": "mesh"
+    }
+  ],
+  "post": {
+    "bokeh": {
+      "aperture": 0.0,
+      "focus": 6.0,
+      "maxblur": 0.006
+    },
+    "grade": {
+      "grain": 0.012,
+      "sat": 0.52,
+      "time": 0.0,
+      "vignette": 0.24,
+      "warm": 0.0
+    }
+  },
+  "version": 2
+}
