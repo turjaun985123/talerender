@@ -18,7 +18,7 @@ and recorded in the packet itself.
 
 | Packet | State |
 |---|---|
-| [`ab1-composer`](ab1-composer.md) | **CANDIDATE IN HAND** — post-fix candidate (CI run 43569670339 at `c00897d`, sha256 `a415ead8…`) measured closer to the Chrome reference on every metric (23.850 → 23.96 dB) and 41.351 dB from the old pin: a shade correction, not drift. Ready for the human re-pin act; this is the item that actually clears the shade debt. |
+| [`ab1-composer`](ab1-composer.md) | **RE-PINNED 2026-11-14** — pin `d7bd71a0…` → `60c32c1a…` (fresh render at the integration head, CI run 43621168728; 23.98 dB vs Chrome). The shade debt is cleared. |
 | [`s28-onoda-t150`](s28-onoda-t150.md) | **CANDIDATE IDENTIFIED + MEASURED — re-pin NOT recommended under the shade debt.** The pin is the §28 prototype's historical output; the current-chain candidate differs structurally (21.711 dB, max Δ 206), far beyond the shade signature, so replacing it would be a retirement decision, not a re-baseline. Pin keeps verifying OK. |
 | [`stroke-toon`](stroke-toon.md) | **PENDING — no post-fix candidate exists.** The move is expected but confined (the `paint_toon` shade regions only). The battery is not a render.yml mode; the packet names the production route: a post-fix CI binary + `talerender --scene stroke-battery`. |
 | [`dof-chart`](dof-chart.md) | **PENDING-not-required — no re-pin owed.** Not expected STALE from the shade fix (`chart_pattern` is literal arithmetic, no `shade()` call). A post-fix verification render via render.yml `mode=dof-chart` is expected to match the pin byte-for-byte; any STALE here would be drift, to be investigated — never attributed to `c00897d`. |

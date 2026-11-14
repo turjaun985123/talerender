@@ -1,6 +1,18 @@
 # Re-pin packet — `ab1-composer`
 
-**State: CANDIDATE IN HAND — ready for the human re-pin act.**
+**State: RE-PINNED 2026-11-14 (Wave 2 lead, Act 2) — pin
+`d7bd71a0…` → `60c32c1a…`.** The pinned frame is a FRESH render
+at the integration head (CI run 43621168728, head `9f497c7`,
+CI lavapipe), not the `c00897d` candidate below: the candidate
+predated the Wave-1 determinism fix chain, and a pin must
+describe current production output. Measured at the act: fresh
+vs Chrome 23.98 dB (the candidate measured 23.96 dB — the A/B
+relationship is unchanged), fresh vs candidate 53.50 dB
+(sub-visible residual from the post-candidate fix chain). The
+packet's procedure was followed with that substitution; the
+pin diff moved ONLY the ab1-composer line, and the golden pack
+verifies 18 OK / 0 STALE / 0 MISSING with Act 1's film pins in
+place. Original packet text follows.
 This packet is evidence only. It pins nothing: the pin is the
 deliberate human act defined in `docs/golden/NATIVE-GOLDEN.md`
 ("Re-baselining — deliberate, disclosed, measured"), and
