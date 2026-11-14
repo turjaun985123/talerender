@@ -1,0 +1,320 @@
+{
+ "format": "talerender-film",
+ "version": 1,
+ "title": "THE SOLDIER WHO DIDN'T KNOW THE WAR WAS OVER",
+ "project": "/home/hatch/faceless-shorts/the-soldier-who-didnt-know",
+ "sourceData": "film/onoda.json",
+ "fps": 30,
+ "durationS": 60.357,
+ "totalFrames": 1811,
+ "resolution": {
+  "width": 1080,
+  "height": 1920
+ },
+ "audio": {
+  "file": "data/mix.wav",
+  "projectPath": "/home/hatch/faceless-shorts/the-soldier-who-didnt-know/data/mix.wav",
+  "durationS": 60.46,
+  "loudnessLUFS": -14.0,
+  "treatment": "muxed unchanged (project master)"
+ },
+ "frameRule": "frame n is staged at t = n/fps; a segment owns frames n with startS <= n/fps < endS, so startFrame = ceil(startS*fps) and the 14 ranges tile [0, totalFrames) exactly",
+ "boundaryRule": "boundaries are the project cut rule cut(i) = lines[i].start - 0.06 (shots.ts), except intra-line splits S05a/S05b at 24.56 and S08/S08b at 40.36 (INVENTORY), and the S06/S07 boundary at 30.39 taken from the authored s06/s07 shot blocks",
+ "segments": [
+  {
+   "id": "s01",
+   "scene": "scenes/film/s01.scene.json",
+   "lines": [
+    0
+   ],
+   "startS": 0.0,
+   "endS": 5.907,
+   "durationS": 5.907,
+   "startFrame": 0,
+   "endFrame": 178,
+   "frames": 178,
+   "set": "JG",
+   "atmosphere": "noon",
+   "filmLook": "jg-noon",
+   "captionChunks": {
+    "first": 0,
+    "last": 12,
+    "count": 13
+   }
+  },
+  {
+   "id": "s02",
+   "scene": "scenes/film/s02.scene.json",
+   "lines": [
+    1
+   ],
+   "startS": 5.907,
+   "endS": 13.061,
+   "durationS": 7.154,
+   "startFrame": 178,
+   "endFrame": 392,
+   "frames": 214,
+   "set": "SH",
+   "atmosphere": "noon",
+   "filmLook": "sh-noon",
+   "captionChunks": {
+    "first": 13,
+    "last": 17,
+    "count": 5
+   }
+  },
+  {
+   "id": "s03",
+   "scene": "scenes/film/s03.scene.json",
+   "lines": [
+    2
+   ],
+   "startS": 13.061,
+   "endS": 15.95,
+   "durationS": 2.889,
+   "startFrame": 392,
+   "endFrame": 479,
+   "frames": 87,
+   "set": "SH",
+   "atmosphere": "noon",
+   "filmLook": "sh-noon",
+   "captionChunks": {
+    "first": 18,
+    "last": 20,
+    "count": 3
+   }
+  },
+  {
+   "id": "s04",
+   "scene": "scenes/film/s04.scene.json",
+   "lines": [
+    3
+   ],
+   "startS": 15.95,
+   "endS": 21.384,
+   "durationS": 5.434,
+   "startFrame": 479,
+   "endFrame": 642,
+   "frames": 163,
+   "set": "JG",
+   "atmosphere": "noon",
+   "filmLook": "jg-noon",
+   "captionChunks": {
+    "first": 21,
+    "last": 25,
+    "count": 5
+   }
+  },
+  {
+   "id": "s05a",
+   "scene": "scenes/film/s05a.scene.json",
+   "lines": [
+    4
+   ],
+   "startS": 21.384,
+   "endS": 24.56,
+   "durationS": 3.176,
+   "startFrame": 642,
+   "endFrame": 737,
+   "frames": 95,
+   "set": "JG",
+   "atmosphere": "noon",
+   "filmLook": "jg-noon",
+   "captionChunks": {
+    "first": 26,
+    "last": 29,
+    "count": 4
+   }
+  },
+  {
+   "id": "s05b",
+   "scene": "scenes/film/s05b.scene.json",
+   "lines": [
+    4
+   ],
+   "startS": 24.56,
+   "endS": 26.129,
+   "durationS": 1.569,
+   "startFrame": 737,
+   "endFrame": 784,
+   "frames": 47,
+   "set": "JG",
+   "atmosphere": "noon",
+   "filmLook": "jg-noon",
+   "captionChunks": {
+    "first": 30,
+    "last": 31,
+    "count": 2
+   }
+  },
+  {
+   "id": "s06",
+   "scene": "scenes/film/s06.scene.json",
+   "lines": [
+    5,
+    6
+   ],
+   "startS": 26.129,
+   "endS": 30.39,
+   "durationS": 4.261,
+   "startFrame": 784,
+   "endFrame": 912,
+   "frames": 128,
+   "set": "JG",
+   "atmosphere": "fog",
+   "filmLook": "jg-fog-s06",
+   "captionChunks": {
+    "first": 32,
+    "last": 39,
+    "count": 8
+   }
+  },
+  {
+   "id": "s07",
+   "scene": "scenes/film/s07.scene.json",
+   "lines": [
+    6
+   ],
+   "startS": 30.39,
+   "endS": 34.209,
+   "durationS": 3.819,
+   "startFrame": 912,
+   "endFrame": 1027,
+   "frames": 115,
+   "set": "JG",
+   "atmosphere": "golden",
+   "filmLook": "jg-golden-s07",
+   "captionChunks": {
+    "first": 40,
+    "last": 41,
+    "count": 2
+   }
+  },
+  {
+   "id": "s08",
+   "scene": "scenes/film/s08.scene.json",
+   "lines": [
+    7
+   ],
+   "startS": 34.209,
+   "endS": 40.36,
+   "durationS": 6.151,
+   "startFrame": 1027,
+   "endFrame": 1211,
+   "frames": 184,
+   "set": "JG",
+   "atmosphere": "noon",
+   "filmLook": "jg-noon",
+   "captionChunks": {
+    "first": 42,
+    "last": 46,
+    "count": 5
+   }
+  },
+  {
+   "id": "s08b",
+   "scene": "scenes/film/s08b.scene.json",
+   "lines": [
+    7
+   ],
+   "startS": 40.36,
+   "endS": 41.732,
+   "durationS": 1.372,
+   "startFrame": 1211,
+   "endFrame": 1252,
+   "frames": 41,
+   "set": "JG",
+   "atmosphere": "noon",
+   "filmLook": "jg-noon",
+   "captionChunks": {
+    "first": 47,
+    "last": 47,
+    "count": 1
+   }
+  },
+  {
+   "id": "s09",
+   "scene": "scenes/film/s09.scene.json",
+   "lines": [
+    8
+   ],
+   "startS": 41.732,
+   "endS": 45.365,
+   "durationS": 3.633,
+   "startFrame": 1252,
+   "endFrame": 1361,
+   "frames": 109,
+   "set": "JG",
+   "atmosphere": "noon",
+   "filmLook": "jg-noon",
+   "captionChunks": {
+    "first": 48,
+    "last": 51,
+    "count": 4
+   }
+  },
+  {
+   "id": "s10",
+   "scene": "scenes/film/s10.scene.json",
+   "lines": [
+    9
+   ],
+   "startS": 45.365,
+   "endS": 50.648,
+   "durationS": 5.283,
+   "startFrame": 1361,
+   "endFrame": 1520,
+   "frames": 159,
+   "set": "BK",
+   "atmosphere": "noon",
+   "filmLook": "bk-noon-shop",
+   "captionChunks": {
+    "first": 52,
+    "last": 56,
+    "count": 5
+   }
+  },
+  {
+   "id": "s11",
+   "scene": "scenes/film/s11.scene.json",
+   "lines": [
+    10
+   ],
+   "startS": 50.648,
+   "endS": 55.52,
+   "durationS": 4.872,
+   "startFrame": 1520,
+   "endFrame": 1666,
+   "frames": 146,
+   "set": "JG",
+   "atmosphere": "dusk",
+   "filmLook": "jg-dusk",
+   "captionChunks": {
+    "first": 57,
+    "last": 60,
+    "count": 4
+   }
+  },
+  {
+   "id": "s12",
+   "scene": "scenes/film/s12.scene.json",
+   "lines": [
+    11
+   ],
+   "startS": 55.52,
+   "endS": 60.357,
+   "durationS": 4.837,
+   "startFrame": 1666,
+   "endFrame": 1811,
+   "frames": 145,
+   "set": "JG",
+   "atmosphere": "dusk",
+   "filmLook": "jg-dusk",
+   "captionChunks": {
+    "first": 61,
+    "last": 65,
+    "count": 5
+   }
+  }
+ ]
+}

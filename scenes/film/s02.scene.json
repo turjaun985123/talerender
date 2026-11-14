@@ -105,19 +105,6 @@
   },
   "envIntensity": 0.25
  },
- "attachments": [
-  {
-   "kind": "rifle",
-   "attachedTo": "onoda",
-   "hand": "R",
-   "offset": [
-    0,
-    0.03,
-    0.07
-   ],
-   "source": "shots.ts:74-83 makeRifle(); attach at shots.ts:255 (shOnoda.attach(rifleShore, 'R', { offset: [0, 0.03, 0.07] }))"
-  }
- ],
  "captions": [
   {
    "index": 13,
@@ -7227,6 +7214,17 @@
     "bob": 0.0064174639992415905,
     "blink": 0.0
    },
+   "attachments": [
+    {
+     "kind": "rifle",
+     "hand": "R",
+     "offset": [
+      0.0,
+      0.03,
+      0.07
+     ]
+    }
+   ],
    "channels": {
     "position": {
      "driver": "travelled = camK(lt, d, 0.03) * 6.8",

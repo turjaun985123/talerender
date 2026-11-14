@@ -129,19 +129,6 @@
    "source": "shots.ts fireLevel(1, t); static scaleY in this file = formula at time"
   }
  },
- "attachments": [
-  {
-   "kind": "rifle",
-   "attachedTo": "onoda",
-   "hand": "R",
-   "offset": [
-    0,
-    0.03,
-    0.07
-   ],
-   "source": "shots.ts makeRifle + jgStage({rifle: true}): attach(rifleHeld, 'R', {offset: [0, 0.03, 0.07]}); model values in ASSUMPTIONS"
-  }
- ],
  "captions": [
   {
    "index": 30,
@@ -10180,6 +10167,17 @@
      "y0": -258
     }
    },
+   "attachments": [
+    {
+     "kind": "rifle",
+     "hand": "R",
+     "offset": [
+      0.0,
+      0.03,
+      0.07
+     ]
+    }
+   ],
    "channels": {
     "armL": {
      "poseTrack": {

@@ -66,9 +66,9 @@
  "lights": {
   "envIntensity": 0.25,
   "hemisphere": {
-   "sky": "#DCECD2",
-   "ground": "#46603A",
-   "intensity": 1.15
+   "sky": "#CFE6FF",
+   "ground": "#C48A5A",
+   "intensity": 1.25
   },
   "key": {
    "color": "#FFF0D6",
@@ -101,14 +101,19 @@
   "points": [
    {
     "color": "#FF9A3C",
-    "intensity": 5.0,
+    "intensity": 4.6,
     "position": [
      -1.35,
      0.6,
      -2.45
     ],
     "distance": 7.0,
-    "decay": 1.6
+    "decay": 1.6,
+    "channel": {
+     "kind": "fireLevel",
+     "level": 1,
+     "formula": "(4.6 + 0.7*sin(17t) + 0.5*sin(7.3t)) * level"
+    }
    }
   ]
  },
@@ -129,19 +134,6 @@
    "source": "shots.ts:289"
   }
  },
- "attachments": [
-  {
-   "kind": "rifle",
-   "attachedTo": "onoda",
-   "hand": "R",
-   "offset": [
-    0,
-    0.03,
-    0.07
-   ],
-   "source": "shots.ts:74-83 makeRifle; attach at shots.ts (jgOnoda.attach rifleHeld 'R')"
-  }
- ],
  "captions": [
   {
    "index": 21,
@@ -10268,6 +10260,17 @@
     "headTurn": -0.349993,
     "blink": 0.0
    },
+   "attachments": [
+    {
+     "kind": "rifle",
+     "hand": "R",
+     "offset": [
+      0.0,
+      0.03,
+      0.07
+     ]
+    }
+   ],
    "channels": {
     "headTurn": {
      "poseTrack": {
