@@ -56,6 +56,20 @@ Known bias, named per W47 §4.1: Chrome references carry one JPEG
 generation (decision (B) — native frames stay clean); that bias
 counts against the native render in every PSNR printed here.
 
+Channel convention (read this before quoting a number): Chrome
+references decode to 3 channels, native renders to 4, and the
+house psnr_of_pair refuses mixed-channel pairs outright. The
+repo's established native-vs-Chrome convention (film/ab_compare.py,
+the tooling behind every film A/B table) is RGB MSE — it
+reproduces docs/ab/onoda-s01-t150/metrics.json's recorded
+20.152 dB exactly. This harness therefore normalises both sides
+to RGB (dropping the candidate's alpha after checking it is
+opaque; a non-opaque candidate is flagged in its detail line)
+and feeds the normalised pair to the imported psnr_of_pair. The
+PSNR math is the house math; only the channel plumbing is local,
+and it exists so the numbers stay comparable with the repo's A/B
+record and with W47's bar.
+
 Usage:
     exporter_acceptance.py --samples DIR --bin PATH
         [--band 45.0] [--film-dir DIR] [--timeout 300]
@@ -77,9 +91,11 @@ import io
 import math
 import os
 import shutil
+import struct
 import subprocess
 import sys
 import tempfile
+import zlib
 from contextlib import redirect_stdout
 
 # House PSNR — imported, never forked. tools/ci/byte_probes.py is
@@ -102,41 +118,96 @@ CHECK_OK_LINE = "FILM TELEMETRY: CHECK OK"
 
 # ------------------------------------------------------------ helpers
 
-def png_mean_and_zero_frac(data):
-    """(mean sample value, fraction of samples == 0) of a PNG."""
-    _w, _h, _c, pixels = decode_png(data)
-    n = len(pixels)
-    if n == 0:
-        return 0.0, 1.0
-    return sum(pixels) / n, pixels.count(0) / n
+def rgb_pixel_bytes(data):
+    """(width, height, RGB bytes) of a PNG, via the house decoder.
+    4-channel input loses its alpha; anything else with 3 channels
+    passes through. Other channel counts raise PngError."""
+    w, h, c, pixels = decode_png(data)
+    if c == 3:
+        return w, h, pixels
+    if c == 4:
+        rgb = bytearray(w * h * 3)
+        rgb[0::3] = pixels[0::4]
+        rgb[1::3] = pixels[1::4]
+        rgb[2::3] = pixels[2::4]
+        return w, h, bytes(rgb)
+    raise PngError(f"unsupported channel count {c}")
+
+
+def alpha_min(data):
+    """Minimum alpha of a 4-channel PNG (255 for 3-channel input)."""
+    _w, _h, c, pixels = decode_png(data)
+    if c != 4:
+        return 255
+    return min(pixels[3::4])
+
+
+def encode_png_rgb(width, height, rgb):
+    """Minimal stdlib RGB PNG encoder (filter 0 rows) — plumbing
+    so normalised pairs can go through the house psnr_of_pair,
+    which speaks PNG bytes. Not a PSNR implementation."""
+    def chunk(ctype, payload):
+        return (struct.pack(">I", len(payload)) + ctype + payload
+                + struct.pack(">I", zlib.crc32(ctype + payload)
+                               & 0xFFFFFFFF))
+    raw = bytearray()
+    stride = width * 3
+    for y in range(height):
+        raw.append(0)
+        raw += rgb[y * stride:(y + 1) * stride]
+    ihdr = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
+    return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", ihdr)
+            + chunk(b"IDAT", zlib.compress(bytes(raw), 6))
+            + chunk(b"IEND", b""))
+
+
+def normalised_pair(ref_bytes, cand_bytes):
+    """Both sides as RGB PNG bytes at identical geometry, ready
+    for psnr_of_pair. Raises PngError on geometry mismatch."""
+    wb, hb, pb = rgb_pixel_bytes(ref_bytes)
+    wc, hc, pc = rgb_pixel_bytes(cand_bytes)
+    if (wb, hb) != (wc, hc):
+        raise PngError(f"geometry differs (baseline {wb}x{hb}, "
+                       f"candidate {wc}x{hc}) — PSNR not meaningful")
+    return (encode_png_rgb(wb, hb, pb), encode_png_rgb(wc, hc, pc))
 
 
 def pct_pixels_gt10(ref_bytes, cand_bytes):
-    """Percent of pixels whose largest per-channel |delta| > 10."""
-    wb, hb, cb, pb = decode_png(ref_bytes)
-    wc, hc, cc, pc = decode_png(cand_bytes)
-    if (wb, hb, cb) != (wc, hc, cc):
+    """Percent of pixels whose largest per-channel |delta| > 10,
+    over RGB (the W47 §4.5 rider measure)."""
+    wb, hb, pb = rgb_pixel_bytes(ref_bytes)
+    wc, hc, pc = rgb_pixel_bytes(cand_bytes)
+    if (wb, hb) != (wc, hc):
         raise PngError("geometry differs — %>10 not meaningful")
     count = 0
-    for i in range(0, len(pb), cb):
-        if max(abs(pb[i + k] - pc[i + k]) for k in range(cb)) > 10:
+    for i in range(0, len(pb), 3):
+        if max(abs(pb[i + k] - pc[i + k]) for k in range(3)) > 10:
             count += 1
     return 100.0 * count / (wb * hb)
 
 
 def is_black_frame(render_bytes, ref_bytes):
     """The software-renderer wall signature: a (near-)uniform black
-    render against a reference that is not black. Returns (bool,
-    evidence string). A genuinely dark scene pair (reference also
-    near-black) is NOT the wall — it falls through to PSNR."""
-    r_mean, r_zero = png_mean_and_zero_frac(render_bytes)
-    if r_mean > 1.0 or r_zero < 0.999:
+    render against a reference that is not black. Judged on RGB
+    only (a black RGBA frame still carries alpha 255). Returns
+    (bool, evidence string). A genuinely dark scene pair
+    (reference also near-black) is NOT the wall — it falls
+    through to PSNR."""
+    _w, _h, rp = rgb_pixel_bytes(render_bytes)
+    n = len(rp)
+    r_mean = sum(rp) / n if n else 0.0
+    black_px = sum(1 for i in range(0, n, 3)
+                   if rp[i] == rp[i + 1] == rp[i + 2] == 0)
+    black_frac = black_px / (n / 3) if n else 1.0
+    if r_mean > 1.0 or black_frac < 0.999:
         return False, ""
-    ref_mean, _ = png_mean_and_zero_frac(ref_bytes)
+    _w2, _h2, fp = rgb_pixel_bytes(ref_bytes)
+    ref_mean = sum(fp) / len(fp) if fp else 0.0
     if ref_mean <= 10.0:
         return False, ""
-    return True, (f"render mean {r_mean:.3f}, {r_zero * 100:.2f}% zero "
-                  f"samples vs reference mean {ref_mean:.1f} — the "
+    return True, (f"render RGB mean {r_mean:.3f}, "
+                  f"{black_frac * 100:.2f}% pure-black pixels vs "
+                  f"reference RGB mean {ref_mean:.1f} — the "
                   f"lavapipe/llvmpipe composer black-frame wall")
 
 
@@ -232,18 +303,22 @@ def score_sample(binary, stem, scene_path, ref_path, renders_dir,
         result["render_path"] = out_png
         return result
 
+    amin = alpha_min(render_bytes)
+    alpha_note = ("" if amin == 255
+                  else f" [candidate alpha not opaque: min {amin}]")
     try:
-        value = psnr_of_pair(ref_bytes, render_bytes)
+        ref_rgb, cand_rgb = normalised_pair(ref_bytes, render_bytes)
+        value = psnr_of_pair(ref_rgb, cand_rgb)
     except PngError as e:
         result["cls"] = "BELOW-BAND"
-        result["detail"] = f"PSNR unavailable ({e})"
+        result["detail"] = f"PSNR unavailable ({e}){alpha_note}"
         result["render_path"] = out_png
         return result
     result["psnr"] = value
     result["render_path"] = out_png
     if value == math.inf:
         result["cls"] = "PASS"
-        result["detail"] = "byte-identical pixels; 0.00% px>10"
+        result["detail"] = f"identical RGB; 0.00% px>10{alpha_note}"
         return result
     try:
         pct = pct_pixels_gt10(ref_bytes, render_bytes)
@@ -252,7 +327,7 @@ def score_sample(binary, stem, scene_path, ref_path, renders_dir,
                     else ""))
     except PngError:
         rider = "%>10 unavailable"
-    result["detail"] = rider
+    result["detail"] = rider + alpha_note
     result["cls"] = "PASS" if value >= band else "BELOW-BAND"
     return result
 
