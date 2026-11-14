@@ -94,9 +94,12 @@ ENVIRONMENT:
                             machines; telemetry runs often use 24.
 
 EXIT CODES:
-    0   Success. (--film-telemetry always exits 0: its verdict is
-        the printed line, not the exit code.)
+    0   Success.
+    1   --film-telemetry QA verdict: CHECK FAILED (the printed
+        line carries the counts and stays authoritative).
     2   Command-line error (unknown flag, bad or missing value).
+    3   --film-telemetry could not run (film data unreadable;
+        the reason is printed on stderr, no verdict line).
 
 The renderer actually used is printed on every run — a hardware
 GPU or a software Vulkan driver such as lavapipe. Nothing claims
@@ -233,10 +236,17 @@ fn main() {
     }
     if let Some(dir) = &film_telemetry_dir {
         // Native telemetry gate over the whole film (M6 semantics,
-        // 0.25 s sampling) — no GPU needed.
+        // 0.25 s sampling) — no GPU needed. The verdict line printed
+        // by run_film_telemetry stays authoritative; the exit code
+        // agrees with it (EXIT-CODES-W02): 0 OK, 1 FAILED, 3 could
+        // not run.
         match film::run_film_telemetry(std::path::Path::new(dir)) {
-            Ok(()) => {}
-            Err(e) => eprintln!("film telemetry failed: {e}"),
+            Ok(true) => {}
+            Ok(false) => std::process::exit(1),
+            Err(e) => {
+                eprintln!("film telemetry failed: {e}");
+                std::process::exit(3);
+            }
         }
         return;
     }

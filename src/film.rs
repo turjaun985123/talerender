@@ -3566,7 +3566,7 @@ const INSTANCE_IDS: [&str; 11] = [
     "onoda", "compA", "compB", "suzuki", "tani", "onoda", "compA", "compB", "tani", "tani", "onoda",
 ];
 
-pub(crate) fn run_film_telemetry(dir: &Path) -> Result<(), String> {
+pub(crate) fn run_film_telemetry(dir: &Path) -> Result<bool, String> {
     use crate::telemetry::*;
     let data = load_film_data(dir)?;
     let looks = look_registry();
@@ -3685,5 +3685,9 @@ pub(crate) fn run_film_telemetry(dir: &Path) -> Result<(), String> {
     for line in &out {
         println!("{line}");
     }
-    Ok(())
+    // Ok(true) = CHECK OK, Ok(false) = CHECK FAILED; the verdict
+    // line above is printed either way and stays authoritative —
+    // the bool only lets main agree with it in the exit code
+    // (EXIT-CODES-W02). Err = telemetry could not run.
+    Ok(bad == 0)
 }
