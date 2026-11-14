@@ -413,7 +413,7 @@ pub(crate) fn paint_toon_full(
     // Shade + highlight, clipped.
     let (shx, shy) = px(bx + bw + 40.0, (top + bot) / 2.0 + 20.0);
     let shade_col = match look.shade {
-        Some(s) => rgba(s),
+        Some(s) => rgba(s.as_str()),
         None => shade_rgba(&look.body, 0.8),
     };
     p.fill_ellipse_masked(shx, shy, 70.0 * RES, 260.0 * RES, th, (shade_col.0, shade_col.1, shade_col.2, (0.85 * 255.0) as u8), &mask);

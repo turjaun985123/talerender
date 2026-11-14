@@ -587,11 +587,11 @@ fn walk_nodes(
                             let ti = tex_index.get(id).ok_or_else(|| {
                                 err(&nctx, &format!("hold plate texture '{id}' not declared"))
                             })?;
-                            let (px, w, h) = &textures[*ti];
+                            let (tpx, tw, th) = &textures[*ti];
                             Ok(Some(Plate {
-                                px: px.clone(),
-                                w: *w,
-                                h: *h,
+                                px: tpx.clone(),
+                                w: *tw,
+                                h: *th,
                                 x0: f32_field_or(h, "x0", &nctx, 0.0)?,
                                 y0: f32_field_or(h, "y0", &nctx, 0.0)?,
                             }))
@@ -600,7 +600,7 @@ fn walk_nodes(
                 };
                 let state = FullState {
                     mood: Mood::from_str(opt_str(&st_spec, "mood").as_deref().unwrap_or("neutral")),
-                    look: pair_field(&st_spec, "look", &nctx, (0.0, 0.0))?,
+                    look: { let (a, b) = pair_field(&st_spec, "look", &nctx, (0.0, 0.0))?; [a, b] },
                     blink: f32_field_or(&st_spec, "blink", &nctx, 0.0)?,
                     talk: f32_field_or(&st_spec, "talk", &nctx, 0.0)?,
                     sweat: truthy(st_spec.get("sweat")),
