@@ -1781,3 +1781,1184 @@ mod json_tests {
         assert!(parse_json("").is_err());
     }
 }
+
+// ===== registry painter: planks (wave pack, painters/planks.rs) =====
+// ---------------------------------------------------------------------
+// paint_planks — native port of the world.ts `T.planks` canvas painter
+// (the film project's own code, NOT three.js library code):
+//
+//   ~/faceless-shorts/the-soldier-who-didnt-know/src/core/world.ts:58-65
+//     planks: (col = '#A8693E', rep = [1, 1]) => canvasTex(
+//       'planks' + col, 512, 512, (g, w, h) => { ... }, rep)
+//   helpers it closes over:
+//     rnd   — world.ts:10 (== lib.ts rnd; == crate::scene::rnd)
+//     shade — world.ts:41 (THREE.Color multiplyScalar; see planks_shade)
+//
+// INTEGRATION (this file is a drop-in for src/scene.rs):
+//   * Paste the items below into src/scene.rs next to paint_grass
+//     (they use that module's Painter / Rgba / hex_rgb / rnd
+//     unqualified, exactly like the sibling painters), OR include as a
+//     submodule with `use super::{hex_rgb, rnd, Painter, Rgba};`.
+//   * Register in src/scenefile.rs resolve_texture(), beside "grass":
+//       "planks" => scene::paint_planks(str_field(spec, "base", ctx)?),
+//   * Signature, size and determinism conventions mirror paint_grass
+//     EXACTLY: `pub(crate) fn paint_*(base: &str) -> (Vec<u8>, u32,
+//     u32)`, fixed 512x512 RGBA canvas, straight alpha, row 0 = top,
+//     all randomness from the f64 sin-hash rnd() — no RNG state, so
+//     two calls with the same base are byte-identical.
+//   * `rep` (repeat) is NOT a painter input, in either engine: the
+//     source applies it to the texture CLONE (canvasTex, world.ts:
+//     24-33) while one canvas per colour is cached and shared. Repeat
+//     and rotation live on the scene file's texture entry / material
+//     UV transform. See painters/planks.md for the full mapping.
+//
+// Op-for-op transcription of the draw callback (world.ts:59-64).
+// Canvas state carried across ops, as in the source: the joint rect
+// reuses the seam's fillStyle (shade 0.45) because the source sets
+// fillStyle once and never resets it between the two fillRects; the
+// grain strokes' globalAlpha 0.35 is folded into the stroke colour's
+// alpha byte (89), which is exactly how Painter::blend consumes it.
+// ---------------------------------------------------------------------
+
+/// three.js r170 `shade()` (world.ts:41):
+///   const shade = (hex, k) => { const c = new THREE.Color(hex);
+///     c.multiplyScalar(k); return '#' + c.getHexString(); };
+/// With r170's default ColorManagement, `new THREE.Color(hex)` stores
+/// the colour in the LINEAR-srgb working space, multiplyScalar scales
+/// the linear components, and getHexString() converts back to sRGB
+/// bytes. The conversions below are three's own constants
+/// (ColorManagement.js: SRGBToLinear uses 0.0773993808 /
+/// 0.9478672986 / 0.0521327014 with exponent 2.4; LinearToSRGB uses
+/// 12.92 / 1.055 / exponent 0.41666), evaluated in f64 like all JS
+/// number math, with the final byte ROUNDED, not truncated: the two
+/// shade() outputs the film corpus recorded from the real pipeline
+/// pin this — shade('#3A2A2A', 0.7) = #302222 and
+/// shade('#3A2E22', 1.25) = #413427, whose green byte is 52 =
+/// round(51.8); truncation would give 51 (#413327). See the tests.
+///
+/// This is deliberately NOT crate::scene::shade_rgb: that helper
+/// multiplies the sRGB BYTES (it ports toon.ts's canvas shadeOf) and
+/// runs 25-40 LSB darker on this painter's factors — e.g.
+/// shade('#A8693E', 0.45) is (116, 71, 40) here vs (76, 47, 28) from
+/// shade_rgb. The M0 audit (docs/audit/a1-engine.md, the
+/// THREE.Color row) already flagged exactly this: "Reproduce that or
+/// every derived shade shifts." paint_grass / film.rs still use
+/// shade_rgb for world.ts painters — an inherited inconsistency in
+/// the registry, documented in painters/planks.md; this module
+/// follows the source.
+fn planks_shade(hex: &str, k: f64) -> (u8, u8, u8) {
+    fn s2l(c: f64) -> f64 {
+        if c <= 0.04045 {
+            c * 0.0773993808
+        } else {
+            (c * 0.9478672986 + 0.0521327014).powf(2.4)
+        }
+    }
+    fn l2s(c: f64) -> f64 {
+        if c <= 0.0031308 {
+            c * 12.92
+        } else {
+            1.055 * c.powf(0.41666) - 0.055
+        }
+    }
+    let (r, g, b) = hex_rgb(hex);
+    let f = |v: u8| -> u8 { (l2s(s2l(v as f64 / 255.0) * k) * 255.0).round().clamp(0.0, 255.0) as u8 };
+    (f(r), f(g), f(b))
+}
+
+fn planks_shade_rgba(hex: &str, k: f64) -> Rgba {
+    let (r, g, b) = planks_shade(hex, k);
+    (r, g, b, 255)
+}
+
+/// One grain curve (world.ts:61): the cubic bezier
+///   moveTo(0, y)  bezierCurveTo(w*0.3, y+6,  w*0.6, y-6,  w, y+2)
+/// flattened to a polyline for Painter::stroke_polyline. 128 segments
+/// keep the polyline within ~0.01 px of the true curve everywhere
+/// (the curve's total y excursion is 12 px over a 512 px run), far
+/// under the stroke's own AA band. Canvas strokes this path with
+/// butt caps; stroke_polyline's house model uses round caps — the
+/// curves span the full canvas width, so the cap difference is
+/// confined to the first/last pixel columns (see planks.md).
+fn planks_grain_pts(w: f32, y: f32) -> Vec<(f32, f32)> {
+    const SEG: usize = 128;
+    let (x0, y0) = (0.0f64, y as f64);
+    let (x1, y1) = (w as f64 * 0.3, y as f64 + 6.0);
+    let (x2, y2) = (w as f64 * 0.6, y as f64 - 6.0);
+    let (x3, y3) = (w as f64, y as f64 + 2.0);
+    (0..=SEG)
+        .map(|s| {
+            let t = s as f64 / SEG as f64;
+            let (u, v) = (1.0 - t, t);
+            let px = u * u * u * x0 + 3.0 * u * u * v * x1 + 3.0 * u * v * v * x2 + v * v * v * x3;
+            let py = u * u * u * y0 + 3.0 * u * u * v * y1 + 3.0 * u * v * v * y2 + v * v * v * y3;
+            (px as f32, py as f32)
+        })
+        .collect()
+}
+
+/// T.planks(col): 512x512 canvas, 8 plank rows. Per row i
+/// (world.ts:60-64), in source order:
+///   1. row fill      shade(col, 0.86 + rnd(i*3)*0.24), full row
+///   2. 4 grain strokes, shade(col, 0.7) @ alpha 0.35, lineWidth 2,
+///      y = i*ph + 8 + rnd(i*7+k)*(ph-16), k = 0..4 — four SEPARATE
+///      canvas strokes, so four separate stroke_polyline calls here
+///      (crossings blend twice, as in the source)
+///   3. seam band     shade(col, 0.45), fillRect(0, i*ph, w, 4)
+///   4. butt joint    SAME fillStyle (0.45), fillRect(jx, i*ph, 4, ph)
+///      with jx = rnd(i*11)*w
+///   5. two knots     shade(col, 0.5), filled circles r = 3 at
+///      (jx-14, i*ph + ph/2) and (jx+18, i*ph + ph/2)
+///      (source: arc(x, y, 3, 0, 7) — 7 rad > 2*PI, a full circle)
+pub(crate) fn paint_planks(base: &str) -> (Vec<u8>, u32, u32) {
+    let (w, h) = (512usize, 512usize);
+    let mut p = Painter::new(w, h);
+    let n = 8usize;
+    let ph = h as f32 / n as f32; // 64
+    // globalAlpha 0.35 -> alpha byte: round(0.35 * 255) = 89.
+    let (gr, gg, gb) = planks_shade(base, 0.7);
+    let grain: Rgba = (gr, gg, gb, 89);
+    let seam = planks_shade_rgba(base, 0.45);
+    let knot = planks_shade_rgba(base, 0.5);
+    for i in 0..n {
+        let fi = i as f64;
+        let top = i as f32 * ph;
+        // 1. row fill
+        let f = 0.86 + rnd(fi * 3.0) * 0.24;
+        let fill = planks_shade_rgba(base, f);
+        p.fill_rect(0.0, top, w as f32, ph, fill);
+        // 2. grain strokes
+        for k in 0..4usize {
+            let y = top + 8.0 + (rnd(fi * 7.0 + k as f64) * (ph as f64 - 16.0)) as f32;
+            let pts = planks_grain_pts(w as f32, y);
+            p.stroke_polyline(&pts, 2.0, grain);
+        }
+        // 3. seam band (top 4 px of the row)
+        p.fill_rect(0.0, top, w as f32, 4.0, seam);
+        // 4. butt joint (same fillStyle as the seam in the source)
+        let jx = (rnd(fi * 11.0) * w as f64) as f32;
+        p.fill_rect(jx, top, 4.0, ph, seam);
+        // 5. knots
+        for cx in [jx - 14.0, jx + 18.0] {
+            p.fill_ellipse(cx, top + ph / 2.0, 3.0, 3.0, 0.0, knot);
+        }
+    }
+    (p.px, w as u32, h as u32)
+}
+
+#[cfg(test)]
+mod planks_tests {
+    use super::*;
+
+    fn px_at(px: &[u8], w: usize, x: usize, y: usize) -> (u8, u8, u8, u8) {
+        let k = (y * w + x) * 4;
+        (px[k], px[k + 1], px[k + 2], px[k + 3])
+    }
+
+    #[test]
+    fn output_size_and_opaque() {
+        let (px, w, h) = paint_planks("#A8693E");
+        assert_eq!((w, h), (512, 512));
+        assert_eq!(px.len(), 512 * 512 * 4);
+        // Every pixel is covered by an opaque row fill and every
+        // later op blends OVER opaque, so alpha is 255 everywhere.
+        assert!(px.chunks_exact(4).all(|c| c[3] == 255));
+    }
+
+    #[test]
+    fn deterministic_and_base_sensitive() {
+        let (a, _, _) = paint_planks("#B07A48");
+        let (b, _, _) = paint_planks("#B07A48");
+        assert_eq!(a, b, "same base must be byte-identical");
+        let (c, _, _) = paint_planks("#9A6337");
+        assert_ne!(a, c, "different base must differ");
+    }
+
+    /// shade() truth table. The first two rows are outputs the film
+    /// corpus recorded from the REAL three.js pipeline (the s10
+    /// bookshop data: sign edge #302222 = shade('#3A2A2A', 0.7);
+    /// ceiling motif #413427 = shade('#3A2E22', 1.25)); the rest are
+    /// this painter's own factors for the default base, computed
+    /// from three r170's conversion constants in f64.
+    #[test]
+    fn shade_truth_table() {
+        assert_eq!(planks_shade("#3A2A2A", 0.7), (0x30, 0x22, 0x22));
+        assert_eq!(planks_shade("#3A2E22", 1.25), (0x41, 0x34, 0x27));
+        assert_eq!(planks_shade("#A8693E", 0.45), (116, 71, 40));
+        assert_eq!(planks_shade("#A8693E", 0.5), (122, 75, 43));
+        assert_eq!(planks_shade("#A8693E", 0.7), (143, 89, 52));
+        // k = 1 is the identity round trip.
+        assert_eq!(planks_shade("#A8693E", 1.0), (0xA8, 0x69, 0x3E));
+    }
+
+    /// The seam band is painted AFTER the grain strokes, opaque, at
+    /// shade(base, 0.45), across the full width — so every pixel of
+    /// band row i*64+2 is exactly that colour (the butt joint shares
+    /// the same fillStyle, and the knots sit at mid-row).
+    #[test]
+    fn seam_band_is_exact() {
+        let (px, w, _) = paint_planks("#A8693E");
+        let seam = planks_shade("#A8693E", 0.45);
+        for i in 0..8usize {
+            for x in [0usize, 17, 256, 511] {
+                assert_eq!(px_at(&px, w as usize, x, i * 64 + 2), (seam.0, seam.1, seam.2, 255), "row {i} x {x}");
+            }
+        }
+    }
+
+    /// Row fills: pixel (x, i*64+63) — the plank's bottom row —
+    /// is touched by nothing after the row fill when x is chosen
+    /// 200 px away from the butt joint: grain curves stay above
+    /// y = i*64 + ~60.2 (control-point max i*64+62 weighted by the
+    /// bezier basis peaks at +2.7 over the endpoint max i*64+56,
+    /// plus 1 px half-width and the AA band), knots sit at mid-row,
+    /// seam at the top. Expected colours are shade('#A8693E', f_i)
+    /// for f_i = 0.86 + rnd(3i)*0.24, computed from the algorithm.
+    #[test]
+    fn row_fills_are_exact() {
+        let expected: [(u8, u8, u8); 8] = [
+            (172, 108, 64),
+            (169, 106, 62),
+            (175, 110, 65),
+            (174, 109, 65),
+            (161, 100, 59),
+            (172, 108, 64),
+            (174, 109, 65),
+            (159, 99, 58),
+        ];
+        let (px, w, _) = paint_planks("#A8693E");
+        for i in 0..8usize {
+            let jx = rnd(i as f64 * 11.0) * 512.0;
+            let x = ((jx as usize + 200) % 512) as usize;
+            assert_eq!(
+                px_at(&px, w as usize, x, i * 64 + 63),
+                (expected[i].0, expected[i].1, expected[i].2, 255),
+                "row {i}"
+            );
+        }
+    }
+
+    /// Knot centres: the pixel containing a knot centre is at
+    /// distance <= ~0.53 from it, so the r=3 disc covers the whole
+    /// pixel (coverage 1) and the opaque knot colour replaces
+    /// whatever the grain strokes left there. Row 0: jx =
+    /// rnd(0)*512 = 419.488 -> knots at x = 405.488 and 437.488,
+    /// y = 32. Row 3: jx = rnd(33)*512 = 184.326 -> x = 170.326
+    /// and 202.326, y = 224.
+    #[test]
+    fn knot_centres_are_exact() {
+        let (px, w, _) = paint_planks("#A8693E");
+        let knot = planks_shade("#A8693E", 0.5);
+        for (x, y) in [(405usize, 32usize), (437, 32), (170, 224), (202, 224)] {
+            assert_eq!(px_at(&px, w as usize, x, y), (knot.0, knot.1, knot.2, 255), "knot at {x},{y}");
+        }
+    }
+
+    /// Mean colour vs the value computed from the algorithm.
+    /// Ignoring the grain strokes, the composition is exact: per
+    /// 512x64 row, 30424 px of row fill shade(f_i), 2048 + 240 px
+    /// of shade(0.45) (seam band + the joint's non-overlapping
+    /// part), and ~56 px of shade(0.5) (two r=3 discs, area pi*9
+    /// each, replacing row fill). The strokes are the only other
+    /// term: they touch at most ~27% of pixels (4 curves x ~543 px
+    /// x 4 px incl. AA fringe, per row) at alpha <= 89/255, moving
+    /// a pixel at most toward shade(0.7). The tolerance is that
+    /// bound, computed from the actual shade colours, + 1.5 LSB of
+    /// slack for the disc-area and rounding approximations.
+    /// For '#A8693E' the stroke-free expectation is
+    /// (165.7, 103.6, 61.1).
+    #[test]
+    fn mean_colour_matches_algorithm() {
+        let base = "#A8693E";
+        let (px, w, h) = paint_planks(base);
+        let npix = (w * h) as f64;
+        let (mut sr, mut sg, mut sb) = (0f64, 0f64, 0f64);
+        for c in px.chunks_exact(4) {
+            sr += c[0] as f64;
+            sg += c[1] as f64;
+            sb += c[2] as f64;
+        }
+        let mean = (sr / npix, sg / npix, sb / npix);
+
+        let seam = planks_shade(base, 0.45);
+        let knot = planks_shade(base, 0.5);
+        let grain = planks_shade(base, 0.7);
+        let (mut er, mut eg, mut eb) = (0f64, 0f64, 0f64);
+        let mut maxdist = (0f64, 0f64, 0f64);
+        for i in 0..8usize {
+            let f = 0.86 + rnd(i as f64 * 3.0) * 0.24;
+            let fill = planks_shade(base, f);
+            er += 30424.0 * fill.0 as f64 + 2288.0 * seam.0 as f64 + 56.0 * knot.0 as f64;
+            eg += 30424.0 * fill.1 as f64 + 2288.0 * seam.1 as f64 + 56.0 * knot.1 as f64;
+            eb += 30424.0 * fill.2 as f64 + 2288.0 * seam.2 as f64 + 56.0 * knot.2 as f64;
+            for other in [fill, seam, knot] {
+                maxdist.0 = maxdist.0.max((grain.0 as f64 - other.0 as f64).abs());
+                maxdist.1 = maxdist.1.max((grain.1 as f64 - other.1 as f64).abs());
+                maxdist.2 = maxdist.2.max((grain.2 as f64 - other.2 as f64).abs());
+            }
+        }
+        let row_area = 512.0 * 64.0;
+        let expect = (er / (8.0 * row_area), eg / (8.0 * row_area), eb / (8.0 * row_area));
+        let tol = (
+            0.27 * (89.0 / 255.0) * maxdist.0 + 1.5,
+            0.27 * (89.0 / 255.0) * maxdist.1 + 1.5,
+            0.27 * (89.0 / 255.0) * maxdist.2 + 1.5,
+        );
+        assert!((mean.0 - expect.0).abs() <= tol.0, "r: mean {} vs {} +- {}", mean.0, expect.0, tol.0);
+        assert!((mean.1 - expect.1).abs() <= tol.1, "g: mean {} vs {} +- {}", mean.1, expect.1, tol.1);
+        assert!((mean.2 - expect.2).abs() <= tol.2, "b: mean {} vs {} +- {}", mean.2, expect.2, tol.2);
+    }
+}
+
+// ===== registry painter: wallpaper (wave pack, painters/wallpaper.rs) =====
+// T.wallpaper — the bookshop wallpaper texture painter, ported
+// op-for-op from the project's world.ts (world.ts:69-73) for the
+// scene-format texture registry (docs/scene-format.md; the registry
+// gap is B8 in scenes/sets/README.md).
+//
+// INTEGRATION: this file is the registry version of the painter
+// film.rs already carries as a local duplicate (film.rs's
+// paint_wallpaper, film.rs:526). Drop it into src/scene.rs beside
+// paint_grass / paint_sky (deleting the `use` line below — those
+// items are scene.rs's own) and register it in
+// src/scenefile.rs::resolve_texture as:
+//
+//     "wallpaper" => scene::paint_wallpaper(
+//         str_field(spec, "base", ctx)?,
+//         str_field(spec, "motif", ctx)?,
+//     ),
+//
+// The spec fields are the ones the film data already declares
+// (scenes/sets/bookshop.scene.json, scenes/film/s10.scene.json):
+// `base` (the TS `col`), `motif`, `canvas: [256, 256]`, plus a
+// `repeat` the painter does not consume (repeat is a material-side
+// clone property in the source too — canvasTex keys its cache by
+// 'wp' + col + motif only and clones per repeat).
+//
+// Signature and conventions mirror the registry painters exactly:
+// hex-string colour parameters in, (RGBA bytes, w, h) out, painted
+// through the shared CPU Painter with its signed-distance coverage
+// model. The source painter uses NO rnd() calls — it is fully
+// geometric — so determinism here is exact, not hash-dependent.
+//
+// Two interpretation points (full discussion in
+// painters/wallpaper.md): the two wing arcs share ONE canvas path
+// in the source; they are painted as two discs because Chrome/Skia
+// clamps an arc sweep to a full circle, which makes the inter-arc
+// connector degenerate — the same reading film.rs's port took. And
+// the fleur position list has four entries but an `i < 2` guard
+// draws only the first two.
+
+
+/// world.ts:35's `shade(hex, k)`: THREE.Color(hex).multiplyScalar(k)
+/// read back with getHexString(). THREE.Color stores its components
+/// in the LINEAR working space (the hex is converted on
+/// construction), so the multiply happens in linear space and the
+/// read-back re-encodes to sRGB (clamped, rounded) — NOT the canvas
+/// shadeOf() byte multiply scene::shade_rgb implements. The two
+/// visibly differ: shade('#3A2E22', 1.25) is #413427 this way and
+/// #493A2B the shade_rgb way (scenes/film/ASSUMPTIONS.md, S10
+/// divergences item 3 — the source value is #413427).
+///
+/// The wallpaper painter itself never calls shade() — interior()
+/// pre-computes the ceiling motif with it (world.ts:313) and the
+/// film data carries the result — but the registry consumer that
+/// derives a variant from parameters needs it computed the source's
+/// way, and the unit tests pin it against the evaluated constant.
+pub(crate) fn shade_hex(hex: &str, k: f32) -> (u8, u8, u8) {
+    let lin = hex_lin(hex);
+    let f = |c: f32| -> u8 {
+        (linear_to_srgb(c * k) * 255.0)
+            .round()
+            .clamp(0.0, 255.0) as u8
+    };
+    (f(lin[0]), f(lin[1]), f(lin[2]))
+}
+
+/// T.wallpaper(col, motif): 256x256 — base fill, fleur motifs at
+/// (64,64) and (192,192) at scale 0.9, then four alpha-0.5 dots
+/// (world.ts:69-73). The source also sets strokeStyle/lineWidth = 5
+/// before drawing; no stroke() is ever called, so there is nothing
+/// to port for them.
+pub(crate) fn paint_wallpaper(base: &str, motif: &str) -> (Vec<u8>, u32, u32) {
+    let (w, h) = (256usize, 256usize);
+    let mut p = Painter::new(w, h);
+    p.fill_rect(0.0, 0.0, w as f32, h as f32, rgba_of(base));
+    let m = rgba_of(motif);
+    // fleur(x, y, s): translate(x, y) then scale(s, s), all fills in
+    // the motif colour. One fleur is:
+    //   petal — moveTo(0,-40), bezierCurveTo(18,-20, 18,0, 0,14),
+    //           bezierCurveTo(-18,0, -18,-20, 0,-40), fill;
+    //   wings — one path: arc(-22,4,12, 0,7) + arc(22,4,12, 0,7),
+    //           fill (two discs — see the header note);
+    //   stem  — fillRect(-3, 10, 6, 26).
+    let fleur = |p: &mut Painter, cx: f32, cy: f32, s: f32| {
+        let mut outline = flatten_cubic((0.0, -40.0), (18.0, -20.0), (18.0, 0.0), (0.0, 14.0), 24);
+        let back = flatten_cubic((0.0, 14.0), (-18.0, 0.0), (-18.0, -20.0), (0.0, -40.0), 24);
+        // Skip the return curve's first point (the joint, already
+        // the forward curve's last) and its last (the start point,
+        // which fill_polygon closes to on its own).
+        outline.extend(back[1..back.len() - 1].iter().copied());
+        let pts: Vec<(f32, f32)> = outline
+            .iter()
+            .map(|&(x, y)| (cx + x * s, cy + y * s))
+            .collect();
+        p.fill_polygon(&pts, m);
+        p.fill_ellipse(cx - 22.0 * s, cy + 4.0 * s, 12.0 * s, 12.0 * s, 0.0, m);
+        p.fill_ellipse(cx + 22.0 * s, cy + 4.0 * s, 12.0 * s, 12.0 * s, 0.0, m);
+        p.fill_rect(cx - 3.0 * s, cy + 10.0 * s, 6.0 * s, 26.0 * s, m);
+    };
+    // [[64,64],[192,192],[192,64-256],[64,192]] with `i < 2 &&` —
+    // only these two fleurs exist; the other two positions are dead
+    // list entries (one of them, (192,-192), is off-canvas anyway).
+    fleur(&mut p, 64.0, 64.0, 0.9);
+    fleur(&mut p, 192.0, 192.0, 0.9);
+    // globalAlpha 0.5 dots, r 6, at the four grid points in source
+    // order: arc(i%2 ? 192 : 64, i<2 ? 192 : 64, 6, 0, 7). Alpha 128
+    // for the 0.5 (0.5 * 255 = 127.5; the house port precedent —
+    // film.rs's paint_wallpaper uses the same literal). Two of the
+    // dots land on fleur centres (motif over motif: no visible
+    // change); two land on bare base.
+    for i in 0..4 {
+        let (dx, dy) = match i {
+            0 => (64.0, 192.0),
+            1 => (192.0, 192.0),
+            2 => (64.0, 64.0),
+            _ => (192.0, 64.0),
+        };
+        p.fill_ellipse(dx, dy, 6.0, 6.0, 0.0, (m.0, m.1, m.2, 128));
+    }
+    (p.px, w as u32, h as u32)
+}
+
+#[cfg(test)]
+mod wallpaper_tests {
+    use super::*;
+
+    fn at(px: &[u8], w: u32, x: u32, y: u32) -> (u8, u8, u8, u8) {
+        let k = ((y * w + x) * 4) as usize;
+        (px[k], px[k + 1], px[k + 2], px[k + 3])
+    }
+
+    // The bookshop's wall parameters (world.ts interior() as staged
+    // by shots.ts:227; declared on the wallpaper-walls/-back/-side
+    // texture entries).
+    const WALL: (u8, u8, u8, u8) = (0x5A, 0x46, 0x32, 255);
+    const WALL_MOTIF: (u8, u8, u8, u8) = (0x6B, 0x56, 0x38, 255);
+    // The ceiling variant: base #3A2E22, motif #413427 — the motif
+    // is shade(ceiling, 1.25) precomputed by the source caller.
+    const CEIL: (u8, u8, u8, u8) = (0x3A, 0x2E, 0x22, 255);
+    const CEIL_MOTIF: (u8, u8, u8, u8) = (0x41, 0x34, 0x27, 255);
+
+    #[test]
+    fn size_and_fully_opaque() {
+        let (px, w, h) = paint_wallpaper("#5A4632", "#6B5638");
+        assert_eq!((w, h), (256, 256));
+        assert_eq!(px.len(), 256 * 256 * 4);
+        // Base fill is opaque and every later op is opaque or an
+        // alpha blend over opaque, so no alpha but 255 survives.
+        assert!(px.chunks_exact(4).all(|p| p[3] == 255));
+    }
+
+    #[test]
+    fn deterministic() {
+        let a = paint_wallpaper("#5A4632", "#6B5638");
+        let b = paint_wallpaper("#5A4632", "#6B5638");
+        assert_eq!(a, b);
+    }
+
+    #[test]
+    fn bookshop_wall_colours() {
+        let (px, w, _) = paint_wallpaper("#5A4632", "#6B5638");
+        // Bare base, away from every fleur and dot.
+        assert_eq!(at(&px, w, 10, 10), WALL);
+        // Fleur petal interior (local (0.6, -26) of the (64,64)
+        // fleur), both fleurs.
+        assert_eq!(at(&px, w, 64, 40), WALL_MOTIF);
+        assert_eq!(at(&px, w, 192, 167), WALL_MOTIF);
+        // Left wing disc centre (local (-22, 4) at scale 0.9).
+        assert_eq!(at(&px, w, 44, 67), WALL_MOTIF);
+        // Stem interior (local (0.6, 22.8)).
+        assert_eq!(at(&px, w, 64, 84), WALL_MOTIF);
+        // Fleur centre: petal-covered, then dotted with its own
+        // colour at alpha 0.5 — motif over motif is exact.
+        assert_eq!(at(&px, w, 64, 64), WALL_MOTIF);
+    }
+
+    #[test]
+    fn alpha_dot_over_base_composites() {
+        let (px, w, _) = paint_wallpaper("#5A4632", "#6B5638");
+        // The (192,64) dot lands on bare base: motif at alpha
+        // 128/255 source-over the base, per the Painter blend.
+        assert_eq!(at(&px, w, 192, 64), (99, 78, 53, 255));
+        // The (64,192) grid point carries the same dot composite —
+        // and nothing else: its fleur list entry is the fourth,
+        // which the source's `i < 2` guard never draws.
+        assert_eq!(at(&px, w, 64, 192), (99, 78, 53, 255));
+        // Where that undrawn fleur's petal would sit (local
+        // (0.6, -26) of (64,192)) the base is untouched.
+        assert_eq!(at(&px, w, 64, 168), WALL);
+    }
+
+    #[test]
+    fn ceiling_variant_and_linear_shade() {
+        // The pinned constant, computed the source's way:
+        // THREE.Color multiplyScalar in linear space (world.ts:35).
+        // The sRGB byte multiply (scene::shade_rgb) would give
+        // (0x49, 0x3A, 0x2B) here — that is film.rs's known S10
+        // divergence, not the source value.
+        assert_eq!(shade_hex("#3A2E22", 1.25), (0x41, 0x34, 0x27));
+        let (px, w, _) = paint_wallpaper("#3A2E22", "#413427");
+        assert_eq!(at(&px, w, 10, 10), CEIL);
+        assert_eq!(at(&px, w, 64, 40), CEIL_MOTIF);
+    }
+
+    #[test]
+    fn source_defaults() {
+        // T.wallpaper's own defaults (world.ts:69).
+        let (px, w, _) = paint_wallpaper("#9E2E3A", "#B8414C");
+        assert_eq!(at(&px, w, 10, 10), (0x9E, 0x2E, 0x3A, 255));
+        assert_eq!(at(&px, w, 64, 40), (0xB8, 0x41, 0x4C, 255));
+    }
+}
+
+// ===== registry painter: felt (wave pack, painters/felt.rs) =====
+// T.felt(col) — the bookshop's green baize (world.ts:93), a registry
+// painter in the scene.rs conventions: same `paint_*` signature,
+// same CPU `Painter`, same deterministic sin-hash `rnd`.
+//
+// Source recipe (world.ts:93, one line):
+//   canvasTex('felt' + col, 256, 256, (g, w, h) => {
+//     g.fillStyle = col; g.fillRect(0, 0, w, h);
+//     for (let i = 0; i < 3000; i++) {
+//       g.fillStyle = shade(col, 0.85 + rnd(i) * 0.3);
+//       g.fillRect(rnd(i * 3) * w, rnd(i * 7) * h, 2, 2);
+//     } })
+//
+// The one subtlety is `shade`: world.ts:35 defines it through
+// THREE.Color — NOT the canvas shadeOf (toon.ts:94) that
+// scene::shade_rgb mirrors. THREE.Color stores the hex converted
+// to the LINEAR working space, multiplyScalar(k) scales the linear
+// components, and getHexString() converts back to sRGB, quantising
+// with Math.round(clamp(255*c, 0, 255)) per channel. This module
+// reproduces that arithmetic exactly (three r170 transfer curves,
+// f64 throughout, JS argument evaluation order: k and the speckle
+// position are f64 until the Painter's f32 rasteriser, exactly as
+// film.rs's painters cast rnd results to f32 at the fill call).
+// scene::shade_lin does NOT equal it (it multiplies the sRGB bytes
+// first, then converts) — cf. the W14 ceiling-motif finding
+// (#413427 in three vs #493A2B through shade_lin).
+
+
+/// three r170 SRGBToLinear: c < 0.04045 ? 0.0773993808*c
+/// : pow(0.9478672986*c + 0.0521327014, 2.4). (Strict `<`, as in
+/// three; scene::srgb_to_linear uses `<=` — equal only at the exact
+/// boundary input, which no byte/255 value hits: 0.04045*255 =
+/// 10.31475 is not an integer.)
+fn srgb_to_linear_f64(c: f64) -> f64 {
+    if c < 0.04045 {
+        0.0773993808 * c
+    } else {
+        (0.9478672986 * c + 0.0521327014).powf(2.4)
+    }
+}
+
+/// three r170 LinearToSRGB: c < 0.0031308 ? 12.92*c
+/// : 1.055 * pow(c, 0.41666) - 0.055. Note the exponent literal
+/// 0.41666 — not 1/2.4 (scene::linear_to_srgb uses 1.0/2.4 in f32;
+/// the difference is below one byte step for the felt greens but
+/// is reproduced verbatim here because the shade round-trip is the
+/// whole point of this painter).
+fn linear_to_srgb_f64(c: f64) -> f64 {
+    if c < 0.0031308 {
+        12.92 * c
+    } else {
+        1.055 * c.powf(0.41666) - 0.055
+    }
+}
+
+/// world.ts:35 shade(hex, k) -> '#rrggbb', as bytes: hex -> linear
+/// (THREE.Color setHex with colour management on), multiply by k
+/// in linear, back to sRGB (getHex), quantise
+/// Math.round(clamp(255*c, 0, 255)). JS Math.round on non-negative
+/// values rounds half up; f64::round rounds half away from zero —
+/// identical on the clamped [0, 255] domain.
+fn shade_three(hex: &str, k: f64) -> (u8, u8, u8) {
+    let (r, g, b) = hex_rgb(hex);
+    let q = |v: u8| -> u8 {
+        let lin = srgb_to_linear_f64(v as f64 / 255.0) * k;
+        (255.0 * linear_to_srgb_f64(lin)).clamp(0.0, 255.0).round() as u8
+    };
+    (q(r), q(g), q(b))
+}
+
+/// T.felt(base): 256x256 — base fill + 3000 hash speckle rects of
+/// 2x2 px, each shaded shade(base, 0.85 + rnd(i)*0.3). Used by the
+/// bookshop with base '#1F5A45' (counter, the T.felt default) and
+/// '#2E5A44' (desk).
+pub(crate) fn paint_felt(base: &str) -> (Vec<u8>, u32, u32) {
+    let (w, h) = (256usize, 256usize);
+    let mut p = Painter::new(w, h);
+    p.fill_rect(0.0, 0.0, w as f32, h as f32, rgba_of(base));
+    for i in 0..3000 {
+        let fi = i as f64;
+        let sh = shade_three(base, 0.85 + rnd(fi) * 0.3);
+        p.fill_rect(
+            (rnd(fi * 3.0) * w as f64) as f32,
+            (rnd(fi * 7.0) * h as f64) as f32,
+            2.0,
+            2.0,
+            (sh.0, sh.1, sh.2, 255),
+        );
+    }
+    (p.px, w as u32, h as u32)
+}
+
+#[cfg(test)]
+mod felt_tests {
+    use super::*;
+
+    fn count_colour(px: &[u8], rgb: (u8, u8, u8)) -> usize {
+        px.chunks_exact(4)
+            .filter(|p| p[0] == rgb.0 && p[1] == rgb.1 && p[2] == rgb.2)
+            .count()
+    }
+
+    #[test]
+    fn size_and_dims() {
+        let (px, w, h) = paint_felt("#1F5A45");
+        assert_eq!((w, h), (256, 256));
+        assert_eq!(px.len(), 256 * 256 * 4);
+    }
+
+    #[test]
+    fn deterministic() {
+        assert_eq!(paint_felt("#1F5A45").0, paint_felt("#1F5A45").0);
+        assert_eq!(paint_felt("#2E5A44").0, paint_felt("#2E5A44").0);
+    }
+
+    #[test]
+    fn fully_opaque() {
+        // Analytic: the base fill covers every pixel at coverage 1
+        // and every speckle is opaque, so source-over never leaves
+        // alpha < 255 anywhere.
+        let (px, _, _) = paint_felt("#1F5A45");
+        assert!(px.chunks_exact(4).all(|p| p[3] == 255));
+    }
+
+    #[test]
+    fn shade_is_the_three_linear_multiply() {
+        // k = 1 must round-trip a colour byte-exactly through the
+        // linear excursion (conversion + reconversion + round).
+        assert_eq!(shade_three("#1F5A45", 1.0), (0x1F, 0x5A, 0x45));
+        // The linear multiply is NOT the sRGB byte multiply: for
+        // k = 0.85 the canvas shadeOf gives (26, 77, 59) while the
+        // three.js shade gives the brighter (28, 83, 64) — the
+        // linear curve lifts mid-tones. Pinned from the r170
+        // arithmetic above.
+        assert_eq!(shade_three("#1F5A45", 0.85), (28, 83, 64));
+        assert_ne!(
+            shade_three("#1F5A45", 0.85),
+            shade_rgb("#1F5A45", 0.85)
+        );
+    }
+
+    /// Measured base-colour survivors for '#1F5A45' (see test).
+    const PINNED_BASE_COUNT: i64 = 50047;
+
+    #[test]
+    fn pinned_base_pixel_count() {
+        // Pinned statistic, computed from the algorithm: of the
+        // 65536 pixels, this many keep the untouched base colour
+        // (3000 speckles of 2x2 at hash positions, AA edges
+        // included — any pixel a speckle touches at any coverage
+        // leaves the base triple). Measured 50047 on the reference
+        // build. The ±6 tolerance is also measured, not guessed:
+        // re-running the whole painter with every sin() argument
+        // nudged ±1 ulp (the V8-fdlibm vs Rust-libm gap) moves the
+        // count by at most 4 and changes ~0.05% of bytes (speckle
+        // edge blends only).
+        let (px, _, _) = paint_felt("#1F5A45");
+        let n = count_colour(&px, (0x1F, 0x5A, 0x45));
+        assert!((n as i64 - PINNED_BASE_COUNT).abs() <= 6, "base count {n}");
+    }
+}
+
+// ===== registry painter: parcel (wave pack, painters/parcel.rs) =====
+// PR.parcel texture (props.ts:159) — the brown-paper parcel wrap,
+// a registry painter in the scene.rs conventions: same `paint_*`
+// signature shape, same CPU `Painter`, same deterministic
+// sin-hash `rnd`.
+//
+// Source recipe (props.ts:159, the texture half of
+// parcel(w, h, d, label = true) — the box dimensions never reach
+// the canvas; only `label` does):
+//   canvasTex('parcel' + label, 256, 256, (c) => {
+//     c.fillStyle = '#C8935A'; c.fillRect(0, 0, 256, 256);
+//     c.fillStyle = '#B07A48';
+//     for (let i = 0; i < 30; i++)
+//       c.fillRect(rnd(i) * 256, rnd(i * 3) * 256, 40, 2);
+//     c.fillStyle = '#E9D7A5';
+//     c.fillRect(120, 0, 16, 256); c.fillRect(0, 120, 256, 16);
+//     if (label) {
+//       c.fillStyle = '#FFFDF4'; c.fillRect(150, 150, 90, 70);
+//       c.fillStyle = '#D8343F'; c.fillRect(214, 156, 20, 24);
+//     } })
+//
+// No colour management is involved: every fill is a literal hex
+// (canvas bytes), so this painter is a direct transcription. The
+// bookshop stages both parcels with label = false.
+
+
+/// PR.parcel texture: 256x256 — '#C8935A' paper, 30 fibre streaks
+/// '#B07A48' (40x2, hash-placed), tape cross '#E9D7A5' (16 px bands
+/// through (120..136) on both axes), and at label = true the
+/// '#FFFDF4' label with its '#D8343F' stamp.
+pub(crate) fn paint_parcel(label: bool) -> (Vec<u8>, u32, u32) {
+    let (w, h) = (256usize, 256usize);
+    let mut p = Painter::new(w, h);
+    let c = hex_rgb("#C8935A");
+    p.fill_rect(0.0, 0.0, w as f32, h as f32, (c.0, c.1, c.2, 255));
+    let sp = hex_rgb("#B07A48");
+    for i in 0..30 {
+        let fi = i as f64;
+        p.fill_rect(
+            (rnd(fi) * 256.0) as f32,
+            (rnd(fi * 3.0) * 256.0) as f32,
+            40.0,
+            2.0,
+            (sp.0, sp.1, sp.2, 255),
+        );
+    }
+    let tape = hex_rgb("#E9D7A5");
+    let tape = (tape.0, tape.1, tape.2, 255);
+    p.fill_rect(120.0, 0.0, 16.0, 256.0, tape);
+    p.fill_rect(0.0, 120.0, 256.0, 16.0, tape);
+    if label {
+        let paper = hex_rgb("#FFFDF4");
+        p.fill_rect(150.0, 150.0, 90.0, 70.0, (paper.0, paper.1, paper.2, 255));
+        let stamp = hex_rgb("#D8343F");
+        p.fill_rect(214.0, 156.0, 20.0, 24.0, (stamp.0, stamp.1, stamp.2, 255));
+    }
+    (p.px, w as u32, h as u32)
+}
+
+#[cfg(test)]
+mod parcel_tests {
+    use super::*;
+
+    fn count_colour(px: &[u8], rgb: (u8, u8, u8)) -> usize {
+        px.chunks_exact(4)
+            .filter(|p| p[0] == rgb.0 && p[1] == rgb.1 && p[2] == rgb.2)
+            .count()
+    }
+
+    #[test]
+    fn size_and_dims() {
+        let (px, w, h) = paint_parcel(false);
+        assert_eq!((w, h), (256, 256));
+        assert_eq!(px.len(), 256 * 256 * 4);
+    }
+
+    #[test]
+    fn deterministic() {
+        assert_eq!(paint_parcel(false).0, paint_parcel(false).0);
+        assert_eq!(paint_parcel(true).0, paint_parcel(true).0);
+        assert_ne!(paint_parcel(false).0, paint_parcel(true).0);
+    }
+
+    #[test]
+    fn pinned_tape_pixel_count() {
+        // Pinned statistic, computed from the algorithm: the tape
+        // cross is two integer-aligned 16x256 bands, drawn last at
+        // label = false, opaque — so every band pixel ends exactly
+        // tape-coloured and no other pixel can (all remaining
+        // colours and their blends stay below tape in at least one
+        // channel... the streak colour and paper colour differ in
+        // all three). 16*256 + 16*256 - 16*16 = 7936. Exact, not a
+        // tolerance: integer edges give coverage exactly 0 or 1.
+        let (px, _, _) = paint_parcel(false);
+        assert_eq!(count_colour(&px, (0xE9, 0xD7, 0xA5)), 7936);
+        // Column x = 128 lies inside the vertical band for all rows.
+        for y in 0..256 {
+            let k = (y * 256 + 128) * 4;
+            assert_eq!(&px[k..k + 4], &[0xE9, 0xD7, 0xA5, 255]);
+        }
+    }
+
+    #[test]
+    fn label_false_draws_no_label_colours() {
+        // Analytic: blends of base/streak/tape colours cannot
+        // reach the label paper (255, 253, 244) — every source
+        // colour has r <= 233 — nor the stamp (216, 52, 63): its
+        // g = 52 is below every source colour's g (base 147,
+        // streak 122, tape 215), and a blend's channel always lies
+        // between its inputs' channels.
+        let (px, _, _) = paint_parcel(false);
+        assert_eq!(count_colour(&px, (0xFF, 0xFD, 0xF4)), 0);
+        assert_eq!(count_colour(&px, (0xD8, 0x34, 0x3F)), 0);
+    }
+
+    #[test]
+    fn label_true_counts() {
+        // Integer-aligned opaque rects drawn after the tape: label
+        // 90x70 minus the 20x24 stamp inside it, tape untouched
+        // (the label starts at x = 150, past the band's 136 edge).
+        let (px, _, _) = paint_parcel(true);
+        assert_eq!(count_colour(&px, (0xE9, 0xD7, 0xA5)), 7936);
+        assert_eq!(count_colour(&px, (0xFF, 0xFD, 0xF4)), 90 * 70 - 20 * 24);
+        assert_eq!(count_colour(&px, (0xD8, 0x34, 0x3F)), 20 * 24);
+    }
+}
+
+// ===== registry painter: picture (wave pack, painters/picture.rs) =====
+// paint_picture — registry texture generator "picture": the framed
+// line-drawing that hangs in the bookshop interior.
+//
+// Source recipe, transcribed 1:1 from the Onoda project's
+// core/world.ts:319 (`interior()`'s `pic` canvasTex, 256x200):
+//   paper fill '#E9DCC0';
+//   ink '#3A2A22', lineWidth 6, ONE path:
+//     moveTo(40,140)
+//     quadraticCurveTo(90,60, 140,120)
+//     quadraticCurveTo(170,80, 220,140)
+//   stroke();
+//   sun: fill '#C9603F', arc(190,60,22, 0, 7), fill().
+// (arc end angle 7 rad > TAU, so the sun is a full disc.)
+//
+// The gold FRAME is not part of this texture: in the source it is
+// the box mesh's face materials (world.ts:320, '#C9A13B' on five
+// faces, this texture on the front) — see PICTURE_FRAME below.
+//
+// Conventions mirrored from the existing registry painters in
+// src/scene.rs (paint_grass / paint_cloud / paint_blob): signature
+// returns (RGBA bytes, w, h); canvas coordinates, row 0 = top;
+// pure function of its inputs (no state, no RNG — this recipe has
+// no hash strokes at all); curves flattened with the house
+// flatten_quad (the toonfull.rs precedent uses n = 20 per quad).
+//
+// Integration (lead): move to src/painters/picture.rs and add the
+// scenefile.rs resolve_texture arm
+//   "picture" => painters::picture::paint_picture(),
+// or paste the body into src/scene.rs and drop the `use` line.
+// The spec entry (scenes/sets/bookshop.scene.json, texture id
+// "picture") carries no parameters — canvas is fixed 256x200.
+
+
+/// Canvas size fixed by the source canvasTex('pic', 256, 200, ...).
+pub(crate) const PICTURE_W: u32 = 256;
+pub(crate) const PICTURE_H: u32 = 200;
+
+/// The recipe's three colours (world.ts:319).
+pub(crate) const PICTURE_PAPER: &str = "#E9DCC0";
+pub(crate) const PICTURE_INK: &str = "#3A2A22";
+pub(crate) const PICTURE_SUN: &str = "#C9603F";
+
+/// Frame colour of the MESH (world.ts:320) — geometry material,
+/// not texture; recorded here so the data has one home.
+pub(crate) const PICTURE_FRAME: &str = "#C9A13B";
+
+pub(crate) fn paint_picture() -> (Vec<u8>, u32, u32) {
+    let (w, h) = (PICTURE_W as usize, PICTURE_H as usize);
+    let mut p = Painter::new(w, h);
+    p.fill_rect(0.0, 0.0, w as f32, h as f32, rgba_of(PICTURE_PAPER));
+    // The two hill strokes are a single canvas path (the second
+    // quadratic starts where the first ends, at (140,120)), so they
+    // are stroked as ONE polyline — one canvas stroke is one shape,
+    // and the join is the union, never a double blend.
+    let mut pts = flatten_quad((40.0, 140.0), (90.0, 60.0), (140.0, 120.0), 20);
+    let tail = flatten_quad((140.0, 120.0), (170.0, 80.0), (220.0, 140.0), 20);
+    pts.extend_from_slice(&tail[1..]);
+    p.stroke_polyline(&pts, 6.0, rgba_of(PICTURE_INK));
+    // Sun disc (drawn after the stroke, as in the source).
+    p.fill_ellipse(190.0, 60.0, 22.0, 22.0, 0.0, rgba_of(PICTURE_SUN));
+    (p.px, PICTURE_W, PICTURE_H)
+}
+
+#[cfg(test)]
+mod picture_tests {
+    use super::*;
+
+    fn at(px: &[u8], x: u32, y: u32) -> (u8, u8, u8, u8) {
+        let k = ((y * PICTURE_W + x) * 4) as usize;
+        (px[k], px[k + 1], px[k + 2], px[k + 3])
+    }
+
+    #[test]
+    fn size_and_opacity() {
+        let (px, w, h) = paint_picture();
+        assert_eq!((w, h), (256, 200));
+        assert_eq!(px.len(), 256 * 200 * 4);
+        // Interior sample points are fully opaque (the paper fill
+        // covers the whole canvas; AA lives only at shape edges).
+        for (x, y) in [(4, 4), (128, 20), (30, 180), (250, 100)] {
+            assert_eq!(at(&px, x, y).3, 255, "alpha at ({x},{y})");
+        }
+    }
+
+    #[test]
+    fn deterministic() {
+        let (a, _, _) = paint_picture();
+        let (b, _, _) = paint_picture();
+        assert_eq!(a, b);
+    }
+
+    #[test]
+    fn pinned_pixels() {
+        let (px, _, _) = paint_picture();
+        // Paper, far from ink and sun.
+        assert_eq!(at(&px, 4, 4), (233, 220, 192, 255));
+        // Sun centre: (201, 96, 63) = #C9603F.
+        assert_eq!(at(&px, 190, 60), (201, 96, 63, 255));
+        // The first quadratic passes exactly through (90, 95) at
+        // t = 0.5 (0.25*(40,140) + 0.5*(90,60) + 0.25*(140,120));
+        // the pixel centre is < 1 px from the curve, deep inside
+        // the 6 px stroke, so it carries the full ink colour
+        // (58, 42, 34) = #3A2A22.
+        assert_eq!(at(&px, 90, 95), (58, 42, 34, 255));
+    }
+
+    #[test]
+    fn sun_disc_area_band() {
+        // Pinned statistic (band, not exact count: the disc's AA
+        // rim is coverage-blended, so only the fully-covered
+        // interior carries the exact sun colour — expected near
+        // pi * 21.5^2 ~ 1450 px; tighten after the first CI run).
+        let (px, _, _) = paint_picture();
+        let n = (0..256 * 200)
+            .filter(|&i| {
+                let k = i * 4;
+                (px[k], px[k + 1], px[k + 2]) == (201, 96, 63)
+            })
+            .count();
+        assert!((1250..1600).contains(&n), "sun interior px = {n}");
+    }
+}
+
+// ===== registry painter: sign (wave pack, painters/sign.rs) =====
+// paint_sign — registry texture generator "sign": the bookshop's
+// 'TANIGUCHI BOOKS' board (world.ts signBoard, core/world.ts:137-146).
+//
+// Source recipe:
+//   canvas = (round(w*200), round(h*200)) px — 200 px per unit;
+//     the bookshop board is w=2.2, h=0.4 -> 440x80.
+//   fill bg over the whole canvas;
+//   border: strokeStyle fg, lineWidth 6,
+//     strokeRect(10, 10, cw-20, ch-20) — the stroke is CENTRED on
+//     the rect path, so ink spans 7..13 px from each edge;
+//   text: font `700 {fs}px Caladea, Georgia, serif`,
+//     fs starts at ch*0.5 and shrinks by 2 while
+//     measureText(text) > cw*0.86;
+//     fillText(text, cw/2, ch/2 + 3), align centre, baseline middle.
+//   The board's box side faces take shade(bg, 0.7) — see
+//   sign_edge_rgba.
+//
+// TEXT STRATEGY (the engine's existing approach, stated plainly):
+// this engine has NO Rust text rasteriser — every text-bearing
+// texture enters as a PIL asset rendered from the project's own
+// fonts (film.rs module docs; captions, the S07 calendar plates,
+// and film/assets/sign.png for this very sign, all produced by
+// film/gen_assets.py). paint_sign therefore paints the board and
+// border natively and sign_with_text() composites a same-size
+// transparent glyph strip (PIL, 700 Caladea, laid out per
+// SIGN_FONT_* / sign_text_anchor) over it. Without a strip the
+// painter returns the board+border exactly as the canvas looks
+// before fillText.
+//
+// FONT SIZE AS DATA (gap B9): the shrink rule's outcome depends on
+// font metrics. Measured with PIL against the project's own
+// fonts/Caladea-Bold.ttf (2026-11-14): 'TANIGUCHI BOOKS' at the
+// 40 px start size is 335.36 px wide, under the 378.4 px limit —
+// NO shrink step fires; fs = 40 (see TANIGUCHI_BOOKS_PIL below).
+// That is a PIL measurement: browser (Skia) Caladea metrics are
+// unreproducible from source, so the browser's fs is not provable
+// from here — but the 43.04 px headroom makes a shrink in the
+// browser unlikely. gen_assets.py's own loop lands on 40 too.
+//
+// Integration (lead): move to src/painters/sign.rs and add the
+// scenefile.rs resolve_texture arm, e.g.
+//   "sign" => painters::sign::paint_sign(
+//       str_field(spec, "bg", ctx)?, str_field(spec, "fg", ctx)?,
+//       /* units from the mesh or canvas/200 */ ...),
+// optionally followed by sign_with_text() when the spec names a
+// glyph-strip file; or paste the body into src/scene.rs and drop
+// the `use` line.
+
+
+/// canvasTex scale in signBoard: canvas px per world unit.
+pub(crate) const SIGN_PX_PER_UNIT: f32 = 200.0;
+/// The shrink rule (world.ts:143-144): start at ch * 0.5, step -2
+/// while the text is wider than cw * SIGN_FIT_FRACTION.
+pub(crate) const SIGN_FONT_START_FRAC: f32 = 0.5;
+pub(crate) const SIGN_FIT_FRACTION: f32 = 0.86;
+pub(crate) const SIGN_FONT_STEP: f32 = 2.0;
+/// fillText anchor offset: (cw/2, ch/2 + 3) (world.ts:145).
+pub(crate) const SIGN_TEXT_DY: f32 = 3.0;
+
+/// PIL-measured outcome of the shrink rule for the bookshop text:
+/// (text, font px, measured width px at that size). PIL metrics,
+/// the project's Caladea-Bold.ttf, 2026-11-14 — NOT browser
+/// metrics (gap B9, see the module docs). No shrink fires:
+/// 335.36 <= 440 * 0.86 = 378.4.
+pub(crate) const TANIGUCHI_BOOKS_PIL: (&str, f32, f32) =
+    ("TANIGUCHI BOOKS", 40.0, 335.36);
+
+/// signBoard's canvas size rule: Math.round(w*200), Math.round(h*200).
+pub(crate) fn sign_canvas_size(w_units: f32, h_units: f32) -> (u32, u32) {
+    (
+        (w_units * SIGN_PX_PER_UNIT).round() as u32,
+        (h_units * SIGN_PX_PER_UNIT).round() as u32,
+    )
+}
+
+/// The fillText anchor (centre / middle baseline): (cw/2, ch/2 + 3).
+/// The PIL glyph strip must place the text here.
+pub(crate) fn sign_text_anchor(cw: u32, ch: u32) -> (f32, f32) {
+    (cw as f32 / 2.0, ch as f32 / 2.0 + SIGN_TEXT_DY)
+}
+
+/// shade(bg, 0.7) — the box side-face colour (world.ts:143: five
+/// faces at shade(bg, 0.7)). Computed the SOURCE's way: world.ts:35
+/// is THREE.Color — hex parsed to LINEAR, multiplied in linear,
+/// converted back to sRGB. For the bookshop bg '#3A2A2A' this is
+/// (48, 34, 34) = #302222. (scene.rs's shade_rgb multiplies in
+/// sRGB space and would give (41, 29, 29) — the divergence W14
+/// flagged; this helper follows the source.)
+pub(crate) fn sign_edge_rgba(bg: &str) -> Rgba {
+    let lin = hex_lin(bg);
+    (
+        (linear_to_srgb(lin[0] * 0.7) * 255.0).round() as u8,
+        (linear_to_srgb(lin[1] * 0.7) * 255.0).round() as u8,
+        (linear_to_srgb(lin[2] * 0.7) * 255.0).round() as u8,
+        255,
+    )
+}
+
+/// Board + border, canvas-pixel dimensions (the form the scene
+/// spec's "canvas": [440, 80] entry speaks in).
+pub(crate) fn paint_sign_px(bg: &str, fg: &str, cw: u32, ch: u32) -> (Vec<u8>, u32, u32) {
+    let mut p = Painter::new(cw as usize, ch as usize);
+    p.fill_rect(0.0, 0.0, cw as f32, ch as f32, rgba_of(bg));
+    // strokeRect(10, 10, cw-20, ch-20) at lineWidth 6: one closed
+    // polyline through the rect corners, stroked as one shape.
+    let (x1, y1) = (cw as f32 - 10.0, ch as f32 - 10.0);
+    let rect = [
+        (10.0, 10.0),
+        (x1, 10.0),
+        (x1, y1),
+        (10.0, y1),
+        (10.0, 10.0),
+    ];
+    p.stroke_polyline(&rect, 6.0, rgba_of(fg));
+    (p.px, cw, ch)
+}
+
+/// Board + border, world-unit dimensions (signBoard's own shape:
+/// canvas derived by the 200 px/unit rule).
+pub(crate) fn paint_sign(bg: &str, fg: &str, w_units: f32, h_units: f32) -> (Vec<u8>, u32, u32) {
+    let (cw, ch) = sign_canvas_size(w_units, h_units);
+    paint_sign_px(bg, fg, cw, ch)
+}
+
+/// Composite a glyph strip over a painted board. The strip is a
+/// same-size RGBA image, transparent except for the glyphs (the
+/// PIL step renders ONLY the text, at sign_text_anchor, in fg).
+/// Blending reuses Painter::blend (source-over, straight alpha) —
+/// the same semantics the single-image PIL asset gets for free.
+pub(crate) fn sign_with_text(board: (Vec<u8>, u32, u32), strip: &[u8]) -> (Vec<u8>, u32, u32) {
+    let (px, w, h) = board;
+    assert_eq!(
+        strip.len(),
+        px.len(),
+        "sign glyph strip must be the same size as the board"
+    );
+    let mut p = Painter { w: w as usize, h: h as usize, px };
+    for y in 0..h as i32 {
+        for x in 0..w as i32 {
+            let k = ((y as usize * w as usize + x as usize) * 4) as usize;
+            if strip[k + 3] > 0 {
+                p.blend(x, y, (strip[k], strip[k + 1], strip[k + 2], strip[k + 3]));
+            }
+        }
+    }
+    (p.px, w, h)
+}
+
+#[cfg(test)]
+mod sign_tests {
+    use super::*;
+
+    const BG: &str = "#3A2A2A";
+    const FG: &str = "#F2E6CF";
+
+    fn at(px: &[u8], w: u32, x: u32, y: u32) -> (u8, u8, u8, u8) {
+        let k = ((y * w + x) * 4) as usize;
+        (px[k], px[k + 1], px[k + 2], px[k + 3])
+    }
+
+    #[test]
+    fn canvas_size_rule() {
+        // The bookshop board: 2.2 x 0.4 units -> 440 x 80 px.
+        assert_eq!(sign_canvas_size(2.2, 0.4), (440, 80));
+        // signBoard defaults: 2 x 0.5 -> 400 x 100.
+        assert_eq!(sign_canvas_size(2.0, 0.5), (400, 100));
+    }
+
+    #[test]
+    fn edge_shade_is_the_linear_source_value() {
+        // shade('#3A2A2A', 0.7) in THREE.Color (linear) = #302222.
+        assert_eq!(sign_edge_rgba(BG), (48, 34, 34, 255));
+    }
+
+    #[test]
+    fn text_anchor_matches_fill_text() {
+        assert_eq!(sign_text_anchor(440, 80), (220.0, 43.0));
+    }
+
+    #[test]
+    fn board_pixels() {
+        let (px, w, h) = paint_sign(BG, FG, 2.2, 0.4);
+        assert_eq!((w, h), (440, 80));
+        // Board centre: plain bg (58, 42, 42) — no text without a strip.
+        assert_eq!(at(&px, w, 220, 40), (58, 42, 42, 255));
+        // Left border at mid-height: pixel centre (10.5, 40.5) is
+        // 0.5 px from the stroke path -> full fg (242, 230, 207).
+        assert_eq!(at(&px, w, 10, 40), (242, 230, 207, 255));
+        // Just outside the border's ink (spans 7..13): still bg.
+        assert_eq!(at(&px, w, 20, 40), (58, 42, 42, 255));
+    }
+
+    #[test]
+    fn deterministic() {
+        let (a, _, _) = paint_sign(BG, FG, 2.2, 0.4);
+        let (b, _, _) = paint_sign(BG, FG, 2.2, 0.4);
+        assert_eq!(a, b);
+    }
+
+    #[test]
+    fn pil_measurement_means_no_shrink() {
+        // The recorded PIL measurement: at the 40 px start size the
+        // text already fits the 86% limit, so the rule keeps 40.
+        let (text, fs, width) = TANIGUCHI_BOOKS_PIL;
+        assert_eq!(text, "TANIGUCHI BOOKS");
+        assert_eq!(fs, 80.0 * SIGN_FONT_START_FRAC);
+        assert!(width <= 440.0 * SIGN_FIT_FRACTION);
+    }
+
+    #[test]
+    fn strip_composites_over_board() {
+        let board = paint_sign(BG, FG, 2.2, 0.4);
+        let mut strip = vec![0u8; board.0.len()];
+        // One opaque fg "glyph" block at the text anchor.
+        for y in 38..48usize {
+            for x in 215..225usize {
+                let k = (y * 440 + x) * 4;
+                strip[k..k + 4].copy_from_slice(&[242, 230, 207, 255]);
+            }
+        }
+        let (px, w, _) = sign_with_text(board, &strip);
+        assert_eq!(at(&px, w, 220, 43), (242, 230, 207, 255));
+        // Untouched corner stays bg.
+        assert_eq!(at(&px, w, 20, 40), (58, 42, 42, 255));
+    }
+}

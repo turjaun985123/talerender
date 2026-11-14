@@ -68,6 +68,7 @@ struct GradeCfg {
     grain: f32,
     warm: f32,
     sat: f32,
+    exposure: f32,
     time: f32,
 }
 
@@ -408,6 +409,40 @@ fn resolve_texture(spec: &Value, scene_dir: &Path, ctx: &str) -> Result<(Vec<u8>
     let gen = str_field(spec, "generator", ctx)?;
     Ok(match gen {
         "grass" => scene::paint_grass(str_field(spec, "base", ctx)?),
+        // Registry painters (wave pack, pasted into scene.rs with
+        // their pinned tests): the bookshop/prop texture family.
+        "planks" => scene::paint_planks(str_field(spec, "base", ctx)?),
+        "wallpaper" => scene::paint_wallpaper(
+            str_field(spec, "base", ctx)?,
+            str_field(spec, "motif", ctx)?,
+        ),
+        "felt" => scene::paint_felt(str_field(spec, "base", ctx)?),
+        "parcel" => scene::paint_parcel(truthy(spec.get("label"))),
+        "picture" => scene::paint_picture(),
+        "sign" => {
+            let c = spec.get("canvas").and_then(Value::as_arr)
+                .filter(|a| a.len() == 2)
+                .ok_or_else(|| err(ctx, "'canvas' must be [w, h]"))?;
+            scene::paint_sign_px(
+                str_field(spec, "bg", ctx)?,
+                str_field(spec, "fg", ctx)?,
+                num(&c[0], ctx)? as u32,
+                num(&c[1], ctx)? as u32,
+            )
+        }
+        // Flat colour panel (fog-chart + test scenes): 64x64 sRGB
+        // bytes of the entry's `color`, per tools/fog-chart/README.
+        "solid" => {
+            let (r, g, b) = scene::hex_rgb(str_field(spec, "color", ctx)?);
+            let mut px = vec![0u8; 64 * 64 * 4];
+            for i in 0..64 * 64 {
+                px[i * 4] = r;
+                px[i * 4 + 1] = g;
+                px[i * 4 + 2] = b;
+                px[i * 4 + 3] = 255;
+            }
+            (px, 64, 64)
+        }
         "sky-gradient" => scene::paint_sky(
             str_field(spec, "top", ctx)?,
             str_field(spec, "horizon", ctx)?,
@@ -973,6 +1008,7 @@ fn load(path: &str) -> Result<Loaded, String> {
             grain: f32_field_or(g, "grain", "scene.post.grade", 0.008)?,
             warm: f32_field_or(g, "warm", "scene.post.grade", 0.02)?,
             sat: f32_field_or(g, "sat", "scene.post.grade", 1.12)?,
+            exposure: f32_field_or(g, "exposure", "scene.post.grade", 1.0)?,
             time: f32_field_or(g, "time", "scene.post.grade", 0.0)?,
         }),
         None => None,
@@ -1790,21 +1826,29 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded) {
 
     let output_module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
         label: Some("composer output shader"),
-        source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("shader_output.wgsl"))),
+        source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("shader_output_exp.wgsl"))),
     });
     let output_bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
         label: Some("composer output layout"),
         entries: &[
             wgpu::BindGroupLayoutEntry { binding: 0, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Texture { sample_type: wgpu::TextureSampleType::Float { filterable: true }, view_dimension: wgpu::TextureViewDimension::D2, multisampled: false }, count: None },
             wgpu::BindGroupLayoutEntry { binding: 1, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering), count: None },
+            wgpu::BindGroupLayoutEntry { binding: 2, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Uniform, has_dynamic_offset: false, min_binding_size: None }, count: None },
         ],
     });
+    // post.grade.exposure reaches the OutputPass uniform (the
+    // composer's exposure slot, as in film.rs); absent grade -> 1.0,
+    // where the exp shader reduces to the old hardcoded output
+    // bit-for-bit.
+    let exposure = scene.grade.as_ref().map(|g| g.exposure).unwrap_or(1.0);
+    let output_ub = make_buffer(&device, &queue, "output uniforms", &pack_f32(&[exposure, 0.0, 0.0, 0.0]), wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST);
     let output_bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
         label: Some("composer output bind group"),
         layout: &output_bgl,
         entries: &[
             wgpu::BindGroupEntry { binding: 0, resource: wgpu::BindingResource::TextureView(&bokeh_view) },
             wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::Sampler(&linear_sampler) },
+            wgpu::BindGroupEntry { binding: 2, resource: output_ub.as_entire_binding() },
         ],
     });
     let output_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
