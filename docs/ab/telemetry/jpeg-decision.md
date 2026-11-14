@@ -1,6 +1,11 @@
 # The q0.93 JPEG generation — decision brief (contract §5)
 
-**Status: OPEN — the decision is the user's. This brief takes
+**DECISION (2026-11-14): the user chose (B) — native frames stay
+clean.** Recorded in `docs/compatibility-contract.md` §5, which
+is the deciding document; this brief remains as the evidence
+record behind it.
+
+**Status at writing: OPEN — the decision is the user's. This brief takes
 none.** It assembles the measurements, lays out the two options
 with their consequences, and ends with a recommendation and its
 reasoning, as the M6 work order requires.

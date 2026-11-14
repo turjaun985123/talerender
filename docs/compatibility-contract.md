@@ -105,9 +105,26 @@ Cross-implementation (Chrome vs native) frame equality is judged by the
 parity tests of §1–§2, **not** by byte equality — last-ulp transcendental
 differences are documented as acceptable (a4 §3).
 
-## 5. OPEN DECISION — the q0.93 JPEG master generation (a2)
+## 5. DECISION — the q0.93 JPEG master generation (a2)
 
-**Status: open. This contract does not decide it.**
+**Status: RESOLVED 2026-11-14 — option (b): native frames stay
+CLEAN.** Decided by the user on the evidence in
+`docs/ab/telemetry/jpeg-decision.md` (which see for the full
+brief; its header points back here).
+
+Evidence summary: the pipeline's own encoder measurements put the
+q0.93 generation at 42.31 dB against the clean frame with 94.5 %
+of pixels changed — it is a real loss baked into every Chrome
+master, but reproducing it natively would mean deliberately
+damaging every native master to match it. The cost of (b) is
+bounded and disclosed: A/B comparisons against Chrome references
+carry a known comparison bias (the Chrome side sits behind its
+JPEG generation; the native side does not), and native QA
+references are re-baselined once, natively. Native output paths
+therefore carry **clean frames (PNG/raw) into finishing**; the
+draft (0.8), frames (0.92) and sheet (0.8) preview JPEGs remain
+preview-grade QA surfaces only, exactly as in the original
+pipeline — they are not masters.
 
 Evidence (a2 §4.1): on the default path, every master frame reaches
 libx264 only after a canvas JPEG encode at quality 0.93 — a real,
