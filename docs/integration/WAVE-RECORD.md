@@ -189,6 +189,16 @@ generators the set/shot data names (`planks`, `wallpaper`,
 the arms land in `resolve_texture`, scene files referencing
 them fall back to averaged flat shades in the still loader.
 
+**[W63 correction, 2026-11-14]** The last sentence above is
+wrong (same error as REVIEW-W50 C3; first flagged in the W52
+addendum). There is no flat-shade fallback: `resolve_texture`
+returns `unknown texture generator '<name>'`
+(`src/scenefile.rs:426`) and `load()` resolves the `textures`
+array eagerly with `?` (`src/scenefile.rs:941`), so a file
+naming an unwired generator fails to load whole. The original
+text is kept above as the record of what was written; this
+note is the correction of record for the passage.
+
 ---
 
 ## 4. Corrections register

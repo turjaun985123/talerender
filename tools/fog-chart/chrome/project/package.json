@@ -1,0 +1,1 @@
+{"devDependencies":{"@types/three":"^0.170.0","typescript":"^7.0.2"},"name":"tall-tale-project","private":true,"scripts":{"build":"bun build src/main.ts src/sheet.ts src/castsheet.ts --outdir build --target browser --external three --external \"three/addons/*\"","typecheck":"tsc -p tsconfig.json"}}

@@ -5,8 +5,12 @@ Native port of `T.planks` (the film project's own canvas painter,
 written to close the registry gap the wave found: the film's scene
 data names a `planks` texture generator (crates, barrel, lean-to
 roof, bookshop floor/wainscot/counter/desk) that
-`src/scenefile.rs::resolve_texture` does not know yet — files that
-reference it currently fall back to averaged flat shades
+`src/scenefile.rs::resolve_texture` does not know yet — and there
+is no graceful degradation: `resolve_texture` returns
+`unknown texture generator 'planks'` (`src/scenefile.rs:426`) and
+`load()` resolves the `textures` array eagerly with `?`
+(`src/scenefile.rs:941`), so any file that references it fails to
+load whole until the arm below lands
 (`scenes/film/ASSUMPTIONS.md`: the S02/S03 crate+barrel notes, the
 S10 registry-gaps list).
 
