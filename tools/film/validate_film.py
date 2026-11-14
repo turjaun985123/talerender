@@ -37,7 +37,7 @@ consistency rules the wave works under:
   4. attachments    §14.5 R2: attachments live ON character nodes;
                     a top-level `attachments` key is an error
   5. captions       caption chunk ids across all present segment
-                    files are contiguous and cover 0..65 exactly
+                    files are contiguous and cover 0..72 exactly
                     once (id taken from `index`, else `cap_NNN` id)
   6. durations      segment durations x fps round to the manifest
                     totalFrames, and the manifest frame ranges tile
@@ -69,7 +69,11 @@ import re
 import struct
 import sys
 
-EXPECTED_CHUNKS = list(range(66))  # film/onoda.json carries 66 chunks
+EXPECTED_CHUNKS = list(range(73))  # scene files carry 73 chunks since the
+# caption re-chunk (W01, docs/ab/film/RECHUNK-W01.md): the 7 over-floor
+# chunks were split at word boundaries, 66 -> 73. film/onoda.json still
+# carries the pre-split 66 until the driver-side regeneration lands;
+# check 5 validates the SCENE files, so 73 is the expected coverage.
 
 
 class InputError(Exception):
@@ -400,12 +404,14 @@ def main():
                    % ", ".join(str(c) for c in absent))
     extra = [c for c in sorted(seen) if c not in EXPECTED_CHUNKS]
     if extra:
-        bad.append("chunk ids outside 0..65: %s"
-                   % ", ".join(str(c) for c in extra))
+        bad.append("chunk ids outside 0..%d: %s"
+                   % (len(EXPECTED_CHUNKS) - 1,
+                      ", ".join(str(c) for c in extra)))
     results.append(("5 captions", not bad,
-                    "%d chunk listings, %d unique chunks covered of 66, "
+                    "%d chunk listings, %d unique chunks covered of %d, "
                     "%d duplicates, %d uncovered"
                     % (sum(len(v) for v in seen.values()), len(seen),
+                       len(EXPECTED_CHUNKS),
                        sum(1 for v in seen.values() if len(v) > 1),
                        len(absent)), bad))
 

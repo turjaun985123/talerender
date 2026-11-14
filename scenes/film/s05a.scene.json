@@ -120,35 +120,43 @@
    "source": "shots.ts fireLevel(0, t): flame cones hidden — omitted from this file's nodes"
   }
  },
- "captionsNote": "chunk 25 ('the message.', 20.47-21.61) starts in S04 and is owned by s04 under the manifest start-time rule (scenes/film/film.json); it bleeds 0.226 s into this shot's head and is not listed here (seat W55). Captions are film-global, drawn by time.",
+ "captionsNote": "chunk 26 ('the message.', 20.47-21.61) starts in S04 and is owned by s04 under the manifest start-time rule (scenes/film/film.json); it bleeds 0.226 s into this shot's head and is not listed here (seat W55). Captions are film-global, drawn by time.",
  "captions": [
-  {
-   "index": 26,
-   "id": "cap_026",
-   "s": 21.61,
-   "e": 22.61,
-   "text": "Planes dropped leaflets",
-   "fit": 0.92269
-  },
   {
    "index": 27,
    "id": "cap_027",
+   "s": 21.61,
+   "e": 22.09,
+   "text": "Planes dropped",
+   "fit": 1.0
+  },
+  {
+   "index": 28,
+   "id": "cap_028",
+   "s": 22.09,
+   "e": 22.61,
+   "text": "leaflets",
+   "fit": 1.0
+  },
+  {
+   "index": 29,
+   "id": "cap_029",
    "s": 22.61,
    "e": 23.59,
    "text": "saying the war",
    "fit": 1.0
   },
   {
-   "index": 28,
-   "id": "cap_028",
+   "index": 30,
+   "id": "cap_030",
    "s": 23.59,
    "e": 24.49,
    "text": "was over.",
    "fit": 1.0
   },
   {
-   "index": 29,
-   "id": "cap_029",
+   "index": 31,
+   "id": "cap_031",
    "s": 24.49,
    "e": 24.97,
    "text": "He thought it",

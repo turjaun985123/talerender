@@ -16,7 +16,7 @@
   "renderedW": 850.0,
   "fit": 0.68
  },
- "count": 66,
+ "count": 73,
  "chunks": [
   {
    "id": "cap-000",
@@ -174,17 +174,28 @@
   },
   {
    "id": "cap-014",
-   "text": "was a Japanese soldier",
+   "text": "was a Japanese",
    "s": 6.69,
-   "e": 8.53,
+   "e": 7.87,
    "line": 1,
-   "rawW": 1024.05,
-   "renderedW": 960.0,
-   "fit": 0.9375,
+   "rawW": 699.34,
+   "renderedW": 699.34,
+   "fit": 1.0,
    "file": "cap-014.png"
   },
   {
    "id": "cap-015",
+   "text": "soldier",
+   "s": 7.87,
+   "e": 8.53,
+   "line": 1,
+   "rawW": 307.17,
+   "renderedW": 307.17,
+   "fit": 1.0,
+   "file": "cap-015.png"
+  },
+  {
+   "id": "cap-016",
    "text": "sent to",
    "s": 8.53,
    "e": 9.31,
@@ -192,10 +203,10 @@
    "rawW": 304.25,
    "renderedW": 304.25,
    "fit": 1.0,
-   "file": "cap-015.png"
+   "file": "cap-016.png"
   },
   {
-   "id": "cap-016",
+   "id": "cap-017",
    "text": "a Philippine island",
    "s": 9.31,
    "e": 10.39,
@@ -203,10 +214,10 @@
    "rawW": 801.14,
    "renderedW": 801.14,
    "fit": 1.0,
-   "file": "cap-016.png"
+   "file": "cap-017.png"
   },
   {
-   "id": "cap-017",
+   "id": "cap-018",
    "text": "in 1944.",
    "s": 10.39,
    "e": 13.15,
@@ -214,10 +225,10 @@
    "rawW": 353.38,
    "renderedW": 353.38,
    "fit": 1.0,
-   "file": "cap-017.png"
+   "file": "cap-018.png"
   },
   {
-   "id": "cap-018",
+   "id": "cap-019",
    "text": "His orders",
    "s": 13.15,
    "e": 13.61,
@@ -225,10 +236,10 @@
    "rawW": 451.8,
    "renderedW": 451.8,
    "fit": 1.0,
-   "file": "cap-018.png"
+   "file": "cap-019.png"
   },
   {
-   "id": "cap-019",
+   "id": "cap-020",
    "text": "were simple:",
    "s": 13.61,
    "e": 14.75,
@@ -236,10 +247,10 @@
    "rawW": 565.86,
    "renderedW": 565.86,
    "fit": 1.0,
-   "file": "cap-019.png"
+   "file": "cap-020.png"
   },
   {
-   "id": "cap-020",
+   "id": "cap-021",
    "text": "never surrender.",
    "s": 14.75,
    "e": 16.01,
@@ -247,10 +258,10 @@
    "rawW": 740.95,
    "renderedW": 740.95,
    "fit": 1.0,
-   "file": "cap-020.png"
+   "file": "cap-021.png"
   },
   {
-   "id": "cap-021",
+   "id": "cap-022",
    "text": "In 1945,",
    "s": 16.01,
    "e": 17.25,
@@ -258,10 +269,10 @@
    "rawW": 351.0,
    "renderedW": 351.0,
    "fit": 1.0,
-   "file": "cap-021.png"
+   "file": "cap-022.png"
   },
   {
-   "id": "cap-022",
+   "id": "cap-023",
    "text": "the war ended.",
    "s": 17.25,
    "e": 19.51,
@@ -269,10 +280,10 @@
    "rawW": 658.97,
    "renderedW": 658.97,
    "fit": 1.0,
-   "file": "cap-022.png"
+   "file": "cap-023.png"
   },
   {
-   "id": "cap-023",
+   "id": "cap-024",
    "text": "But Onoda",
    "s": 19.51,
    "e": 19.93,
@@ -280,10 +291,10 @@
    "rawW": 458.34,
    "renderedW": 458.34,
    "fit": 1.0,
-   "file": "cap-023.png"
+   "file": "cap-024.png"
   },
   {
-   "id": "cap-024",
+   "id": "cap-025",
    "text": "never got",
    "s": 19.93,
    "e": 20.47,
@@ -291,10 +302,10 @@
    "rawW": 419.44,
    "renderedW": 419.44,
    "fit": 1.0,
-   "file": "cap-024.png"
+   "file": "cap-025.png"
   },
   {
-   "id": "cap-025",
+   "id": "cap-026",
    "text": "the message.",
    "s": 20.47,
    "e": 21.61,
@@ -302,21 +313,32 @@
    "rawW": 599.22,
    "renderedW": 599.22,
    "fit": 1.0,
-   "file": "cap-025.png"
-  },
-  {
-   "id": "cap-026",
-   "text": "Planes dropped leaflets",
-   "s": 21.61,
-   "e": 22.61,
-   "line": 4,
-   "rawW": 1040.44,
-   "renderedW": 960.0,
-   "fit": 0.9227,
    "file": "cap-026.png"
   },
   {
    "id": "cap-027",
+   "text": "Planes dropped",
+   "s": 21.61,
+   "e": 22.09,
+   "line": 4,
+   "rawW": 687.14,
+   "renderedW": 687.14,
+   "fit": 1.0,
+   "file": "cap-027.png"
+  },
+  {
+   "id": "cap-028",
+   "text": "leaflets",
+   "s": 22.09,
+   "e": 22.61,
+   "line": 4,
+   "rawW": 335.77,
+   "renderedW": 335.77,
+   "fit": 1.0,
+   "file": "cap-028.png"
+  },
+  {
+   "id": "cap-029",
    "text": "saying the war",
    "s": 22.61,
    "e": 23.59,
@@ -324,10 +346,10 @@
    "rawW": 647.28,
    "renderedW": 647.28,
    "fit": 1.0,
-   "file": "cap-027.png"
+   "file": "cap-029.png"
   },
   {
-   "id": "cap-028",
+   "id": "cap-030",
    "text": "was over.",
    "s": 23.59,
    "e": 24.49,
@@ -335,10 +357,10 @@
    "rawW": 425.09,
    "renderedW": 425.09,
    "fit": 1.0,
-   "file": "cap-028.png"
+   "file": "cap-030.png"
   },
   {
-   "id": "cap-029",
+   "id": "cap-031",
    "text": "He thought it",
    "s": 24.49,
    "e": 24.97,
@@ -346,10 +368,10 @@
    "rawW": 569.84,
    "renderedW": 569.84,
    "fit": 1.0,
-   "file": "cap-029.png"
+   "file": "cap-031.png"
   },
   {
-   "id": "cap-030",
+   "id": "cap-032",
    "text": "was an enemy",
    "s": 24.97,
    "e": 25.57,
@@ -357,10 +379,10 @@
    "rawW": 626.89,
    "renderedW": 626.89,
    "fit": 1.0,
-   "file": "cap-030.png"
+   "file": "cap-032.png"
   },
   {
-   "id": "cap-031",
+   "id": "cap-033",
    "text": "trick.",
    "s": 25.57,
    "e": 26.19,
@@ -368,10 +390,10 @@
    "rawW": 238.62,
    "renderedW": 238.62,
    "fit": 1.0,
-   "file": "cap-031.png"
+   "file": "cap-033.png"
   },
   {
-   "id": "cap-032",
+   "id": "cap-034",
    "text": "His friends",
    "s": 26.19,
    "e": 26.67,
@@ -379,10 +401,10 @@
    "rawW": 481.72,
    "renderedW": 481.72,
    "fit": 1.0,
-   "file": "cap-032.png"
+   "file": "cap-034.png"
   },
   {
-   "id": "cap-033",
+   "id": "cap-035",
    "text": "gave up",
    "s": 26.67,
    "e": 27.19,
@@ -390,10 +412,10 @@
    "rawW": 346.81,
    "renderedW": 346.81,
    "fit": 1.0,
-   "file": "cap-033.png"
+   "file": "cap-035.png"
   },
   {
-   "id": "cap-034",
+   "id": "cap-036",
    "text": "or died,",
    "s": 27.19,
    "e": 27.79,
@@ -401,10 +423,10 @@
    "rawW": 336.56,
    "renderedW": 336.56,
    "fit": 1.0,
-   "file": "cap-034.png"
+   "file": "cap-036.png"
   },
   {
-   "id": "cap-035",
+   "id": "cap-037",
    "text": "until he",
    "s": 27.79,
    "e": 28.49,
@@ -412,10 +434,10 @@
    "rawW": 329.62,
    "renderedW": 329.62,
    "fit": 1.0,
-   "file": "cap-035.png"
+   "file": "cap-037.png"
   },
   {
-   "id": "cap-036",
+   "id": "cap-038",
    "text": "was alone.",
    "s": 28.49,
    "e": 29.351,
@@ -423,10 +445,10 @@
    "rawW": 475.45,
    "renderedW": 475.45,
    "fit": 1.0,
-   "file": "cap-036.png"
+   "file": "cap-038.png"
   },
   {
-   "id": "cap-037",
+   "id": "cap-039",
    "text": "He lived",
    "s": 29.351,
    "e": 29.71,
@@ -434,10 +456,10 @@
    "rawW": 353.34,
    "renderedW": 353.34,
    "fit": 1.0,
-   "file": "cap-037.png"
+   "file": "cap-039.png"
   },
   {
-   "id": "cap-038",
+   "id": "cap-040",
    "text": "in the jungle",
    "s": 29.71,
    "e": 30.29,
@@ -445,10 +467,10 @@
    "rawW": 541.16,
    "renderedW": 541.16,
    "fit": 1.0,
-   "file": "cap-038.png"
+   "file": "cap-040.png"
   },
   {
-   "id": "cap-039",
+   "id": "cap-041",
    "text": "for decades,",
    "s": 30.29,
    "e": 31.55,
@@ -456,21 +478,32 @@
    "rawW": 557.91,
    "renderedW": 557.91,
    "fit": 1.0,
-   "file": "cap-039.png"
+   "file": "cap-041.png"
   },
   {
-   "id": "cap-040",
-   "text": "surviving on coconuts",
+   "id": "cap-042",
+   "text": "surviving",
    "s": 31.55,
+   "e": 32.01,
+   "line": 6,
+   "rawW": 425.88,
+   "renderedW": 425.88,
+   "fit": 1.0,
+   "file": "cap-042.png"
+  },
+  {
+   "id": "cap-043",
+   "text": "on coconuts",
+   "s": 32.01,
    "e": 32.99,
    "line": 6,
-   "rawW": 989.95,
-   "renderedW": 960.0,
-   "fit": 0.9697,
-   "file": "cap-040.png"
+   "rawW": 546.55,
+   "renderedW": 546.55,
+   "fit": 1.0,
+   "file": "cap-043.png"
   },
   {
-   "id": "cap-041",
+   "id": "cap-044",
    "text": "and bananas.",
    "s": 32.99,
    "e": 34.27,
@@ -478,10 +511,10 @@
    "rawW": 598.11,
    "renderedW": 598.11,
    "fit": 1.0,
-   "file": "cap-041.png"
+   "file": "cap-044.png"
   },
   {
-   "id": "cap-042",
+   "id": "cap-045",
    "text": "In 1974,",
    "s": 34.27,
    "e": 35.53,
@@ -489,10 +522,10 @@
    "rawW": 336.66,
    "renderedW": 336.66,
    "fit": 1.0,
-   "file": "cap-042.png"
+   "file": "cap-045.png"
   },
   {
-   "id": "cap-043",
+   "id": "cap-046",
    "text": "a young traveler",
    "s": 35.53,
    "e": 37.13,
@@ -500,21 +533,32 @@
    "rawW": 715.36,
    "renderedW": 715.36,
    "fit": 1.0,
-   "file": "cap-043.png"
+   "file": "cap-046.png"
   },
   {
-   "id": "cap-044",
-   "text": "named Norio Suzuki",
+   "id": "cap-047",
+   "text": "named Norio",
    "s": 37.13,
+   "e": 38.07,
+   "line": 7,
+   "rawW": 562.33,
+   "renderedW": 562.33,
+   "fit": 1.0,
+   "file": "cap-047.png"
+  },
+  {
+   "id": "cap-048",
+   "text": "Suzuki",
+   "s": 38.07,
    "e": 38.45,
    "line": 7,
-   "rawW": 884.11,
-   "renderedW": 884.11,
+   "rawW": 304.25,
+   "renderedW": 304.25,
    "fit": 1.0,
-   "file": "cap-044.png"
+   "file": "cap-048.png"
   },
   {
-   "id": "cap-045",
+   "id": "cap-049",
    "text": "found him.",
    "s": 38.45,
    "e": 39.95,
@@ -522,10 +566,10 @@
    "rawW": 478.55,
    "renderedW": 478.55,
    "fit": 1.0,
-   "file": "cap-045.png"
+   "file": "cap-049.png"
   },
   {
-   "id": "cap-046",
+   "id": "cap-050",
    "text": "Onoda still refused",
    "s": 39.95,
    "e": 40.83,
@@ -533,10 +577,10 @@
    "rawW": 834.8,
    "renderedW": 834.8,
    "fit": 1.0,
-   "file": "cap-046.png"
+   "file": "cap-050.png"
   },
   {
-   "id": "cap-047",
+   "id": "cap-051",
    "text": "to leave.",
    "s": 40.83,
    "e": 41.762,
@@ -544,10 +588,10 @@
    "rawW": 378.27,
    "renderedW": 378.27,
    "fit": 1.0,
-   "file": "cap-047.png"
+   "file": "cap-051.png"
   },
   {
-   "id": "cap-048",
+   "id": "cap-052",
    "text": "He said",
    "s": 41.762,
    "e": 42.17,
@@ -555,10 +599,10 @@
    "rawW": 324.02,
    "renderedW": 324.02,
    "fit": 1.0,
-   "file": "cap-048.png"
+   "file": "cap-052.png"
   },
   {
-   "id": "cap-049",
+   "id": "cap-053",
    "text": "he would only stop",
    "s": 42.17,
    "e": 43.13,
@@ -566,10 +610,10 @@
    "rawW": 827.75,
    "renderedW": 827.75,
    "fit": 1.0,
-   "file": "cap-049.png"
+   "file": "cap-053.png"
   },
   {
-   "id": "cap-050",
+   "id": "cap-054",
    "text": "if his own",
    "s": 43.13,
    "e": 44.01,
@@ -577,21 +621,32 @@
    "rawW": 421.64,
    "renderedW": 421.64,
    "fit": 1.0,
-   "file": "cap-050.png"
+   "file": "cap-054.png"
   },
   {
-   "id": "cap-051",
-   "text": "commander ordered it.",
+   "id": "cap-055",
+   "text": "commander",
    "s": 44.01,
+   "e": 44.43,
+   "line": 8,
+   "rawW": 532.11,
+   "renderedW": 532.11,
+   "fit": 1.0,
+   "file": "cap-055.png"
+  },
+  {
+   "id": "cap-056",
+   "text": "ordered it.",
+   "s": 44.43,
    "e": 45.395,
    "line": 8,
-   "rawW": 1007.39,
-   "renderedW": 960.0,
-   "fit": 0.953,
-   "file": "cap-051.png"
+   "rawW": 457.75,
+   "renderedW": 457.75,
+   "fit": 1.0,
+   "file": "cap-056.png"
   },
   {
-   "id": "cap-052",
+   "id": "cap-057",
    "text": "So Japan found",
    "s": 45.395,
    "e": 46.39,
@@ -599,21 +654,32 @@
    "rawW": 682.92,
    "renderedW": 682.92,
    "fit": 1.0,
-   "file": "cap-052.png"
+   "file": "cap-057.png"
   },
   {
-   "id": "cap-053",
-   "text": "his old commander,",
+   "id": "cap-058",
+   "text": "his old",
    "s": 46.39,
+   "e": 46.93,
+   "line": 9,
+   "rawW": 290.33,
+   "renderedW": 290.33,
+   "fit": 1.0,
+   "file": "cap-058.png"
+  },
+  {
+   "id": "cap-059",
+   "text": "commander,",
+   "s": 46.93,
    "e": 47.77,
    "line": 9,
-   "rawW": 867.3,
-   "renderedW": 867.3,
+   "rawW": 559.44,
+   "renderedW": 559.44,
    "fit": 1.0,
-   "file": "cap-053.png"
+   "file": "cap-059.png"
   },
   {
-   "id": "cap-054",
+   "id": "cap-060",
    "text": "now a bookseller,",
    "s": 47.77,
    "e": 48.93,
@@ -621,10 +687,10 @@
    "rawW": 772.3,
    "renderedW": 772.3,
    "fit": 1.0,
-   "file": "cap-054.png"
+   "file": "cap-060.png"
   },
   {
-   "id": "cap-055",
+   "id": "cap-061",
    "text": "and flew him",
    "s": 48.93,
    "e": 49.63,
@@ -632,10 +698,10 @@
    "rawW": 560.62,
    "renderedW": 560.62,
    "fit": 1.0,
-   "file": "cap-055.png"
+   "file": "cap-061.png"
   },
   {
-   "id": "cap-056",
+   "id": "cap-062",
    "text": "to the island.",
    "s": 49.63,
    "e": 50.69,
@@ -643,10 +709,10 @@
    "rawW": 573.62,
    "renderedW": 573.62,
    "fit": 1.0,
-   "file": "cap-056.png"
+   "file": "cap-062.png"
   },
   {
-   "id": "cap-057",
+   "id": "cap-063",
    "text": "He finally",
    "s": 50.69,
    "e": 51.19,
@@ -654,10 +720,10 @@
    "rawW": 420.47,
    "renderedW": 420.47,
    "fit": 1.0,
-   "file": "cap-057.png"
+   "file": "cap-063.png"
   },
   {
-   "id": "cap-058",
+   "id": "cap-064",
    "text": "gave the order,",
    "s": 51.19,
    "e": 52.07,
@@ -665,21 +731,32 @@
    "rawW": 662.58,
    "renderedW": 662.58,
    "fit": 1.0,
-   "file": "cap-058.png"
+   "file": "cap-064.png"
   },
   {
-   "id": "cap-059",
-   "text": "and Onoda surrendered",
+   "id": "cap-065",
+   "text": "and Onoda",
    "s": 52.07,
+   "e": 52.99,
+   "line": 10,
+   "rawW": 473.73,
+   "renderedW": 473.73,
+   "fit": 1.0,
+   "file": "cap-065.png"
+  },
+  {
+   "id": "cap-066",
+   "text": "surrendered",
+   "s": 52.99,
    "e": 53.57,
    "line": 10,
-   "rawW": 1040.03,
-   "renderedW": 960.0,
-   "fit": 0.923,
-   "file": "cap-059.png"
+   "rawW": 548.77,
+   "renderedW": 548.77,
+   "fit": 1.0,
+   "file": "cap-066.png"
   },
   {
-   "id": "cap-060",
+   "id": "cap-067",
    "text": "after 29 years.",
    "s": 53.57,
    "e": 55.55,
@@ -687,10 +764,10 @@
    "rawW": 646.92,
    "renderedW": 646.92,
    "fit": 1.0,
-   "file": "cap-060.png"
+   "file": "cap-067.png"
   },
   {
-   "id": "cap-061",
+   "id": "cap-068",
    "text": "He wasn't hiding",
    "s": 55.55,
    "e": 56.21,
@@ -698,10 +775,10 @@
    "rawW": 737.27,
    "renderedW": 737.27,
    "fit": 1.0,
-   "file": "cap-061.png"
+   "file": "cap-068.png"
   },
   {
-   "id": "cap-062",
+   "id": "cap-069",
    "text": "from the war.",
    "s": 56.21,
    "e": 57.15,
@@ -709,10 +786,10 @@
    "rawW": 586.48,
    "renderedW": 586.48,
    "fit": 1.0,
-   "file": "cap-062.png"
+   "file": "cap-069.png"
   },
   {
-   "id": "cap-063",
+   "id": "cap-070",
    "text": "He was just",
    "s": 57.15,
    "e": 57.73,
@@ -720,10 +797,10 @@
    "rawW": 505.53,
    "renderedW": 505.53,
    "fit": 1.0,
-   "file": "cap-063.png"
+   "file": "cap-070.png"
   },
   {
-   "id": "cap-064",
+   "id": "cap-071",
    "text": "still loyal",
    "s": 57.73,
    "e": 58.35,
@@ -731,10 +808,10 @@
    "rawW": 395.42,
    "renderedW": 395.42,
    "fit": 1.0,
-   "file": "cap-064.png"
+   "file": "cap-071.png"
   },
   {
-   "id": "cap-065",
+   "id": "cap-072",
    "text": "to it.",
    "s": 58.35,
    "e": 60.357,
@@ -742,7 +819,7 @@
    "rawW": 200.86,
    "renderedW": 200.86,
    "fit": 1.0,
-   "file": "cap-065.png"
+   "file": "cap-072.png"
   }
  ]
 }

@@ -59,8 +59,8 @@
    "filmLook": "sh-noon",
    "captionChunks": {
     "first": 13,
-    "last": 17,
-    "count": 5
+    "last": 18,
+    "count": 6
    }
   },
   {
@@ -79,8 +79,8 @@
    "atmosphere": "noon",
    "filmLook": "sh-noon",
    "captionChunks": {
-    "first": 18,
-    "last": 20,
+    "first": 19,
+    "last": 21,
     "count": 3
    }
   },
@@ -100,8 +100,8 @@
    "atmosphere": "noon",
    "filmLook": "jg-noon",
    "captionChunks": {
-    "first": 21,
-    "last": 25,
+    "first": 22,
+    "last": 26,
     "count": 5
    }
   },
@@ -121,9 +121,9 @@
    "atmosphere": "noon",
    "filmLook": "jg-noon",
    "captionChunks": {
-    "first": 26,
-    "last": 29,
-    "count": 4
+    "first": 27,
+    "last": 31,
+    "count": 5
    }
   },
   {
@@ -142,8 +142,8 @@
    "atmosphere": "noon",
    "filmLook": "jg-noon",
    "captionChunks": {
-    "first": 30,
-    "last": 31,
+    "first": 32,
+    "last": 33,
     "count": 2
    }
   },
@@ -164,8 +164,8 @@
    "atmosphere": "fog",
    "filmLook": "jg-fog-s06",
    "captionChunks": {
-    "first": 32,
-    "last": 39,
+    "first": 34,
+    "last": 41,
     "count": 8
    }
   },
@@ -185,9 +185,9 @@
    "atmosphere": "golden",
    "filmLook": "jg-golden-s07",
    "captionChunks": {
-    "first": 40,
-    "last": 41,
-    "count": 2
+    "first": 42,
+    "last": 44,
+    "count": 3
    }
   },
   {
@@ -206,9 +206,9 @@
    "atmosphere": "noon",
    "filmLook": "jg-noon",
    "captionChunks": {
-    "first": 42,
-    "last": 46,
-    "count": 5
+    "first": 45,
+    "last": 50,
+    "count": 6
    }
   },
   {
@@ -227,8 +227,8 @@
    "atmosphere": "noon",
    "filmLook": "jg-noon",
    "captionChunks": {
-    "first": 47,
-    "last": 47,
+    "first": 51,
+    "last": 51,
     "count": 1
    }
   },
@@ -248,9 +248,9 @@
    "atmosphere": "noon",
    "filmLook": "jg-noon",
    "captionChunks": {
-    "first": 48,
-    "last": 51,
-    "count": 4
+    "first": 52,
+    "last": 56,
+    "count": 5
    }
   },
   {
@@ -269,9 +269,9 @@
    "atmosphere": "noon",
    "filmLook": "bk-noon-shop",
    "captionChunks": {
-    "first": 52,
-    "last": 56,
-    "count": 5
+    "first": 57,
+    "last": 62,
+    "count": 6
    }
   },
   {
@@ -290,9 +290,9 @@
    "atmosphere": "dusk",
    "filmLook": "jg-dusk",
    "captionChunks": {
-    "first": 57,
-    "last": 60,
-    "count": 4
+    "first": 63,
+    "last": 67,
+    "count": 5
    }
   },
   {
@@ -311,8 +311,8 @@
    "atmosphere": "dusk",
    "filmLook": "jg-dusk",
    "captionChunks": {
-    "first": 61,
-    "last": 65,
+    "first": 68,
+    "last": 72,
     "count": 5
    }
   }

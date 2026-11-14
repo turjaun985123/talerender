@@ -1,0 +1,32 @@
+renderer: CI lavapipe
+provenance: CANDIDATE re-stage of the 14 film golden mids at film
+head f021991 (supersedes-in-waiting the 381ff47 staging in
+docs/golden/frames/; NOT pins — see docs/integration/
+GOLDEN-RESTAGE-W03.md)
+frames taken from: /home/hatch/workspace/film-final/frames4
+  (the lead's on-disk f021991 frame set: its ab-out4 table reads
+  Overall n=60 min=19.36 mean=23.02 dB, and the MP4 finished from
+  this set, film-final/onoda-native.mp4, is byte-identical to the
+  delivered proof onoda-native-f021991.mp4, sha256 dea7bb2c…)
+staged at (UTC): 2026-11-14T16:31Z
+repo HEAD at staging: d7bebdd (film content unchanged since f021991)
+staged segment mid frames:
+film-s01  frame 89 (frame_00089.png)  sha256 1608ead9a477764af9cf5958cfc4dfb78b205d3beee705a094aec189bd6bc610
+film-s02  frame 285 (frame_00285.png)  sha256 9649a9b65fa375523023fde3c0bf7c69321f7b788232c34b5408444f94e98a89
+film-s03  frame 435 (frame_00435.png)  sha256 0bbdbdd8a93959fb8c145b01cce1791c8a8d0a8dbdfb7553e0ee65c3469eca17
+film-s04  frame 560 (frame_00560.png)  sha256 f135462d330c0e2d1a4771513bfe36b37a2e0d2310ea0d246a0df8d717680523
+film-s05a  frame 689 (frame_00689.png)  sha256 bb0ee0c0d969744a997760d8482b2aaf6c8a5a6d46c7b27d4bd80151aa14685b
+film-s05b  frame 760 (frame_00760.png)  sha256 471366bffdc72f55988cab97ef8c13f9ffd26e98cabb8f2dd7cce06744c67919
+film-s06  frame 848 (frame_00848.png)  sha256 7eff42cdf8c80ff6e5dd06c56298ba045d49f6eeff2c2639e59657bcfcb576fb
+film-s07  frame 969 (frame_00969.png)  sha256 4bc49c5ccb96a94ff340ae99082e4873fd60ec3dfae00e1a2dbd3e3f8d8cb551
+film-s08  frame 1119 (frame_01119.png)  sha256 5ebdb083bd0e0a2f1ad2c015dfec784ce6180cdb4a91b6cd63d7916aab11c55c
+film-s08b  frame 1231 (frame_01231.png)  sha256 fb4e2ba44ad807394f6ff59bf0d48e8742a6080f8f63f6dd49a3df500f710dbc
+film-s09  frame 1306 (frame_01306.png)  sha256 74b6003d0eda5d82e8ac58b4717c33c4c902aa7f6bf6965ae67ad9411796462d
+film-s10  frame 1440 (frame_01440.png)  sha256 59bdb4f2558fa37f34569482f1c650669b96eb8a8fb225c8d2825386b93ebaad
+film-s11  frame 1593 (frame_01593.png)  sha256 231fc172784c09a16c563440296004628906cfcc4d2c9c32ff38f6c1a10cfbf4
+film-s12  frame 1738 (frame_01738.png)  sha256 dfabc09a542dd1ccfe473fb10d001ec4981e5aaededf5576b73388f6efb1bf83
+note: staged frames are NOT pins. A frame becomes a golden reference
+only when a human runs make_golden.py --pin (see NATIVE-GOLDEN.md).
+These candidates live alongside the 381ff47 staging on purpose: the
+pin act copies them onto the canonical paths in docs/golden/frames/
+as its first step (GOLDEN-RESTAGE-W03.md gives the exact commands).

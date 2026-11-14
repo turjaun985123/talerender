@@ -159,59 +159,59 @@
   ],
   "law": "level = clamp(1 - seg(lt, 2.95, 3.70), 0, 1) (fireLevel, shots.ts S06); point intensity = level > 0.02 ? (4.6 + 0.7 sin(17 t) + 0.5 sin(7.3 t)) * level : 0, t = film time; flame scale = (level, f * level, level) / (level, (2 - f) * level, level), f = 1 + 0.16 sin(13 t) + 0.07 sin(29 t + 1)"
  },
- "captionsNote": "chunk 31 ('trick.', 25.57-26.19) starts in S05b and is owned by s05b under the manifest start-time rule (scenes/film/film.json); it bleeds 0.061 s into this shot's head and is not listed here (seat W27). Captions are film-global, drawn by time.",
+ "captionsNote": "chunk 33 ('trick.', 25.57-26.19) starts in S05b and is owned by s05b under the manifest start-time rule (scenes/film/film.json); it bleeds 0.061 s into this shot's head and is not listed here (seat W27). Captions are film-global, drawn by time.",
  "captions": [
   {
-   "index": 32,
+   "index": 34,
    "s": 26.189999999999998,
    "e": 26.669999999999998,
    "text": "His friends",
    "fit": 1.0
   },
   {
-   "index": 33,
+   "index": 35,
    "s": 26.669999999999998,
    "e": 27.189999999999998,
    "text": "gave up",
    "fit": 1.0
   },
   {
-   "index": 34,
+   "index": 36,
    "s": 27.189999999999998,
    "e": 27.79,
    "text": "or died,",
    "fit": 1.0
   },
   {
-   "index": 35,
+   "index": 37,
    "s": 27.79,
    "e": 28.49,
    "text": "until he",
    "fit": 1.0
   },
   {
-   "index": 36,
+   "index": 38,
    "s": 28.49,
    "e": 29.351,
    "text": "was alone.",
    "fit": 1.0
   },
   {
-   "index": 37,
+   "index": 39,
    "s": 29.351,
    "e": 29.709999999999997,
    "text": "He lived",
    "fit": 1.0
   },
   {
-   "index": 38,
+   "index": 40,
    "s": 29.709999999999997,
    "e": 30.29,
    "text": "in the jungle",
    "fit": 1.0
   },
   {
-   "index": 39,
+   "index": 41,
    "s": 30.29,
    "e": 31.549999999999997,
    "text": "for decades,",

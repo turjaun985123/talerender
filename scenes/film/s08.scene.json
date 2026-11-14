@@ -133,43 +133,51 @@
    "source": "shots.ts fireLevel(1, t); static scaleY in this file = formula at time"
   }
  },
- "captionsNote": "chunk 41 ('and bananas.', 32.99-34.27) starts in S07 and is owned by s07 under the manifest start-time rule (scenes/film/film.json); it bleeds 0.061 s into this shot's head and is not listed here (seat W55). Captions are film-global, drawn by time.",
+ "captionsNote": "chunk 44 ('and bananas.', 32.99-34.27) starts in S07 and is owned by s07 under the manifest start-time rule (scenes/film/film.json); it bleeds 0.061 s into this shot's head and is not listed here (seat W55). Captions are film-global, drawn by time.",
  "captions": [
   {
-   "index": 42,
-   "id": "cap_042",
+   "index": 45,
+   "id": "cap_045",
    "s": 34.269999999999996,
    "e": 35.53,
    "text": "In 1974,",
    "fit": 1.0
   },
   {
-   "index": 43,
-   "id": "cap_043",
+   "index": 46,
+   "id": "cap_046",
    "s": 35.53,
    "e": 37.129999999999995,
    "text": "a young traveler",
    "fit": 1.0
   },
   {
-   "index": 44,
-   "id": "cap_044",
+   "index": 47,
+   "id": "cap_047",
    "s": 37.129999999999995,
-   "e": 38.449999999999996,
-   "text": "named Norio Suzuki",
+   "e": 38.07,
+   "text": "named Norio",
    "fit": 1.0
   },
   {
-   "index": 45,
-   "id": "cap_045",
+   "index": 48,
+   "id": "cap_048",
+   "s": 38.07,
+   "e": 38.449999999999996,
+   "text": "Suzuki",
+   "fit": 1.0
+  },
+  {
+   "index": 49,
+   "id": "cap_049",
    "s": 38.449999999999996,
    "e": 39.949999999999996,
    "text": "found him.",
    "fit": 1.0
   },
   {
-   "index": 46,
-   "id": "cap_046",
+   "index": 50,
+   "id": "cap_050",
    "s": 39.949999999999996,
    "e": 40.83,
    "text": "Onoda still refused",

@@ -134,38 +134,38 @@
    "source": "shots.ts:289"
   }
  },
- "captionsNote": "chunk 20 ('never surrender.', 14.75-16.01) starts in S03 and is owned by s03 under the manifest start-time rule (scenes/film/film.json); it bleeds 0.06 s into this shot's head and is not listed here (seat W55). Captions are film-global, drawn by time.",
+ "captionsNote": "chunk 21 ('never surrender.', 14.75-16.01) starts in S03 and is owned by s03 under the manifest start-time rule (scenes/film/film.json); it bleeds 0.06 s into this shot's head and is not listed here (seat W55). Captions are film-global, drawn by time.",
  "captions": [
   {
-   "index": 21,
+   "index": 22,
    "s": 16.01,
    "e": 17.25,
    "text": "In 1945,",
    "fit": 1.0
   },
   {
-   "index": 22,
+   "index": 23,
    "s": 17.25,
    "e": 19.51,
    "text": "the war ended.",
    "fit": 1.0
   },
   {
-   "index": 23,
+   "index": 24,
    "s": 19.51,
    "e": 19.93,
    "text": "But Onoda",
    "fit": 1.0
   },
   {
-   "index": 24,
+   "index": 25,
    "s": 19.93,
    "e": 20.47,
    "text": "never got",
    "fit": 1.0
   },
   {
-   "index": 25,
+   "index": 26,
    "s": 20.47,
    "e": 21.61,
    "text": "the message.",

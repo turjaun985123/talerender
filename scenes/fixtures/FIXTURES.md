@@ -187,6 +187,28 @@ itself; the open item is the data/loader spelling decision
 (rename the data's keys, or teach the loader the alias) — an
 integrator call, recorded in AUDIT-W40.
 
+**Correction (2026-11-14, wave 2 seat W08) — trap 1 above is
+stale on both halves; the original text is preserved for the
+record, but do not rely on it.**
+
+- *Data spelling:* the rename landed. The census behind trap 1
+  was itself superseded (12 of 14 files spelled `saturation`,
+  not 11 — LOADER-ACCEPTANCE-W71), and all 12 were renamed to
+  `sat` with values byte-unchanged (commit `8af40eb`, seat
+  W81; validator 7/7 after). No `saturation` key remains
+  anywhere in `scenes/film/` (census re-run and reproduced in
+  docs/integration/RED-TEAM-W93.md).
+- *Loader behaviour:* `saturation` is still not a loader key
+  (the loader reads only `sat`, no alias), but `exposure` **is**
+  now consumed — parsed and wired to the composer OutputPass
+  uniform (commit `c74cf0c`; spec status addendum `5b0889d`).
+  The canonical grade keys are `sat`/`warm`/`exposure`/`time`
+  (spec wording aligned in commit `ede0e92`).
+- The spelling decision left open below trap 1 is therefore
+  taken: the data was renamed, the loader was not aliased. This
+  fixture's own use of `sat` was and remains the correct
+  spelling.
+
 ## fx-textures — the registry census
 
 **Exercises:** one quad mesh per texture the film data names —

@@ -117,26 +117,33 @@
   {
    "index": 14,
    "s": 6.6899999999999995,
-   "e": 8.530000000000001,
-   "text": "was a Japanese soldier",
-   "fit": 0.93746
+   "e": 7.87,
+   "text": "was a Japanese",
+   "fit": 1.0
   },
   {
    "index": 15,
+   "s": 7.87,
+   "e": 8.530000000000001,
+   "text": "soldier",
+   "fit": 1.0
+  },
+  {
+   "index": 16,
    "s": 8.530000000000001,
    "e": 9.31,
    "text": "sent to",
    "fit": 1.0
   },
   {
-   "index": 16,
+   "index": 17,
    "s": 9.31,
    "e": 10.39,
    "text": "a Philippine island",
    "fit": 1.0
   },
   {
-   "index": 17,
+   "index": 18,
    "s": 10.39,
    "e": 13.15,
    "text": "in 1944.",

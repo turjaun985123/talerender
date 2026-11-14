@@ -134,47 +134,57 @@
    "source": "shots.ts fireLevel(1, t); static scaleY in this file = formula at time (1.166407)"
   }
  },
- "captionsNote": "chunk 47 ('to leave.', 40.83-41.762) starts in S08B and is owned by s08b under the manifest start-time rule (scenes/film/film.json); it bleeds 0.03 s into this shot's head and is not listed here (seat W55). Captions are film-global, drawn by time.",
+ "captionsNote": "chunk 51 ('to leave.', 40.83-41.762) starts in S08B and is owned by s08b under the manifest start-time rule (scenes/film/film.json); it bleeds 0.03 s into this shot's head and is not listed here (seat W55). Captions are film-global, drawn by time.",
  "captions": [
   {
-   "id": "cap_048",
+   "id": "cap_052",
    "line": 8,
    "s": 41.762,
    "e": 42.17,
    "text": "He said",
    "width": 324.02,
    "fit": 1.0,
-   "strip": "cap_048.png"
+   "strip": "cap_052.png"
   },
   {
-   "id": "cap_049",
+   "id": "cap_053",
    "line": 8,
    "s": 42.17,
    "e": 43.13,
    "text": "he would only stop",
    "width": 827.75,
    "fit": 1.0,
-   "strip": "cap_049.png"
+   "strip": "cap_053.png"
   },
   {
-   "id": "cap_050",
+   "id": "cap_054",
    "line": 8,
    "s": 43.13,
    "e": 44.01,
    "text": "if his own",
    "width": 421.64,
    "fit": 1.0,
-   "strip": "cap_050.png"
+   "strip": "cap_054.png"
   },
   {
-   "id": "cap_051",
+   "id": "cap_055",
    "line": 8,
    "s": 44.01,
+   "e": 44.43,
+   "text": "commander",
+   "width": 532.11,
+   "fit": 1.0,
+   "strip": "cap_055.png"
+  },
+  {
+   "id": "cap_056",
+   "line": 8,
+   "s": 44.43,
    "e": 45.395,
-   "text": "commander ordered it.",
-   "width": 1007.39,
-   "fit": 0.95296,
-   "strip": "cap_051.png"
+   "text": "ordered it.",
+   "width": 457.75,
+   "fit": 1.0,
+   "strip": "cap_056.png"
   }
  ],
  "textures": [

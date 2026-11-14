@@ -1,0 +1,89 @@
+name: Determinism (dispatch)
+
+# The determinism byte-compare pack (tools/determinism/), run for
+# real on the CI lavapipe environment — discharge route 1 of
+# docs/integration/DETERMINISM-RUN-W96.md, formalised by
+# docs/integration/DETERMINISM-CONTRACT-W04.md.
+#
+# Environment mirrors render.yml exactly (ubuntu-22.04, Mesa 23.2
+# lavapipe, ICD pinned via VK_ICD_FILENAMES, mold, rust-cache):
+# renders must happen here because the development VM's llvmpipe
+# JIT segfaults compiling shader_pbr.wgsl on its CPU.
+#
+# The pack renders film frames [100, 130) four times (single /
+# chunked-resumed / tight paint-cache cap) and sha256-compares
+# every frame. Its verdict discipline:
+#   exit 0 + final line "DETERMINISM: PASS"  — pass
+#   exit 1 + "DETERMINISM: FAIL (n differ)"  — frames differ
+#   exit 2 + "REFUSAL: ..."                  — no verdict claimed
+# This job passes ONLY on exit 0 with the PASS line present in
+# determinism-results.txt; the verdict step below checks both.
+#
+# A lavapipe PASS discharges only the CI-lavapipe leg of the
+# contract. The PC RADV leg is a separate run on the user's PC
+# (procedure in the contract doc, §7) — neither stands in for
+# the other.
+#
+# No inputs on purpose: the pack's range, chunk split and cache
+# caps are the fixed protocol every PASS must be comparable to.
+
+on:
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+  RUSTFLAGS: "-C link-arg=-fuse-ld=mold"
+
+jobs:
+  determinism:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+      - name: Install mold + lavapipe
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mold mesa-vulkan-drivers vulkan-tools
+          ICD=$(ls /usr/share/vulkan/icd.d/lvp_icd*.json | head -n 1)
+          echo "VK_ICD_FILENAMES=$ICD" >> "$GITHUB_ENV"
+          echo "lavapipe ICD: $ICD"
+      - name: Build
+        run: cargo build --release
+      - name: Determinism byte-compare
+        id: det
+        run: |
+          set +e
+          tools/determinism/determinism_check.sh \
+            ./target/release/talerender "$RUNNER_TEMP/det" \
+            --film-dir film
+          rc=$?
+          echo "pack exit code: $rc (0 = PASS, 1 = FAIL, 2 = refusal / no verdict)"
+          echo "script_rc=$rc" >> "$GITHUB_OUTPUT"
+      - name: Verdict (the PASS line is the verdict)
+        run: |
+          RESULTS="$RUNNER_TEMP/det/determinism-results.txt"
+          echo "----- determinism-results.txt -----"
+          cat "$RESULTS" 2>/dev/null || echo "(no results file — the pack refused before writing one)"
+          echo "-----------------------------------"
+          rc="${{ steps.det.outputs.script_rc }}"
+          if [ "$rc" != "0" ]; then
+            echo "::error::determinism pack exited $rc (1 = FAIL, 2 = refusal — no verdict). See the uploaded artifact."
+            exit 1
+          fi
+          if ! grep -qx "DETERMINISM: PASS" "$RESULTS"; then
+            echo "::error::no exact 'DETERMINISM: PASS' line in determinism-results.txt — not a pass."
+            exit 1
+          fi
+          echo "DETERMINISM: PASS confirmed (pack exit 0 + PASS line present)."
+      - name: Upload determinism results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: determinism-${{ github.run_id }}
+          path: ${{ runner.temp }}/det
+          retention-days: 7

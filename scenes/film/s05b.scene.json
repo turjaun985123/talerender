@@ -129,19 +129,19 @@
    "source": "shots.ts fireLevel(1, t); static scaleY in this file = formula at time"
   }
  },
- "captionsNote": "chunk 29 ('He thought it', 24.49-24.97) starts in S05A and is owned by s05a under the manifest start-time rule (scenes/film/film.json); it bleeds 0.41 s into this shot's head and is not listed here (seat W55). Captions are film-global, drawn by time.",
+ "captionsNote": "chunk 31 ('He thought it', 24.49-24.97) starts in S05A and is owned by s05a under the manifest start-time rule (scenes/film/film.json); it bleeds 0.41 s into this shot's head and is not listed here (seat W55). Captions are film-global, drawn by time.",
  "captions": [
   {
-   "index": 30,
-   "id": "cap_030",
+   "index": 32,
+   "id": "cap_032",
    "s": 24.97,
    "e": 25.57,
    "text": "was an enemy",
    "fit": 1.0
   },
   {
-   "index": 31,
-   "id": "cap_031",
+   "index": 33,
+   "id": "cap_033",
    "s": 25.57,
    "e": 26.189999999999998,
    "text": "trick.",

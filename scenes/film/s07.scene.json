@@ -10449,27 +10449,37 @@
    }
   }
  ],
- "captionsNote": "chunk 39 ('for decades,', 30.29-31.55) starts in S06 and is owned by s06 under the manifest start-time rule (scenes/film/film.json); it bleeds 1.16 s into this shot's head and is not listed here (seat W27). Captions are film-global, drawn by time.",
+ "captionsNote": "chunk 41 ('for decades,', 30.29-31.55) starts in S06 and is owned by s06 under the manifest start-time rule (scenes/film/film.json); it bleeds 1.16 s into this shot's head and is not listed here (seat W27). Captions are film-global, drawn by time.",
  "captions": [
   {
-   "id": "cap_040",
+   "id": "cap_042",
    "line": 6,
    "s": 31.55,
-   "e": 32.99,
-   "text": "surviving on coconuts",
-   "width": 989.95,
-   "fit": 0.96974,
-   "strip": "cap_040.png"
+   "e": 32.01,
+   "text": "surviving",
+   "width": 425.88,
+   "fit": 1.0,
+   "strip": "cap_042.png"
   },
   {
-   "id": "cap_041",
+   "id": "cap_043",
+   "line": 6,
+   "s": 32.01,
+   "e": 32.99,
+   "text": "on coconuts",
+   "width": 546.55,
+   "fit": 1.0,
+   "strip": "cap_043.png"
+  },
+  {
+   "id": "cap_044",
    "line": 6,
    "s": 32.99,
    "e": 34.27,
    "text": "and bananas.",
    "width": 598.11,
    "fit": 1.0,
-   "strip": "cap_041.png"
+   "strip": "cap_044.png"
   }
  ],
  "overlays": [

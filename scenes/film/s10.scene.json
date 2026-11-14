@@ -9993,62 +9993,73 @@
    }
   }
  ],
- "captionsNote": "chunk 51 ('commander ordered it.', 44.01-45.395) starts in S09 and is owned by s09 under the manifest start-time rule (scenes/film/film.json); it bleeds 0.03 s into this shot's head and is not listed here (seat W55). Captions are film-global, drawn by time.",
+ "captionsNote": "chunk 56 ('ordered it.', 44.43-45.395) starts in S09 and is owned by s09 under the manifest start-time rule (scenes/film/film.json); it bleeds 0.03 s into this shot's head and is not listed here (seat W55). Captions are film-global, drawn by time.",
  "captions": [
   {
-   "index": 52,
-   "id": "cap_052",
+   "index": 57,
+   "id": "cap_057",
    "line": 9,
    "s": 45.394999999999996,
    "e": 46.39,
    "text": "So Japan found",
    "width": 682.92,
    "fit": 1.0,
-   "strip": "cap_052.png"
+   "strip": "cap_057.png"
   },
   {
-   "index": 53,
-   "id": "cap_053",
+   "index": 58,
+   "id": "cap_058",
    "line": 9,
    "s": 46.39,
-   "e": 47.769999999999996,
-   "text": "his old commander,",
-   "width": 867.3,
+   "e": 46.93,
+   "text": "his old",
+   "width": 290.33,
    "fit": 1.0,
-   "strip": "cap_053.png"
+   "strip": "cap_058.png"
   },
   {
-   "index": 54,
-   "id": "cap_054",
+   "index": 59,
+   "id": "cap_059",
+   "line": 9,
+   "s": 46.93,
+   "e": 47.769999999999996,
+   "text": "commander,",
+   "width": 559.44,
+   "fit": 1.0,
+   "strip": "cap_059.png"
+  },
+  {
+   "index": 60,
+   "id": "cap_060",
    "line": 9,
    "s": 47.769999999999996,
    "e": 48.93,
    "text": "now a bookseller,",
    "width": 772.3,
    "fit": 1.0,
-   "strip": "cap_054.png"
+   "strip": "cap_060.png"
   },
   {
-   "index": 55,
-   "id": "cap_055",
+   "index": 61,
+   "id": "cap_061",
    "line": 9,
    "s": 48.93,
    "e": 49.629999999999995,
    "text": "and flew him",
    "width": 560.62,
    "fit": 1.0,
-   "strip": "cap_055.png"
+   "strip": "cap_061.png"
   },
   {
-   "index": 56,
-   "id": "cap_056",
+   "index": 62,
+   "id": "cap_062",
    "line": 9,
    "s": 49.629999999999995,
    "e": 50.69,
    "text": "to the island.",
    "width": 573.62,
    "fit": 1.0,
-   "strip": "cap_056.png"
+   "strip": "cap_062.png"
   }
  ]
 }
