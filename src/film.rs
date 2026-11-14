@@ -3451,15 +3451,15 @@ fn apply_fade(px: &mut [u8], fade: f32) {
 // The film driver.
 // ---------------------------------------------------------------------
 
-pub(crate) async fn run_film(width: u32, height: u32, film_dir: &str, out_dir: &str, from: u32, to: u32) {
+pub(crate) async fn run_film(width: u32, height: u32, film_dir: &str, out_dir: &str, from: u32, to: u32) -> crate::errors::TaleResult<()> {
     let dir = Path::new(film_dir);
-    let data = load_film_data(dir).unwrap_or_else(|e| panic!("film data: {e}"));
-    let assets = load_assets(dir, &data).unwrap_or_else(|e| panic!("film assets: {e}"));
+    let data = load_film_data(dir).map_err(|e| crate::errors::TaleError::data_load(dir, e))?;
+    let assets = load_assets(dir, &data).map_err(|e| crate::errors::TaleError::data_load(dir, e))?;
     let looks = look_registry();
     let frames_total = (data.duration * 30.0).ceil() as u32;
     let to = if to == 0 { frames_total } else { to.min(frames_total) };
     let mut renderer = Renderer::new(width, height, &assets.sign).await;
-    std::fs::create_dir_all(out_dir).expect("cannot create frames dir");
+    std::fs::create_dir_all(out_dir).map_err(|e| crate::errors::TaleError::image_io(out_dir, e))?;
     println!(
         "film: {} — {} frames @30fps, rendering {}..{} at {}x{} (clean PNG frames; decision B)",
         "THE SOLDIER WHO DIDN'T KNOW THE WAR WAS OVER", frames_total, from, to, width, height
@@ -3486,13 +3486,14 @@ pub(crate) async fn run_film(width: u32, height: u32, film_dir: &str, out_dir: &
             overlay_caption(&mut px, width, height, &assets, ci, spec.caption_scale);
         }
         let img = image::RgbaImage::from_raw(width, height, px).expect("pixel buffer size mismatch");
-        img.save(&path).unwrap_or_else(|e| panic!("cannot save {path}: {e}"));
+        img.save(&path).map_err(|e| crate::errors::TaleError::image_io(&path, e))?;
         done += 1;
         if done % 25 == 0 {
             println!("  frame {n} (t = {t:.2}s) — {done} rendered, {skipped} skipped");
         }
     }
     println!("film render complete: {done} rendered, {skipped} skipped (resume), range {from}..{to}");
+    Ok(())
 }
 
 // ---------------------------------------------------------------------

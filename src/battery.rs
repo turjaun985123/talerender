@@ -29,10 +29,11 @@ fn pts(v: &Value) -> Vec<(f32, f32)> {
     v.as_arr().expect("spec: expected points").iter().map(pt).collect()
 }
 
-fn save(px: &[u8], w: u32, h: u32, path: &str) {
+fn save(px: &[u8], w: u32, h: u32, path: &str) -> crate::errors::TaleResult<()> {
     let img = image::RgbaImage::from_raw(w, h, px.to_vec()).expect("pixel buffer size mismatch");
-    img.save(path).expect("failed to save PNG");
+    img.save(path).map_err(|e| crate::errors::TaleError::image_io(path, e))?;
     println!("wrote {path} ({w}x{h})");
+    Ok(())
 }
 
 fn mood_of(s: &str) -> ToonMood {
@@ -75,13 +76,13 @@ fn toon_spec(look: &Value, state: &Value, mood: &str) -> ToonSpec {
     }
 }
 
-pub(crate) fn run_battery(out_dir: &str) {
+pub(crate) fn run_battery(out_dir: &str) -> crate::errors::TaleResult<()> {
     let spec = parse_json(SPEC).expect("embedded battery spec must parse");
     let canvas = spec.get("canvas").expect("spec.canvas");
     let res = num(canvas.get("res").expect("spec.canvas.res"));
     let (lw, lh) = (num(canvas.get("w").expect("spec.canvas.w")), num(canvas.get("h").expect("spec.canvas.h")));
     let (dw, dh) = ((lw * res) as usize, (lh * res) as usize);
-    std::fs::create_dir_all(out_dir).expect("cannot create out dir");
+    std::fs::create_dir_all(out_dir).map_err(|e| crate::errors::TaleError::image_io(out_dir, e))?;
     println!("renderer: TaleRender CPU painter (src/scene.rs Painter) — no GPU involved; cards are raw painter output at {}x{} (logical {}x{} @ res {})", dw, dh, lw, lh, res);
 
     // ---- prims card ----
@@ -128,7 +129,7 @@ pub(crate) fn run_battery(out_dir: &str) {
             other => panic!("spec: unknown prim op {other}"),
         }
     }
-    save(&p.px, dw as u32, dh as u32, &format!("{out_dir}/prims.png"));
+    save(&p.px, dw as u32, dh as u32, &format!("{out_dir}/prims.png"))?;
 
     // ---- toon card ----
     let toon = spec.get("toon").expect("spec.toon");
@@ -138,7 +139,7 @@ pub(crate) fn run_battery(out_dir: &str) {
         toon.get("state").unwrap().get("mood").and_then(|v| v.as_str()).expect("toon.state.mood"),
     );
     let (px, w, h) = paint_toon(&ts);
-    save(&px, w, h, &format!("{out_dir}/toon.png"));
+    save(&px, w, h, &format!("{out_dir}/toon.png"))?;
 
     // ---- face cards ----
     let faces = spec.get("faces").expect("spec.faces");
@@ -146,6 +147,7 @@ pub(crate) fn run_battery(out_dir: &str) {
         let m = m.as_str().expect("mood name");
         let ts = toon_spec(faces.get("look").expect("faces.look"), faces.get("state").expect("faces.state"), m);
         let (px, w, h) = paint_toon(&ts);
-        save(&px, w, h, &format!("{out_dir}/face-{m}.png"));
+        save(&px, w, h, &format!("{out_dir}/face-{m}.png"))?;
     }
+    Ok(())
 }

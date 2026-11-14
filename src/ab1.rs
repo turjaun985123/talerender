@@ -582,7 +582,7 @@ fn pack_u32(data: &[u32]) -> Vec<u8> {
     out
 }
 
-pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str, post_stage: u8) {
+pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str, post_stage: u8) -> crate::errors::TaleResult<()> {
     let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
         backends: wgpu::Backends::VULKAN,
         ..Default::default()
@@ -686,7 +686,7 @@ pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str, pos
 
     // ---- textures ----
     let caption_img = image::open(caption_path)
-        .unwrap_or_else(|e| panic!("cannot load caption strip {caption_path}: {e}"))
+        .map_err(|e| crate::errors::TaleError::data_load(caption_path, e))?
         .to_rgba8();
     let (cap_w, cap_h) = caption_img.dimensions();
     let textures_px: [(Vec<u8>, u32, u32); 6] = [
@@ -1587,8 +1587,9 @@ pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str, pos
     readback.unmap();
 
     let img = image::RgbaImage::from_raw(width, height, pixels).expect("pixel buffer size mismatch");
-    img.save(out).expect("failed to save PNG");
+    img.save(out).map_err(|e| crate::errors::TaleError::image_io(out, e))?;
     println!("wrote {out} ({width}x{height})");
+    Ok(())
 }
 
 #[cfg(test)]

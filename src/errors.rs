@@ -28,9 +28,10 @@
 //!   1 QA fail, 2 CLI/invalid input, 3 GPU/render failure,
 //!   4 output/filesystem failure. No variant maps to 1: that code
 //!   is the film-telemetry gate's *verdict*, not an error — the
-//!   gate prints `FILM TELEMETRY: CHECK OK / CHECK FAILED` and
-//!   exits 0 either way, and the skill adapter keys on the line.
-//!   Do not route the telemetry verdict through this type.
+//!   gate prints `FILM TELEMETRY: CHECK OK / CHECK FAILED` (the
+//!   line stays authoritative) and, since EXIT-CODES-W02, exits
+//!   0 / 1 in agreement with it. Do not route the telemetry
+//!   verdict through this type.
 //!
 //! Wiring: declare `mod errors;` in `src/main.rs` (see
 //! docs/integration/ERRORS-W05.md for the exact site and the

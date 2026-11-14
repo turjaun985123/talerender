@@ -19,6 +19,7 @@ mod ab1;
 mod battery;
 mod composer;
 mod dof;
+mod errors;
 mod math;
 mod scene;
 mod scenefile;
@@ -129,6 +130,15 @@ fn parse_u32(args: &[String], i: usize, flag: &str) -> u32 {
             "invalid value for {flag}: '{raw}' (expected a non-negative integer)"
         ))
     })
+}
+
+/// Run a mode that returns a structured error: print it the CLI
+/// way and exit with the error's audit-table code (ERRORS-W05).
+fn exit_on_err(r: errors::TaleResult<()>) {
+    if let Err(e) = r {
+        eprintln!("error: {e}");
+        std::process::exit(e.exit_code());
+    }
 }
 
 fn main() {
@@ -254,17 +264,17 @@ fn main() {
         // Production integration: the complete film, frame range
         // [--from, --to) into the --out frames directory (resume:
         // existing frames are skipped). --to 0 = through the end.
-        pollster::block_on(film::run_film(width, height, dir, &out, film_from, film_to));
+        exit_on_err(pollster::block_on(film::run_film(width, height, dir, &out, film_from, film_to)));
         return;
     }
     if let Some(path) = &scene_file {
         // A scene file wins over --scene: the two are alternative
         // scene sources, and the file is the more specific request.
-        pollster::block_on(scenefile::run_scene_file(width, height, &out, path));
+        exit_on_err(pollster::block_on(scenefile::run_scene_file(width, height, &out, path)));
         return;
     }
     match scene.as_str() {
-        "m1" => pollster::block_on(run(width, height, &out)),
+        "m1" => exit_on_err(pollster::block_on(run(width, height, &out))),
         "ab1" => {
             let stage = match post_stage.as_str() {
                 "lighting" => 1,
@@ -276,10 +286,10 @@ fn main() {
                     ));
                 }
             };
-            pollster::block_on(ab1::run_ab1(width, height, &out, &caption, stage))
+            exit_on_err(pollster::block_on(ab1::run_ab1(width, height, &out, &caption, stage)))
         }
-        "dof-chart" => pollster::block_on(dof::run_dof(width, height, &out)),
-        "stroke-battery" => battery::run_battery(&out),
+        "dof-chart" => exit_on_err(pollster::block_on(dof::run_dof(width, height, &out))),
+        "stroke-battery" => exit_on_err(battery::run_battery(&out)),
         other => {
             cli_error(&format!(
                 "unknown scene: {other} (expected m1, ab1, dof-chart or stroke-battery)"
@@ -448,7 +458,7 @@ fn character_texture(size: u32) -> Vec<u8> {
     px
 }
 
-async fn run(width: u32, height: u32, out: &str) {
+async fn run(width: u32, height: u32, out: &str) -> errors::TaleResult<()> {
     let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
         backends: wgpu::Backends::VULKAN,
         ..Default::default()
@@ -859,8 +869,9 @@ async fn run(width: u32, height: u32, out: &str) {
     readback.unmap();
 
     let img = image::RgbaImage::from_raw(width, height, pixels).expect("pixel buffer size mismatch");
-    img.save(out).expect("failed to save PNG");
+    img.save(out).map_err(|e| errors::TaleError::image_io(out, e))?;
     println!("wrote {out} ({width}x{height})");
+    Ok(())
 }
 
 // Small helper so `make_uniform` above reads linearly: creates the buffer

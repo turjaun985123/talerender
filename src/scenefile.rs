@@ -1229,12 +1229,12 @@ fn tex_bgl(device: &wgpu::Device) -> wgpu::BindGroupLayout {
     })
 }
 
-pub async fn run_scene_file(width: u32, height: u32, out: &str, path: &str) {
-    let loaded = load(path).unwrap_or_else(|e| panic!("{e}"));
+pub async fn run_scene_file(width: u32, height: u32, out: &str, path: &str) -> crate::errors::TaleResult<()> {
+    let loaded = load(path).map_err(|e| crate::errors::TaleError::data_load(path, e))?;
     if loaded.bokeh.is_some() {
-        run_composer(width, height, out, &loaded).await;
+        run_composer(width, height, out, &loaded).await
     } else {
-        run_direct(width, height, out, &loaded).await;
+        run_direct(width, height, out, &loaded).await
     }
 }
 
@@ -1242,7 +1242,7 @@ pub async fn run_scene_file(width: u32, height: u32, out: &str, path: &str) {
 // Direct path (the ab1 pass structure)
 // ---------------------------------------------------------------------
 
-async fn run_direct(width: u32, height: u32, out: &str, scene: &Loaded) {
+async fn run_direct(width: u32, height: u32, out: &str, scene: &Loaded) -> crate::errors::TaleResult<()> {
     let (device, queue) = make_device("talerender scene-file device").await;
     println!(
         "scene: file — {} (format v{}, direct path, {} draws, {} textures)",
@@ -1533,8 +1533,9 @@ async fn run_direct(width: u32, height: u32, out: &str, scene: &Loaded) {
     readback.unmap();
 
     let img = image::RgbaImage::from_raw(width, height, pixels).expect("pixel buffer size mismatch");
-    img.save(out).expect("failed to save PNG");
+    img.save(out).map_err(|e| crate::errors::TaleError::image_io(out, e))?;
     println!("wrote {out} ({width}x{height})");
+    Ok(())
 }
 
 // ---------------------------------------------------------------------
@@ -1590,7 +1591,7 @@ fn draw_model(draw: &Draw) -> &Mat4 {
     }
 }
 
-async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded) {
+async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded) -> crate::errors::TaleResult<()> {
     let bokeh = scene.bokeh.as_ref().expect("composer path requires post.bokeh");
     let (device, queue) = make_device("talerender scene-file composer device").await;
     println!(
@@ -2237,8 +2238,10 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded) {
     }
     drop(mapped);
     out_buf.unmap();
-    image::save_buffer(out, &rgba, width, height, image::ColorType::Rgba8).expect("write PNG");
+    image::save_buffer(out, &rgba, width, height, image::ColorType::Rgba8)
+        .map_err(|e| crate::errors::TaleError::image_io(out, e))?;
     println!("wrote {out} ({width}x{height})");
+    Ok(())
 }
 
 // ---------------------------------------------------------------------

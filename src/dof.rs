@@ -153,7 +153,7 @@ fn make_target(
     })
 }
 
-pub async fn run_dof(width: u32, height: u32, out: &str) {
+pub async fn run_dof(width: u32, height: u32, out: &str) -> crate::errors::TaleResult<()> {
     let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
         backends: wgpu::Backends::VULKAN,
         ..Default::default()
@@ -552,7 +552,8 @@ pub async fn run_dof(width: u32, height: u32, out: &str) {
     }
     drop(mapped);
     out_buf.unmap();
-    image::save_buffer(out, &rgba, width, height, image::ColorType::Rgba8).expect("write PNG");
+    image::save_buffer(out, &rgba, width, height, image::ColorType::Rgba8)
+        .map_err(|e| crate::errors::TaleError::image_io(out, e))?;
 
     if dump_depth {
         dump_packed_depth(&device, &queue, &packed_depth, width, height, depth_format);
@@ -561,6 +562,7 @@ pub async fn run_dof(width: u32, height: u32, out: &str) {
     println!(
         "wrote {out} ({width}x{height}) — scene dof-chart: panels at 2..30 m, focus {FOCUS} m, aperture {APERTURE}, maxblur {MAXBLUR}; chain: HalfFloat MSAA-4x scene -> packed-depth prepass -> transcribed r170 bokeh -> Neutral+sRGB output"
     );
+    Ok(())
 }
 
 /// Debug: read the packed-depth target back and print the recovered
