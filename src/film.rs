@@ -191,6 +191,9 @@ pub(crate) fn walk_phase(dist: f64, stride: f64) -> f64 {
 pub(crate) fn walk_bob(phase: f64, amp: f64) -> f64 {
     amp * (1.0 - phase.sin().abs())
 }
+// Superseded by crate::charanim::blink_amount (W58 adoption);
+// retained for one release cycle as the motion.ts
+// blinkDirector reference transcription the perf tools cite.
 pub(crate) struct Blinker {
     pub seed: f64,
 }
@@ -1408,7 +1411,7 @@ fn char(f: &mut FrameSpec, inst: usize, pos: [f32; 3], st: FullState, tint: [f32
 // ---------------------------------------------------------------------
 
 fn blink_of(seed: f64, t: f64, beats: &[f64]) -> f32 {
-    blink_max(Blinker { seed }.at(t), blink_at(t, beats)) as f32
+    blink_max(crate::charanim::blink_amount(seed as u64, t) as f64, blink_at(t, beats)) as f32
 }
 
 fn s01(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
@@ -1455,19 +1458,19 @@ fn s02(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
     so.legs = legs;
     so.phase = ph as f32;
     so.bob = bob as f32;
-    so.blink = Blinker { seed: 3.0 }.at(t) as f32;
+    so.blink = crate::charanim::blink_amount(3, t);
     char(&mut f, SH_ONODA, [0.0, 0.0, z as f32], so, TINT_NOON, true);
     let mut sa = fs();
     sa.legs = legs;
     sa.phase = ph as f32;
     sa.bob = bob as f32;
-    sa.blink = Blinker { seed: 7.0 }.at(t) as f32;
+    sa.blink = crate::charanim::blink_amount(7, t);
     char(&mut f, SH_COMPA, [-1.4, 0.0, (z - 0.9) as f32], sa, TINT_NOON, false);
     let mut sb = fs();
     sb.legs = legs;
     sb.phase = ph as f32;
     sb.bob = bob as f32;
-    sb.blink = Blinker { seed: 11.0 }.at(t) as f32;
+    sb.blink = crate::charanim::blink_amount(11, t);
     char(&mut f, SH_COMPB, [1.4, 0.0, (z - 1.5) as f32], sb, TINT_NOON, false);
     { let (e, tg) = (f.eye, f.target); add_clouds(&mut f, &[([-24.0, 22.0, -85.0], 12.0), ([30.0, 27.0, -90.0], 15.0)], e, tg); }
     f
@@ -1486,7 +1489,7 @@ fn s03(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
     tani.mood = Mood::Determined;
     tani.arm_r = (pose_track(&[key(0.0, 68.0), keym(w_never - st0 - 0.13, 96.0, 0.3)], lt) as f32, -6.0);
     tani.talk = talk(t, lt < w_surr - st0 + 0.35) as f32;
-    tani.blink = Blinker { seed: 9.0 }.at(t) as f32;
+    tani.blink = crate::charanim::blink_amount(9, t);
     char(&mut f, SH_TANI, [-1.05, 0.0, 1.0], tani, TINT_NOON, false);
     let mut onoda = fs();
     onoda.mood = Mood::Determined;
@@ -1497,12 +1500,12 @@ fn s03(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
     let mut ca = fs();
     ca.arm_r = (5.0, 3.0);
     ca.arm_l = (5.0, 3.0);
-    ca.blink = Blinker { seed: 7.0 }.at(t) as f32;
+    ca.blink = crate::charanim::blink_amount(7, t);
     char(&mut f, SH_COMPA, [1.85, 0.0, -0.85], ca, TINT_NOON, false);
     let mut cb = fs();
     cb.arm_r = (5.0, 3.0);
     cb.arm_l = (5.0, 3.0);
-    cb.blink = Blinker { seed: 11.0 }.at(t) as f32;
+    cb.blink = crate::charanim::blink_amount(11, t);
     char(&mut f, SH_COMPB, [-1.9, 0.0, -0.65], cb, TINT_NOON, false);
     { let (e, tg) = (f.eye, f.target); add_clouds(&mut f, &[([-24.0, 22.0, -85.0], 12.0), ([30.0, 27.0, -90.0], 15.0)], e, tg); }
     f
@@ -1516,13 +1519,13 @@ fn s04(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
     let mut ca = fs();
     pose_celebrate(&mut ca);
     ca.bob = (-4.5 * (4.6 * t).sin().abs()) as f32;
-    ca.blink = Blinker { seed: 7.0 }.at(t) as f32;
+    ca.blink = crate::charanim::blink_amount(7, t);
     char(&mut f, COMPA, [-0.75, 0.0, -2.65], ca, TINT_NOON, false);
     let mut cb = fs();
     pose_celebrate(&mut cb);
     cb.mood = Mood::Happy;
     cb.bob = (-4.5 * (4.6 * t + 1.2).sin().abs()) as f32;
-    cb.blink = Blinker { seed: 11.0 }.at(t) as f32;
+    cb.blink = crate::charanim::blink_amount(11, t);
     char(&mut f, COMPB, [0.85, 0.0, -2.95], cb, TINT_NOON, false);
     let mut onoda = fs();
     onoda.mood = Mood::Suspicious;
@@ -1610,7 +1613,7 @@ fn s05b(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
     onoda.arm_r = (16.0, -6.0);
     onoda.look = [0.1, 0.3];
     onoda.head_turn = if t > w_trick { (settle(t, w_trick, 6.5, 3.2) * 0.38) as f32 } else { 0.04 };
-    onoda.blink = Blinker { seed: 3.0 }.at(t) as f32;
+    onoda.blink = crate::charanim::blink_amount(3, t);
     let idx = {
         char(&mut f, ONODA, [0.35, 0.0, -0.55], onoda, TINT_NOON, true);
         f.chars.len() - 1
@@ -1650,10 +1653,10 @@ fn s06(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
         st
     };
     let mut ca = mk_walk(wk * 5.96, Mood::Sad);
-    ca.blink = Blinker { seed: 7.0 }.at(t) as f32;
+    ca.blink = crate::charanim::blink_amount(7, t);
     char(&mut f, COMPA, [(-1.7 - 2.3 * wk) as f32, 0.0, (-5.0 - 5.5 * wk) as f32], ca, tint_fog(), false);
     let mut cb = mk_walk(wk * 6.1, Mood::Tired);
-    cb.blink = Blinker { seed: 11.0 }.at(t) as f32;
+    cb.blink = crate::charanim::blink_amount(11, t);
     char(&mut f, COMPB, [(0.2 - 2.8 * wk) as f32, 0.0, (-5.6 - 5.3 * wk) as f32], cb, tint_fog(), false);
     let oz = lerp(-1.48, -1.76, seg(lt, sit_at - 0.15, sit_at + 0.25));
     // shots.ts:419: POSES.mourn is spread in BOTH branches (lean 5,
@@ -1669,7 +1672,7 @@ fn s06(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
         onoda.sit_drop = Some((0.34 * 1024.0 / (1.75 / 0.96)) as f32);
         onoda.squash = (-0.04 * (seg(lt, sit_at, sit_at + 0.3) * std::f64::consts::PI).sin()) as f32;
     }
-    onoda.blink = Blinker { seed: 3.0 }.at(t) as f32;
+    onoda.blink = crate::charanim::blink_amount(3, t);
     char(&mut f, ONODA, [-0.5, 0.0, oz as f32], onoda, tint_fog(), true);
     { let (e, tg) = (f.eye, f.target); add_clouds(&mut f, &[([-28.0, 23.0, -85.0], 13.0), ([26.0, 29.0, -95.0], 16.0), ([58.0, 19.0, -75.0], 10.0)], e, tg); }
     f
@@ -1730,7 +1733,7 @@ fn s07(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
     onoda.arm_l = (12.0, 6.0);
     onoda.look = [0.2, -0.1];
     onoda.cam_pitch = cam_pitch_of([ox as f32, 0.0, oz as f32], f.eye);
-    onoda.blink = Blinker { seed: 3.0 }.at(t) as f32;
+    onoda.blink = crate::charanim::blink_amount(3, t);
     let idx = {
         char(&mut f, ONODA, [ox as f32, 0.0, oz as f32], onoda, tint_golden(), true);
         f.chars.len() - 1
@@ -1777,7 +1780,7 @@ fn s08(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
     onoda.mood = Mood::Determined;
     onoda.arm_r = (16.0, -6.0);
     onoda.arm_l = (10.0, 6.0);
-    onoda.blink = Blinker { seed: 3.0 }.at(t) as f32;
+    onoda.blink = crate::charanim::blink_amount(3, t);
     char(&mut f, ONODA, [lerp(-2.9, -1.1, wk_o) as f32, 0.0, lerp(-3.1, -1.5, wk_o) as f32], onoda, TINT_NOON, true);
     { let (e, tg) = (f.eye, f.target); add_clouds(&mut f, &[([-28.0, 23.0, -85.0], 13.0), ([26.0, 29.0, -95.0], 16.0), ([58.0, 19.0, -75.0], 10.0)], e, tg); }
     f
@@ -1797,12 +1800,12 @@ fn s08b(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
     onoda.arm_l = (12.0, 4.0);
     onoda.lean = 1.0;
     onoda.head_turn = if t > w_ref { (settle(t, w_ref, 5.5, 3.4) * 0.42) as f32 } else { 0.0 };
-    onoda.blink = Blinker { seed: 3.0 }.at(t) as f32;
+    onoda.blink = crate::charanim::blink_amount(3, t);
     char(&mut f, ONODA, [-0.95, 0.0, -1.5], onoda, TINT_NOON, true);
     let mut suz = fs();
     pose_listen(&mut suz);
     suz.mood = Mood::Worried;
-    suz.blink = Blinker { seed: 5.0 }.at(t) as f32;
+    suz.blink = crate::charanim::blink_amount(5, t);
     let sidx = {
         char(&mut f, SUZUKI, [1.55, 0.0, -0.8], suz, TINT_NOON, false);
         f.chars.len() - 1
@@ -1837,7 +1840,7 @@ fn s09(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
     } else {
         pose_listen(&mut suz);
     }
-    suz.blink = Blinker { seed: 5.0 }.at(t) as f32;
+    suz.blink = crate::charanim::blink_amount(5, t);
     let sidx = {
         char(&mut f, SUZUKI, [1.55, 0.0, -0.8], suz, TINT_NOON, false);
         f.chars.len() - 1
@@ -1932,7 +1935,7 @@ fn s11(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
         onoda.arm_r = (16.0, -6.0); // D15: source S11 walk-in arms
         onoda.arm_l = (10.0, 5.0);
         onoda.lean = 1.0;
-        onoda.blink = Blinker { seed: 3.0 }.at(t) as f32;
+        onoda.blink = crate::charanim::blink_amount(3, t);
         char(&mut f, ONODA, [lerp(-2.65, -0.15, wk) as f32, 0.0, lerp(-0.45, -0.95, wk) as f32], onoda, tint_dusk(), true);
     } else {
         let mut onoda = fs();
@@ -1945,7 +1948,7 @@ fn s11(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
         // D14: source lean is a STEP at dropT + 0.55, not the
         // poseTrack ease the port used.
         onoda.lean = if t >= drop_t + 0.55 { 0.0 } else { 1.0 };
-        onoda.blink = Blinker { seed: 3.0 }.at(t) as f32;
+        onoda.blink = crate::charanim::blink_amount(3, t);
         char(&mut f, ONODA2, [-0.15, 0.0, -0.95], onoda, tint_dusk(), false);
     }
     let mut tani = fs();
@@ -1956,7 +1959,7 @@ fn s11(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
     tani.head_tilt = (-0.8 * bow) as f32;
     tani.talk = talk(t, t > w_order - 0.1 && t < w_order + 0.75) as f32;
     tani.mood = Mood::Determined;
-    tani.blink = Blinker { seed: 9.0 }.at(t) as f32;
+    tani.blink = crate::charanim::blink_amount(9, t);
     char(&mut f, TANI, [1.3, 0.0, -1.3], tani, tint_dusk(), false);
     { let (e, tg) = (f.eye, f.target); add_clouds(&mut f, &[([-28.0, 23.0, -85.0], 13.0), ([26.0, 29.0, -95.0], 16.0), ([58.0, 19.0, -75.0], 10.0)], e, tg); }
     f
@@ -1993,7 +1996,7 @@ fn s12(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
     tani.arm_r = (10.0, 6.0);
     tani.arm_l = (10.0, 6.0);
     tani.head_tilt = -3.0;
-    tani.blink = Blinker { seed: 9.0 }.at(t) as f32;
+    tani.blink = crate::charanim::blink_amount(9, t);
     char(&mut f, TANI, [2.3, 0.0, -2.6], tani, tint_dusk(), false);
     { let (e, tg) = (f.eye, f.target); add_clouds(&mut f, &[([-28.0, 23.0, -85.0], 13.0), ([26.0, 29.0, -95.0], 16.0), ([58.0, 19.0, -75.0], 10.0)], e, tg); }
     f
