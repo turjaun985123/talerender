@@ -132,6 +132,15 @@ struct Loaded {
     bokeh: Option<Bokeh>,
     bloom: Option<BloomCfg>,
     grade: Option<GradeCfg>,
+    fog: Option<FogCfg>,
+}
+
+/// Format v2 `fog` block (spec §14): three.js scene.fog —
+/// { color (sRGB hex, stored linearised), near, far } in metres.
+struct FogCfg {
+    color: [f32; 3],
+    near: f32,
+    far: f32,
 }
 
 // ---------------------------------------------------------------------
@@ -1020,7 +1029,15 @@ fn load(path: &str) -> Result<Loaded, String> {
         return Err(err("scene.post", "post.bloom / post.grade require post.bokeh (format v1 enters the composer path via bokeh)"));
     }
 
-    Ok(Loaded { name, version, time, camera, clear, light_dir, ambient, lights, textures, draws, bokeh, bloom, grade })
+    let fog = match root.get("fog") {
+        Some(fg) => Some(FogCfg {
+            color: scene::hex_lin(str_field(fg, "color", "scene.fog")?),
+            near: f32_field(fg, "near", "scene.fog")?,
+            far: f32_field(fg, "far", "scene.fog")?,
+        }),
+        None => None,
+    };
+    Ok(Loaded { name, version, time, camera, clear, light_dir, ambient, lights, textures, draws, bokeh, bloom, grade, fog })
 }
 
 // ---------------------------------------------------------------------
@@ -1635,6 +1652,14 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded) {
     let final_tex = make_target(&device, width, height, wgpu::TextureFormat::Rgba8Unorm, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC, "composer-final");
     let scene_view = scene_resolved.create_view(&wgpu::TextureViewDescriptor::default());
     let packed_view = packed_depth.create_view(&wgpu::TextureViewDescriptor::default());
+    // Fog (format v2 `fog` block): the resolved HDR is fogged into
+    // this target after the depth prepass and bokeh reads IT
+    // instead of the raw scene target. Built only when the file
+    // declares fog — absent block, the path is bit-identical.
+    let fog_tex = scene.fog.as_ref().map(|_| {
+        make_target(&device, width, height, wgpu::TextureFormat::Rgba16Float, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING, "composer-fogged")
+    });
+    let fog_view = fog_tex.as_ref().map(|t| t.create_view(&wgpu::TextureViewDescriptor::default()));
     let bokeh_view = bokeh_out.create_view(&wgpu::TextureViewDescriptor::default());
 
     // ---- scene pipelines (HalfFloat target, MSAA 4x, no culling —
@@ -1776,6 +1801,60 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded) {
         multiview: None,
     });
 
+    // ---- fog pass (shader_fog.wgsl): three fog_fragment over
+    // the packed depth, linear, pre-bokeh ----
+    let fog_assets = scene.fog.as_ref().map(|fg| {
+        let module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("composer fog shader"),
+            source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("shader_fog.wgsl"))),
+        });
+        let bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
+            label: Some("composer fog layout"),
+            entries: &[
+                wgpu::BindGroupLayoutEntry { binding: 0, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Buffer { ty: wgpu::BufferBindingType::Uniform, has_dynamic_offset: false, min_binding_size: None }, count: None },
+                wgpu::BindGroupLayoutEntry { binding: 1, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Texture { sample_type: wgpu::TextureSampleType::Float { filterable: true }, view_dimension: wgpu::TextureViewDimension::D2, multisampled: false }, count: None },
+                wgpu::BindGroupLayoutEntry { binding: 2, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering), count: None },
+                wgpu::BindGroupLayoutEntry { binding: 3, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Texture { sample_type: wgpu::TextureSampleType::Float { filterable: true }, view_dimension: wgpu::TextureViewDimension::D2, multisampled: false }, count: None },
+                wgpu::BindGroupLayoutEntry { binding: 4, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering), count: None },
+            ],
+        });
+        let ub = make_buffer(&device, &queue, "fog uniforms", &pack_f32(&[
+            fg.color[0], fg.color[1], fg.color[2], fg.near,
+            fg.far, cam.near, cam.far, 0.0,
+        ]), wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST);
+        let bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
+            label: Some("composer fog bind group"),
+            layout: &bgl,
+            entries: &[
+                wgpu::BindGroupEntry { binding: 0, resource: ub.as_entire_binding() },
+                wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::TextureView(&scene_view) },
+                wgpu::BindGroupEntry { binding: 2, resource: wgpu::BindingResource::Sampler(&linear_sampler) },
+                wgpu::BindGroupEntry { binding: 3, resource: wgpu::BindingResource::TextureView(&packed_view) },
+                wgpu::BindGroupEntry { binding: 4, resource: wgpu::BindingResource::Sampler(&nearest_sampler) },
+            ],
+        });
+        let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("composer fog pipeline"),
+            layout: Some(&device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("composer fog pipeline layout"),
+                bind_group_layouts: &[&bgl],
+                push_constant_ranges: &[],
+            })),
+            vertex: wgpu::VertexState { module: &module, entry_point: "vs_main", buffers: &[], compilation_options: Default::default() },
+            fragment: Some(wgpu::FragmentState {
+                module: &module,
+                entry_point: "fs_main",
+                targets: &[Some(wgpu::ColorTargetState { format: wgpu::TextureFormat::Rgba16Float, blend: Some(wgpu::BlendState::REPLACE), write_mask: wgpu::ColorWrites::ALL })],
+                compilation_options: Default::default(),
+            }),
+            primitive: wgpu::PrimitiveState::default(),
+            depth_stencil: None,
+            multisample: wgpu::MultisampleState::default(),
+            multiview: None,
+        });
+        (pipeline, bg, ub)
+    });
+
     // ---- bokeh + output pipelines (dof.rs's, unchanged shaders) ----
     let bokeh_uniform_data: [f32; 8] = [bokeh.focus, aspect, bokeh.aperture, bokeh.maxblur, cam.near, cam.far, 0.0, 0.0];
     let bokeh_uniform_buf = make_buffer(&device, &queue, "bokeh uniforms", &pack_f32(&bokeh_uniform_data), wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST);
@@ -1798,7 +1877,7 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded) {
         layout: &bokeh_bgl,
         entries: &[
             wgpu::BindGroupEntry { binding: 0, resource: bokeh_uniform_buf.as_entire_binding() },
-            wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::TextureView(&scene_view) },
+            wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::TextureView(fog_view.as_ref().unwrap_or(&scene_view)) },
             wgpu::BindGroupEntry { binding: 2, resource: wgpu::BindingResource::Sampler(&linear_sampler) },
             wgpu::BindGroupEntry { binding: 3, resource: wgpu::BindingResource::TextureView(&packed_view) },
             wgpu::BindGroupEntry { binding: 4, resource: wgpu::BindingResource::Sampler(&nearest_sampler) },
@@ -2023,6 +2102,25 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded) {
             pass.set_index_buffer(p.ib.slice(..), wgpu::IndexFormat::Uint32);
             pass.draw_indexed(0..p.n, 0, 0..1);
         }
+    }
+    if let (Some((fog_pipeline, fog_bg, _fog_ub)), Some(fv)) = (&fog_assets, &fog_view) {
+        let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+            label: Some("composer fog pass"),
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                view: fv,
+                resolve_target: None,
+                ops: wgpu::Operations {
+                    load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
+                    store: wgpu::StoreOp::Store,
+                },
+            })],
+            depth_stencil_attachment: None,
+            timestamp_writes: None,
+            occlusion_query_set: None,
+        });
+        pass.set_pipeline(fog_pipeline);
+        pass.set_bind_group(0, fog_bg, &[]);
+        pass.draw(0..3, 0..1);
     }
     {
         let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
