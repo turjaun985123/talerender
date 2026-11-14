@@ -2089,9 +2089,10 @@ pub(crate) struct CharInfo {
 /// 2560x2816 RGBA (~29 MB), so an unbounded cache grows by
 /// gigabytes over a film (and starved this VM's renderers when a
 /// telemetry run held one). Painting is a pure function of the
-/// state key, so eviction can only cost time, never a pixel —
-/// determinism is unaffected. Cap 160 entries (~4.6 GB worst
-/// case, far above the live working set of any single shot).
+/// EXACT state key (see state_key), so eviction can only cost
+/// time, never a pixel — determinism is unaffected. Cap 160
+/// entries (~4.6 GB worst case, far above the live working set
+/// of any single shot).
 pub(crate) struct PaintCache {
     map: HashMap<String, std::rc::Rc<Painted>>,
     order: std::collections::VecDeque<String>,
@@ -2121,7 +2122,17 @@ impl PaintCache {
 }
 
 fn state_key(look: usize, st: &FullState, hold_l: Option<&str>, hold_r: Option<&str>) -> String {
-    let q = |v: f32| (v * 100.0).round() as i32;
+    // EXACT keys (f32 bit patterns). A quantised key (the original
+    // 2-dp rounding) is a determinism bug: the painter is continuous
+    // in these channels, so two states sharing a rounded key paint
+    // ~1-code-different cards, and which representative a frame
+    // receives then depends on invocation history — measured as a
+    // 72.34 dB divergence at a chunk boundary (frames 1195-1199,
+    // S08) across two independent render fleets. Exact keys make
+    // the cache a pure optimisation: hits only for identical
+    // states (walk-cycle phases recur bit-exactly, so the cache
+    // still pays).
+    let q = |v: f32| v.to_bits();
     format!(
         "{look}|{:?}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}",
         st.mood,
@@ -2136,8 +2147,8 @@ fn state_key(look: usize, st: &FullState, hold_l: Option<&str>, hold_r: Option<&
     )
 }
 
-/// Paint every character (cache by the Toon's own 2-dp-rounded
-/// repaint key), then append blob + card draws and held rifles to
+/// Paint every character (cache by the Toon's exact state key),
+/// then append blob + card draws and held rifles to
 /// the frame. Returns the per-frame dynamic textures (card images)
 /// in TexSrc::Dyn order.
 fn resolve_chars(
