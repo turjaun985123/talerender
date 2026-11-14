@@ -226,7 +226,26 @@ Binding constraints:
 | Lead | **Caption driver leg `5e90d7e`: telemetry re-run (exit-code binary, local CPU) — `FILM TELEMETRY: CHECK OK`, exit 0** (0 overflow / 0 continuity / **0 caption failures**; 241 samples; max on-screen caption width 928 px). Watch item closed: the tightest unsplit chunk ("Onoda still refused", driver ink 844 pre-regen per GATE2-W10 §2.3) passes the audit's floor in the regenerated set — zero chunks over the bar | **PHASE-1 HEADLINE GATE: GREEN** |
 | Lead | Errors step 1 + `mod errors` `ba88596`: CI (43618555381) + Tools CI (43618555345) | SUCCESS / SUCCESS |
 | B2 push | HEAD `1a62161` CI (43618849875) + Tools CI (43618849888) | SUCCESS / SUCCESS |
-| Lead | Adapter re-proof, real binary (`ba88596` build) vs 66-chunk fixture: binary prints the FAILED line (7 caption failures — the pre-rechunk verdict reproduced) and exits **1**; work-copy adapter relays `CHECK FAILED`, rc 1 | PASS (FAILED direction, new generation). OK direction + old-binary direction re-proofs run at the same head — rows appended when they land |
+| Lead | Adapter re-proof, real binary (`ba88596` build) vs 66-chunk fixture — **CORRECTED 2026-11-14 (late)**: the run behind this row's original text was in fact **SIGKILLed mid-telemetry** (OOM under VM contention; log ends at sample ~160); the adapter's rc 1 came from its no-verdict-line path ("binary killed by signal SIGKILL — treated as a FAILED gate"), NOT from an exit-1 verdict. A second defect compounded it: the fixture paired 66-chunk data with the 73-era strip set, and on that mixed fixture the OLD (v1.0.0) binary prints `CHECK OK` (max rendered width 844 px) — the genuine Wave-1 failure state needs matched data+assets. Fixture rebuilt from `git archive aa10b13 film/` (66 captions, 78 asset files); the corrected FAILED-direction proofs (new binary, then old binary) are being re-run sequentially and will be appended as their own rows. The OK direction stands as proven (row below) | **CORRECTION — exit-1 direction NOT proven by that run; re-proof in flight** |
+| Lead | Adapter re-proof, OK direction: real binary (`ba88596` build) on the 73-chunk fixture — binary prints `FILM TELEMETRY: CHECK OK`, adapter relays `CHECK OK`, **rc 0** | PASS |
+| Lead | PaintBudget byte-probes (render dispatches 43620063494 / 43620069128 defaults; 43620074415 / 43620079310 at `TALERENDER_PAINT_BUDGET_MB=100`): budget-forced eviction vs defaults — 795–814 **20/20** + 1195–1204 **10/10 byte-identical**; defaults vs the `f021991` set also 30/30 byte-identical | PASS (PERF §9 wiring discharged) |
+| Lead | Determinism re-dispatch at the wiring head (run 43620084786) | SUCCESS |
+| B3 push | HEAD `ff52b3a` Tools CI (43620525788) SUCCESS; its CI run was cancelled-by-concurrency by the lead's next push (superseded by green `df89ad6` — a cancellation, not a failure) | SUCCESS (gate PASS-WITH-NOTES) |
+| Lead | **gpucore migration site 1/5 dof** `df89ad6` CI (43620553455) SUCCESS; dof-chart dispatch 43620556727: chart sha256 `957d5573…` **byte-identical** to the M3 reference + golden pin | PASS, pin discharged |
+| Lead | **gpucore site 2/5 scenefile** (CI 43620746325 cancelled-by-concurrency, covered by the ab1 run); fx-textures dispatch 43620768148: `scene.png` sha256 `6ef2e39b…` **byte-identical** to the Wave-1 pinned hash | PASS, pin discharged |
+| Lead | **gpucore site 3/5 ab1** `9f497c7` CI (43620828640) SUCCESS; fresh ab1 dispatch 43621168728 (below) | SUCCESS |
+| Lead | **gpucore site 4/5 main** `dc0e555` CI SUCCESS (43621168728 list) | SUCCESS |
+| Lead | **gpucore site 5/5 film + F1** `aadc193` CI SUCCESS — migration COMPLETE (5/5); post-migration film probes (runs 43621922784 / 43621929764): 795–814 **20/20** + 1195–1204 **10/10 byte-identical** vs post-wiring defaults (= `f021991` bytes). main.rs's duplicate `request_adapter` deleted — audit finding B CLOSED | PASS, pin discharged |
+| Lead | ab1 fresh render at `9f497c7` (run 43621168728): sha256 `60c32c1a…`; vs Chrome **23.98 dB**, vs the `c00897d` candidate `a415ead8…` **53.50 dB**, candidate vs Chrome 23.96 dB (sampler validated against the recorded pair) — the basis for Golden Act 2 (below) | MEASURED |
+| Lead | Tools-ci wiring (W39) `630d82e`: validators verified locally pre-wiring (lights 6/6, assets 5/5+6/6, shaders 21/21) | SUCCESS at wiring head |
+| B4 push | HEAD `f6616aa` CI (43622186461) | SUCCESS (gate PASS-WITH-NOTES) |
+| Incident | **Tools CI RED at `630d82e`/`f6616aa`** (runs 43622033396, 43622186445): the new "Asset references" step existence-failed the film manifest's 3 absolute machine paths (`project`, `audio.projectPath`, derived `audio.file`) on runners — W28 F2 (manifest is machine-bound) colliding with a check-2/check-4 classification inconsistency. Lead fix `617ea4e`: absolute-rooted refs are classified by check 4 (report-only; `audio.file` now flagged when its `project` base is absolute) and skipped by check 2; relative missing refs still fail (missing fixture rc 1 re-verified); new fixture `scenes/fixtures/assets/abs-path` proves the rule (PASS 5/5, exactly 3 check-4 warnings); manifest portability count 17→18 disclosed (audio.file newly classified). Main CI on `617ea4e` SUCCESS; manifest/driver step green in CI from run 43622601972 | FIXED (lead) |
+| Incident 2 | Same run 43622601972 then failed one step later: fixture PNGs (`valid-scene/tex.png` etc.) missing on the runner — **`.gitignore` `*.png`** (negations only for `docs/**`, `film/assets/*`) had silently swallowed W28's fixture PNGs since Batch 3; every local reproduction passed because the files exist on this disk. Orchestrator fix `865c471`: negations for `scenes/fixtures/**` + `tools/**/fixtures/**`, 55 fixture PNGs committed. **Tools CI on `865c471` SUCCESS** — fixtures + WGSL steps green in CI for the first time | FIXED (orchestrator) |
+| B5 push | HEAD `d3def63` (gap-fix batch; gate PASS-WITH-NOTES, GATE2-W50) | CI green via `aa92cee` (below) |
+| Lead | **Errors step 2** `edb058f` — W35's pack as collapsed by the migration: only gpucore's 3 panic sites remained (`request_adapter`, `request_device`, `Readback::collect_padded`); all converted to `TaleResult` (GpuInit/DeviceRequest/BufferMap → exit 3), message in PERF's table preserved verbatim as the GpuInit source; callers converted across dof/scenefile/ab1/main/film (`Renderer::new`/`render` TaleResult ripples). Tools CI at `edb058f` SUCCESS; main CI FAILED at Build — two missing `Ok(...)` wraps at film.rs's construction tails (the delimiter class the orchestrator diagnosed from the log) | RED → fixed next row |
+| Lead | Ok-wrap fix `aa92cee` (`Ok(Renderer {…})`, `Ok(pixels)`) | **CI + Tools CI both SUCCESS** |
+| Lead | **GOLDEN ACT 1** (separate act): 14 film first-pins struck — 11 mids from the `f021991` candidates (planner-proven pixel-identical outside the split windows) + 3 in-window mids from the post-re-chunk render at `aadc193` (s07 f969 `7f8e1555`, s08 f1119 `3e8e703f`, s11 f1593 `7bed0da5`; runs 43621883744/43621890834/43621914911). Verify: 18 OK / 0 STALE / 0 MISSING; pin diff = exactly the 14 film lines, no milestone hash moved | **STRUCK** |
+| Lead | **GOLDEN ACT 2** (separate act): ab1-composer re-pinned `d7bd71a0…` → `60c32c1a…` — the FRESH head frame (run 43621168728), not the `c00897d` candidate, for the reason recorded in the repin packet's updated State line (candidate predates the exact-key fix chain; a pin describes current production output; A/B vs Chrome unchanged at 23.98 dB). Scope guard: pin diff = exactly the ab1 line; film frames moved aside during the act, restored; pack verifies 18/18 OK | **STRUCK** |
 | Lead | Module registration `2328e6f` CI (43619241590): 174 passed / **1 failed** — `gpucore::tests::strip_padding_drops_sentinels` (first-ever execution of W07's CI-pending tests; the test's payload pattern aliased its own 0xEE sentinel at x=238 — a seat test bug, not a module defect) | FAILURE → fixed `38930fa` |
 | Lead | PaintBudget + RunLog wiring `86f0c81` CI (43619649089) — suite 175/175 incl. the fixed gpucore test | SUCCESS |
 
@@ -258,8 +277,11 @@ Binding constraints:
 |---|---|---|---|---|---|
 | 1 | W01–W10 | Phase 1 + foundations | Gate PASS (GATE2-W10) | Exit codes ✓; caption driver leg ✓ CHECK OK; errors step 1 ✓; paintbudget/runlog/gpucore registered ✓ (wiring: paintbudget ✓, runlog ✓, gpucore per-site in progress); pins pending (post-re-render sequencing, GOLDEN-RESTAGE-W03 §4.3) | green at `86f0c81` |
 | 2 | W11–W20 | Phase 4/5 foundations: anim, charanim, rendergraph, format extensions, visual-regression CI, bench, atlas, bufferpool | Gate PASS (GATE2-W20) | All 5 modules registered ✓ (+65 tests in suite); adoption decisions recorded §9; format fold-ins + per-site adoptions in progress | green at `1a62161` |
-| 3 | W21–W30 | film/scene modularisation blueprints, lip-sync data, locomotion, camera moves, validators, planners, checkers | seats running at this record's writing | — | — |
-| 4–10 | — | per orchestrator boards | — | — | — |
+| 3 | W21–W30 | film/scene modularisation blueprints, lip-sync data, locomotion, camera moves, validators, planners, checkers | Gate PASS-WITH-NOTES (GATE2-W30) | Validators wired via W39 (below); split programmes noted SERIAL (film.rs then scene.rs); locomotion adoption held for A/B sign-off (Batch 6 W57 pack) | green at `ff52b3a` (tools) |
+| 4 | W31–W40 | §15 draft, anim staging tool, blink evidence, gpucore probes, errors step-2 pack, PC runbook, VR triage, doc-fix pack, tools-ci wiring, gate | Gate PASS-WITH-NOTES (GATE2-W40) | W39 wiring landed verbatim (`630d82e`); W35 pack consumed by errors step 2; W33 blink = Batch-6 W58 input; W31 draft = §15 fold-in source; W38 pack queued for application | green at `f6616aa` |
+| 5 | W41–W50 | Gap-fix batch (user order 23:24): F1 verify + F2 audit, F3 strictness checker, F4 knobs spec, F5 sheet tool, F6 cues design, v1.0.1 pack, exporter spec, selftest leg, traceability, gate | Gate PASS-WITH-NOTES (GATE2-W50) | F1 verified landed (`aadc193`); F2/F3/F4 dispositions in §10; v1.0.1 NOT releasable at snapshot (procedure ready, user confirms at close) | green via `aa92cee` |
+| 6 | W51–W60 | §15 conformance checker, s12 bake pack, F2 migration staging pack, knobs patch pack + gate, tools-ci pack 2, VRAM telemetry design, locomotion A/B pack, blink patch pack, lipsync evaluation, gate | running at this fold-in | Lead landings queued: tools-ci pack 2 (W55), knobs (W54 + §10 ruling), F2 staging (W53), blink (W58), §15 fold-in with the W51 checker | — |
+| 7–10 | — | per orchestrator boards | — | — | — |
 
 ## 9. Lead decisions (Batch-2 adoption, recorded 2026-11-14)
 
@@ -297,5 +319,71 @@ Binding constraints:
    duration on the clip, wrap on the instance (`clipTime`),
    bridged mechanically by the loader; anim's per-track
    duration/wrap remains the evaluator's internal shape.
+
+## 10. Gap-fix packet (user order 2026-11-14 23:24) — dispositions
+
+Stale claims in the rev-2 analysis are NOT re-fixed (source in
+VCS, scene-format.md exists, telemetry exits 1/3 since
+`aa10b13`, CLI panic-free exit 2 since `d7bebdd`, errors
+mid-flight) — W38's doc pack + the v1.0.1 release close the
+stale-binary side. True gaps:
+
+- **F1 — LANDED** (`aadc193`): `load_film_data` accepts
+  `film.json` as the generic entry, `onoda.json` fallback;
+  `--help` agrees with the loader (also closes W28 F4; W28 F3's
+  `--caption` CWD-relative default is documented in `--help`).
+  W41 verified the landing in Batch 5.
+- **F2 — AUDITED (W41), landing scoped:** of 13 film-driver
+  loads, only caption strips are data-referenced; plates /
+  calendars / sign load unconditionally and two loads have
+  silent fallbacks. The Batch-6 W53 migration staging pack
+  (proposal, `film-migration/`) + W41's should-be governors
+  govern the src landing; film.rs's transcribed staging is NOT
+  generalised blindly (packet instruction).
+- **F3 — CHECKER LANDED (W42), policy = Option A:** real data
+  carries 196 unknown-field occurrences in 15 paths / 3
+  classes. Recommendation (lead concurs with W42 + GATE2-W50):
+  report-only tools-ci ratchet against the 196 baseline;
+  hard errors deferred to a format v3 decision (user-visible
+  at wave close). Dispositions: F3-a — 174 occurrences are
+  dead provenance written by `gen_film_data.py` (strip at the
+  generator; data-only change, gated on telemetry CHECK OK);
+  F3-b — 19 prose `note` fields + s10 `motifLaw`: **lead
+  ruling: CITE, don't strip** (they are the staging's
+  documentation; the checker learns them as known-optional);
+  F3-c — bookshop `nodes[].materials` is a shadow format
+  (sharpest): resolve at the §15 fold-in — either the loader
+  consumes it or the data stops carrying it, never both.
+- **F4 — SPEC LANDED (W43), implementation via Batch-6 W54
+  pack + `knobs_gate.py`.** Laws: defaults byte-identical
+  (the gate proves it); knobs are draft/preview only, finals
+  stay full quality; draft output is TAGGED as draft. **Gate
+  conflict (3) — lead ruling:** W43's caption-scale behaviour
+  vs the strips contract — captions are pre-rendered strips
+  composited post-grade (standing contract); at draft
+  resolutions the strip scales WITH the frame (it is part of
+  the composed image, not an overlay re-render), so no
+  re-rendering of strips is introduced; the knob spec's
+  scale-with-frame reading stands.
+- **F5 — TOOL LANDED (W44):** native sheet tool (seat tool,
+  tests 10/10, honest no-audit scope). A `--sheet` mode in the
+  binary is NOT duplicated on top of it; the adapter covers
+  review at the frame(t) seam.
+- **F6 — DESIGN ONLY (W45)** as scoped: emitted-entry shape
+  marked PROPOSED; the skill-side Q1 stays open for the user.
+
+**First dispatches at `aa92cee` (orchestrator):** bench
+43623743480 + visual-regression 43623748951 — verdicts to be
+appended to §7 when checked (VR read with W37's triage:
+AS-EXPECTED pattern; s28 red by design — its pin is a
+historical artifact and is NOT re-pinned).
+
+**Errors step 2 gate dispatches (lead, at the post-Act-2
+head):** dof-chart 43624002645, fx scene-file 43624007505,
+film probe 795–815 43624011865, determinism 43624016907 —
+verdicts appended when checked; plus the no-adapter failure
+proof (CI binary + `VK_ICD_FILENAMES` pointed nowhere →
+expect `error: GPU initialisation failed …` + exit 3, the one
+behaviour step 2 exists to change; W35 P6 gate).
 
 *(Filled per batch as the orchestrator hands over.)*
