@@ -27,6 +27,7 @@ mod math;
 mod scene;
 mod scenefile;
 mod telemetry;
+mod film;
 mod toonfull;
 
 use math::Mat4;
@@ -47,6 +48,9 @@ fn main() {
     let mut telemetry_mode: Option<String> = None;
     let mut captions_path: Option<String> = None;
     let mut cutouts_out: Option<String> = None;
+    let mut film_dir: Option<String> = None;
+    let mut film_from: u32 = 0;
+    let mut film_to: u32 = 0;
     let mut i = 1;
     while i < args.len() {
         match args[i].as_str() {
@@ -90,6 +94,18 @@ fn main() {
                 i += 1;
                 cutouts_out = Some(args.get(i).expect("missing value for --cutouts-out").clone());
             }
+            "--film" => {
+                i += 1;
+                film_dir = Some(args.get(i).expect("missing value for --film").clone());
+            }
+            "--from" => {
+                i += 1;
+                film_from = args.get(i).and_then(|v| v.parse().ok()).expect("bad --from");
+            }
+            "--to" => {
+                i += 1;
+                film_to = args.get(i).and_then(|v| v.parse().ok()).expect("bad --to");
+            }
             other => {
                 eprintln!("unknown argument: {other}");
                 std::process::exit(2);
@@ -106,6 +122,13 @@ fn main() {
             captions_path.as_deref(),
             cutouts_out.as_deref(),
         ));
+    }
+    if let Some(dir) = &film_dir {
+        // Production integration: the complete film, frame range
+        // [--from, --to) into the --out frames directory (resume:
+        // existing frames are skipped). --to 0 = through the end.
+        pollster::block_on(film::run_film(width, height, dir, &out, film_from, film_to));
+        return;
     }
     if let Some(path) = &scene_file {
         // A scene file wins over --scene: the two are alternative

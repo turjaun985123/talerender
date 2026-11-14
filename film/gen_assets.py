@@ -193,6 +193,26 @@ def calendar_plate(year: str):
 
 for y in ["1945", "1955", "1965", "1974"]:
     calendar_plate(y).save(ASSETS / f"calendar-{y}.png")
+
+# ------------------------------------------------------------------
+# BK sign board texture (world.ts signBoard): 200 px per unit,
+# 2.2x0.4 units -> 440x80 px; bg #3A2A2A, border fg #F2E6CF
+# inset 10 lw 6, 'TANIGUCHI BOOKS' in 700 Caladea fitted to 86%
+# width (the canvas measure loop, with PIL metrics).
+# ------------------------------------------------------------------
+CALADEA = str(PROJ / "fonts/Caladea-Bold.ttf")
+img = Image.new("RGBA", (440, 80), (58, 42, 42, 255))
+d = ImageDraw.Draw(img)
+d.rectangle([10, 10, 430, 70], outline=(242, 230, 207, 255), width=6)
+fs = 40
+while fs > 8:
+    fnt = ImageFont.truetype(CALADEA, fs)
+    if d.textlength("TANIGUCHI BOOKS", font=fnt) <= 440 * 0.86:
+        break
+    fs -= 2
+d.text((220, 43), "TANIGUCHI BOOKS", font=fnt, fill=(242, 230, 207, 255), anchor="mm")
+img.save(ASSETS / "sign.png")
+print(f"sign texture: font size {fs}")
 img = Image.new("RGBA", (720, 880), (0, 0, 0, 0))
 d = ImageDraw.Draw(img)
 d.rounded_rectangle([40, 40, 680, 840], radius=28, fill=(30, 25, 18, 255))
