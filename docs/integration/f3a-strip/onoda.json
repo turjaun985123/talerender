@@ -1,0 +1,595 @@
+{
+ "duration": 60.357,
+ "fps": 30,
+ "frames": 1811,
+ "lines": [
+  {
+   "start": 0.3,
+   "end": 5.787
+  },
+  {
+   "start": 5.967,
+   "end": 12.941
+  },
+  {
+   "start": 13.121,
+   "end": 15.83
+  },
+  {
+   "start": 16.01,
+   "end": 21.264
+  },
+  {
+   "start": 21.444,
+   "end": 26.009
+  },
+  {
+   "start": 26.189,
+   "end": 29.201
+  },
+  {
+   "start": 29.381,
+   "end": 34.089
+  },
+  {
+   "start": 34.269,
+   "end": 41.612
+  },
+  {
+   "start": 41.792,
+   "end": 45.245
+  },
+  {
+   "start": 45.425,
+   "end": 50.528
+  },
+  {
+   "start": 50.708,
+   "end": 55.4
+  },
+  {
+   "start": 55.58,
+   "end": 58.977
+  }
+ ],
+ "anchors": {
+  "years0": 4.2,
+  "never2": 14.78,
+  "surrender2": 15.02,
+  "message3": 20.7,
+  "thought4": 24.68,
+  "trick4": 25.6,
+  "decades6": 30.64,
+  "coconuts6": 32.4,
+  "found7": 38.48,
+  "refused7": 40.46,
+  "only8": 42.52,
+  "commander8": 44.04,
+  "bookseller9": 48.16,
+  "flew9": 49.22,
+  "order10": 51.78,
+  "surrendered10": 53.02,
+  "loyal11": 58.12
+ },
+ "captions": [
+  {
+   "s": 0.27,
+   "e": 0.43000000000000005,
+   "text": "This",
+   "fit": 1.0,
+   "strip": "cap_000.png"
+  },
+  {
+   "s": 0.43000000000000005,
+   "e": 0.9299999999999999,
+   "text": "soldier",
+   "fit": 1.0,
+   "strip": "cap_001.png"
+  },
+  {
+   "s": 0.9299999999999999,
+   "e": 1.3499999999999999,
+   "text": "kept",
+   "fit": 1.0,
+   "strip": "cap_002.png"
+  },
+  {
+   "s": 1.3499999999999999,
+   "e": 1.83,
+   "text": "fighting",
+   "fit": 1.0,
+   "strip": "cap_003.png"
+  },
+  {
+   "s": 1.83,
+   "e": 2.1500000000000004,
+   "text": "World",
+   "fit": 1.0,
+   "strip": "cap_004.png"
+  },
+  {
+   "s": 2.1500000000000004,
+   "e": 2.77,
+   "text": "War",
+   "fit": 1.0,
+   "strip": "cap_005.png"
+  },
+  {
+   "s": 2.77,
+   "e": 3.1300000000000003,
+   "text": "II",
+   "fit": 1.0,
+   "strip": "cap_006.png"
+  },
+  {
+   "s": 3.1300000000000003,
+   "e": 3.6500000000000004,
+   "text": "for",
+   "fit": 1.0,
+   "strip": "cap_007.png"
+  },
+  {
+   "s": 3.6500000000000004,
+   "e": 4.17,
+   "text": "29",
+   "fit": 1.0,
+   "strip": "cap_008.png"
+  },
+  {
+   "s": 4.17,
+   "e": 4.67,
+   "text": "years",
+   "fit": 1.0,
+   "strip": "cap_009.png"
+  },
+  {
+   "s": 4.67,
+   "e": 5.13,
+   "text": "after",
+   "fit": 1.0,
+   "strip": "cap_010.png"
+  },
+  {
+   "s": 5.13,
+   "e": 5.29,
+   "text": "it",
+   "fit": 1.0,
+   "strip": "cap_011.png"
+  },
+  {
+   "s": 5.29,
+   "e": 5.936999999999999,
+   "text": "ended.",
+   "fit": 1.0,
+   "strip": "cap_012.png"
+  },
+  {
+   "s": 5.936999999999999,
+   "e": 6.6899999999999995,
+   "text": "Hiroo Onoda",
+   "fit": 1.0,
+   "strip": "cap_013.png"
+  },
+  {
+   "s": 6.6899999999999995,
+   "e": 7.87,
+   "text": "was a Japanese",
+   "fit": 1.0,
+   "strip": "cap_014.png"
+  },
+  {
+   "s": 7.87,
+   "e": 8.530000000000001,
+   "text": "soldier",
+   "fit": 1.0,
+   "strip": "cap_015.png"
+  },
+  {
+   "s": 8.530000000000001,
+   "e": 9.31,
+   "text": "sent to",
+   "fit": 1.0,
+   "strip": "cap_016.png"
+  },
+  {
+   "s": 9.31,
+   "e": 10.39,
+   "text": "a Philippine island",
+   "fit": 1.0,
+   "strip": "cap_017.png"
+  },
+  {
+   "s": 10.39,
+   "e": 13.15,
+   "text": "in 1944.",
+   "fit": 1.0,
+   "strip": "cap_018.png"
+  },
+  {
+   "s": 13.15,
+   "e": 13.610000000000001,
+   "text": "His orders",
+   "fit": 1.0,
+   "strip": "cap_019.png"
+  },
+  {
+   "s": 13.610000000000001,
+   "e": 14.75,
+   "text": "were simple:",
+   "fit": 1.0,
+   "strip": "cap_020.png"
+  },
+  {
+   "s": 14.75,
+   "e": 16.009999999999998,
+   "text": "never surrender.",
+   "fit": 1.0,
+   "strip": "cap_021.png"
+  },
+  {
+   "s": 16.009999999999998,
+   "e": 17.25,
+   "text": "In 1945,",
+   "fit": 1.0,
+   "strip": "cap_022.png"
+  },
+  {
+   "s": 17.25,
+   "e": 19.509999999999998,
+   "text": "the war ended.",
+   "fit": 1.0,
+   "strip": "cap_023.png"
+  },
+  {
+   "s": 19.509999999999998,
+   "e": 19.93,
+   "text": "But Onoda",
+   "fit": 1.0,
+   "strip": "cap_024.png"
+  },
+  {
+   "s": 19.93,
+   "e": 20.47,
+   "text": "never got",
+   "fit": 1.0,
+   "strip": "cap_025.png"
+  },
+  {
+   "s": 20.47,
+   "e": 21.61,
+   "text": "the message.",
+   "fit": 1.0,
+   "strip": "cap_026.png"
+  },
+  {
+   "s": 21.61,
+   "e": 22.09,
+   "text": "Planes dropped",
+   "fit": 1.0,
+   "strip": "cap_027.png"
+  },
+  {
+   "s": 22.09,
+   "e": 22.61,
+   "text": "leaflets",
+   "fit": 1.0,
+   "strip": "cap_028.png"
+  },
+  {
+   "s": 22.61,
+   "e": 23.59,
+   "text": "saying the war",
+   "fit": 1.0,
+   "strip": "cap_029.png"
+  },
+  {
+   "s": 23.59,
+   "e": 24.49,
+   "text": "was over.",
+   "fit": 1.0,
+   "strip": "cap_030.png"
+  },
+  {
+   "s": 24.49,
+   "e": 24.97,
+   "text": "He thought it",
+   "fit": 1.0,
+   "strip": "cap_031.png"
+  },
+  {
+   "s": 24.97,
+   "e": 25.57,
+   "text": "was an enemy",
+   "fit": 1.0,
+   "strip": "cap_032.png"
+  },
+  {
+   "s": 25.57,
+   "e": 26.189999999999998,
+   "text": "trick.",
+   "fit": 1.0,
+   "strip": "cap_033.png"
+  },
+  {
+   "s": 26.189999999999998,
+   "e": 26.669999999999998,
+   "text": "His friends",
+   "fit": 1.0,
+   "strip": "cap_034.png"
+  },
+  {
+   "s": 26.669999999999998,
+   "e": 27.189999999999998,
+   "text": "gave up",
+   "fit": 1.0,
+   "strip": "cap_035.png"
+  },
+  {
+   "s": 27.189999999999998,
+   "e": 27.79,
+   "text": "or died,",
+   "fit": 1.0,
+   "strip": "cap_036.png"
+  },
+  {
+   "s": 27.79,
+   "e": 28.49,
+   "text": "until he",
+   "fit": 1.0,
+   "strip": "cap_037.png"
+  },
+  {
+   "s": 28.49,
+   "e": 29.351,
+   "text": "was alone.",
+   "fit": 1.0,
+   "strip": "cap_038.png"
+  },
+  {
+   "s": 29.351,
+   "e": 29.709999999999997,
+   "text": "He lived",
+   "fit": 1.0,
+   "strip": "cap_039.png"
+  },
+  {
+   "s": 29.709999999999997,
+   "e": 30.29,
+   "text": "in the jungle",
+   "fit": 1.0,
+   "strip": "cap_040.png"
+  },
+  {
+   "s": 30.29,
+   "e": 31.549999999999997,
+   "text": "for decades,",
+   "fit": 1.0,
+   "strip": "cap_041.png"
+  },
+  {
+   "s": 31.549999999999997,
+   "e": 32.01,
+   "text": "surviving",
+   "fit": 1.0,
+   "strip": "cap_042.png"
+  },
+  {
+   "s": 32.01,
+   "e": 32.99,
+   "text": "on coconuts",
+   "fit": 1.0,
+   "strip": "cap_043.png"
+  },
+  {
+   "s": 32.99,
+   "e": 34.269999999999996,
+   "text": "and bananas.",
+   "fit": 1.0,
+   "strip": "cap_044.png"
+  },
+  {
+   "s": 34.269999999999996,
+   "e": 35.53,
+   "text": "In 1974,",
+   "fit": 1.0,
+   "strip": "cap_045.png"
+  },
+  {
+   "s": 35.53,
+   "e": 37.129999999999995,
+   "text": "a young traveler",
+   "fit": 1.0,
+   "strip": "cap_046.png"
+  },
+  {
+   "s": 37.129999999999995,
+   "e": 38.07,
+   "text": "named Norio",
+   "fit": 1.0,
+   "strip": "cap_047.png"
+  },
+  {
+   "s": 38.07,
+   "e": 38.449999999999996,
+   "text": "Suzuki",
+   "fit": 1.0,
+   "strip": "cap_048.png"
+  },
+  {
+   "s": 38.449999999999996,
+   "e": 39.949999999999996,
+   "text": "found him.",
+   "fit": 1.0,
+   "strip": "cap_049.png"
+  },
+  {
+   "s": 39.949999999999996,
+   "e": 40.83,
+   "text": "Onoda still refused",
+   "fit": 1.0,
+   "strip": "cap_050.png"
+  },
+  {
+   "s": 40.83,
+   "e": 41.762,
+   "text": "to leave.",
+   "fit": 1.0,
+   "strip": "cap_051.png"
+  },
+  {
+   "s": 41.762,
+   "e": 42.17,
+   "text": "He said",
+   "fit": 1.0,
+   "strip": "cap_052.png"
+  },
+  {
+   "s": 42.17,
+   "e": 43.129999999999995,
+   "text": "he would only stop",
+   "fit": 1.0,
+   "strip": "cap_053.png"
+  },
+  {
+   "s": 43.129999999999995,
+   "e": 44.01,
+   "text": "if his own",
+   "fit": 1.0,
+   "strip": "cap_054.png"
+  },
+  {
+   "s": 44.01,
+   "e": 44.43,
+   "text": "commander",
+   "fit": 1.0,
+   "strip": "cap_055.png"
+  },
+  {
+   "s": 44.43,
+   "e": 45.394999999999996,
+   "text": "ordered it.",
+   "fit": 1.0,
+   "strip": "cap_056.png"
+  },
+  {
+   "s": 45.394999999999996,
+   "e": 46.39,
+   "text": "So Japan found",
+   "fit": 1.0,
+   "strip": "cap_057.png"
+  },
+  {
+   "s": 46.39,
+   "e": 46.93,
+   "text": "his old",
+   "fit": 1.0,
+   "strip": "cap_058.png"
+  },
+  {
+   "s": 46.93,
+   "e": 47.769999999999996,
+   "text": "commander,",
+   "fit": 1.0,
+   "strip": "cap_059.png"
+  },
+  {
+   "s": 47.769999999999996,
+   "e": 48.93,
+   "text": "now a bookseller,",
+   "fit": 1.0,
+   "strip": "cap_060.png"
+  },
+  {
+   "s": 48.93,
+   "e": 49.629999999999995,
+   "text": "and flew him",
+   "fit": 1.0,
+   "strip": "cap_061.png"
+  },
+  {
+   "s": 49.629999999999995,
+   "e": 50.69,
+   "text": "to the island.",
+   "fit": 1.0,
+   "strip": "cap_062.png"
+  },
+  {
+   "s": 50.69,
+   "e": 51.19,
+   "text": "He finally",
+   "fit": 1.0,
+   "strip": "cap_063.png"
+  },
+  {
+   "s": 51.19,
+   "e": 52.07,
+   "text": "gave the order,",
+   "fit": 1.0,
+   "strip": "cap_064.png"
+  },
+  {
+   "s": 52.07,
+   "e": 52.99,
+   "text": "and Onoda",
+   "fit": 1.0,
+   "strip": "cap_065.png"
+  },
+  {
+   "s": 52.99,
+   "e": 53.57,
+   "text": "surrendered",
+   "fit": 1.0,
+   "strip": "cap_066.png"
+  },
+  {
+   "s": 53.57,
+   "e": 55.55,
+   "text": "after 29 years.",
+   "fit": 1.0,
+   "strip": "cap_067.png"
+  },
+  {
+   "s": 55.55,
+   "e": 56.21,
+   "text": "He wasn't hiding",
+   "fit": 1.0,
+   "strip": "cap_068.png"
+  },
+  {
+   "s": 56.21,
+   "e": 57.15,
+   "text": "from the war.",
+   "fit": 1.0,
+   "strip": "cap_069.png"
+  },
+  {
+   "s": 57.15,
+   "e": 57.73,
+   "text": "He was just",
+   "fit": 1.0,
+   "strip": "cap_070.png"
+  },
+  {
+   "s": 57.73,
+   "e": 58.35,
+   "text": "still loyal",
+   "fit": 1.0,
+   "strip": "cap_071.png"
+  },
+  {
+   "s": 58.35,
+   "e": 60.357,
+   "text": "to it.",
+   "fit": 1.0,
+   "strip": "cap_072.png"
+  }
+ ],
+ "calendarYears": [
+  "1945",
+  "1955",
+  "1965",
+  "1974"
+ ],
+ "calendarDark": "calendar-dark.png",
+ "sign": "sign.png"
+}

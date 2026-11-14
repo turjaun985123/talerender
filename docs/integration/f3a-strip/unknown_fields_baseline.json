@@ -1,0 +1,98 @@
+{
+ "_about": "Ratchet baseline for tools/format/check_unknown_fields.py, consumed by the tools-ci strictness step specified in docs/integration/TOOLSCI2-W55.md. Lowered 196 -> 24 by the F3-a strip landing (docs/integration/F3A-STRIP-W74.md): the six truly-dead paths (root film/project; lines[] i/text; captions[] line/width) were removed from film/onoda.json and from film/gen_film_data.py's emissions in the same commit. Root fps/frames were re-classed F3-a-kept, not stripped: they are consumed by Python tooling (hard reads in tools/perf/blink_cost.py and tools/perf/blink_census.py; defaulted/fallback reads in tools/lipsync/evaluate_track.py and tools/film/rerender_plan.py) and stay baselined until the checker's film-data known set learns them (a checker change, not a data change). The ratchet FAILS if any path not listed here appears, or any listed path's occurrence count grows. Shrinkage passes; the step prints the new register in this file's shape so the baseline can be lowered in the same PR that fixes the data. Raise a count only deliberately, in the same PR that lands the new dialect, with the STRICTNESS-W42.md register updated to cite it.",
+ "checker": "tools/format/check_unknown_fields.py",
+ "classes": {
+  "F3-a": "Driver-data dead provenance, STRIPPED in the W74 landing: root film/project, lines[] i/text, captions[] line/width in film/onoda.json (172 occurrences, 6 paths) \u2014 written by film/gen_film_data.py, read by nobody (verified field-by-field in F3A-STRIP-W74.md). The generator no longer emits them.",
+  "F3-a-kept": "Root fps/frames in film/onoda.json: checker-unknown (the checker's film-data set mirrors the Rust loader, which hardcodes 30 fps) but tool-consumed \u2014 tools/perf/blink_cost.py:351,359 and tools/perf/blink_census.py:169,179 read them unconditionally; tools/lipsync/evaluate_track.py:274,277 and tools/film/rerender_plan.py:237-251 read them as defaults/fallbacks. NOT strippable; disposition is a checker known-set fix.",
+  "F3-b": "Uncited prose `note` fields plus s10's `motifLaw`: deliberate-looking records with no citing document, so the register's rule keeps them findings (STRICTNESS-W42.md section 6, F3-b). 19 occurrences, 5 paths.",
+  "F3-c": "Bookshop dialect residue: lights.key.near (same class as sets README B7's cited radius/mapSize but unnamed there) and nodes[].materials, whose nodes carry their ONLY material data in a key no loader reads (STRICTNESS-W42.md section 6, F3-c). 3 occurrences, 2 paths."
+ },
+ "corpus": [
+  "scenes/*.scene.json",
+  "scenes/film/*.scene.json",
+  "scenes/film/film.json",
+  "scenes/film/s07-calendar.json",
+  "scenes/sets/*.scene.json",
+  "scenes/atmospheres.json",
+  "film/onoda.json",
+  "film/assets/plates.json"
+ ],
+ "distinctPaths": 9,
+ "paths": [
+  {
+   "class": "F3-a-kept",
+   "context": "film-root",
+   "file": "film/onoda.json",
+   "key": "fps",
+   "occurrences": 1,
+   "pattern": "$"
+  },
+  {
+   "class": "F3-a-kept",
+   "context": "film-root",
+   "file": "film/onoda.json",
+   "key": "frames",
+   "occurrences": 1,
+   "pattern": "$"
+  },
+  {
+   "class": "F3-b",
+   "context": "texture",
+   "file": "scenes/film/s10.scene.json",
+   "key": "motifLaw",
+   "occurrences": 1,
+   "pattern": "$.textures[]"
+  },
+  {
+   "class": "F3-b",
+   "context": "texture",
+   "file": "scenes/film/s10.scene.json",
+   "key": "note",
+   "occurrences": 2,
+   "pattern": "$.textures[]"
+  },
+  {
+   "class": "F3-b",
+   "context": "node",
+   "file": "scenes/film/s11.scene.json",
+   "key": "note",
+   "occurrences": 1,
+   "pattern": "$.nodes[]"
+  },
+  {
+   "class": "F3-b",
+   "context": "node",
+   "file": "scenes/film/s12.scene.json",
+   "key": "note",
+   "occurrences": 1,
+   "pattern": "$.nodes[]"
+  },
+  {
+   "class": "F3-b",
+   "context": "texture",
+   "file": "scenes/sets/bookshop.scene.json",
+   "key": "note",
+   "occurrences": 14,
+   "pattern": "$.textures[]"
+  },
+  {
+   "class": "F3-c",
+   "context": "light-key",
+   "file": "scenes/sets/bookshop.scene.json",
+   "key": "near",
+   "occurrences": 1,
+   "pattern": "$.lights.key"
+  },
+  {
+   "class": "F3-c",
+   "context": "node",
+   "file": "scenes/sets/bookshop.scene.json",
+   "key": "materials",
+   "occurrences": 2,
+   "pattern": "$.nodes[]"
+  }
+ ],
+ "source": "docs/integration/STRICTNESS-W42.md section 6 (verbatim findings), section 7 (Option A: report-only + ratchet); lowering + F3-a-kept re-class per docs/integration/F3A-STRIP-W74.md",
+ "toleratedOccurrences": 7043,
+ "totalOccurrences": 24
+}

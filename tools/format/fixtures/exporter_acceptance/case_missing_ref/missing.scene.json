@@ -1,0 +1,4 @@
+{
+  "format": "talerender-scene",
+  "note": "Synthetic fixture for exporter_acceptance.py --self-test. Never rendered by a real binary in the self-test; the stub binary copies the planted frame beside this file."
+}
