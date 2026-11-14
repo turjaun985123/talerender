@@ -276,3 +276,23 @@ word-boundary split of all seven chunks measured; word timings —
 project `data/words.json`; placement and fit rules — project
 `src/core/captions.ts`:7,51–53 and src/film.rs:2014,3401–3467; Chrome census
 parity — docs/integration/WAVE-RECORD.md:123. Nothing was modified.*
+
+---
+
+## RULING — lead/integrator, 2026-11-14: **ACCEPT WITH WAIVER** (Option B)
+
+Recorded by the orchestrator from the lead's production-integration
+final report (film at f021991). The 7 over-floor chunks are accepted
+as shipped. Rationale, in the lead's words: the chunks "exceed the
+850 px authoring bar in the Chrome original too (worst chunk
+measured at 953 px ink in Chrome's own frame, fit-capped from
+~1050 natural; native PIL widths agree within ~1%). They are the
+project's auto-chunked captions reproduced faithfully; re-chunking
+would desync the native film from its fidelity target."
+
+Consequences: the film telemetry verdict stands as recorded —
+`FILM TELEMETRY: CHECK FAILED (0 overflow groups, 0 continuity
+violations, 7 caption failures)` — with this waiver as its
+disposition. The gate itself is unchanged (no severity edit).
+Option A (re-chunk 66→73) remains computed above should the user
+overrule.
