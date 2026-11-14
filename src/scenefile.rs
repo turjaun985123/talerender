@@ -1132,30 +1132,16 @@ fn upload_texture(device: &wgpu::Device, queue: &wgpu::Queue, px: &[u8], w: u32,
 }
 
 async fn make_device(label: &'static str) -> (wgpu::Device, wgpu::Queue) {
-    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
-        backends: wgpu::Backends::VULKAN,
-        ..Default::default()
-    });
-    let adapter = crate::request_adapter(&instance).await;
+    let instance = crate::gpucore::new_instance();
+    let adapter = crate::gpucore::request_adapter(&instance).await;
     let info = adapter.get_info();
     println!(
         "adapter: {} | backend: {:?} | device type: {:?} | driver: {} {}",
         info.name, info.backend, info.device_type, info.driver, info.driver_info
     );
-    adapter
-        .request_device(
-            &wgpu::DeviceDescriptor {
-                label: Some(label),
-                required_features: wgpu::Features::empty(),
-                // Standard limits, not downlevel: the real character
-                // canvas is 2560x2816 (see ab1.rs).
-                required_limits: wgpu::Limits::default(),
-                ..Default::default()
-            },
-            None,
-        )
-        .await
-        .expect("request_device failed")
+    // Standard limits, not downlevel: the real character canvas
+    // is 2560x2816 (see ab1.rs) — request_device_default's law.
+    crate::gpucore::request_device_default(&adapter, label).await
 }
 
 fn view_proj(cam: &Camera, width: u32, height: u32) -> Mat4 {
@@ -1447,13 +1433,6 @@ async fn run_direct(width: u32, height: u32, out: &str, scene: &Loaded) -> crate
         view_formats: &[],
     });
     let depth_view = depth.create_view(&wgpu::TextureViewDescriptor::default());
-    let padded = math::padded_row_bytes(width);
-    let readback = device.create_buffer(&wgpu::BufferDescriptor {
-        label: Some("readback buffer"),
-        size: (padded * height) as u64,
-        usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
-        mapped_at_creation: false,
-    });
     let clear = scene.clear.unwrap_or([0.0, 0.0, 0.0]);
 
     let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
@@ -1496,41 +1475,9 @@ async fn run_direct(width: u32, height: u32, out: &str, scene: &Loaded) -> crate
             pass.draw_indexed(0..p.n, 0, 0..1);
         }
     }
-    encoder.copy_texture_to_buffer(
-        wgpu::ImageCopyTexture {
-            texture: &texture,
-            mip_level: 0,
-            origin: wgpu::Origin3d::ZERO,
-            aspect: wgpu::TextureAspect::All,
-        },
-        wgpu::ImageCopyBuffer {
-            buffer: &readback,
-            layout: wgpu::ImageDataLayout {
-                offset: 0,
-                bytes_per_row: Some(padded),
-                rows_per_image: Some(height),
-            },
-        },
-        wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
-    );
+    let rb = crate::gpucore::Readback::record(&device, &mut encoder, &texture, width, height, "readback buffer");
     queue.submit(Some(encoder.finish()));
-
-    let slice = readback.slice(..);
-    let (tx, rx) = std::sync::mpsc::channel();
-    slice.map_async(wgpu::MapMode::Read, move |result| {
-        let _ = tx.send(result);
-    });
-    device.poll(wgpu::Maintain::Wait);
-    rx.recv().expect("map channel closed").expect("buffer map failed");
-    let data = slice.get_mapped_range();
-    let row = (width * 4) as usize;
-    let stride = padded as usize;
-    let mut pixels = Vec::with_capacity(row * height as usize);
-    for y in 0..height as usize {
-        pixels.extend_from_slice(&data[y * stride..y * stride + row]);
-    }
-    drop(data);
-    readback.unmap();
+    let pixels = rb.collect(&device);
 
     let img = image::RgbaImage::from_raw(width, height, pixels).expect("pixel buffer size mismatch");
     img.save(out).map_err(|e| crate::errors::TaleError::image_io(out, e))?;
@@ -1547,27 +1494,6 @@ async fn run_direct(width: u32, height: u32, out: &str, scene: &Loaded) -> crate
 // shader_depth_pos.wgsl (fragment arithmetic identical to
 // shader_depth.wgsl).
 // ---------------------------------------------------------------------
-
-fn make_target(
-    device: &wgpu::Device,
-    w: u32,
-    h: u32,
-    format: wgpu::TextureFormat,
-    samples: u32,
-    usage: wgpu::TextureUsages,
-    label: &str,
-) -> wgpu::Texture {
-    device.create_texture(&wgpu::TextureDescriptor {
-        label: Some(label),
-        size: wgpu::Extent3d { width: w, height: h, depth_or_array_layers: 1 },
-        mip_level_count: 1,
-        sample_count: samples,
-        dimension: wgpu::TextureDimension::D2,
-        format,
-        usage,
-        view_formats: &[],
-    })
-}
 
 fn draw_positions(draw: &Draw) -> Vec<f32> {
     let (verts, stride): (&[f32], usize) = match draw {
@@ -1645,13 +1571,13 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded) -> cra
     });
 
     // ---- targets ----
-    let scene_msaa = make_target(&device, width, height, wgpu::TextureFormat::Rgba16Float, 4, wgpu::TextureUsages::RENDER_ATTACHMENT, "composer-scene-msaa");
-    let scene_resolved = make_target(&device, width, height, wgpu::TextureFormat::Rgba16Float, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING, "composer-scene-resolved");
-    let scene_depth = make_target(&device, width, height, wgpu::TextureFormat::Depth32Float, 4, wgpu::TextureUsages::RENDER_ATTACHMENT, "composer-scene-depth");
-    let packed_depth = make_target(&device, width, height, depth_format, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_SRC, "composer-packed-depth");
-    let prepass_depth = make_target(&device, width, height, wgpu::TextureFormat::Depth32Float, 1, wgpu::TextureUsages::RENDER_ATTACHMENT, "composer-prepass-depth");
-    let bokeh_out = make_target(&device, width, height, wgpu::TextureFormat::Rgba16Float, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING, "composer-bokeh-out");
-    let final_tex = make_target(&device, width, height, wgpu::TextureFormat::Rgba8Unorm, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC, "composer-final");
+    let scene_msaa = crate::gpucore::make_target(&device, width, height, wgpu::TextureFormat::Rgba16Float, 4, wgpu::TextureUsages::RENDER_ATTACHMENT, "composer-scene-msaa");
+    let scene_resolved = crate::gpucore::make_target(&device, width, height, wgpu::TextureFormat::Rgba16Float, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING, "composer-scene-resolved");
+    let scene_depth = crate::gpucore::make_target(&device, width, height, wgpu::TextureFormat::Depth32Float, 4, wgpu::TextureUsages::RENDER_ATTACHMENT, "composer-scene-depth");
+    let packed_depth = crate::gpucore::make_target(&device, width, height, depth_format, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_SRC, "composer-packed-depth");
+    let prepass_depth = crate::gpucore::make_target(&device, width, height, wgpu::TextureFormat::Depth32Float, 1, wgpu::TextureUsages::RENDER_ATTACHMENT, "composer-prepass-depth");
+    let bokeh_out = crate::gpucore::make_target(&device, width, height, wgpu::TextureFormat::Rgba16Float, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING, "composer-bokeh-out");
+    let final_tex = crate::gpucore::make_target(&device, width, height, wgpu::TextureFormat::Rgba8Unorm, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC, "composer-final");
     let scene_view = scene_resolved.create_view(&wgpu::TextureViewDescriptor::default());
     let packed_view = packed_depth.create_view(&wgpu::TextureViewDescriptor::default());
     // Fog (format v2 `fog` block): the resolved HDR is fogged into
@@ -1659,7 +1585,7 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded) -> cra
     // instead of the raw scene target. Built only when the file
     // declares fog — absent block, the path is bit-identical.
     let fog_tex = scene.fog.as_ref().map(|_| {
-        make_target(&device, width, height, wgpu::TextureFormat::Rgba16Float, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING, "composer-fogged")
+        crate::gpucore::make_target(&device, width, height, wgpu::TextureFormat::Rgba16Float, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING, "composer-fogged")
     });
     let fog_view = fog_tex.as_ref().map(|t| t.create_view(&wgpu::TextureViewDescriptor::default()));
     let bokeh_view = bokeh_out.create_view(&wgpu::TextureViewDescriptor::default());
@@ -2027,7 +1953,7 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded) -> cra
         None
     };
     let grade_tex = scene.grade.as_ref().map(|_| {
-        make_target(&device, width, height, wgpu::TextureFormat::Rgba8Unorm, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING, "composer-grade-src")
+        crate::gpucore::make_target(&device, width, height, wgpu::TextureFormat::Rgba8Unorm, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING, "composer-grade-src")
     });
 
     // ---- passes (dof.rs's order) ----
@@ -2196,48 +2122,9 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded) -> cra
         );
     }
 
-    let padded = math::padded_row_bytes(width);
-    let out_buf = device.create_buffer(&wgpu::BufferDescriptor {
-        label: Some("composer readback"),
-        size: (padded * height) as u64,
-        usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
-        mapped_at_creation: false,
-    });
-    encoder.copy_texture_to_buffer(
-        wgpu::ImageCopyTexture {
-            texture: &final_tex,
-            mip_level: 0,
-            origin: wgpu::Origin3d::ZERO,
-            aspect: wgpu::TextureAspect::All,
-        },
-        wgpu::ImageCopyBuffer {
-            buffer: &out_buf,
-            layout: wgpu::ImageDataLayout {
-                offset: 0,
-                bytes_per_row: Some(padded),
-                rows_per_image: Some(height),
-            },
-        },
-        wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
-    );
+    let rb = crate::gpucore::Readback::record(&device, &mut encoder, &final_tex, width, height, "composer readback");
     queue.submit(Some(encoder.finish()));
-
-    let slice = out_buf.slice(..);
-    let (tx, rx) = std::sync::mpsc::channel();
-    slice.map_async(wgpu::MapMode::Read, move |r| {
-        let _ = tx.send(r);
-    });
-    device.poll(wgpu::Maintain::Wait);
-    rx.recv().expect("map channel closed").expect("buffer map failed");
-    let mapped = slice.get_mapped_range();
-    let row = (width * 4) as usize;
-    let stride = padded as usize;
-    let mut rgba = vec![0u8; row * height as usize];
-    for y in 0..height as usize {
-        rgba[y * row..(y + 1) * row].copy_from_slice(&mapped[y * stride..y * stride + row]);
-    }
-    drop(mapped);
-    out_buf.unmap();
+    let rgba = rb.collect(&device);
     image::save_buffer(out, &rgba, width, height, image::ColorType::Rgba8)
         .map_err(|e| crate::errors::TaleError::image_io(out, e))?;
     println!("wrote {out} ({width}x{height})");
