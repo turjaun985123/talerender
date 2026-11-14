@@ -1346,6 +1346,7 @@ fn finish_chars(f: &mut FrameSpec, looks: &[(FullLook, bool, f64)]) {
             let dh = (eye[0] - c.pos[0]).hypot(eye[2] - c.pos[2]);
             let pitch_ang = if dh < 1e-4 { 0.0 } else { dy.atan2(dh) };
             c.pitch = (pitch_ang * 0.45).clamp(-0.38, 0.38);
+            c.state.cam_pitch = cam_pitch_of(c.pos, eye);
         } else {
             c.pitch = 0.0;
         }
@@ -2112,21 +2113,6 @@ fn resolve_chars(
         };
         st.hold_l = plate_of(c.hold_l);
         st.hold_r = plate_of(c.hold_r);
-        // Perspective instances: the model pitch and the painter's
-        // camPitch are the same angle (Toon setCamPitch + group
-        // rotation.x in the staging), computed centrally here.
-        let (_, persp, _) = &looks[c.look];
-        let mut pitch = c.pitch;
-        if *persp {
-            let p = crate::telemetry::cam_pitch_of(
-                [c.pos[0] as f64, c.pos[1] as f64, c.pos[2] as f64],
-                [f.eye[0] as f64, f.eye[1] as f64, f.eye[2] as f64],
-                1.75,
-                true,
-            );
-            st.cam_pitch = p as f32;
-            pitch = p as f32;
-        }
         let key = state_key(c.look, &st, c.hold_l, c.hold_r);
         let entry = cache
             .entry(key)
@@ -2152,7 +2138,7 @@ fn resolve_chars(
         });
         let card_model = math::mul(
             &t3(c.pos[0], c.pos[1], c.pos[2]),
-            &math::mul(&math::rotate_y(c.yaw), &math::rotate_x(pitch)),
+            &math::mul(&math::rotate_y(c.yaw), &math::rotate_x(c.pitch)),
         );
         infos.push(CharInfo {
             look: c.look,
@@ -3461,22 +3447,22 @@ fn tel_look(l: &FullLook) -> crate::telemetry::Look {
 fn mood_name(m: Mood) -> &'static str {
     match m {
         Mood::Neutral => "neutral",
+        Mood::Smug => "smug",
         Mood::Happy => "happy",
-        Mood::Determined => "determined",
-        Mood::Sad => "sad",
-        Mood::Worried => "worried",
-        Mood::Tired => "tired",
-        Mood::Surprised => "surprised",
-        Mood::Angry => "angry",
-        Mood::Proud => "proud",
-        Mood::Awe => "awe",
         Mood::Laugh => "laugh",
-        Mood::Cry => "cry",
-        Mood::Stern => "stern",
-        Mood::Calm => "calm",
+        Mood::Shock => "shock",
+        Mood::Worried => "worried",
+        Mood::Angry => "angry",
+        Mood::Sad => "sad",
+        Mood::Sly => "sly",
+        Mood::Proud => "proud",
+        Mood::Tired => "tired",
+        Mood::Dizzy => "dizzy",
+        Mood::Determined => "determined",
         Mood::Embarrassed => "embarrassed",
-        Mood::Thinking => "thinking",
-        Mood::Hopeful => "hopeful",
+        Mood::Awe => "awe",
+        Mood::Suspicious => "suspicious",
+        Mood::Relieved => "relieved",
     }
 }
 
