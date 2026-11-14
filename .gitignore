@@ -2,3 +2,4 @@
 frame.png
 *.png
 !docs/**/*.png
+!film/assets/*.png
