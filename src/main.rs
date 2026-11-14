@@ -60,11 +60,13 @@ MODES (choose one; the default is a built-in scene render):
     --scene-file <PATH>     Render a scene-format JSON file (v1/v2;
                             see docs/scene-format.md). Wins over
                             --scene when both are given.
-    --film <DIR>            Render a whole film: DIR holds film.json
-                            + its scene files (format v2, §14).
-                            Frames are written to --out as
-                            frame_%05d.png; existing frames are
-                            skipped (resume).
+    --film <DIR>            Render a whole film: DIR holds the
+                            film data (film.json — the generic
+                            entry; onoda.json accepted for this
+                            film) + an assets/ dir; segment scenes
+                            resolve from scenes/film/. Frames are
+                            written to --out as frame_%05d.png;
+                            existing frames are skipped (resume).
     --film-telemetry <DIR>  Native telemetry gate over a film
                             directory (CPU only, no GPU). The
                             verdict is the printed line
@@ -82,7 +84,9 @@ OPTIONS:
                             (default: frame.png).
     --caption <PATH>        Caption strip PNG composited by
                             --scene ab1 (default: the §28 strip
-                            under docs/ab/).
+                            under docs/ab/ — a repo-relative path,
+                            so run from the repo root or pass
+                            --caption explicitly).
     --post-stage <STAGE>    Composer ablation for --scene ab1:
                             lighting | bloom | grade
                             (default: grade = the full chain).
@@ -313,26 +317,10 @@ fn main() {
     }
 }
 
-pub(crate) async fn request_adapter(instance: &wgpu::Instance) -> wgpu::Adapter {
-    if let Some(adapter) = instance
-        .request_adapter(&wgpu::RequestAdapterOptions {
-            power_preference: wgpu::PowerPreference::HighPerformance,
-            compatible_surface: None,
-            force_fallback_adapter: false,
-        })
-        .await
-    {
-        return adapter;
-    }
-    instance
-        .request_adapter(&wgpu::RequestAdapterOptions {
-            power_preference: wgpu::PowerPreference::default(),
-            compatible_surface: None,
-            force_fallback_adapter: true,
-        })
-        .await
-        .expect("no wgpu adapter found — a Vulkan driver (hardware or lavapipe) is required")
-}
+// The shared GPU primitives (instance / adapter / device /
+// targets / readback) live in crate::gpucore since the Wave-2
+// migration — every render entry point consumes them; there is
+// no per-mode copy left in this file.
 
 fn pack_f32(data: &[f32]) -> Vec<u8> {
     let mut out = Vec::with_capacity(data.len() * 4);

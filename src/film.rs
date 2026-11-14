@@ -61,7 +61,16 @@ fn jnum(v: &Value, ctx: &str) -> Result<f64, String> {
 }
 
 pub(crate) fn load_film_data(dir: &Path) -> Result<FilmData, String> {
-    let text = std::fs::read_to_string(dir.join("onoda.json"))
+    // F1 (gap-fix packet): film.json is the format's generic
+    // entry name; onoda.json is this film's historical data file
+    // and stays the fallback, so the existing film data and the
+    // bridge packages load unchanged. --help says the same.
+    let path = if dir.join("film.json").exists() {
+        dir.join("film.json")
+    } else {
+        dir.join("onoda.json")
+    };
+    let text = std::fs::read_to_string(&path)
         .map_err(|e| format!("cannot read film data: {e}"))?;
     let root = crate::scene::parse_json(&text)?;
     let g = |k: &str| root.get(k).ok_or_else(|| format!("film data: missing {k}"));
@@ -2372,27 +2381,15 @@ pub(crate) struct Renderer {
 
 impl Renderer {
     pub(crate) async fn new(width: u32, height: u32, sign: &(Vec<u8>, u32, u32)) -> Renderer {
-        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
-            backends: wgpu::Backends::VULKAN,
-            ..Default::default()
-        });
-        let adapter = crate::request_adapter(&instance).await;
+        let instance = crate::gpucore::new_instance();
+        let adapter = crate::gpucore::request_adapter(&instance).await;
         let info = adapter.get_info();
         println!(
             "renderer: {} | backend: {:?} | device type: {:?} | driver: {} {}",
             info.name, info.backend, info.device_type, info.driver, info.driver_info
         );
-        let (device, queue) = adapter
-            .request_device(
-                &wgpu::DeviceDescriptor {
-                    label: Some("talerender film device"),
-                    required_features: wgpu::Features::empty(),
-                    required_limits: wgpu::Limits::default(),
-                },
-                None,
-            )
-            .await
-            .expect("request_device failed");
+        let (device, queue) =
+            crate::gpucore::request_device_default(&adapter, "talerender film device").await;
         let ceil_motif = {
             let (r, g, b) = crate::scene::shade_rgb("#3A2E22", 1.25);
             format!("#{r:02X}{g:02X}{b:02X}")
@@ -2528,16 +2525,7 @@ impl Renderer {
                 wgpu::BindGroupLayoutEntry { binding: 4, visibility: wgpu::ShaderStages::FRAGMENT, ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering), count: None },
             ],
         });
-        let shadow_map = device.create_texture(&wgpu::TextureDescriptor {
-            label: Some("key shadow map"),
-            size: wgpu::Extent3d { width: 2048, height: 2048, depth_or_array_layers: 1 },
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba8Unorm,
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
-            view_formats: &[],
-        });
+        let shadow_map = crate::gpucore::make_target(&device, 2048, 2048, wgpu::TextureFormat::Rgba8Unorm, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING, "key shadow map");
         let shadow_map_view = shadow_map.create_view(&wgpu::TextureViewDescriptor::default());
         tex_keep.push(shadow_map);
         let shadow_depth = crate::composer::make_rt(&device, 2048, 2048, wgpu::TextureFormat::Depth32Float, "shadow depth");
@@ -2548,46 +2536,19 @@ impl Renderer {
         } else {
             wgpu::TextureFormat::Rgba8Unorm
         };
-        let packed_depth = device.create_texture(&wgpu::TextureDescriptor {
-            label: Some("packed depth"),
-            size: wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format: depth_format,
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING,
-            view_formats: &[],
-        });
+        let packed_depth = crate::gpucore::make_target(&device, width, height, depth_format, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING, "packed depth");
         let packed_view = packed_depth.create_view(&wgpu::TextureViewDescriptor::default());
         tex_keep.push(packed_depth);
         let prepass_depth = crate::composer::make_rt(&device, width, height, wgpu::TextureFormat::Depth32Float, "prepass depth");
         let prepass_depth_view = prepass_depth.create_view(&wgpu::TextureViewDescriptor::default());
         tex_keep.push(prepass_depth);
-        let hdr_msaa = device.create_texture(&wgpu::TextureDescriptor {
-            label: Some("hdr msaa"),
-            size: wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
-            mip_level_count: 1,
-            sample_count: 4,
-            dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba16Float,
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-            view_formats: &[],
-        });
+        let hdr_msaa = crate::gpucore::make_target(&device, width, height, wgpu::TextureFormat::Rgba16Float, 4, wgpu::TextureUsages::RENDER_ATTACHMENT, "hdr msaa");
         let hdr_msaa_view = hdr_msaa.create_view(&wgpu::TextureViewDescriptor::default());
         tex_keep.push(hdr_msaa);
         let hdr_tex = crate::composer::make_rt(&device, width, height, wgpu::TextureFormat::Rgba16Float, "hdr resolved");
         let hdr_view = hdr_tex.create_view(&wgpu::TextureViewDescriptor::default());
         tex_keep.push(hdr_tex);
-        let hdr_depth = device.create_texture(&wgpu::TextureDescriptor {
-            label: Some("hdr depth"),
-            size: wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
-            mip_level_count: 1,
-            sample_count: 4,
-            dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Depth32Float,
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-            view_formats: &[],
-        });
+        let hdr_depth = crate::gpucore::make_target(&device, width, height, wgpu::TextureFormat::Depth32Float, 4, wgpu::TextureUsages::RENDER_ATTACHMENT, "hdr depth");
         let hdr_depth_view = hdr_depth.create_view(&wgpu::TextureViewDescriptor::default());
         tex_keep.push(hdr_depth);
         let bokeh_tex = crate::composer::make_rt(&device, width, height, wgpu::TextureFormat::Rgba16Float, "bokeh out");
@@ -2596,16 +2557,7 @@ impl Renderer {
         let srgb_tex = crate::composer::make_rt(&device, width, height, wgpu::TextureFormat::Rgba8Unorm, "output srgb");
         let srgb_view = srgb_tex.create_view(&wgpu::TextureViewDescriptor::default());
         tex_keep.push(srgb_tex);
-        let final_tex = device.create_texture(&wgpu::TextureDescriptor {
-            label: Some("final"),
-            size: wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba8Unorm,
-            usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
-            view_formats: &[],
-        });
+        let final_tex = crate::gpucore::make_target(&device, width, height, wgpu::TextureFormat::Rgba8Unorm, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC, "final");
         let final_view = final_tex.create_view(&wgpu::TextureViewDescriptor::default());
         let module = |label: &str, src: &str| {
             device.create_shader_module(wgpu::ShaderModuleDescriptor {
@@ -3307,39 +3259,12 @@ impl Renderer {
             &self.final_view,
             &GradeParams { vignette: spec.post.vig, grain: spec.post.grain, warm: spec.post.warm, sat: spec.post.sat, time: 0.0 },
         );
-        // ---- readback ----
-        let padded = math::padded_row_bytes(width);
-        let readback = device.create_buffer(&wgpu::BufferDescriptor {
-            label: Some("readback buffer"),
-            size: (padded * height) as u64,
-            usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
-            mapped_at_creation: false,
-        });
-        encoder.copy_texture_to_buffer(
-            wgpu::ImageCopyTexture { texture: &self.final_tex, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
-            wgpu::ImageCopyBuffer {
-                buffer: &readback,
-                layout: wgpu::ImageDataLayout { offset: 0, bytes_per_row: Some(padded), rows_per_image: Some(height) },
-            },
-            wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
-        );
+        // ---- readback (gpucore; the copy rides this frame's own
+        // encoder — one submit per frame, the load-bearing
+        // batching GPU-CORE-W07 s4 names) ----
+        let rb = crate::gpucore::Readback::record(device, &mut encoder, &self.final_tex, width, height, "readback buffer");
         queue.submit(Some(encoder.finish()));
-        let slice = readback.slice(..);
-        let (tx, rx) = std::sync::mpsc::channel();
-        slice.map_async(wgpu::MapMode::Read, move |result| {
-            let _ = tx.send(result);
-        });
-        device.poll(wgpu::Maintain::Wait);
-        rx.recv().expect("map channel closed").expect("buffer map failed");
-        let data = slice.get_mapped_range();
-        let row = (width * 4) as usize;
-        let stride = padded as usize;
-        let mut pixels = Vec::with_capacity(row * height as usize);
-        for y in 0..height as usize {
-            pixels.extend_from_slice(&data[y * stride..y * stride + row]);
-        }
-        drop(data);
-        readback.unmap();
+        let pixels = rb.collect(device);
         drop(dyn_keep);
         pixels
     }
