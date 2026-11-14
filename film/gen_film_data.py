@@ -96,6 +96,13 @@ out = {
     "lines": [{"i": l["i"], "start": l["start"], "end": l["end"], "text": l["text"]} for l in LINES],
     "anchors": anchors,
     "captions": caps,
+    # F2 migration (W53 s1.2): the calendar set, dark plate and
+    # sign are declared by the film data, not hardcoded in the
+    # driver. Values mirror film/gen_assets.py (its calendar
+    # loop, sign and dark-plate writers).
+    "calendarYears": ["1945", "1955", "1965", "1974"],
+    "calendarDark": "calendar-dark.png",
+    "sign": "sign.png",
 }
 OUT.write_text(json.dumps(out, indent=1))
 print(f"wrote {OUT}: {len(caps)} caption chunks, {len(anchors)} anchors, duration {T_DUR}")

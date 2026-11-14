@@ -755,5 +755,13 @@
    "fit": 1.0,
    "strip": "cap_072.png"
   }
- ]
+ ],
+ "calendarYears": [
+  "1945",
+  "1955",
+  "1965",
+  "1974"
+ ],
+ "calendarDark": "calendar-dark.png",
+ "sign": "sign.png"
 }
