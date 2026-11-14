@@ -1613,6 +1613,8 @@ fn s06(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
     // (sky dressing applied below, after FrameSpec::new)
     post.exposure = 0.96;
     let mut f = FrameSpec::new(rig_fog(fire_light(fire, t)), post);
+    f.sky_jg = TEX_SKY_FOG; // 'fog' call passes no sky:false: dome + clouds re-dressed
+    f.cloud_tint = hex_lin("#EDEFEF");
     f.fog = Some((hex_lin("#C9CFC2"), 4.5, 20.0));
     build_jg(&mut f, JgDyn { fire, t, extra_std: Vec::new() });
     let k = cam_k(lt, d, 0.1);
@@ -1724,7 +1726,9 @@ fn s07(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
 
 fn s08(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
     let w_found = data.anchors["found7"];
-    let mut f = FrameSpec::new(rig_noon([7.0, 12.0, 5.0], [0.0, 0.0, -2.0], fire_light(1.0, t)), g_jungle());
+    let mut f = FrameSpec::new(rig_noon([-8.0, 4.5, 5.0], [0.0, 0.0, -2.0], fire_light(1.0, t)), g_jungle());
+    f.sky_jg = TEX_SKY_GOLDEN; // inherits S07's golden dressing: noon passes sky:false and never restores dome, clouds, or the key position (golden keyPos [-8, 4.5, 5] persists; noon colours/intensities DO apply)
+    f.cloud_tint = hex_lin("#FFE3B0");
     build_jg(&mut f, JgDyn { fire: 1.0, t, extra_std: Vec::new() });
     let k = cam_k(lt, d, 0.1);
     shoot(&mut f, [1.0, 2.0, 6.2], [0.8, 1.8, 5.0], [0.35, 1.1, -1.2], None, k, 62.0);
@@ -1762,7 +1766,9 @@ fn s08(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
 
 fn s08b(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
     let w_ref = data.anchors["refused7"];
-    let mut f = FrameSpec::new(rig_noon([7.0, 12.0, 5.0], [0.0, 0.0, -2.0], fire_light(1.0, t)), g_jungle());
+    let mut f = FrameSpec::new(rig_noon([-8.0, 4.5, 5.0], [0.0, 0.0, -2.0], fire_light(1.0, t)), g_jungle());
+    f.sky_jg = TEX_SKY_GOLDEN; // inherits S07's golden dressing: noon passes sky:false and never restores dome, clouds, or the key position (golden keyPos [-8, 4.5, 5] persists; noon colours/intensities DO apply)
+    f.cloud_tint = hex_lin("#FFE3B0");
     build_jg(&mut f, JgDyn { fire: 1.0, t, extra_std: Vec::new() });
     let k = cam_k(lt, d, 0.1);
     shoot(&mut f, [0.3, 1.78, 5.1], [0.25, 1.7, 4.55], [0.25, 1.2, -1.15], None, k, 54.0);
@@ -1791,7 +1797,9 @@ fn s09(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
     let st0 = 41.732;
     let w_comm = data.anchors["commander8"];
     let w_only = data.anchors["only8"];
-    let mut f = FrameSpec::new(rig_noon([7.0, 12.0, 5.0], [0.0, 0.0, -2.0], fire_light(1.0, t)), g_jungle());
+    let mut f = FrameSpec::new(rig_noon([-8.0, 4.5, 5.0], [0.0, 0.0, -2.0], fire_light(1.0, t)), g_jungle());
+    f.sky_jg = TEX_SKY_GOLDEN; // inherits S07's golden dressing: noon passes sky:false and never restores dome, clouds, or the key position (golden keyPos [-8, 4.5, 5] persists; noon colours/intensities DO apply)
+    f.cloud_tint = hex_lin("#FFE3B0");
     build_jg(&mut f, JgDyn { fire: 1.0, t, extra_std: Vec::new() });
     let k = cam_k(lt, d, 0.1);
     shoot(&mut f, [0.3, 1.75, 4.9], [0.25, 1.68, 4.35], [0.25, 1.2, -1.15], None, k, 54.0);
