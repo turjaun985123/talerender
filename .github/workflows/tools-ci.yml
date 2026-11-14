@@ -19,6 +19,7 @@ on:
     paths:
       - "tools/**"
       - "scenes/**"
+      - "src/**"
       - "assets/captions/**"
       - "film/**"
       - "docs/golden/**"
@@ -28,6 +29,7 @@ on:
     paths:
       - "tools/**"
       - "scenes/**"
+      - "src/**"
       - "assets/captions/**"
       - "film/**"
       - "docs/golden/**"
@@ -174,3 +176,78 @@ jobs:
               print("  INVALID:", b)
           sys.exit(1 if bad else 0)
           EOF
+
+      # The light rig is data now (scene-format §14): grade keys,
+      # the R3 grain-time pin, R5 preset-named atmospheres and the
+      # R1 fire basis are enforced here, mechanically, instead of
+      # by review. Warnings (fire basis) print but do not fail;
+      # exit 1 is a failed check, 2 an input error — both fail
+      # the step. No project tree needed: the atmospheres
+      # vocabulary resolves relative to the tool's own path.
+      - name: Light-rig validator (film scenes)
+        run: python3 tools/format/check_lights.py --film scenes/film
+
+      # The fixtures are the validator's own proof: the valid and
+      # warnings-only scenes must pass, and every negative fixture
+      # must fail — a validator that stops biting turns this red.
+      - name: Light-rig validator (fixtures + negative controls)
+        run: |
+          python3 tools/format/check_lights.py \
+            scenes/fixtures/lights/fx-valid.scene.json \
+            scenes/fixtures/lights/fx-fire-basis-warn.scene.json
+          for f in fx-grade-unknown-key fx-grade-time fx-atmosphere-inline \
+                   fx-atmosphere-filmlook fx-light-negative fx-light-nan \
+                   fx-light-colour-range; do
+            if python3 tools/format/check_lights.py \
+                 scenes/fixtures/lights/$f.scene.json; then
+              echo "::error::$f unexpectedly PASSED"; exit 1
+            fi
+          done
+
+      # Every asset reference in the film manifest and the driver
+      # data resolves, with the right kind of bytes behind it.
+      # --root is EXPLICIT: manifest references resolve against
+      # it, and its default is the caller's CWD — a step that
+      # relied on the default would pass or fail by accident of
+      # where it ran. Portability warnings (17 at HEAD, the
+      # manifest layer is root-relative by construction) and the
+      # orphan report print but never change the exit code;
+      # exit 1 (missing / wrong-kind / a loader silent-fallback
+      # made loud) and 2 (input error) fail the step.
+      - name: Asset references (film manifest + driver)
+        run: python3 tools/format/check_assets.py --root . scenes/film film
+
+      # Fixtures pin the tool's contract, including the root
+      # rule itself: the cwd fixture must FAIL from a foreign
+      # CWD without --root and PASS with it. Check counts are
+      # mode-dependent (5/5 lone scene, 6/6 film dir), so this
+      # step asserts exit codes, not a count string. The
+      # valid-scene target is the scene FILE, not its directory
+      # (the directory is an input error, exit 2).
+      - name: Asset checker (fixtures + CWD root rule)
+        run: |
+          python3 tools/format/check_assets.py scenes/fixtures/assets/valid-scene/mini.scene.json
+          python3 tools/format/check_assets.py scenes/fixtures/assets/valid-driver
+          for t in missing wrong-kind; do
+            if python3 tools/format/check_assets.py scenes/fixtures/assets/$t; then
+              echo "::error::assets fixture $t unexpectedly PASSED"; exit 1
+            fi
+          done
+          if (cd "$RUNNER_TEMP" && python3 "$GITHUB_WORKSPACE/tools/format/check_assets.py" \
+                "$GITHUB_WORKSPACE/scenes/fixtures/assets/cwd/scenes/film"); then
+            echo "::error::cwd fixture unexpectedly PASSED without --root"; exit 1
+          fi
+          python3 tools/format/check_assets.py --root scenes/fixtures/assets/cwd \
+            scenes/fixtures/assets/cwd/scenes/film
+
+      # WGSL ↔ Rust structural agreement: entry points, binding
+      # numbers/kinds against the Rust bind-group layouts, and
+      # hand-packed uniform sizes. Exit 1 covers FAIL and
+      # UNRESOLVED alike — a refactor that changes a helper's
+      # shape drops coverage loudly instead of silently. Reads
+      # src/**, which is why src/** is in this workflow's trigger
+      # paths. If a legitimate new helper shape appears, extend
+      # the interpreter in check_shaders.py; never weaken a
+      # verdict.
+      - name: WGSL shader structural check
+        run: python3 tools/ci/check_shaders.py --repo .
