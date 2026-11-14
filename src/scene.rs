@@ -58,10 +58,22 @@ pub(crate) fn hex_lin(s: &str) -> [f32; 3] {
     ]
 }
 
-/// Canvas shadeOf(): multiply the sRGB bytes by k (round, clamp).
+/// world.ts shade(hex, k): THREE.Color arithmetic — setHex
+/// converts to the LINEAR working space, multiplyScalar applies
+/// there, getHex quantises back to sRGB bytes (Math.round,
+/// clamped). The previous byte-space multiply ran 25-40 LSB
+/// darker than Chrome on derived shades (three wave seats
+/// confirmed independently; corpus pins: shade('#3A2E22', 1.25)
+/// = #413427, shade('#3A2A2A', 0.7) = #302222).
 pub(crate) fn shade_rgb(s: &str, k: f32) -> (u8, u8, u8) {
     let (r, g, b) = hex_rgb(s);
-    let f = |v: u8| -> u8 { (v as f32 * k).round().clamp(0.0, 255.0) as u8 };
+    let f = |v: u8| -> u8 {
+        let c = (v as f64) / 255.0;
+        let lin = if c <= 0.04045 { c / 12.92 } else { ((c + 0.055) / 1.055).powf(2.4) };
+        let m = lin * (k as f64);
+        let sr = if m <= 0.0031308 { m * 12.92 } else { 1.055 * m.powf(1.0 / 2.4) - 0.055 };
+        (255.0 * sr).clamp(0.0, 255.0).round() as u8
+    };
     (f(r), f(g), f(b))
 }
 
