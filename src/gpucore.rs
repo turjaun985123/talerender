@@ -365,14 +365,21 @@ mod tests {
     }
 
     /// A synthetic mapped buffer: each row is `row` payload bytes
-    /// (byte value = y*16 + x pattern) followed by 0xEE sentinels.
+    /// followed by 0xEE sentinels. The payload pattern stays in
+    /// 1..=0xED so it can never alias the sentinel (the original
+    /// y*16+x pattern reaches 0xEE itself at x=238 — the lead's
+    /// fix when this test first ran in CI, run 43619241590).
+    fn payload(y: usize, x: usize) -> u8 {
+        (1 + (y * 16 + x) % 0xED) as u8
+    }
+
     fn fake_mapped(width: u32, height: u32, bpp: u32) -> (Vec<u8>, u32) {
         let padded = padded_row_bytes(width, bpp);
         let row = (width * bpp) as usize;
         let mut buf = vec![0xEEu8; (padded * height) as usize];
         for y in 0..height as usize {
             for x in 0..row {
-                buf[y * padded as usize + x] = (y * 16 + x) as u8;
+                buf[y * padded as usize + x] = payload(y, x);
             }
         }
         (buf, padded)
@@ -386,7 +393,7 @@ mod tests {
         assert!(!out.contains(&0xEE), "padding sentinel leaked into output");
         for y in 0..3usize {
             for x in 0..260usize {
-                assert_eq!(out[y * 260 + x], (y * 16 + x) as u8, "row {y} byte {x}");
+                assert_eq!(out[y * 260 + x], payload(y, x), "row {y} byte {x}");
             }
         }
     }
