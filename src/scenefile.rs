@@ -455,6 +455,7 @@ fn resolve_texture(spec: &Value, scene_dir: &Path, ctx: &str) -> Result<(Vec<u8>
         "sky-gradient" => scene::paint_sky(
             str_field(spec, "top", ctx)?,
             str_field(spec, "horizon", ctx)?,
+            spec.get("ground").and_then(|v| v.as_str()).unwrap_or("#BFE4F7"),
         ),
         "cloud" => scene::paint_cloud(),
         "blob-shadow" => scene::paint_blob(),

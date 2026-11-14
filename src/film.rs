@@ -351,6 +351,11 @@ pub(crate) struct FrameSpec {
     pub calendar: Option<CalendarState>,
     pub fade: f32, // 0 = clear, 1 = full black
     pub clear: [f32; 3], // scene.background (linear); BK's #1A1418
+    // Atmosphere re-dressing (env.ts applyAtmosphere step 2): shots
+    // whose call does NOT pass sky:false swap the dome texture and the
+    // cloud sprite tint. Defaults are the sets' build-time values.
+    pub sky_jg: usize,
+    pub cloud_tint: [f32; 3],
 }
 
 impl FrameSpec {
@@ -369,6 +374,8 @@ impl FrameSpec {
             fov: 44.0,
             focus: 6.0,
             post,
+            sky_jg: TEX_SKY_JG,
+            cloud_tint: hex_lin("#EFF4EA"),
             caption: None,
             caption_scale: 1.0,
             calendar: None,
@@ -390,6 +397,9 @@ pub(crate) const TEX_PLANKS_FLOOR: usize = 7; // #7A5230 (BK floor is planks tex
 pub(crate) const TEX_WALLPAPER: usize = 8; // #5A4632 / motif #6B5638
 pub(crate) const TEX_PARCEL: usize = 9;
 pub(crate) const TEX_SIGN: usize = 10;
+pub(crate) const TEX_SKY_FOG: usize = 18;
+pub(crate) const TEX_SKY_GOLDEN: usize = 19;
+pub(crate) const TEX_SKY_DUSK: usize = 20;
 pub(crate) const TEX_PICTURE: usize = 11;
 pub(crate) const TEX_FELT_DARK: usize = 12; // #2E5A44 desk top
 pub(crate) const TEX_FELT_COUNTER: usize = 13; // #1F5A45 counter top
@@ -801,7 +811,7 @@ fn add_clouds(f: &mut FrameSpec, list: &[([f32; 3], f32)], eye: [f32; 3], target
             geo: g,
             model: math::identity(),
             tex: TexSrc::S(TEX_CLOUD),
-            tint: hex_lin("#EFF4EA"), // D17: the source cloud sprite material colour (world.ts clouds); port rendered untinted
+            tint: f.cloud_tint, // D17 + atmosphere dressing: build-time #EFF4EA, preset cloudTint when re-dressed
             opacity: 1.0,
             alpha_test: 0.0,
             depth_write: false,
@@ -858,7 +868,7 @@ pub(crate) struct JgDyn {
 }
 
 pub(crate) fn build_jg(f: &mut FrameSpec, jd: JgDyn) {
-    add_sky(f, TEX_SKY_JG);
+    add_sky(f, f.sky_jg);
     // grass ground (textured, the ab1 ground pattern)
     f.texmapped.push(TexMapDraw {
         geo: ground_disc_geo(80.0, 48, 48.0),
@@ -1600,6 +1610,7 @@ fn s06(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
     let mut post = g_jungle();
     post.sat = 0.52;
     post.warm = 0.0;
+    // (sky dressing applied below, after FrameSpec::new)
     post.exposure = 0.96;
     let mut f = FrameSpec::new(rig_fog(fire_light(fire, t)), post);
     f.fog = Some((hex_lin("#C9CFC2"), 4.5, 20.0));
@@ -1672,6 +1683,8 @@ fn s07(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
     post.warm = 0.06;
     post.exposure = 1.02;
     let mut f = FrameSpec::new(rig_golden(fire_light(0.0, t)), post);
+    f.sky_jg = TEX_SKY_GOLDEN; // 'golden' re-dresses dome + clouds
+    f.cloud_tint = hex_lin("#FFE3B0");
     f.fog = Some((hex_lin("#FFD98A"), 30.0, 140.0));
     build_jg(&mut f, JgDyn { fire: 0.0, t, extra_std: Vec::new() });
     let k = cam_k(lt, d, 0.1);
@@ -1875,6 +1888,8 @@ fn s11(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
         extra = rifle_down_draws(t, drop_t);
     }
     let mut f = FrameSpec::new(rig_dusk(fire_light(1.0, t)), post);
+    f.sky_jg = TEX_SKY_DUSK; // 'dusk' re-dresses dome + clouds
+    f.cloud_tint = hex_lin("#FFC9B0");
     f.fog = Some((hex_lin("#F59C6B"), 28.0, 120.0));
     build_jg(&mut f, JgDyn { fire: 1.0, t, extra_std: extra });
     let k = cam_k(lt, d, 0.1);
@@ -1928,6 +1943,8 @@ fn s12(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
     post.warm = 0.06;
     post.exposure = 0.97;
     let mut f = FrameSpec::new(rig_dusk(fire_light(1.0, t)), post);
+    f.sky_jg = TEX_SKY_DUSK; // 'dusk' re-dresses dome + clouds
+    f.cloud_tint = hex_lin("#FFC9B0");
     f.fog = Some((hex_lin("#F59C6B"), 28.0, 120.0));
     build_jg(&mut f, JgDyn { fire: 1.0, t, extra_std: rifle_down_draws(1.0, 0.0) });
     let k = cam_k(lt, d, 0.1);
@@ -2342,8 +2359,8 @@ impl Renderer {
             format!("#{r:02X}{g:02X}{b:02X}")
         };
         let textures_px: Vec<(Vec<u8>, u32, u32)> = vec![
-            paint_sky("#6E9CC0", "#D8E8DA"),
-            paint_sky("#6E9CC0", "#E4EEDC"),
+            paint_sky("#6E9CC0", "#D8E8DA", "#BFE4F7"),
+            paint_sky("#6E9CC0", "#E4EEDC", "#BFE4F7"),
             paint_grass("#5B9A48"),
             paint_grass("#5E8F52"),
             paint_cloud(),
@@ -2360,6 +2377,9 @@ impl Renderer {
             paint_planks("#B07A48"),
             paint_wallpaper("#3A2E22", &ceil_motif),
             paint_planks("#7A3E24"),
+            paint_sky("#C8CDD0", "#E6E9EA", "#D8DCDE"),
+            paint_sky("#4A90D9", "#FFD98A", "#FFD98A"),
+            paint_sky("#3B3F8F", "#F59C6B", "#F59C6B"),
         ];
         let upload = |device: &wgpu::Device, queue: &wgpu::Queue, px: &[u8], w: u32, h: u32, format: wgpu::TextureFormat| -> wgpu::Texture {
             let tex = device.create_texture(&wgpu::TextureDescriptor {

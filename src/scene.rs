@@ -1340,23 +1340,33 @@ pub(crate) fn paint_grass(base: &str) -> (Vec<u8>, u32, u32) {
 /// y > 0: mix(horizon, top, pow(clamp(y*1.6, 0, 1), 0.7)); below the
 /// horizon the ground colour defaults to the horizon colour. The mix
 /// is done in linear space like three.js colour management.
-pub(crate) fn paint_sky(top_hex: &str, horizon_hex: &str) -> (Vec<u8>, u32, u32) {
+pub(crate) fn paint_sky(top_hex: &str, horizon_hex: &str, ground_hex: &str) -> (Vec<u8>, u32, u32) {
+    // The source dome is a ShaderMaterial (world.ts sky()):
+    //   y > 0: mix(hor, top, pow(clamp(y*1.6, 0, 1), 0.7));  y <= 0: gnd
+    // with y = normalize(position).y. On the UV sphere the polar angle
+    // is linear in v (v = 1 - theta/pi), so the direction's y at a
+    // fragment is cos(pi*(1-v)) — NOT linear in v. Rows below the
+    // horizon carry the flat ground colour.
     let (w, h) = (2usize, 512usize);
     let top = hex_lin(top_hex);
     let hor = hex_lin(horizon_hex);
+    let gnd = hex_lin(ground_hex);
     let mut px = vec![0u8; w * h * 4];
     for j in 0..h {
         // wgpu samples memory row j at v = (j + 0.5) / h, and the
-        // dome's uv has v = 1 at the top pole, so row j carries the
-        // direction ny = 2v - 1 for ITS v.
+        // dome's uv has v = 1 at the top pole.
         let v = (j as f32 + 0.5) / h as f32;
-        let ny = 2.0 * v - 1.0;
-        let t = if ny > 0.0 { (ny * 1.6).clamp(0.0, 1.0).powf(0.7) } else { 0.0 };
-        let col = [
-            hor[0] + (top[0] - hor[0]) * t,
-            hor[1] + (top[1] - hor[1]) * t,
-            hor[2] + (top[2] - hor[2]) * t,
-        ];
+        let ny = (std::f32::consts::PI * (1.0 - v)).cos();
+        let col = if ny > 0.0 {
+            let t = (ny * 1.6).clamp(0.0, 1.0).powf(0.7);
+            [
+                hor[0] + (top[0] - hor[0]) * t,
+                hor[1] + (top[1] - hor[1]) * t,
+                hor[2] + (top[2] - hor[2]) * t,
+            ]
+        } else {
+            gnd
+        };
         for i in 0..w {
             let k = (j * w + i) * 4;
             px[k] = (linear_to_srgb(col[0]) * 255.0).round() as u8;

@@ -690,7 +690,7 @@ pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str, pos
         .to_rgba8();
     let (cap_w, cap_h) = caption_img.dimensions();
     let textures_px: [(Vec<u8>, u32, u32); 6] = [
-        paint_sky("#6E9CC0", "#D8E8DA"),
+        paint_sky("#6E9CC0", "#D8E8DA", "#BFE4F7"),
         paint_grass("#5B9A48"),
         paint_cloud(),
         paint_blob(),
