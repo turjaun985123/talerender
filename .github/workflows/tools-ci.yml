@@ -252,3 +252,187 @@ jobs:
       # verdict.
       - name: WGSL shader structural check
         run: python3 tools/ci/check_shaders.py --repo .
+
+      # W42's strictness checker proves itself before it is
+      # trusted with the corpus: the clean fixture exercises the
+      # full loader surface and must pass with ZERO tolerated
+      # occurrences (the known sets are the loader's, not the
+      # corpus's habits); the allowlisted fixture passes on its
+      # citations; and every planted unknown must FAIL with its
+      # exact path named — a checker that stops biting turns
+      # this red (same negative-control discipline as the
+      # light-rig and asset fixture steps above).
+      - name: Unknown-field strictness (fixtures — clean passes, planted fails named)
+        run: |
+          python3 tools/format/check_unknown_fields.py tools/format/fixtures/unknown_fields/fx-clean.scene.json
+          python3 tools/format/check_unknown_fields.py tools/format/fixtures/unknown_fields/fx-allowlisted.scene.json
+          if python3 tools/format/check_unknown_fields.py tools/format/fixtures/unknown_fields/fx-unknown.scene.json > "$RUNNER_TEMP/uf-unknown.log" 2>&1; then
+            echo "::error::fx-unknown unexpectedly PASSED"; exit 1
+          fi
+          cat "$RUNNER_TEMP/uf-unknown.log"
+          grep -F "first at $.bogus" "$RUNNER_TEMP/uf-unknown.log"
+          grep -F "first at $.nodes[0].bogosity" "$RUNNER_TEMP/uf-unknown.log"
+          grep -F "first at $.nodes[0].material.shininess" "$RUNNER_TEMP/uf-unknown.log"
+          if python3 tools/format/check_unknown_fields.py tools/format/fixtures/unknown_fields/fx-film-data.json > "$RUNNER_TEMP/uf-film-data.log" 2>&1; then
+            echo "::error::fx-film-data unexpectedly PASSED"; exit 1
+          fi
+          cat "$RUNNER_TEMP/uf-film-data.log"
+          grep -F "first at $.studio" "$RUNNER_TEMP/uf-film-data.log"
+          grep -F "first at $.captions[0].bogus" "$RUNNER_TEMP/uf-film-data.log"
+          if python3 tools/format/check_unknown_fields.py tools/format/fixtures/unknown_fields/fx-manifest.json > "$RUNNER_TEMP/uf-manifest.log" 2>&1; then
+            echo "::error::fx-manifest unexpectedly PASSED"; exit 1
+          fi
+          cat "$RUNNER_TEMP/uf-manifest.log"
+          grep -F "first at $.segments[0].bogus" "$RUNNER_TEMP/uf-manifest.log"
+
+      # Report-only + ratchet, per STRICTNESS-W42 section 7
+      # Option A: the corpus legitimately carries 196 unknown-key
+      # occurrences in 15 paths today (the F3-a/b/c register —
+      # dead generator provenance, uncited note fields, bookshop
+      # residue), so the checker itself can never go green here
+      # and a hard gate would be red forever. Instead the
+      # baseline (tools/format/unknown_fields_baseline.json,
+      # transcribed from STRICTNESS-W42.md section 6) pins the
+      # register, and this step fails only on GROWTH: a path not
+      # in the baseline, or a baselined path whose occurrence
+      # count increased. Shrinkage passes and prints the lowered
+      # register in the baseline's own shape, so a data fix
+      # lowers the baseline in the same PR. The checker's exit 2
+      # (input error — e.g. a corpus file deleted or unreadable)
+      # fails the step outright: a missing file is never read as
+      # shrinkage. The corpus is W42's 27-file command verbatim,
+      # globs unexpanded in the YAML so new scene files join the
+      # corpus automatically (fixtures stay excluded — the globs
+      # are single-level, scenes/fixtures/ is not matched).
+      # Tolerated occurrences are reported by the checker but are
+      # NOT gated: growth in the cited dialect is legal.
+      - name: Unknown-field ratchet (real corpus vs baseline — growth fails)
+        run: |
+          LOG="$RUNNER_TEMP/unknown-fields.log"
+          set +e
+          python3 tools/format/check_unknown_fields.py \
+            scenes/*.scene.json scenes/film/*.scene.json \
+            scenes/film/film.json scenes/film/s07-calendar.json \
+            scenes/sets/*.scene.json scenes/atmospheres.json \
+            film/onoda.json film/assets/plates.json > "$LOG" 2>&1
+          RC=$?
+          set -e
+          cat "$LOG"
+          if [ "$RC" -eq 2 ]; then
+            echo "::error::check_unknown_fields input error (exit 2) — a corpus file is missing or unreadable; the ratchet never treats that as shrinkage"
+            exit 1
+          fi
+          python3 - "$LOG" <<'EOF'
+          import json, re, sys
+
+          log_path = sys.argv[1]
+          text = open(log_path, encoding="utf-8").read()
+          line_re = re.compile(
+              r"^    (\S+): (\S+) \u2014 unknown key '([^']+)' in (\S+) object "
+              r"\((\d+) occurrence\(s\); first at ", re.M)
+          run = {}
+          for f, pattern, key, ctx, n in line_re.findall(text):
+              run[(f, pattern, key, ctx)] = int(n)
+
+          base = json.load(open("tools/format/unknown_fields_baseline.json",
+                                encoding="utf-8"))
+          bmap = {}
+          for p in base["paths"]:
+              bmap[(p["file"], p["pattern"], p["key"], p["context"])] = \
+                  p["occurrences"]
+
+          failures = []
+          for k in sorted(run):
+              if k not in bmap:
+                  failures.append(
+                      "NEW unknown-key path (not in baseline): %s %s key '%s' "
+                      "(%s) x%d" % (k[0], k[1], k[2], k[3], run[k]))
+              elif run[k] > bmap[k]:
+                  failures.append(
+                      "GREW past baseline: %s %s key '%s' (%s) %d -> %d"
+                      % (k[0], k[1], k[2], k[3], bmap[k], run[k]))
+          total = sum(run.values())
+          if total > base["totalOccurrences"]:
+              failures.append("TOTAL unknown occurrences grew: %d -> %d"
+                              % (base["totalOccurrences"], total))
+
+          if failures:
+              for f in failures:
+                  print("::error::" + f)
+              print("RATCHET: FAIL - %d growth finding(s); baseline is "
+                    "tools/format/unknown_fields_baseline.json "
+                    "(STRICTNESS-W42.md section 6)" % len(failures))
+              sys.exit(1)
+
+          shrunk = []
+          for k in sorted(bmap):
+              if k not in run:
+                  shrunk.append("RESOLVED: %s %s key '%s' (%s) was x%d, now "
+                                "absent" % (k[0], k[1], k[2], k[3], bmap[k]))
+              elif run[k] < bmap[k]:
+                  shrunk.append("DECREASED: %s %s key '%s' (%s) %d -> %d"
+                                % (k[0], k[1], k[2], k[3], bmap[k], run[k]))
+          for s in shrunk:
+              print(s)
+          print("RATCHET: PASS - %d unknown-key occurrence(s) in %d distinct "
+                "path(s), baseline %d in %d; no growth"
+                % (total, len(run), base["totalOccurrences"], len(bmap)))
+          if shrunk:
+              print("The register shrank - lower the baseline in this PR by "
+                    "saving the register below over "
+                    "tools/format/unknown_fields_baseline.json:")
+              by_key = {}
+              for p in base["paths"]:
+                  by_key[(p["file"], p["pattern"], p["key"],
+                          p["context"])] = p
+              new = dict(base)
+              new["paths"] = []
+              for k in sorted(run):
+                  entry = dict(by_key[k])
+                  entry["occurrences"] = run[k]
+                  new["paths"].append(entry)
+              new["totalOccurrences"] = total
+              new["distinctPaths"] = len(run)
+              print(json.dumps(new, indent=2, sort_keys=True))
+          EOF
+
+      # W44's native contact-sheet tool verifies itself: the
+      # suite tiles the 90 synthetic fixture frames (all committed
+      # — tools/film/fixtures/sheet/frames/, covered by the
+      # .gitignore fixture negations) and checks dimensions via
+      # ffprobe plus tile order/identity via an ffmpeg rawvideo
+      # decode; its negative cases are inside the suite (a sampled
+      # frame removed must fail BY NAME with no sheet left; ffmpeg
+      # absent must exit 2). Exit 0 from run_tests.py IS the
+      # 10/10 verdict. Needs ffmpeg + ffprobe on the runner (the
+      # ubuntu-22.04 hosted image ships both; if a future image
+      # drops them this step fails loudly inside case A/D, never
+      # silently). ~9 s on the dev VM.
+      - name: Native contact sheet suite (10/10)
+        run: python3 tools/film/fixtures/sheet/run_tests.py
+
+      # §15 conformance (scene-format §15, folded in with this
+      # step so the doc and its checker cannot drift apart): the
+      # valid composite and the note-only fixture pass; every
+      # planted violation fails — a checker that stops biting
+      # turns this red (same discipline as the steps above).
+      - name: Format §15 conformance (fixtures — valid passes, planted fails)
+        run: |
+          python3 tools/format/check_format15.py tools/format/fixtures/format15/valid-composite.scene.json
+          python3 tools/format/check_format15.py tools/format/fixtures/format15/note-first-key-ease.scene.json
+          for f in bad-guard-version bad-guard-shape bad-guard-stray-pid \
+                   bad-guard-stray-cliptime bad-prefab-closed-key bad-clip-ease \
+                   bad-colour-lane bad-step-channel bad-placement; do
+            if python3 tools/format/check_format15.py tools/format/fixtures/format15/$f.scene.json; then
+              echo "::error::$f unexpectedly PASSED"; exit 1
+            fi
+          done
+
+      # §15 trivial pass over the production corpus: no real
+      # scene or film-data file uses the extensions yet (§15.10),
+      # so every file must validate — the day one fails, either
+      # the data grew an extension (adoption step 2's business)
+      # or the checker drifted from the format.
+      - name: Format §15 conformance (production corpus — trivial pass)
+        run: |
+          python3 tools/format/check_format15.py scenes/*.scene.json scenes/film/*.scene.json film/onoda.json
