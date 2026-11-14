@@ -227,11 +227,20 @@
   {
    "line": 1,
    "s": 6.6899999999999995,
-   "e": 8.530000000000001,
-   "text": "was a Japanese soldier",
-   "width": 1024.05,
-   "fit": 0.93746,
+   "e": 7.87,
+   "text": "was a Japanese",
+   "width": 699.34,
+   "fit": 1.0,
    "strip": "cap_014.png"
+  },
+  {
+   "line": 1,
+   "s": 7.87,
+   "e": 8.530000000000001,
+   "text": "soldier",
+   "width": 307.17,
+   "fit": 1.0,
+   "strip": "cap_015.png"
   },
   {
    "line": 1,
@@ -240,7 +249,7 @@
    "text": "sent to",
    "width": 304.25,
    "fit": 1.0,
-   "strip": "cap_015.png"
+   "strip": "cap_016.png"
   },
   {
    "line": 1,
@@ -249,7 +258,7 @@
    "text": "a Philippine island",
    "width": 801.14,
    "fit": 1.0,
-   "strip": "cap_016.png"
+   "strip": "cap_017.png"
   },
   {
    "line": 1,
@@ -258,7 +267,7 @@
    "text": "in 1944.",
    "width": 353.38,
    "fit": 1.0,
-   "strip": "cap_017.png"
+   "strip": "cap_018.png"
   },
   {
    "line": 2,
@@ -267,7 +276,7 @@
    "text": "His orders",
    "width": 451.8,
    "fit": 1.0,
-   "strip": "cap_018.png"
+   "strip": "cap_019.png"
   },
   {
    "line": 2,
@@ -276,7 +285,7 @@
    "text": "were simple:",
    "width": 565.86,
    "fit": 1.0,
-   "strip": "cap_019.png"
+   "strip": "cap_020.png"
   },
   {
    "line": 2,
@@ -285,7 +294,7 @@
    "text": "never surrender.",
    "width": 740.95,
    "fit": 1.0,
-   "strip": "cap_020.png"
+   "strip": "cap_021.png"
   },
   {
    "line": 3,
@@ -294,7 +303,7 @@
    "text": "In 1945,",
    "width": 351.0,
    "fit": 1.0,
-   "strip": "cap_021.png"
+   "strip": "cap_022.png"
   },
   {
    "line": 3,
@@ -303,7 +312,7 @@
    "text": "the war ended.",
    "width": 658.97,
    "fit": 1.0,
-   "strip": "cap_022.png"
+   "strip": "cap_023.png"
   },
   {
    "line": 3,
@@ -312,7 +321,7 @@
    "text": "But Onoda",
    "width": 458.34,
    "fit": 1.0,
-   "strip": "cap_023.png"
+   "strip": "cap_024.png"
   },
   {
    "line": 3,
@@ -321,7 +330,7 @@
    "text": "never got",
    "width": 419.44,
    "fit": 1.0,
-   "strip": "cap_024.png"
+   "strip": "cap_025.png"
   },
   {
    "line": 3,
@@ -330,16 +339,25 @@
    "text": "the message.",
    "width": 599.22,
    "fit": 1.0,
-   "strip": "cap_025.png"
+   "strip": "cap_026.png"
   },
   {
    "line": 4,
    "s": 21.61,
+   "e": 22.09,
+   "text": "Planes dropped",
+   "width": 687.14,
+   "fit": 1.0,
+   "strip": "cap_027.png"
+  },
+  {
+   "line": 4,
+   "s": 22.09,
    "e": 22.61,
-   "text": "Planes dropped leaflets",
-   "width": 1040.44,
-   "fit": 0.92269,
-   "strip": "cap_026.png"
+   "text": "leaflets",
+   "width": 335.77,
+   "fit": 1.0,
+   "strip": "cap_028.png"
   },
   {
    "line": 4,
@@ -348,7 +366,7 @@
    "text": "saying the war",
    "width": 647.28,
    "fit": 1.0,
-   "strip": "cap_027.png"
+   "strip": "cap_029.png"
   },
   {
    "line": 4,
@@ -357,7 +375,7 @@
    "text": "was over.",
    "width": 425.09,
    "fit": 1.0,
-   "strip": "cap_028.png"
+   "strip": "cap_030.png"
   },
   {
    "line": 4,
@@ -366,7 +384,7 @@
    "text": "He thought it",
    "width": 569.84,
    "fit": 1.0,
-   "strip": "cap_029.png"
+   "strip": "cap_031.png"
   },
   {
    "line": 4,
@@ -375,7 +393,7 @@
    "text": "was an enemy",
    "width": 626.89,
    "fit": 1.0,
-   "strip": "cap_030.png"
+   "strip": "cap_032.png"
   },
   {
    "line": 4,
@@ -384,7 +402,7 @@
    "text": "trick.",
    "width": 238.62,
    "fit": 1.0,
-   "strip": "cap_031.png"
+   "strip": "cap_033.png"
   },
   {
    "line": 5,
@@ -393,7 +411,7 @@
    "text": "His friends",
    "width": 481.72,
    "fit": 1.0,
-   "strip": "cap_032.png"
+   "strip": "cap_034.png"
   },
   {
    "line": 5,
@@ -402,7 +420,7 @@
    "text": "gave up",
    "width": 346.81,
    "fit": 1.0,
-   "strip": "cap_033.png"
+   "strip": "cap_035.png"
   },
   {
    "line": 5,
@@ -411,7 +429,7 @@
    "text": "or died,",
    "width": 336.56,
    "fit": 1.0,
-   "strip": "cap_034.png"
+   "strip": "cap_036.png"
   },
   {
    "line": 5,
@@ -420,7 +438,7 @@
    "text": "until he",
    "width": 329.62,
    "fit": 1.0,
-   "strip": "cap_035.png"
+   "strip": "cap_037.png"
   },
   {
    "line": 5,
@@ -429,7 +447,7 @@
    "text": "was alone.",
    "width": 475.45,
    "fit": 1.0,
-   "strip": "cap_036.png"
+   "strip": "cap_038.png"
   },
   {
    "line": 6,
@@ -438,7 +456,7 @@
    "text": "He lived",
    "width": 353.34,
    "fit": 1.0,
-   "strip": "cap_037.png"
+   "strip": "cap_039.png"
   },
   {
    "line": 6,
@@ -447,7 +465,7 @@
    "text": "in the jungle",
    "width": 541.16,
    "fit": 1.0,
-   "strip": "cap_038.png"
+   "strip": "cap_040.png"
   },
   {
    "line": 6,
@@ -456,16 +474,25 @@
    "text": "for decades,",
    "width": 557.91,
    "fit": 1.0,
-   "strip": "cap_039.png"
+   "strip": "cap_041.png"
   },
   {
    "line": 6,
    "s": 31.549999999999997,
+   "e": 32.01,
+   "text": "surviving",
+   "width": 425.88,
+   "fit": 1.0,
+   "strip": "cap_042.png"
+  },
+  {
+   "line": 6,
+   "s": 32.01,
    "e": 32.99,
-   "text": "surviving on coconuts",
-   "width": 989.95,
-   "fit": 0.96974,
-   "strip": "cap_040.png"
+   "text": "on coconuts",
+   "width": 546.55,
+   "fit": 1.0,
+   "strip": "cap_043.png"
   },
   {
    "line": 6,
@@ -474,7 +501,7 @@
    "text": "and bananas.",
    "width": 598.11,
    "fit": 1.0,
-   "strip": "cap_041.png"
+   "strip": "cap_044.png"
   },
   {
    "line": 7,
@@ -483,7 +510,7 @@
    "text": "In 1974,",
    "width": 336.66,
    "fit": 1.0,
-   "strip": "cap_042.png"
+   "strip": "cap_045.png"
   },
   {
    "line": 7,
@@ -492,16 +519,25 @@
    "text": "a young traveler",
    "width": 715.36,
    "fit": 1.0,
-   "strip": "cap_043.png"
+   "strip": "cap_046.png"
   },
   {
    "line": 7,
    "s": 37.129999999999995,
-   "e": 38.449999999999996,
-   "text": "named Norio Suzuki",
-   "width": 884.11,
+   "e": 38.07,
+   "text": "named Norio",
+   "width": 562.33,
    "fit": 1.0,
-   "strip": "cap_044.png"
+   "strip": "cap_047.png"
+  },
+  {
+   "line": 7,
+   "s": 38.07,
+   "e": 38.449999999999996,
+   "text": "Suzuki",
+   "width": 304.25,
+   "fit": 1.0,
+   "strip": "cap_048.png"
   },
   {
    "line": 7,
@@ -510,7 +546,7 @@
    "text": "found him.",
    "width": 478.55,
    "fit": 1.0,
-   "strip": "cap_045.png"
+   "strip": "cap_049.png"
   },
   {
    "line": 7,
@@ -519,7 +555,7 @@
    "text": "Onoda still refused",
    "width": 834.8,
    "fit": 1.0,
-   "strip": "cap_046.png"
+   "strip": "cap_050.png"
   },
   {
    "line": 7,
@@ -528,7 +564,7 @@
    "text": "to leave.",
    "width": 378.27,
    "fit": 1.0,
-   "strip": "cap_047.png"
+   "strip": "cap_051.png"
   },
   {
    "line": 8,
@@ -537,7 +573,7 @@
    "text": "He said",
    "width": 324.02,
    "fit": 1.0,
-   "strip": "cap_048.png"
+   "strip": "cap_052.png"
   },
   {
    "line": 8,
@@ -546,7 +582,7 @@
    "text": "he would only stop",
    "width": 827.75,
    "fit": 1.0,
-   "strip": "cap_049.png"
+   "strip": "cap_053.png"
   },
   {
    "line": 8,
@@ -555,16 +591,25 @@
    "text": "if his own",
    "width": 421.64,
    "fit": 1.0,
-   "strip": "cap_050.png"
+   "strip": "cap_054.png"
   },
   {
    "line": 8,
    "s": 44.01,
+   "e": 44.43,
+   "text": "commander",
+   "width": 532.11,
+   "fit": 1.0,
+   "strip": "cap_055.png"
+  },
+  {
+   "line": 8,
+   "s": 44.43,
    "e": 45.394999999999996,
-   "text": "commander ordered it.",
-   "width": 1007.39,
-   "fit": 0.95296,
-   "strip": "cap_051.png"
+   "text": "ordered it.",
+   "width": 457.75,
+   "fit": 1.0,
+   "strip": "cap_056.png"
   },
   {
    "line": 9,
@@ -573,16 +618,25 @@
    "text": "So Japan found",
    "width": 682.92,
    "fit": 1.0,
-   "strip": "cap_052.png"
+   "strip": "cap_057.png"
   },
   {
    "line": 9,
    "s": 46.39,
-   "e": 47.769999999999996,
-   "text": "his old commander,",
-   "width": 867.3,
+   "e": 46.93,
+   "text": "his old",
+   "width": 290.33,
    "fit": 1.0,
-   "strip": "cap_053.png"
+   "strip": "cap_058.png"
+  },
+  {
+   "line": 9,
+   "s": 46.93,
+   "e": 47.769999999999996,
+   "text": "commander,",
+   "width": 559.44,
+   "fit": 1.0,
+   "strip": "cap_059.png"
   },
   {
    "line": 9,
@@ -591,7 +645,7 @@
    "text": "now a bookseller,",
    "width": 772.3,
    "fit": 1.0,
-   "strip": "cap_054.png"
+   "strip": "cap_060.png"
   },
   {
    "line": 9,
@@ -600,7 +654,7 @@
    "text": "and flew him",
    "width": 560.62,
    "fit": 1.0,
-   "strip": "cap_055.png"
+   "strip": "cap_061.png"
   },
   {
    "line": 9,
@@ -609,7 +663,7 @@
    "text": "to the island.",
    "width": 573.62,
    "fit": 1.0,
-   "strip": "cap_056.png"
+   "strip": "cap_062.png"
   },
   {
    "line": 10,
@@ -618,7 +672,7 @@
    "text": "He finally",
    "width": 420.47,
    "fit": 1.0,
-   "strip": "cap_057.png"
+   "strip": "cap_063.png"
   },
   {
    "line": 10,
@@ -627,16 +681,25 @@
    "text": "gave the order,",
    "width": 662.58,
    "fit": 1.0,
-   "strip": "cap_058.png"
+   "strip": "cap_064.png"
   },
   {
    "line": 10,
    "s": 52.07,
+   "e": 52.99,
+   "text": "and Onoda",
+   "width": 473.73,
+   "fit": 1.0,
+   "strip": "cap_065.png"
+  },
+  {
+   "line": 10,
+   "s": 52.99,
    "e": 53.57,
-   "text": "and Onoda surrendered",
-   "width": 1040.03,
-   "fit": 0.92305,
-   "strip": "cap_059.png"
+   "text": "surrendered",
+   "width": 548.77,
+   "fit": 1.0,
+   "strip": "cap_066.png"
   },
   {
    "line": 10,
@@ -645,7 +708,7 @@
    "text": "after 29 years.",
    "width": 646.92,
    "fit": 1.0,
-   "strip": "cap_060.png"
+   "strip": "cap_067.png"
   },
   {
    "line": 11,
@@ -654,7 +717,7 @@
    "text": "He wasn't hiding",
    "width": 737.27,
    "fit": 1.0,
-   "strip": "cap_061.png"
+   "strip": "cap_068.png"
   },
   {
    "line": 11,
@@ -663,7 +726,7 @@
    "text": "from the war.",
    "width": 586.48,
    "fit": 1.0,
-   "strip": "cap_062.png"
+   "strip": "cap_069.png"
   },
   {
    "line": 11,
@@ -672,7 +735,7 @@
    "text": "He was just",
    "width": 505.53,
    "fit": 1.0,
-   "strip": "cap_063.png"
+   "strip": "cap_070.png"
   },
   {
    "line": 11,
@@ -681,7 +744,7 @@
    "text": "still loyal",
    "width": 395.42,
    "fit": 1.0,
-   "strip": "cap_064.png"
+   "strip": "cap_071.png"
   },
   {
    "line": 11,
@@ -690,7 +753,7 @@
    "text": "to it.",
    "width": 200.86,
    "fit": 1.0,
-   "strip": "cap_065.png"
+   "strip": "cap_072.png"
   }
  ]
 }
