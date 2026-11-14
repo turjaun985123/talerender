@@ -1,0 +1,72 @@
+name: Knobs gate (dispatch)
+
+# The F4 knobs acceptance gate (tools/ci/knobs_gate.py;
+# KNOBS-W43 §5, pack KNOBS-PATCH-W54 §10, invocation per
+# KNOBS-P23-W73 §4). Three legs, one invocation, in order:
+#   A — defaults identity: no flags vs --res 1 --aa 4
+#       --shadow 2048 over the standing probe ranges must be
+#       byte-identical (40/40) with no DRAFT in either stdout.
+#   B — draft smoke: --draft frames must differ from leg A's,
+#       carry the exact DRAFT tag, and measure 540x960.
+#   C — CLI validation: ten bad/missing values exit 2 with
+#       `error:` and never the `unknown argument` refusal.
+#
+# Environment mirrors determinism.yml / render.yml exactly
+# (ubuntu-22.04, Mesa lavapipe, ICD pinned, mold, rust-cache):
+# the film legs cannot run on the development VM (its llvmpipe
+# segfaults compiling shader_pbr.wgsl).
+#
+# Verdict discipline mirrors the gate tool's own: the report's
+# final line is exactly "KNOBS GATE: PASS" / "KNOBS GATE:
+# FAIL", exits 0/1, and exit 2 with NO verdict line for
+# refusals. This job passes only on exit 0 with the PASS line
+# present. A lavapipe PASS discharges the CI leg; per-knob
+# intermediate values (e.g. --aa 2 alone) are PC-session spot
+# checks, not gated here (pack §10, stated plainly there).
+
+on:
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+  RUSTFLAGS: "-C link-arg=-fuse-ld=mold"
+
+jobs:
+  knobs:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+      - name: Install mold + lavapipe
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mold mesa-vulkan-drivers vulkan-tools
+          ICD=$(ls /usr/share/vulkan/icd.d/lvp_icd*.json | head -n 1)
+          echo "VK_ICD_FILENAMES=$ICD" >> "$GITHUB_ENV"
+          echo "lavapipe ICD: $ICD"
+      - name: Build
+        run: cargo build --release
+      - name: Knobs gate
+        id: knobs
+        run: |
+          set +e
+          python3 tools/ci/knobs_gate.py \
+            ./target/release/talerender \
+            --film-dir film --work "$RUNNER_TEMP/knobs"
+          echo "script_rc=$?" >> "$GITHUB_OUTPUT"
+      - name: Verdict (the PASS line is the verdict)
+        run: |
+          grep -qx "KNOBS GATE: PASS" \
+            "$RUNNER_TEMP/knobs/knobs-results.txt"
+      - name: Upload knobs results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: knobs-${{ github.run_id }}
+          path: ${{ runner.temp }}/knobs
+          retention-days: 7
