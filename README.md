@@ -13,25 +13,32 @@ replaces the 2D characters with modelled 3D characters.
 
 ## Status
 
+All milestones are complete, and production integration is proven on a
+complete short. (This table was stale at M1 for a long time; it now
+reflects the record in `docs/` and the goal ledger.)
+
 | Milestone | Scope | State |
 |---|---|---|
 | M0 | Repository audit of Tall Tale Shorts (API / browser / shader inventory) | **Complete** — 6 audit findings + ADR-001 + compatibility contract + risk register (see docs/) |
-| M1 | Native wgpu prototype: offscreen render → PNG, headless | In progress — smoke frame + first real 3D scene (perspective camera, lit cube, textured character card) rendered and verified in CI; the §28 reproduction of a real Tall Tale scene with A/B evidence is the remaining step |
-| M2 | Core Three.js compatibility (Scene/Object3D/Mesh/Camera/…) | Not started |
-| M3 | One real Tall Tale scene migrated + visual A/B vs Chrome | Not started |
-| M4 | Animation & character parity | Not started |
-| M5 | Cinematic quality (shadows, bloom, DOF, grading) | Not started |
-| M6 | Native production capture + FFmpeg integration | Not started |
-| M7 | Full project integration | Not started |
-| M8 | Production hardening & release | Not started |
+| M1 | Native wgpu prototype: offscreen render → PNG, headless | **Complete** — real 3D scene (perspective camera, lit cube, billboarded character card) rendered in CI |
+| §28 | Real-scene A/B: Onoda S01 t=1.50 vs the Chrome original | **Complete** — PSNR 20.152 dB |
+| M2 | Scene format v1 + JSON loader | **Complete** (2a7ff89) — ab1-as-data 95.17 dB vs hand-authored, dof-chart-as-data 84.49 dB, hand-authored modes pixel-identical |
+| M3 | Bokeh depth-of-field parity gate | **PASS** (b0de44e) — blur width within 0.05 px at all 10 chart depths; full-frame PSNR 47.38 dB |
+| M4 | Painter stroke battery (Skia parity, contract §2) | **PASS 46/46** (819ee16) — full character alpha PSNR 47.88 dB |
+| M5 | Composer completion (shadows, PMREM lighting, bloom, GRADE) | **PASS** (79aff03) — ablation on Onoda S01: 21.36 → 21.42 → 23.850 dB |
+| M6 | QA telemetry: native cutouts() vs Chrome (contract §3) | **PASS — exact agreement** (9a8cc79); JPEG q0.93 decision resolved: native frames stay clean (user decision (B), 801f85c) |
+| Production integration | Scene format v2, film driver, native telemetry gate, FFmpeg finishing, skill capture backend | **Complete, with named remainders** — the full Onoda short (14 segments, 1,811 frames @ 1080×1920, 30 fps) rendered natively in CI; final-head A/B vs Chrome: **mean 23.02 dB** (60 pairs); telemetry verdict recorded with the caption waiver ruling; finished MP4 proof delivered. Full record: [docs/integration/FINAL-REPORT.md](docs/integration/FINAL-REPORT.md), proof package in [docs/ab/film/](docs/ab/film/) |
 
 Architecture record: [docs/audit/](docs/audit/) (M0 findings) · [docs/ADR-001-talerender-architecture.md](docs/ADR-001-talerender-architecture.md) · [docs/compatibility-contract.md](docs/compatibility-contract.md) · [docs/risk-register.md](docs/risk-register.md)
 
-What exists today is the Milestone 1 smoke frame: wgpu initialises on the Vulkan
-backend, renders one 1080×1920 frame to an offscreen texture and writes a PNG.
-The shader draws a simple test scene (sky, sun, ground, character card). It is
-scaffolding that proves the pipeline end to end — it is **not** a migrated
-Tall Tale scene, and it does not claim visual parity with anything yet.
+What exists today is the complete native pipeline: a JSON scene format
+(v2) with a real character node, the full composer chain, a film driver
+that renders a complete short under a telemetry gate, and FFmpeg
+finishing — proven end to end on "THE SOLDIER WHO DIDN'T KNOW THE WAR
+WAS OVER". Remaining, by design: GPU proof on the target PC (RADV —
+every number so far is CI lavapipe), the golden-frame pins (deliberate
+human acts), and the decision on adopting the native backend into the
+shipped skill (a verified work copy exists; Chrome remains the default).
 
 ## Honest rendering notes
 
