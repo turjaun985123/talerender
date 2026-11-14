@@ -236,7 +236,7 @@ Binding constraints:
 | Lead | **gpucore site 3/5 ab1** `9f497c7` CI (43620828640) SUCCESS; fresh ab1 dispatch 43621168728 (below) | SUCCESS |
 | Lead | **gpucore site 4/5 main** `dc0e555` CI SUCCESS (43621168728 list) | SUCCESS |
 | Lead | **gpucore site 5/5 film + F1** `aadc193` CI SUCCESS — migration COMPLETE (5/5); post-migration film probes (runs 43621922784 / 43621929764): 795–814 **20/20** + 1195–1204 **10/10 byte-identical** vs post-wiring defaults (= `f021991` bytes). main.rs's duplicate `request_adapter` deleted — audit finding B CLOSED | PASS, pin discharged |
-| Lead | ab1 fresh render at `9f497c7` (run 43621168728): sha256 `60c32c1a…`; vs Chrome **23.98 dB**, vs the `c00897d` candidate `a415ead8…` **53.50 dB**, candidate vs Chrome 23.96 dB (sampler validated against the recorded pair) — the basis for Golden Act 2 (below) | MEASURED |
+| Lead | ab1 fresh render at `dc0e555` (run 43621168728): sha256 `60c32c1a…`; vs Chrome **23.98 dB**, vs the `c00897d` candidate `a415ead8…` **53.50 dB**, candidate vs Chrome 23.96 dB (sampler validated against the recorded pair) — the basis for Golden Act 2 (below). **[Cite corrected per W63 §3: this row originally read `9f497c7`; the run's head was `dc0e555` (site 4/5 had already landed). The Act-2 commit message carries the same slip and is immutable; this row is the correction of record.]** | MEASURED |
 | Lead | Tools-ci wiring (W39) `630d82e`: validators verified locally pre-wiring (lights 6/6, assets 5/5+6/6, shaders 21/21) | SUCCESS at wiring head |
 | B4 push | HEAD `f6616aa` CI (43622186461) | SUCCESS (gate PASS-WITH-NOTES) |
 | Incident | **Tools CI RED at `630d82e`/`f6616aa`** (runs 43622033396, 43622186445): the new "Asset references" step existence-failed the film manifest's 3 absolute machine paths (`project`, `audio.projectPath`, derived `audio.file`) on runners — W28 F2 (manifest is machine-bound) colliding with a check-2/check-4 classification inconsistency. Lead fix `617ea4e`: absolute-rooted refs are classified by check 4 (report-only; `audio.file` now flagged when its `project` base is absolute) and skipped by check 2; relative missing refs still fail (missing fixture rc 1 re-verified); new fixture `scenes/fixtures/assets/abs-path` proves the rule (PASS 5/5, exactly 3 check-4 warnings); manifest portability count 17→18 disclosed (audio.file newly classified). Main CI on `617ea4e` SUCCESS; manifest/driver step green in CI from run 43622601972 | FIXED (lead) |
@@ -248,6 +248,19 @@ Binding constraints:
 | Lead | **GOLDEN ACT 2** (separate act): ab1-composer re-pinned `d7bd71a0…` → `60c32c1a…` — the FRESH head frame (run 43621168728), not the `c00897d` candidate, for the reason recorded in the repin packet's updated State line (candidate predates the exact-key fix chain; a pin describes current production output; A/B vs Chrome unchanged at 23.98 dB). Scope guard: pin diff = exactly the ab1 line; film frames moved aside during the act, restored; pack verifies 18/18 OK | **STRUCK** |
 | Lead | Module registration `2328e6f` CI (43619241590): 174 passed / **1 failed** — `gpucore::tests::strip_padding_drops_sentinels` (first-ever execution of W07's CI-pending tests; the test's payload pattern aliased its own 0xEE sentinel at x=238 — a seat test bug, not a module defect) | FAILURE → fixed `38930fa` |
 | Lead | PaintBudget + RunLog wiring `86f0c81` CI (43619649089) — suite 175/175 incl. the fixed gpucore test | SUCCESS |
+| Lead | Errors step-2 gates at the post-step-2 head: dof-chart dispatch 43624002645 sha `957d5573…` byte-identical; fx-textures dispatch 43624248449 (correct fixture scene) sha `6ef2e39b…` byte-identical; film probe 43624011865 795–814 20/20 byte-identical; determinism dispatch 43624016907 SUCCESS. **No-adapter proof (W35 P6):** the `aa92cee` CI binary with `VK_ICD_FILENAMES` pointed nowhere → stderr `error: GPU initialisation failed (request_adapter (gpucore)): no wgpu adapter found — a Vulkan driver (hardware or lavapipe) is required`, **exit 3**, no panic | ALL PASS |
+| Lead | **GOLDEN ACT 1 — CORRECTIVE** `2755ff3`: the first act pinned the staged 381ff47-era bytes for the 11 out-of-window mids (W03's candidate-copy step was missed). The VR canary caught it on its first measured run (dispatch 43624398371: film-s08b DRIFT 24.85 dB; rendered `fb4e2ba4…` = the f021991 candidate = current output). Corrective copies the 11 candidates (s10 identical — control case, line unmoved) and re-pins; diff = exactly 10 film lines; pack 18 OK / 0 STALE / 0 MISSING. W63 (Batch 7) independently verified the corrective exactly | **CORRECTED + VERIFIED** |
+| Lead | Visual regression, post-correction dispatch 43625139818: dof-chart MATCH, ab1-composer MATCH, **film-s08b MATCH** (byte-identical to the corrected pin); the ONLY drift is **s28 (21.65 dB, by design** — its reference is the M2-era artifact; disposition is a user decision, W63 §7). The run's FAIL verdict is solely the designed s28 red | STEADY STATE |
+| Lead | First bench dispatch 43623743480 at `aa92cee` | SUCCESS (harness verified; W64 analysis: CI lavapipe 1.85 s/f in-window, cache-24 saves ~147 MiB RSS at no time cost; anomalies A1 bench window is S01-only, A2 accounted-vs-resident cache bytes diverge ~9× — both recorded, neither blocks) |
+| B7/W62 | **Adapter re-proof, INDEPENDENT (W62, gate re-ran the grid): 8/8 cells PASS** across both telemetry exit-code generations, strip-mismatch refused pre-gate. This closes the CORRECTION row above with an outside verdict: the exit-1 (CHECK FAILED) direction is proven — the lead's own re-run attempts kept dying to VM contention (SIGKILL at ~sample 160 twice; a third died in a service restart), which is itself recorded rather than papered over | **PASS — correction CLOSED** |
+| Lead | **§15 fold-in + reservation guard** `4dd6530`: W31's paste-ready §15 appended verbatim to `docs/scene-format.md`; §15.10 step 1 in src (scenefile `load()` + `walk_nodes`, film `load_film_data`) hard-errors the reserved blocks/keys with the §15.1 named messages. W65 (Batch 7) post-fold census: **75/75 clauses FOUND, none weakened**; pre-fold baseline honestly 0/75 | LANDED + CENSUS PASS |
+| Lead | Tools-ci pack 2 `8b9ac36` (W55 verbatim + the §15 conformance steps): all steps verified locally pre-commit (ratchet PASS 196/15, sheet 10/10, format15 corpus PASS, planted 9/9) | SUCCESS in CI at the wiring head |
+| Incident 3 | **Tools CI RED at `2c41313`** (run 43625940101) — failed ONLY at the new sheet step: every case rc 2 (make_sheet's ffmpeg-absent exit) on the hosted image; the ratchet, the migrated-tree asset steps and everything upstream passed. **Third tools-ci root cause, same family as incidents 1–2: an environment assumption local runs couldn't see** (W55 assumed the ubuntu-22.04 image ships ffmpeg; it does not guarantee it). Lead fix `f4f6ccf`: the workflow installs ffmpeg before the suite (the suite's own ffmpeg-absent case manipulates PATH internally, unaffected). **CI + Tools CI both SUCCESS at `f4f6ccf`** (43626299883 / 43626299876) | FIXED (lead) |
+| Lead | F2 first landing `a2ec80c` gates: film probe dispatch 43624533281 — 795–814 **20/20 byte-identical** vs defaults (the loud fallbacks are pixel-neutral for valid data) | PASS |
+| Lead | **F2 migration COMPLETE**: Phase D `20a81a7` (data declares calendarYears/calendarDark/sign; regeneration diff = exactly the 3 keys; its tools-ci red was the ratchet window W53 predicted — the checker did not know the keys until T2 — closed in the same series) → Phases L+T `2c41313` (loader demands the keys, plates manifest atomic swap, calendar_state count from data + zero-years guard, check_assets re-pointed 86 refs 6/6, unknown-fields + rerender-plan taught). Gates: F2-isolation probe diff vs the blink-era set = **zero frames**; calendar range (1000–1061) diffs are blink-scale only (mean \|Δ\| ≤ 0.014, ≤ 0.01 % px — no wrong-year signature). Main CI SUCCESS at both heads | **LANDED, ZERO FRAME IMPACT** |
+| Lead | **Blink adoption** `5a9383e` (W58 pack, max(channel, beats)) gates — dispatches 43625505071 / 43625513647 / 43625521417: 195–204 changes **only f204**, 795–814 **only f814**, 1195–1204 **none** — the W58 census promise exact (38/40 probe frames assertable, the 2 changed frames are the promised ones). Baseline note: 195–204 was compared against the `aadc193` window renders, NOT `frames4` — the f021991 set's s02 frames differ from the current generation in a caption-band region and are **not a clean baseline for s02**; `.w2-probes` + `.w2-windows` are the baselines of record | **LANDED, GATE EXACT** |
+| B6 push | HEAD `3a3a427` (adoption-preparation batch; gate PASS-WITH-NOTES, GATE2-W60 §9 = the landing packet) | CI + tools-ci SUCCESS |
+| B7 push | HEAD `b2e46d2` (gate PASS-WITH-NOTES, GATE2-W70 §12 = the ordered packet; W68 PC dry-run still running, folds in on landing) | **CI (43626618994) + Tools CI (43626619083) both SUCCESS — tree green at the current head** |
 
 **Watch items / flags recorded by the lead:**
 - **Painter panic observed once, not reproduced.** The first
@@ -270,6 +283,32 @@ Binding constraints:
   additive, empty = default) — made so the W06 byte-probe's
   forced-eviction leg is dispatchable; flagged for the
   orchestrator's ratification.
+- **Split-programme hazards (W66, Batch 7):** W21 §4's adapter
+  paragraph is VOID (`aadc193` deleted the helper it preserves)
+  — strike it before executing the splits; every G-TEL gate
+  text in the split packs expects the OLD `CHECK FAILED` line
+  and must be re-worded to `FILM TELEMETRY: CHECK OK` / exit 0,
+  or the gates fail a healthy tree. `state_key` freeze verified
+  byte-identical at five heads (at film.rs:2246 after the
+  Batch-6/7-era landings). Splits run SERIALLY (film, then
+  scene) and must not interleave with §15 step 2.
+- **s28 disposition (user decision, W63 §7):** re-pin to
+  current ab1 output / retire from the registry / leave as the
+  designed red. W03's standing recommendation is against
+  re-pinning. Until ruled, VR reads FAIL with s28 the only
+  DRIFT row — steady state, not a new failure.
+- **Caption veto pricing (W69):** a veto of the 73-chunk
+  re-chunk stales exactly the 3 in-window golden pins
+  (s07/s08/s11) and restores the Wave-1 waiver state; the
+  brief is decision-ready for the user at wave close
+  (recommendation on record: KEEP 73).
+- **`frames4` baseline caveat:** the f021991 frame set is not
+  uniform for s02 (its 195–204 frames differ from the current
+  generation outside any audited change). Byte-probe baselines
+  of record are `.w2-probes` (795–814, 1195–1204) and the
+  `aadc193` window renders (`.w2-windows`); do not gate new
+  work against `frames4` outside the ranges where it was
+  verified (795–814 / 1195–1204 / f1231).
 
 ## 8. Batch ledger
 
@@ -280,8 +319,10 @@ Binding constraints:
 | 3 | W21–W30 | film/scene modularisation blueprints, lip-sync data, locomotion, camera moves, validators, planners, checkers | Gate PASS-WITH-NOTES (GATE2-W30) | Validators wired via W39 (below); split programmes noted SERIAL (film.rs then scene.rs); locomotion adoption held for A/B sign-off (Batch 6 W57 pack) | green at `ff52b3a` (tools) |
 | 4 | W31–W40 | §15 draft, anim staging tool, blink evidence, gpucore probes, errors step-2 pack, PC runbook, VR triage, doc-fix pack, tools-ci wiring, gate | Gate PASS-WITH-NOTES (GATE2-W40) | W39 wiring landed verbatim (`630d82e`); W35 pack consumed by errors step 2; W33 blink = Batch-6 W58 input; W31 draft = §15 fold-in source; W38 pack queued for application | green at `f6616aa` |
 | 5 | W41–W50 | Gap-fix batch (user order 23:24): F1 verify + F2 audit, F3 strictness checker, F4 knobs spec, F5 sheet tool, F6 cues design, v1.0.1 pack, exporter spec, selftest leg, traceability, gate | Gate PASS-WITH-NOTES (GATE2-W50) | F1 verified landed (`aadc193`); F2/F3/F4 dispositions in §10; v1.0.1 NOT releasable at snapshot (procedure ready, user confirms at close) | green via `aa92cee` |
-| 6 | W51–W60 | §15 conformance checker, s12 bake pack, F2 migration staging pack, knobs patch pack + gate, tools-ci pack 2, VRAM telemetry design, locomotion A/B pack, blink patch pack, lipsync evaluation, gate | running at this fold-in | Lead landings queued: tools-ci pack 2 (W55), knobs (W54 + §10 ruling), F2 staging (W53), blink (W58), §15 fold-in with the W51 checker | — |
-| 7–10 | — | per orchestrator boards | — | — | — |
+| 6 | W51–W60 | §15 conformance checker, s12 bake pack, F2 migration staging pack, knobs patch pack + gate, tools-ci pack 2, VRAM telemetry design, locomotion A/B pack, blink patch pack, lipsync evaluation, gate | Gate PASS-WITH-NOTES (GATE2-W60) | Tools-ci pack 2 ✓ (`8b9ac36`); §15 fold-in + guard ✓ (`4dd6530`); F2 migration ✓ (D `20a81a7`, L+T `2c41313`); blink ✓ (`5a9383e`, gate exact); lipsync DEFERRED to user sign-off (gate §9.3: A/B sheet on line 3 + the diegetic windows first); locomotion = user-eye decision (W57 census + LOCOMOTION-AB-W57); still queued: knobs implementation (W54 pack), VRAM `gpu-mem:` line (W56), s12 baked-corpus adoption (W52) | green at `3a3a427`; lead landings green through `f4f6ccf` |
+| 7 | W61–W70 | W43 tail restoration, adapter re-proof, golden-verify + VR triage, first-bench analysis, §15 fold-in checker, split readiness, docfix refresh, PC dry-run, caption-veto brief, gate | Gate PASS-WITH-NOTES (GATE2-W70) | W62 adapter PASS closes the §7 correction; W63 verified the Act-1 corrective + corrected the Act-2 cite (fixed in §7); W65 census 75/75; W66 split hazards recorded (below); W61 tail = splice queued (§12.3b); W67 DOCFIX2 = application queued (§12.3a); W69 veto brief ready for the user (veto ⇒ 3 in-window pins stale + restore from candidates; recommendation on record: KEEP 73); W68 PC dry-run STILL RUNNING at batch close — folds in on landing | green at `b2e46d2` (CI + Tools CI SUCCESS) |
+| 8 | W71–W80 | Fold-in addendum, VR register update, knobs phases 2–3 staging + phase-1 verification, F3-a strip pack, G7 telemetry tables, micro-fix verification, exporter acceptance harness, E7 RADV readiness audit, record completeness audit + close skeleton, gate | running at this fold-in | Lead queue while it runs: knobs phase 1 (the seats verify it — it must land), W61 splice, DOCFIX2 application, VRAM line, s12 corpus | — |
+| 9–10 | — | per orchestrator boards | — | — | — |
 
 ## 9. Lead decisions (Batch-2 adoption, recorded 2026-11-14)
 
