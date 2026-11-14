@@ -212,6 +212,59 @@ but treat that as orientation, not a promise.
 
 ---
 
+### Optional support step — RADV byte-probes (W78 G4)
+
+**Optional — RADV byte-probe support (does NOT discharge
+anything).** The pack's window [100, 130) never touches the
+old 160-entry cache-cap boundary where the quantised-key
+defect measured pre-fix (contract E2). While the proven
+binary is provisioned, the E4 probe ranges
+(`tools/ci/byte_probes.py` defaults: 195–204, 795–814,
+1195–1204) can be re-rendered twice on RADV and byte-compared
+— supporting evidence on this renderer, in the E4 class:
+
+```bash
+export TALERENDER_BIN=~/talerender-bin/talerender
+cd ~/workspace/talerender
+for dir in probe-a probe-b; do
+  for r in "195 205" "795 815" "1195 1205"; do
+    set -- $r
+    "$TALERENDER_BIN" --film film --out $dir --from $1 --to $2
+  done
+done
+python3 tools/ci/byte_probes.py probe-a probe-b
+```
+
+Both dirs fresh, default cache cap, same binary, back to
+back. Expected shape: `BYTE PROBES: PASS (40/40 frames
+identical across 3 range(s))`. Any FAIL here alongside a
+pack PASS is still a headline — send both outputs; per
+contract §4 the pack verdict stands as the E7 record and
+the probe result opens a defect thread, it does not amend
+the verdict either way.
+
+### If the verdict is not PASS (W78 G2)
+
+- **REFUSAL (exit 2): stop the session here.** Fix the named
+  cause and re-run §1 into a fresh output root before any
+  other leg. A refusal is *no evidence*; the remaining legs
+  all cite this leg's binary/adapter proof chain, and the
+  re-run costs minutes — never defer E7 past §3.
+- **FAIL (exit 1): preserve, send, then decide.** Freeze the
+  whole `~/det-run-onoda/` tree (do not re-run into it, do
+  not delete from it), complete §5.1 with the G1 additions,
+  and send `determinism-results.txt` + logs before continuing.
+  §2 (bench) may proceed — its tables claim timings, not
+  determinism — and §4's cross-vendor PSNR bands remain
+  meaningful. **§3 proceeds only with the defect flagged in
+  its send-back note:** the full render's resume/chunking
+  story rests on the same purity the pack just failed, so
+  its frames are evidence *about* the defect, not a
+  production claim. Do not attempt any fix on the PC; a FAIL
+  is a defect report (contract §8), and the kept frame dirs
+  + `tools/ab/measure_ab.py` are its diagnostic path.
+- **PASS:** proceed; §5.2's discharge consequence applies.
+
 ## §2 Bench legs — the PERF protocol, run locally
 
 ### 2.0 Reconciliation: what runs where
@@ -324,6 +377,25 @@ logs, is what the lead works from to fill PERF.md. PERF §8's
 summary prose stays a human fill-in; the generator
 deliberately does not fabricate it.
 
+---
+
+### 2.4 Cache-cap neutrality support (W78 G5)
+
+The §5 RADV bench legs render frames 0..100 twice (default
+cap, then `TALERENDER_PAINT_CACHE=24`) into two fresh dirs —
+the same shape as pack section C over a 100-frame window.
+While both dirs exist, one command turns them into RADV
+cache-cap-neutrality *support* evidence at zero extra
+renders (cross-reference: the E7 verdict itself is W36 §1's
+pack; this is not it):
+
+```bash
+python3 tools/ci/byte_probes.py --ranges 0-99 \
+    perf-radv/frames-default perf-radv/frames-cache24
+```
+
+Record the output beside `perf-radv/REPORT.md`. A FAIL here
+with a pack PASS is reported, not reconciled on the spot.
 ---
 
 ## §3 Full film render + telemetry verdict capture
@@ -551,6 +623,26 @@ From the repo checkout on the PC:
 | `radv-mids/*.png` (14 files) | §4.3 — the RADV mids themselves, so any number can be re-measured |
 | `onoda-native-radv.mp4` (optional) | §3.3 — the assembled proof, if the finish step ran |
 | PERF §8 summary, filled by hand | §2 — prose over the generated tables; nobody fabricates this for you |
+
+**On a FAIL verdict, add the frame evidence itself** — the
+results file names every differing frame, but the diagnosis
+happens from the sent package, and the frames are the
+diagnosis. Before sending:
+
+```bash
+cd ~/det-run-onoda
+(cd A-single  && sha256sum frame_*.png) > manifest-A-single.sha256
+(cd B-chunked && sha256sum frame_*.png) > manifest-B-chunked.sha256
+(cd C-cache24 && sha256sum frame_*.png) > manifest-C-cache24.sha256
+```
+
+Send the three manifests plus, for every frame the results
+file names as differing, that frame's PNG from **each** of
+the three dirs (same frame number, three files). Keep the
+full `~/det-run-onoda/` tree on the PC until the orchestrator
+confirms the E7 row is recorded. On PASS or REFUSAL the
+manifests are optional (the results file is the record);
+the tree is still kept until recording is confirmed.
 
 On any failure, add PERF §7's send-back checklist for that
 failure class (exact command, exit code, stdout + stderr,
