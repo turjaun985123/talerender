@@ -764,9 +764,9 @@ fn add_mapped(f: &mut FrameSpec, geo: MapGeo, model: Mat4, tex: usize, mat: StdM
 /// Cloud sprites for a camera at `eye` looking at `target`
 /// (three Sprite billboarding; world.ts clouds()).
 fn add_clouds(f: &mut FrameSpec, list: &[([f32; 3], f32)], eye: [f32; 3], target: [f32; 3]) {
-    let fwd = math::norm3(math::sub3(target, eye));
-    let right = math::norm3(math::cross3(fwd, [0.0, 1.0, 0.0]));
-    let upv = math::cross3(right, fwd);
+    let fwd = n3(s3(target, eye));
+    let right = n3(x3(fwd, [0.0, 1.0, 0.0]));
+    let upv = x3(right, fwd);
     for &(c, s) in list {
         let (hw, hh) = (s, s / 2.0);
         let corner = |sx: f32, sy: f32| -> [f32; 3] {
@@ -980,7 +980,7 @@ pub(crate) fn build_sh(f: &mut FrameSpec) {
 fn shelf_unit(f: &mut FrameSpec, w: f32, h: f32, seed: f64, model: Mat4) {
     let frame = hex_lin("#5A4630");
     let put = |f: &mut FrameSpec, geo: Geo, local: Mat4| {
-        add(f, geo, math::mul(&model, &local), sm(0.85, 0.0), true, true);
+        add(&mut f.std, geo, math::mul(&model, &local), sm(0.85, 0.0), true, true);
     };
     put(f, box_geo(0.06, h, 0.34, frame), t3(-(w / 2.0 - 0.03), h / 2.0, 0.0));
     put(f, box_geo(0.06, h, 0.34, frame), t3(w / 2.0 - 0.03, h / 2.0, 0.0));
@@ -1002,7 +1002,7 @@ fn shelf_unit(f: &mut FrameSpec, w: f32, h: f32, seed: f64, model: Mat4) {
                 if tilt {
                     local = math::mul(&local, &math::rotate_z(0.1));
                 }
-                add(f, box_geo(bw, bh, 0.2, hex_lin(col)), math::mul(&model, &local), sm(0.85, 0.0), true, true);
+                add(&mut f.std, box_geo(bw, bh, 0.2, hex_lin(col)), math::mul(&model, &local), sm(0.85, 0.0), true, true);
             }
             x += bw + 0.005;
             i += 1;
@@ -1381,7 +1381,7 @@ fn s01(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
     st.cam_pitch = cam_pitch_of([0.35, 0.0, -0.55], f.eye);
     st.blink = blink_of(3.0, t, &[data.anchors["years0"]]);
     char(&mut f, ONODA, [0.35, 0.0, -0.55], st, TINT_NOON, true);
-    add_clouds(&mut f, &[([-28.0, 23.0, -85.0], 13.0), ([26.0, 29.0, -95.0], 16.0), ([58.0, 19.0, -75.0], 10.0)], f.eye, f.target);
+    { let (e, tg) = (f.eye, f.target); add_clouds(&mut f, &[([-28.0, 23.0, -85.0], 13.0), ([26.0, 29.0, -95.0], 16.0), ([58.0, 19.0, -75.0], 10.0)], e, tg); }
     f
 }
 
@@ -1407,23 +1407,23 @@ fn s02(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
     so.arm_r = (16.0, -6.0);
     so.arm_l = (10.0, 6.0);
     so.legs = legs;
-    so.phase = ph;
-    so.bob = bob;
+    so.phase = ph as f32;
+    so.bob = bob as f32;
     so.blink = Blinker { seed: 3.0 }.at(t) as f32;
     char(&mut f, SH_ONODA, [0.0, 0.0, z as f32], so, TINT_NOON, true);
     let mut sa = fs();
     sa.legs = legs;
-    sa.phase = ph;
-    sa.bob = bob;
+    sa.phase = ph as f32;
+    sa.bob = bob as f32;
     sa.blink = Blinker { seed: 7.0 }.at(t) as f32;
     char(&mut f, SH_COMPA, [-1.4, 0.0, (z - 0.9) as f32], sa, TINT_NOON, false);
     let mut sb = fs();
     sb.legs = legs;
-    sb.phase = ph;
-    sb.bob = bob;
+    sb.phase = ph as f32;
+    sb.bob = bob as f32;
     sb.blink = Blinker { seed: 11.0 }.at(t) as f32;
     char(&mut f, SH_COMPB, [1.4, 0.0, (z - 1.5) as f32], sb, TINT_NOON, false);
-    add_clouds(&mut f, &[([-24.0, 22.0, -85.0], 12.0), ([30.0, 27.0, -90.0], 15.0)], f.eye, f.target);
+    { let (e, tg) = (f.eye, f.target); add_clouds(&mut f, &[([-24.0, 22.0, -85.0], 12.0), ([30.0, 27.0, -90.0], 15.0)], e, tg); }
     f
 }
 
@@ -1458,7 +1458,7 @@ fn s03(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
     cb.arm_l = (5.0, 3.0);
     cb.blink = Blinker { seed: 11.0 }.at(t) as f32;
     char(&mut f, SH_COMPB, [-1.9, 0.0, -0.65], cb, TINT_NOON, false);
-    add_clouds(&mut f, &[([-24.0, 22.0, -85.0], 12.0), ([30.0, 27.0, -90.0], 15.0)], f.eye, f.target);
+    { let (e, tg) = (f.eye, f.target); add_clouds(&mut f, &[([-24.0, 22.0, -85.0], 12.0), ([30.0, 27.0, -90.0], 15.0)], e, tg); }
     f
 }
 
@@ -1469,13 +1469,13 @@ fn s04(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
     shoot(&mut f, [1.0, 1.8, 7.6], [0.85, 1.65, 6.6], [0.8, 1.1, -0.6], None, k, 50.0);
     let mut ca = fs();
     pose_celebrate(&mut ca);
-    ca.bob = -4.5 * (4.6 * t).sin().abs();
+    ca.bob = (-4.5 * (4.6 * t).sin().abs()) as f32;
     ca.blink = Blinker { seed: 7.0 }.at(t) as f32;
     char(&mut f, COMPA, [-0.75, 0.0, -2.65], ca, TINT_NOON, false);
     let mut cb = fs();
     pose_celebrate(&mut cb);
     cb.mood = Mood::Happy;
-    cb.bob = -4.5 * (4.6 * t + 1.2).sin().abs();
+    cb.bob = (-4.5 * (4.6 * t + 1.2).sin().abs()) as f32;
     cb.blink = Blinker { seed: 11.0 }.at(t) as f32;
     char(&mut f, COMPB, [0.85, 0.0, -2.95], cb, TINT_NOON, false);
     let mut onoda = fs();
@@ -1485,7 +1485,7 @@ fn s04(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
     onoda.head_turn = pose_track(&[key(0.0, 0.5), keym(2.2, -0.35, 1.9), keym(4.6, 0.3, 1.9)], lt) as f32;
     onoda.blink = blink_of(3.0, t, &[data.anchors["message3"]]);
     char(&mut f, ONODA, [1.8, 0.0, 1.55], onoda, TINT_NOON, true);
-    add_clouds(&mut f, &[([-28.0, 23.0, -85.0], 13.0), ([26.0, 29.0, -95.0], 16.0), ([58.0, 19.0, -75.0], 10.0)], f.eye, f.target);
+    { let (e, tg) = (f.eye, f.target); add_clouds(&mut f, &[([-28.0, 23.0, -85.0], 13.0), ([26.0, 29.0, -95.0], 16.0), ([58.0, 19.0, -75.0], 10.0)], e, tg); }
     f
 }
 
@@ -1537,7 +1537,7 @@ fn s05a(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
     build_jg(&mut f, JgDyn { fire: 0.0, t, extra_std: plane_extras(t, lt, d) });
     let k = cam_k(lt, d, 0.1);
     shoot(&mut f, [2.4, 1.0, 4.2], [2.0, 1.2, 3.6], [-4.5, 6.4, -11.0], Some([0.5, 6.0, -11.0]), k, 46.0);
-    add_clouds(&mut f, &[([-28.0, 23.0, -85.0], 13.0), ([26.0, 29.0, -95.0], 16.0), ([58.0, 19.0, -75.0], 10.0)], f.eye, f.target);
+    { let (e, tg) = (f.eye, f.target); add_clouds(&mut f, &[([-28.0, 23.0, -85.0], 13.0), ([26.0, 29.0, -95.0], 16.0), ([58.0, 19.0, -75.0], 10.0)], e, tg); }
     f
 }
 
@@ -1572,7 +1572,7 @@ fn s05b(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
     if t < drop_t {
         f.chars[idx].hold_l = Some("leaflet");
     }
-    add_clouds(&mut f, &[([-28.0, 23.0, -85.0], 13.0), ([26.0, 29.0, -95.0], 16.0), ([58.0, 19.0, -75.0], 10.0)], f.eye, f.target);
+    { let (e, tg) = (f.eye, f.target); add_clouds(&mut f, &[([-28.0, 23.0, -85.0], 13.0), ([26.0, 29.0, -95.0], 16.0), ([58.0, 19.0, -75.0], 10.0)], e, tg); }
     f
 }
 
@@ -1593,8 +1593,8 @@ fn s06(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
     let mk_walk = |dist: f64, mood: Mood| -> FullState {
         let mut st = fs();
         let ph = walk_phase(dist, 0.62);
-        st.phase = ph;
-        st.bob = walk_bob(ph, 6.0);
+        st.phase = ph as f32;
+        st.bob = walk_bob(ph, 6.0) as f32;
         st.legs = if wk >= 1.0 { Legs::Stand } else { Legs::Walk };
         st.mood = mood;
         st.head_tilt = -4.0;
@@ -1620,7 +1620,7 @@ fn s06(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
     }
     onoda.blink = Blinker { seed: 3.0 }.at(t) as f32;
     char(&mut f, ONODA, [-0.5, 0.0, oz as f32], onoda, tint_fog(), true);
-    add_clouds(&mut f, &[([-28.0, 23.0, -85.0], 13.0), ([26.0, 29.0, -95.0], 16.0), ([58.0, 19.0, -75.0], 10.0)], f.eye, f.target);
+    { let (e, tg) = (f.eye, f.target); add_clouds(&mut f, &[([-28.0, 23.0, -85.0], 13.0), ([26.0, 29.0, -95.0], 16.0), ([58.0, 19.0, -75.0], 10.0)], e, tg); }
     f
 }
 
@@ -1666,8 +1666,8 @@ fn s07(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
     let oz = lerp(-1.76, -2.3, wk);
     let mut onoda = fs();
     let ph = walk_phase(wk * 2.0, 0.6);
-    onoda.phase = ph;
-    onoda.bob = walk_bob(ph, 4.0);
+    onoda.phase = ph as f32;
+    onoda.bob = walk_bob(ph, 4.0) as f32;
     onoda.legs = if wk >= 1.0 { Legs::Stand } else { Legs::Walk };
     onoda.mood = if lt < 1.2 { Mood::Tired } else { Mood::Neutral };
     if lt < 1.2 {
@@ -1686,7 +1686,7 @@ fn s07(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
         f.chars[idx].hold_l = Some("coconut");
     }
     f.calendar = calendar_state(lt - 0.16);
-    add_clouds(&mut f, &[([-28.0, 23.0, -85.0], 13.0), ([26.0, 29.0, -95.0], 16.0), ([58.0, 19.0, -75.0], 10.0)], f.eye, f.target);
+    { let (e, tg) = (f.eye, f.target); add_clouds(&mut f, &[([-28.0, 23.0, -85.0], 13.0), ([26.0, 29.0, -95.0], 16.0), ([58.0, 19.0, -75.0], 10.0)], e, tg); }
     f
 }
 
@@ -1699,8 +1699,8 @@ fn s08(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
     let wk_s = seg(lt, 0.1, 3.3);
     let mut suz = fs();
     let ph = walk_phase(wk_s * 3.28, 0.6);
-    suz.phase = ph;
-    suz.bob = walk_bob(ph, 5.0);
+    suz.phase = ph as f32;
+    suz.bob = walk_bob(ph, 5.0) as f32;
     suz.legs = if wk_s >= 1.0 { Legs::Stand } else { Legs::Walk };
     suz.arm_l = (38.0, -52.0);
     suz.arm_r = (12.0, 8.0);
@@ -1716,15 +1716,15 @@ fn s08(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
     let wk_o = seg(lt, 0.35, 1.95);
     let mut onoda = fs();
     let ph2 = walk_phase(wk_o * 2.25, 0.6);
-    onoda.phase = ph2;
-    onoda.bob = walk_bob(ph2, 4.0);
+    onoda.phase = ph2 as f32;
+    onoda.bob = walk_bob(ph2, 4.0) as f32;
     onoda.legs = if wk_o >= 1.0 { Legs::Stand } else { Legs::Walk };
     onoda.mood = Mood::Determined;
     onoda.arm_r = (16.0, -6.0);
     onoda.arm_l = (10.0, 6.0);
     onoda.blink = Blinker { seed: 3.0 }.at(t) as f32;
     char(&mut f, ONODA, [lerp(-2.9, -1.1, wk_o) as f32, 0.0, lerp(-3.1, -1.5, wk_o) as f32], onoda, TINT_NOON, true);
-    add_clouds(&mut f, &[([-28.0, 23.0, -85.0], 13.0), ([26.0, 29.0, -95.0], 16.0), ([58.0, 19.0, -75.0], 10.0)], f.eye, f.target);
+    { let (e, tg) = (f.eye, f.target); add_clouds(&mut f, &[([-28.0, 23.0, -85.0], 13.0), ([26.0, 29.0, -95.0], 16.0), ([58.0, 19.0, -75.0], 10.0)], e, tg); }
     f
 }
 
@@ -1751,7 +1751,7 @@ fn s08b(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
         f.chars.len() - 1
     };
     f.chars[sidx].hold_l = Some("paper-map");
-    add_clouds(&mut f, &[([-28.0, 23.0, -85.0], 13.0), ([26.0, 29.0, -95.0], 16.0), ([58.0, 19.0, -75.0], 10.0)], f.eye, f.target);
+    { let (e, tg) = (f.eye, f.target); add_clouds(&mut f, &[([-28.0, 23.0, -85.0], 13.0), ([26.0, 29.0, -95.0], 16.0), ([58.0, 19.0, -75.0], 10.0)], e, tg); }
     f
 }
 
@@ -1784,7 +1784,7 @@ fn s09(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
         f.chars.len() - 1
     };
     f.chars[sidx].hold_l = Some("paper-map");
-    add_clouds(&mut f, &[([-28.0, 23.0, -85.0], 13.0), ([26.0, 29.0, -95.0], 16.0), ([58.0, 19.0, -75.0], 10.0)], f.eye, f.target);
+    { let (e, tg) = (f.eye, f.target); add_clouds(&mut f, &[([-28.0, 23.0, -85.0], 13.0), ([26.0, 29.0, -95.0], 16.0), ([58.0, 19.0, -75.0], 10.0)], e, tg); }
     f
 }
 
@@ -1800,8 +1800,8 @@ fn s10(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
     let wk = seg(t, w_flew + 0.5, w_flew + 1.7);
     let mut tani = fs();
     let ph = walk_phase(wk * 0.55, 0.58);
-    tani.phase = ph;
-    tani.bob = walk_bob(ph, 3.0);
+    tani.phase = ph as f32;
+    tani.bob = walk_bob(ph, 3.0) as f32;
     tani.legs = if wk >= 1.0 { Legs::Stand } else { Legs::Walk };
     tani.arm_r = (pose_track(&[key(0.0, 42.0), keym(w_flew - st0, 17.0, 0.5)], lt) as f32, -28.0);
     tani.arm_l = (14.0, 8.0);
@@ -1864,8 +1864,8 @@ fn s11(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
         let wk = seg(lt, 0.1, (w_order - st0 - 0.25).max(0.4));
         let mut onoda = fs();
         let ph = walk_phase(wk * 2.5, 0.6);
-        onoda.phase = ph;
-        onoda.bob = walk_bob(ph, 4.0);
+        onoda.phase = ph as f32;
+        onoda.bob = walk_bob(ph, 4.0) as f32;
         onoda.legs = if wk >= 1.0 { Legs::Stand } else { Legs::Walk };
         onoda.mood = if t >= w_order { Mood::Awe } else { Mood::Determined };
         onoda.lean = 1.0;
@@ -1892,7 +1892,7 @@ fn s11(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
     tani.mood = Mood::Determined;
     tani.blink = Blinker { seed: 9.0 }.at(t) as f32;
     char(&mut f, TANI, [1.3, 0.0, -1.3], tani, tint_dusk(), false);
-    add_clouds(&mut f, &[([-28.0, 23.0, -85.0], 13.0), ([26.0, 29.0, -95.0], 16.0), ([58.0, 19.0, -75.0], 10.0)], f.eye, f.target);
+    { let (e, tg) = (f.eye, f.target); add_clouds(&mut f, &[([-28.0, 23.0, -85.0], 13.0), ([26.0, 29.0, -95.0], 16.0), ([58.0, 19.0, -75.0], 10.0)], e, tg); }
     f
 }
 
@@ -1927,7 +1927,7 @@ fn s12(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
     tani.head_tilt = -3.0;
     tani.blink = Blinker { seed: 9.0 }.at(t) as f32;
     char(&mut f, TANI, [2.3, 0.0, -2.6], tani, tint_dusk(), false);
-    add_clouds(&mut f, &[([-28.0, 23.0, -85.0], 13.0), ([26.0, 29.0, -95.0], 16.0), ([58.0, 19.0, -75.0], 10.0)], f.eye, f.target);
+    { let (e, tg) = (f.eye, f.target); add_clouds(&mut f, &[([-28.0, 23.0, -85.0], 13.0), ([26.0, 29.0, -95.0], 16.0), ([58.0, 19.0, -75.0], 10.0)], e, tg); }
     f
 }
 
@@ -1997,30 +1997,19 @@ pub(crate) fn load_assets(dir: &Path, data: &FilmData) -> Result<Assets, String>
     let adir = dir.join("assets");
     let origins_text = std::fs::read_to_string(adir.join("plates.json")).map_err(|e| format!("plates.json: {e}"))?;
     let origins = crate::scene::parse_json(&origins_text)?;
-    let mut plates = HashMap::new();
-    for name in ["paper-map", "leaflet", "book-open", "book-closed", "coconut"] {
-        let (px, w, h) = load_png(&adir.join(format!("{name}.png")))?;
-        let o = origins.get(name).ok_or("plate origin")?;
-        let x0 = o.get("0").and_then(|v| v.as_f64()).unwrap_or(0.0) as f32;
-        let y0 = o.get("1").and_then(|v| v.as_f64()).unwrap_or(0.0) as f32;
-        // plates.json values are arrays; as_f64 on the array index
-        // path is handled by Value::get with a string key only for
-        // objects — fall back to positional access below.
-        let _ = (x0, y0);
-        plates.insert(name.to_string(), (px, w, h));
-    }
-    // Re-read origins positionally (arrays, not objects).
     let mut plate_map = HashMap::new();
     if let Value::Obj(m) = &origins {
-        for (name, (px, w, h)) in plates.drain() {
+        for name in ["paper-map", "leaflet", "book-open", "book-closed", "coconut"] {
+            let (px, w, h) = load_png(&adir.join(format!("{name}.png")))?;
             let (mut x0, mut y0) = (0.0f32, 0.0f32);
-            if let Some(Value::Arr(a)) = m.get(&name) {
+            let entry = m.iter().find(|(k, _)| k == name).map(|(_, v)| v);
+            if let Some(Value::Arr(a)) = entry {
                 if let (Some(a0), Some(a1)) = (a.first(), a.get(1)) {
                     x0 = a0.as_f64().unwrap_or(0.0) as f32;
                     y0 = a1.as_f64().unwrap_or(0.0) as f32;
                 }
             }
-            plate_map.insert(name, Plate { px, w, h, x0, y0 });
+            plate_map.insert(name.to_string(), Plate { px, w, h, x0, y0 });
         }
     }
     let mut strips = Vec::new();
@@ -2051,7 +2040,7 @@ fn state_key(look: usize, st: &FullState, hold_l: Option<&str>, hold_r: Option<&
         q(st.look[0]), q(st.look[1]), q(st.blink), q(st.talk),
         q(st.arm_l.0), q(st.arm_l.1), q(st.arm_r.0), q(st.arm_r.1),
         q(st.phase), q(st.lean), q(st.bob), q(st.squash),
-        st.legs,
+        match st.legs { Legs::Stand => "stand", Legs::Walk => "walk", Legs::Sit => "sit", Legs::Kneel => "kneel" },
         q(st.head_tilt), q(st.head_turn), q(st.cam_pitch),
         st.sit_drop.map(q).unwrap_or(-1),
         hold_l.unwrap_or("-"),
@@ -2808,9 +2797,10 @@ impl Renderer {
         // PBR texture bind groups (group 1), cached per (tex, repeat).
         let mut bg1_cache: HashMap<(Option<usize>, bool), wgpu::BindGroup> = HashMap::new();
         let mut bg1 = |r: &Renderer, tex: Option<usize>, repeat: bool, cache: &mut HashMap<(Option<usize>, bool), wgpu::BindGroup>| -> wgpu::BindGroup {
-            cache
-                .entry((tex, repeat))
-                .or_insert_with(|| {
+            if let Some(b) = cache.get(&(tex, repeat)) {
+                return b.clone();
+            }
+            let bg = {
                     let (view, smp) = match tex {
                         Some(i) => (&r.tex_views[i], if repeat { &r.sampler_repeat } else { &r.sampler_clamp }),
                         None => (&r.dummy_view, &r.sampler_clamp),
@@ -2826,8 +2816,9 @@ impl Renderer {
                             wgpu::BindGroupEntry { binding: 4, resource: wgpu::BindingResource::Sampler(&r.sampler_clamp) },
                         ],
                     })
-                })
-                .clone()
+            };
+            cache.insert((tex, repeat), bg.clone());
+            bg
         };
         let pbr_bg = |r: &Renderer, draw_ub: &wgpu::Buffer| -> wgpu::BindGroup {
             device.create_bind_group(&wgpu::BindGroupDescriptor {
@@ -3248,7 +3239,7 @@ fn blend_over(px: &mut [u8], w: u32, x: u32, y: u32, src: (f32, f32, f32, f32)) 
     if a <= 0.0 {
         return;
     }
-    let k = (y * w + x) as usize * 4;
+    let k = ((y as u32 * w + x as u32) as usize) * 4;
     let rgb = [src.0, src.1, src.2];
     for i in 0..3 {
         px[k + i] = (rgb[i] * a + px[k + i] as f32 * (1.0 - a)).round() as u8;
@@ -3294,7 +3285,7 @@ fn overlay_calendar(px: &mut [u8], w: u32, h: u32, assets: &Assets, cal: &Calend
                 let dsrc = sample_bilinear(&assets.cal_dark, pu, pv);
                 let a = dsrc.3 * cal.dark * 0.22 * cal.alpha;
                 if a > 0.0 {
-                    let k = (y * w + x) as usize * 4;
+                    let k = ((y as u32 * w + x as u32) as usize) * 4;
                     for i in 0..3 {
                         let dc = [30.0, 25.0, 18.0][i];
                         px[k + i] = (dc * (a / 255.0) + px[k + i] as f32 * (1.0 - a / 255.0)).round() as u8;
