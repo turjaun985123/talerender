@@ -1,0 +1,249 @@
+{
+  "kind": "overlay",
+  "type": "calendar",
+  "shot": "S07",
+  "source": "drawCalendar(t, calT0) in the Onoda project src/shots.ts (drawn after blit, inside the S07 draw); plates rasterised by film/gen_assets.py, composited CPU-side by film.rs overlay_calendar()",
+  "frame": {
+    "width": 1080,
+    "height": 1920
+  },
+  "timing": {
+    "t0Local": 0.16,
+    "t0Film": 30.55,
+    "life": 4.4,
+    "localVariable": "lt = film t - t0Film (= shot lt - 0.16)",
+    "visibleWhile": "0 <= lt <= 4.4",
+    "alphaLaw": "alpha = clamp(lt / 0.18) * clamp((4.4 - lt) / 0.35)",
+    "shotEndsAtLocal": 3.659,
+    "alphaAtShotEnd": 1,
+    "note": "the shot ends at lt 3.659 of the 4.4 s life: the card never fades out inside S07 and is still fully opaque, showing 1974, when the film cuts \u2014 the frame-crossing card at t31-32 in the delivered film is this staging, transcribed unchanged"
+  },
+  "transform": {
+    "order": "translate -> rotate -> scale (canvas)",
+    "translate": [
+      352,
+      648
+    ],
+    "rotate": -0.03,
+    "scale": [
+      0.92,
+      "0.92 * sy"
+    ],
+    "origin": "card centre; all element coordinates below are in card-local units before this transform"
+  },
+  "frameGeometry": {
+    "centre": [
+      352,
+      648
+    ],
+    "cardSizeOnFrame": [
+      294.4,
+      368.0
+    ],
+    "note": "320x400 card at scale 0.92 (sy = 1 outside flips); x spans 204.8..499.2, y spans 464..832 before the -0.03 rad rotation"
+  },
+  "cycle": {
+    "years": [
+      1945,
+      1955,
+      1965,
+      1974
+    ],
+    "hold": 0.62,
+    "flip": 0.42,
+    "cycle": 1.04,
+    "law": "idx = floor(lt / 1.04); if idx >= 3 the year is 1974 steady; else ph = lt - idx*1.04; if ph >= 0.62: u = (ph - 0.62)/0.42, year = u < 0.5 ? years[idx] : years[idx+1], sy = max(0.1, |cos(u*PI)|), dark = 1 - sy; else sy = 1, dark = 0",
+    "flips": [
+      {
+        "from": 1945,
+        "to": 1955,
+        "windowLocal": [
+          0.62,
+          1.04
+        ],
+        "windowFilm": [
+          31.17,
+          31.59
+        ]
+      },
+      {
+        "from": 1955,
+        "to": 1965,
+        "windowLocal": [
+          1.66,
+          2.08
+        ],
+        "windowFilm": [
+          32.21,
+          32.63
+        ]
+      },
+      {
+        "from": 1965,
+        "to": 1974,
+        "windowLocal": [
+          2.7,
+          3.12
+        ],
+        "windowFilm": [
+          33.25,
+          33.67
+        ]
+      }
+    ],
+    "steadyFromLocal": 3.12,
+    "soundCues": [
+      {
+        "type": "tock",
+        "gain": 0.32,
+        "atLocal": 0.62,
+        "atFilm": 31.17
+      },
+      {
+        "type": "tock",
+        "gain": 0.32,
+        "atLocal": 1.66,
+        "atFilm": 32.21
+      },
+      {
+        "type": "tock",
+        "gain": 0.32,
+        "atLocal": 2.7,
+        "atFilm": 33.25
+      }
+    ]
+  },
+  "elements": [
+    {
+      "role": "drop shadow",
+      "shape": "roundRect",
+      "rect": [
+        -152,
+        -190,
+        320,
+        400
+      ],
+      "radius": 14,
+      "fill": "rgba(20,16,10,0.35)",
+      "note": "the card rect offset by (+8, +10)"
+    },
+    {
+      "role": "card body",
+      "shape": "roundRect",
+      "rect": [
+        -160,
+        -200,
+        320,
+        400
+      ],
+      "radius": 14,
+      "fill": "#F4EBD6",
+      "stroke": "#1F1C33",
+      "strokeWidth": 7
+    },
+    {
+      "role": "header band",
+      "shape": "roundRect",
+      "rect": [
+        -160,
+        -200,
+        320,
+        66
+      ],
+      "radius": [
+        14,
+        14,
+        0,
+        0
+      ],
+      "fill": "#8A3038"
+    },
+    {
+      "role": "header text",
+      "text": "C A L E N D A R",
+      "font": "800 30px Inter",
+      "fill": "#F4EBD6",
+      "align": "center",
+      "baseline": "middle",
+      "at": [
+        0,
+        -166
+      ]
+    },
+    {
+      "role": "year text",
+      "text": "{year}",
+      "font": "900 118px Inter",
+      "fill": "#1F1C33",
+      "align": "center",
+      "baseline": "middle",
+      "at": [
+        0,
+        8
+      ],
+      "note": "the string is the current cycle year (see cycle)"
+    },
+    {
+      "role": "sub text",
+      "text": "LUBANG ISLAND",
+      "font": "800 25px Inter",
+      "fill": "#8B8378",
+      "align": "center",
+      "baseline": "middle",
+      "at": [
+        0,
+        118
+      ]
+    },
+    {
+      "role": "rule",
+      "shape": "fillRect",
+      "rect": [
+        -110,
+        158,
+        220,
+        5
+      ],
+      "fill": "#8B8378"
+    },
+    {
+      "role": "flip shading",
+      "shape": "roundRect",
+      "rect": [
+        -160,
+        -200,
+        320,
+        400
+      ],
+      "radius": 14,
+      "fill": "rgba(30,25,18, dark * 0.22)",
+      "note": "drawn only while dark > 0 (during a flip)"
+    }
+  ],
+  "plates": {
+    "dir": "../../film/assets",
+    "files": [
+      "calendar-1945.png",
+      "calendar-1955.png",
+      "calendar-1965.png",
+      "calendar-1974.png",
+      "calendar-dark.png"
+    ],
+    "rasterFrame": {
+      "x": [
+        -180,
+        180
+      ],
+      "y": [
+        -220,
+        220
+      ],
+      "pxPerUnit": 2,
+      "sizePx": [
+        720,
+        880
+      ]
+    },
+    "note": "film.rs overlay_calendar() composites these plates (one per year + the dark flip shade) instead of re-drawing vector text"
+  }
+}
