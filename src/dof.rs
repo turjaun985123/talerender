@@ -138,6 +138,7 @@ pub async fn run_dof(width: u32, height: u32, out: &str, knobs: crate::Knobs) ->
     } else {
         String::new()
     };
+    let samples = knobs.samples();
     let instance = crate::gpucore::new_instance();
     let adapter = crate::gpucore::request_adapter(&instance).await?;
     let info = adapter.get_info();
@@ -242,9 +243,9 @@ pub async fn run_dof(width: u32, height: u32, out: &str, knobs: crate::Knobs) ->
 
     // ---- targets ----
     // Scene colour: HalfFloat + MSAA 4x (the composer's render target).
-    let scene_msaa = crate::gpucore::make_target(&device, width, height, wgpu::TextureFormat::Rgba16Float, 4, wgpu::TextureUsages::RENDER_ATTACHMENT, "dof-scene-msaa");
+    let scene_msaa = crate::gpucore::make_target(&device, width, height, wgpu::TextureFormat::Rgba16Float, samples, wgpu::TextureUsages::RENDER_ATTACHMENT, "dof-scene-msaa");
     let scene_resolved = crate::gpucore::make_target(&device, width, height, wgpu::TextureFormat::Rgba16Float, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING, "dof-scene-resolved");
-    let scene_depth = crate::gpucore::make_target(&device, width, height, wgpu::TextureFormat::Depth32Float, 4, wgpu::TextureUsages::RENDER_ATTACHMENT, "dof-scene-depth");
+    let scene_depth = crate::gpucore::make_target(&device, width, height, wgpu::TextureFormat::Depth32Float, samples, wgpu::TextureUsages::RENDER_ATTACHMENT, "dof-scene-depth");
     // Packed-depth prepass target: HalfFloat, single-sample, cleared to
     // white (BokehPass renders its depth target with a white clear).
     let packed_depth = crate::gpucore::make_target(&device, width, height, depth_format, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_SRC, "dof-packed-depth");
@@ -283,7 +284,7 @@ pub async fn run_dof(width: u32, height: u32, out: &str, knobs: crate::Knobs) ->
         }),
         primitive: wgpu::PrimitiveState { cull_mode: None, ..Default::default() },
         depth_stencil: Some(wgpu::DepthStencilState { format: wgpu::TextureFormat::Depth32Float, depth_write_enabled: true, depth_compare: wgpu::CompareFunction::Less, stencil: Default::default(), bias: Default::default() }),
-        multisample: wgpu::MultisampleState { count: 4, ..Default::default() },
+        multisample: wgpu::MultisampleState { count: samples, ..Default::default() },
         multiview: None,
     });
 
@@ -410,13 +411,16 @@ pub async fn run_dof(width: u32, height: u32, out: &str, knobs: crate::Knobs) ->
     {
         let msaa_view = scene_msaa.create_view(&wgpu::TextureViewDescriptor::default());
         let sdepth_view = scene_depth.create_view(&wgpu::TextureViewDescriptor::default());
+        // Phase 2 (W54 s4 shape): view/resolve chosen together;
+        // field-for-field the pre-knob attachment at samples > 1.
+        let scene_attachment = wgpu::RenderPassColorAttachment {
+            view: if samples > 1 { &msaa_view } else { &scene_view },
+            resolve_target: if samples > 1 { Some(&scene_view) } else { None },
+            ops: wgpu::Operations { load: wgpu::LoadOp::Clear(wgpu::Color { r: 0.0, g: 0.0, b: 0.0, a: 1.0 }), store: wgpu::StoreOp::Store },
+        };
         let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("dof-scene-pass"),
-            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                view: &msaa_view,
-                resolve_target: Some(&scene_view),
-                ops: wgpu::Operations { load: wgpu::LoadOp::Clear(wgpu::Color { r: 0.0, g: 0.0, b: 0.0, a: 1.0 }), store: wgpu::StoreOp::Store },
-            })],
+            color_attachments: &[Some(scene_attachment)],
             depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
                 view: &sdepth_view,
                 depth_ops: Some(wgpu::Operations { load: wgpu::LoadOp::Clear(1.0), store: wgpu::StoreOp::Store }),

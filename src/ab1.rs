@@ -588,6 +588,7 @@ pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str, pos
     } else {
         String::new()
     };
+    let samples = knobs.samples();
     let instance = crate::gpucore::new_instance();
     let adapter = crate::gpucore::request_adapter(&instance).await?;
     let info = adapter.get_info();
@@ -848,7 +849,7 @@ pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str, pos
         label: Some("hdr msaa"),
         size: wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
         mip_level_count: 1,
-        sample_count: 4,
+        sample_count: samples,
         dimension: wgpu::TextureDimension::D2,
         format: wgpu::TextureFormat::Rgba16Float,
         usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
@@ -861,7 +862,7 @@ pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str, pos
         label: Some("hdr depth"),
         size: wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
         mip_level_count: 1,
-        sample_count: 4,
+        sample_count: samples,
         dimension: wgpu::TextureDimension::D2,
         format: wgpu::TextureFormat::Depth32Float,
         usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
@@ -929,7 +930,7 @@ pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str, pos
             }),
             primitive: wgpu::PrimitiveState { cull_mode: Some(wgpu::Face::Back), ..Default::default() },
             depth_stencil: depth_state(true),
-            multisample: wgpu::MultisampleState { count: 4, ..Default::default() },
+            multisample: wgpu::MultisampleState { count: samples, ..Default::default() },
             multiview: None,
         })
     };
@@ -972,8 +973,8 @@ pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str, pos
             multiview: None,
         })
     };
-    let basic_write = make_basic(wgpu::TextureFormat::Rgba16Float, depth_state(true), 4);
-    let basic_nowrite = make_basic(wgpu::TextureFormat::Rgba16Float, depth_state(false), 4);
+    let basic_write = make_basic(wgpu::TextureFormat::Rgba16Float, depth_state(true), samples);
+    let basic_nowrite = make_basic(wgpu::TextureFormat::Rgba16Float, depth_state(false), samples);
     let basic_overlay = make_basic(wgpu::TextureFormat::Rgba8Unorm, None, 1);
 
     // Depth pipelines: prepass (camera) + shadow (light).
@@ -1416,12 +1417,16 @@ pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str, pos
     // 3. HDR scene pass (MSAA 4x, resolved): sky -> standard draws ->
     // transparent basics back-to-front (clouds, blob, card).
     {
+        // Phase 2 (W54 s4 shape): view/resolve chosen together;
+        // field-for-field the pre-knob attachment at samples > 1.
+        let scene_attachment = wgpu::RenderPassColorAttachment {
+            view: if samples > 1 { &hdr_msaa_view } else { &hdr_view },
+            resolve_target: if samples > 1 { Some(&hdr_view) } else { None },
+            ops: wgpu::Operations { load: wgpu::LoadOp::Clear(wgpu::Color { r: 0.0, g: 0.0, b: 0.0, a: 1.0 }), store: wgpu::StoreOp::Store },
+        };
         let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("ab1 scene pass"),
-            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                view: &hdr_msaa_view,
-                resolve_target: Some(&hdr_view),
-                ops: wgpu::Operations { load: wgpu::LoadOp::Clear(wgpu::Color { r: 0.0, g: 0.0, b: 0.0, a: 1.0 }), store: wgpu::StoreOp::Store },
+            color_attachments: &[Some(scene_attachment)],
             })],
             depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
                 view: &hdr_depth_view,

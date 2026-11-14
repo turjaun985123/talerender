@@ -2425,6 +2425,7 @@ pub(crate) struct Renderer {
     queue: wgpu::Queue,
     width: u32,
     height: u32,
+    samples: u32,
     bgl_unif: wgpu::BindGroupLayout,
     bgl_basic: wgpu::BindGroupLayout,
     bgl_shadow_card: wgpu::BindGroupLayout,
@@ -2465,7 +2466,8 @@ pub(crate) struct Renderer {
 }
 
 impl Renderer {
-    pub(crate) async fn new(width: u32, height: u32, sign: &(Vec<u8>, u32, u32)) -> crate::errors::TaleResult<Renderer> {
+    pub(crate) async fn new(width: u32, height: u32, sign: &(Vec<u8>, u32, u32), knobs: crate::Knobs) -> crate::errors::TaleResult<Renderer> {
+        let samples = knobs.samples();
         let instance = crate::gpucore::new_instance();
         let adapter = crate::gpucore::request_adapter(&instance).await?;
         let info = adapter.get_info();
@@ -2627,13 +2629,13 @@ impl Renderer {
         let prepass_depth = crate::composer::make_rt(&device, width, height, wgpu::TextureFormat::Depth32Float, "prepass depth");
         let prepass_depth_view = prepass_depth.create_view(&wgpu::TextureViewDescriptor::default());
         tex_keep.push(prepass_depth);
-        let hdr_msaa = crate::gpucore::make_target(&device, width, height, wgpu::TextureFormat::Rgba16Float, 4, wgpu::TextureUsages::RENDER_ATTACHMENT, "hdr msaa");
+        let hdr_msaa = crate::gpucore::make_target(&device, width, height, wgpu::TextureFormat::Rgba16Float, samples, wgpu::TextureUsages::RENDER_ATTACHMENT, "hdr msaa");
         let hdr_msaa_view = hdr_msaa.create_view(&wgpu::TextureViewDescriptor::default());
         tex_keep.push(hdr_msaa);
         let hdr_tex = crate::composer::make_rt(&device, width, height, wgpu::TextureFormat::Rgba16Float, "hdr resolved");
         let hdr_view = hdr_tex.create_view(&wgpu::TextureViewDescriptor::default());
         tex_keep.push(hdr_tex);
-        let hdr_depth = crate::gpucore::make_target(&device, width, height, wgpu::TextureFormat::Depth32Float, 4, wgpu::TextureUsages::RENDER_ATTACHMENT, "hdr depth");
+        let hdr_depth = crate::gpucore::make_target(&device, width, height, wgpu::TextureFormat::Depth32Float, samples, wgpu::TextureUsages::RENDER_ATTACHMENT, "hdr depth");
         let hdr_depth_view = hdr_depth.create_view(&wgpu::TextureViewDescriptor::default());
         tex_keep.push(hdr_depth);
         let bokeh_tex = crate::composer::make_rt(&device, width, height, wgpu::TextureFormat::Rgba16Float, "bokeh out");
@@ -2688,7 +2690,7 @@ impl Renderer {
                 }),
                 primitive: wgpu::PrimitiveState { cull_mode: Some(wgpu::Face::Back), ..Default::default() },
                 depth_stencil: depth_state(true),
-                multisample: wgpu::MultisampleState { count: 4, ..Default::default() },
+                multisample: wgpu::MultisampleState { count: samples, ..Default::default() },
                 multiview: None,
             })
         };
@@ -2729,8 +2731,8 @@ impl Renderer {
                 multiview: None,
             })
         };
-        let basic_write = make_basic(wgpu::TextureFormat::Rgba16Float, depth_state(true), 4);
-        let basic_nowrite = make_basic(wgpu::TextureFormat::Rgba16Float, depth_state(false), 4);
+        let basic_write = make_basic(wgpu::TextureFormat::Rgba16Float, depth_state(true), samples);
+        let basic_nowrite = make_basic(wgpu::TextureFormat::Rgba16Float, depth_state(false), samples);
         let shader_depth_pos = module("depth pos shader", include_str!("shader_depth_pos.wgsl"));
         let shader_depth = module("depth shader", include_str!("shader_depth.wgsl"));
         let shader_shadow_card = module("shadow card shader", include_str!("shader_shadow_card.wgsl"));
@@ -2804,6 +2806,7 @@ impl Renderer {
             queue,
             width,
             height,
+            samples,
             bgl_unif,
             bgl_basic,
             bgl_shadow_card,
@@ -3255,13 +3258,21 @@ impl Renderer {
         }
         {
             let clear = wgpu::Color { r: spec.clear[0] as f64, g: spec.clear[1] as f64, b: spec.clear[2] as f64, a: 1.0 };
+            // Phase 2 (W54 §4 shape): view and resolve chosen
+            // together — at samples > 1 the attachment is
+            // field-for-field the pre-knob one; at 1 the pass
+            // renders directly into the resolved target (wgpu
+            // forbids a resolve target on a single-sample
+            // attachment). The depth twin carries the same
+            // count and is not branched.
+            let scene_attachment = wgpu::RenderPassColorAttachment {
+                view: if self.samples > 1 { &self.hdr_msaa_view } else { &self.hdr_view },
+                resolve_target: if self.samples > 1 { Some(&self.hdr_view) } else { None },
+                ops: wgpu::Operations { load: wgpu::LoadOp::Clear(clear), store: wgpu::StoreOp::Store },
+            };
             let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("film scene pass"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &self.hdr_msaa_view,
-                    resolve_target: Some(&self.hdr_view),
-                    ops: wgpu::Operations { load: wgpu::LoadOp::Clear(clear), store: wgpu::StoreOp::Store },
-                })],
+                color_attachments: &[Some(scene_attachment)],
                 depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
                     view: &self.hdr_depth_view,
                     depth_ops: Some(wgpu::Operations { load: wgpu::LoadOp::Clear(1.0), store: wgpu::StoreOp::Store }),
@@ -3502,7 +3513,7 @@ pub(crate) async fn run_film(width: u32, height: u32, film_dir: &str, out_dir: &
     let looks = look_registry();
     let frames_total = (data.duration * 30.0).ceil() as u32;
     let to = if to == 0 { frames_total } else { to.min(frames_total) };
-    let mut renderer = Renderer::new(width, height, &assets.sign).await?;
+    let mut renderer = Renderer::new(width, height, &assets.sign, knobs).await?;
     std::fs::create_dir_all(out_dir).map_err(|e| crate::errors::TaleError::image_io(out_dir, e))?;
     println!(
         "film: {} — {} frames @30fps, rendering {}..{} at {}x{} (clean PNG frames; decision B){tag}",
