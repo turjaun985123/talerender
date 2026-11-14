@@ -267,7 +267,7 @@ The v1 registry is exactly the painters the two scenes call:
 | generator | params | painter |
 |---|---|---|
 | `grass` | `base` (hex) | ground texture: base + hash speckle |
-| `sky-gradient` | `top`, `horizon` (hex) | vertical sky gradient |
+| `sky-gradient` | `top`, `horizon` (hex), optional `ground` (hex, default `#BFE4F7`) | the source sky-dome shader sampled per row: `mix(hor, top, pow(clamp(y·1.6,0,1), 0.7))` above the horizon (y = cos(π(1−v))), flat `ground` below it |
 | `cloud` | — | soft cloud sprite |
 | `blob-shadow` | — | radial contact shadow |
 | `onoda-card` | — | the §28 character painter (M4 replaces) |
@@ -299,7 +299,7 @@ because the composer is entered through it):
 
 ```jsonc
 "bloom": { "threshold": 0.85, "strength": 0.0, "radius": 0.6 },
-"grade": { "vignette": 0.18, "grain": 0.008, "warm": 0.02, "saturation": 1.12, "time": 0.0 }
+"grade": { "vignette": 0.18, "grain": 0.008, "warm": 0.02, "sat": 1.12, "time": 0.0 }
 ```
 
 `post.bloom` runs the transcribed UnrealBloomPass between bokeh
@@ -307,7 +307,7 @@ and output; per-field defaults mirror the engine's fallbacks
 (threshold 0.85, radius 0.6, strength 0 — an empty block is
 inert). `post.grade` runs the engine's GRADE shader after output;
 defaults mirror engine.ts (vignette 0.18, grain 0.008, warm 0.02,
-saturation 1.12, time 0). Absent blocks are skipped entirely:
+sat 1.12, time 0). Absent blocks are skipped entirely:
 the chain stays byte-identical to the M2/M3 form (proven — the
 dof-chart as-data render is bit-identical to its committed
 reference, and an identity bloom/grade variant renders
