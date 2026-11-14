@@ -1248,12 +1248,12 @@ fn tex_bgl(device: &wgpu::Device) -> wgpu::BindGroupLayout {
     })
 }
 
-pub async fn run_scene_file(width: u32, height: u32, out: &str, path: &str) -> crate::errors::TaleResult<()> {
+pub async fn run_scene_file(width: u32, height: u32, out: &str, path: &str, knobs: crate::Knobs) -> crate::errors::TaleResult<()> {
     let loaded = load(path).map_err(|e| crate::errors::TaleError::data_load(path, e))?;
     if loaded.bokeh.is_some() {
-        run_composer(width, height, out, &loaded).await
+        run_composer(width, height, out, &loaded, knobs).await
     } else {
-        run_direct(width, height, out, &loaded).await
+        run_direct(width, height, out, &loaded, knobs).await
     }
 }
 
@@ -1261,7 +1261,12 @@ pub async fn run_scene_file(width: u32, height: u32, out: &str, path: &str) -> c
 // Direct path (the ab1 pass structure)
 // ---------------------------------------------------------------------
 
-async fn run_direct(width: u32, height: u32, out: &str, scene: &Loaded) -> crate::errors::TaleResult<()> {
+async fn run_direct(width: u32, height: u32, out: &str, scene: &Loaded, knobs: crate::Knobs) -> crate::errors::TaleResult<()> {
+    let tag = if knobs.is_draft() {
+        format!(" {}", knobs.tag())
+    } else {
+        String::new()
+    };
     let (device, queue) = make_device("talerender scene-file device").await?;
     println!(
         "scene: file — {} (format v{}, direct path, {} draws, {} textures)",
@@ -1514,7 +1519,7 @@ async fn run_direct(width: u32, height: u32, out: &str, scene: &Loaded) -> crate
 
     let img = image::RgbaImage::from_raw(width, height, pixels).expect("pixel buffer size mismatch");
     img.save(out).map_err(|e| crate::errors::TaleError::image_io(out, e))?;
-    println!("wrote {out} ({width}x{height})");
+    println!("wrote {out} ({width}x{height}){tag}");
     Ok(())
 }
 
@@ -1550,7 +1555,12 @@ fn draw_model(draw: &Draw) -> &Mat4 {
     }
 }
 
-async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded) -> crate::errors::TaleResult<()> {
+async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded, knobs: crate::Knobs) -> crate::errors::TaleResult<()> {
+    let tag = if knobs.is_draft() {
+        format!(" {}", knobs.tag())
+    } else {
+        String::new()
+    };
     let bokeh = scene.bokeh.as_ref().expect("composer path requires post.bokeh");
     let (device, queue) = make_device("talerender scene-file composer device").await?;
     println!(
@@ -2160,7 +2170,7 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded) -> cra
     let rgba = rb.collect(&device)?;
     image::save_buffer(out, &rgba, width, height, image::ColorType::Rgba8)
         .map_err(|e| crate::errors::TaleError::image_io(out, e))?;
-    println!("wrote {out} ({width}x{height})");
+    println!("wrote {out} ({width}x{height}){tag}");
     Ok(())
 }
 

@@ -96,6 +96,20 @@ OPTIONS:
                             (default: 0).
     --to <N>                Film frame end, exclusive; 0 = through
                             the end (default: 0).
+    --res <SCALE>           Render scale for drafts: 0 < SCALE <= 1,
+                            applied to --width/--height (default: 1
+                            = full size). The whole frame scales,
+                            captions included. Draft only.
+    --aa <0|2|4|8>          MSAA samples for the HDR scene pass
+                            (default: 4 = full quality; 0 =
+                            single-sample). Draft only below 4.
+    --shadow <SIZE>         Key shadow map size: 512 | 1024 | 2048 |
+                            4096 (default: 2048 = full quality).
+    --draft                 Draft preset: --res 0.5 --aa 0
+                            --shadow 512. Any of the three flags
+                            given after --draft overrides it.
+                            Draft runs label every output line
+                            DRAFT — never use for delivery.
 
     -h, --help              Print this help and exit.
     -V, --version           Print the version and exit.
@@ -151,6 +165,95 @@ fn parse_u32(args: &[String], i: usize, flag: &str) -> u32 {
     })
 }
 
+/// Draft/preview quality knobs (KNOBS-W43; patch pack
+/// KNOBS-PATCH-W54). Defaults are full quality: a run at
+/// `Knobs::FULL` must be byte-identical to the pre-knob binary,
+/// frames and stdout alike. Knobs exist for drafts only.
+#[derive(Clone, Copy, PartialEq)]
+pub(crate) struct Knobs {
+    /// Render scale, 0 < res <= 1 (1 = full size).
+    pub res: f32,
+    /// MSAA in the user's spelling: 0 | 2 | 4 | 8 (0 = single).
+    pub aa: u32,
+    /// Key shadow map size: 512 | 1024 | 2048 | 4096.
+    pub shadow: u32,
+}
+
+impl Knobs {
+    pub(crate) const FULL: Knobs = Knobs { res: 1.0, aa: 4, shadow: 2048 };
+
+    /// The wgpu sample count: the user's 0 is single-sample.
+    pub(crate) fn samples(self) -> u32 {
+        if self.aa == 0 { 1 } else { self.aa }
+    }
+
+    /// Any knob off its default makes the run a draft. The
+    /// condition names all three knobs from birth (W73's
+    /// warning): a later phase that plumbs aa/shadow must not
+    /// be able to produce an untagged draft.
+    pub(crate) fn is_draft(self) -> bool {
+        self.res != 1.0 || self.aa != 4 || self.shadow != 2048
+    }
+
+    /// The in-band draft tag (KNOBS-W43 §3.4), with the
+    /// effective values so any log snippet carries provenance.
+    pub(crate) fn tag(self) -> String {
+        format!("[DRAFT res={} aa={} shadow={} — NOT FOR DELIVERY]",
+                self.res, self.aa, self.shadow)
+    }
+}
+
+fn parse_res(args: &[String], i: usize) -> f32 {
+    let raw = value(args, i, "--res");
+    let v: f32 = raw.parse().unwrap_or_else(|_| {
+        cli_error(&format!(
+            "invalid value for --res: '{raw}' (expected 0 < scale <= 1)"))
+    });
+    // Negated conjunction on purpose: it also rejects NaN,
+    // which parses as an f32 but satisfies no ordering.
+    if !(v > 0.0 && v <= 1.0) {
+        cli_error(&format!(
+            "invalid value for --res: '{raw}' (expected 0 < scale <= 1)"));
+    }
+    v
+}
+
+fn parse_aa(args: &[String], i: usize) -> u32 {
+    let v = parse_u32(args, i, "--aa");
+    if !matches!(v, 0 | 2 | 4 | 8) {
+        cli_error(&format!(
+            "invalid value for --aa: '{}' (expected 0, 2, 4 or 8)",
+            value(args, i, "--aa")));
+    }
+    v
+}
+
+fn parse_shadow(args: &[String], i: usize) -> u32 {
+    let v = parse_u32(args, i, "--shadow");
+    if !matches!(v, 512 | 1024 | 2048 | 4096) {
+        cli_error(&format!(
+            "invalid value for --shadow: '{}' (expected 512, 1024, 2048 or 4096)",
+            value(args, i, "--shadow")));
+    }
+    v
+}
+
+/// Effective frame size: --width/--height x --res, computed
+/// once in main() before dispatch. At res == 1 the base size is
+/// returned exactly (the defaults identity law); below 1 the
+/// size is rounded to even — the skill's draft encode is
+/// yuv420 and needs even dimensions — with a floor of 2.
+fn effective_size(width: u32, height: u32, res: f32) -> (u32, u32) {
+    if res == 1.0 {
+        return (width, height);
+    }
+    let scale = |v: u32| -> u32 {
+        let raw = (v as f64 * res as f64).round() as u32;
+        (raw.max(2) & !1).max(2)
+    };
+    (scale(width), scale(height))
+}
+
 /// Run a mode that returns a structured error: print it the CLI
 /// way and exit with the error's audit-table code (ERRORS-W05).
 fn exit_on_err(r: errors::TaleResult<()>) {
@@ -173,6 +276,7 @@ fn main() {
     }
     let mut width: u32 = 1080;
     let mut height: u32 = 1920;
+    let mut knobs = Knobs::FULL;
     let mut out = String::from("frame.png");
     let mut scene = String::from("m1");
     let mut caption = String::from("docs/ab/onoda-s01-t150/assets/caption.png");
@@ -247,6 +351,27 @@ fn main() {
                 i += 1;
                 film_to = parse_u32(&args, i, "--to");
             }
+            "--res" => {
+                i += 1;
+                knobs.res = parse_res(&args, i);
+            }
+            "--aa" => {
+                i += 1;
+                knobs.aa = parse_aa(&args, i);
+            }
+            "--shadow" => {
+                i += 1;
+                knobs.shadow = parse_shadow(&args, i);
+            }
+            "--draft" => {
+                // A writer of all three fields; the loop is
+                // last-writer-wins in command-line order, in
+                // both directions (lead-confirmed symmetric
+                // rule, KNOBS-PATCH-W54 §9.2 item 1).
+                knobs.res = 0.5;
+                knobs.aa = 0;
+                knobs.shadow = 512;
+            }
             other => {
                 cli_error(&format!("unknown argument: {other}"));
             }
@@ -279,21 +404,28 @@ fn main() {
         }
         return;
     }
+    // F4 knobs (KNOBS-W43 §3.1): the effective size is computed
+    // once, here, before any GPU dispatch. Every entry point
+    // below receives (ew, eh) in place of (width, height), so
+    // film's Renderer::new is built at the effective size — the
+    // substitution cannot land after it. The telemetry
+    // early-returns above are CPU-only and never see it.
+    let (ew, eh) = effective_size(width, height, knobs.res);
     if let Some(dir) = &film_dir {
         // Production integration: the complete film, frame range
         // [--from, --to) into the --out frames directory (resume:
         // existing frames are skipped). --to 0 = through the end.
-        exit_on_err(pollster::block_on(film::run_film(width, height, dir, &out, film_from, film_to)));
+        exit_on_err(pollster::block_on(film::run_film(ew, eh, dir, &out, film_from, film_to, knobs)));
         return;
     }
     if let Some(path) = &scene_file {
         // A scene file wins over --scene: the two are alternative
         // scene sources, and the file is the more specific request.
-        exit_on_err(pollster::block_on(scenefile::run_scene_file(width, height, &out, path)));
+        exit_on_err(pollster::block_on(scenefile::run_scene_file(ew, eh, &out, path, knobs)));
         return;
     }
     match scene.as_str() {
-        "m1" => exit_on_err(pollster::block_on(run(width, height, &out))),
+        "m1" => exit_on_err(pollster::block_on(run(ew, eh, &out, knobs))),
         "ab1" => {
             let stage = match post_stage.as_str() {
                 "lighting" => 1,
@@ -305,9 +437,9 @@ fn main() {
                     ));
                 }
             };
-            exit_on_err(pollster::block_on(ab1::run_ab1(width, height, &out, &caption, stage)))
+            exit_on_err(pollster::block_on(ab1::run_ab1(ew, eh, &out, &caption, stage, knobs)))
         }
-        "dof-chart" => exit_on_err(pollster::block_on(dof::run_dof(width, height, &out))),
+        "dof-chart" => exit_on_err(pollster::block_on(dof::run_dof(ew, eh, &out, knobs))),
         "stroke-battery" => exit_on_err(battery::run_battery(&out)),
         other => {
             cli_error(&format!(
@@ -461,7 +593,12 @@ fn character_texture(size: u32) -> Vec<u8> {
     px
 }
 
-async fn run(width: u32, height: u32, out: &str) -> errors::TaleResult<()> {
+async fn run(width: u32, height: u32, out: &str, knobs: Knobs) -> errors::TaleResult<()> {
+    let tag = if knobs.is_draft() {
+        format!(" {}", knobs.tag())
+    } else {
+        String::new()
+    };
     let instance = crate::gpucore::new_instance();
     let adapter = crate::gpucore::request_adapter(&instance).await?;
     let info = adapter.get_info();
@@ -825,7 +962,7 @@ async fn run(width: u32, height: u32, out: &str) -> errors::TaleResult<()> {
 
     let img = image::RgbaImage::from_raw(width, height, pixels).expect("pixel buffer size mismatch");
     img.save(out).map_err(|e| errors::TaleError::image_io(out, e))?;
-    println!("wrote {out} ({width}x{height})");
+    println!("wrote {out} ({width}x{height}){tag}");
     Ok(())
 }
 

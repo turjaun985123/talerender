@@ -132,7 +132,12 @@ fn panel_geometry(aspect: f32) -> (Vec<f32>, Vec<u32>) {
     (verts, idx)
 }
 
-pub async fn run_dof(width: u32, height: u32, out: &str) -> crate::errors::TaleResult<()> {
+pub async fn run_dof(width: u32, height: u32, out: &str, knobs: crate::Knobs) -> crate::errors::TaleResult<()> {
+    let tag = if knobs.is_draft() {
+        format!(" {}", knobs.tag())
+    } else {
+        String::new()
+    };
     let instance = crate::gpucore::new_instance();
     let adapter = crate::gpucore::request_adapter(&instance).await?;
     let info = adapter.get_info();
@@ -497,7 +502,7 @@ pub async fn run_dof(width: u32, height: u32, out: &str) -> crate::errors::TaleR
     }
 
     println!(
-        "wrote {out} ({width}x{height}) — scene dof-chart: panels at 2..30 m, focus {FOCUS} m, aperture {APERTURE}, maxblur {MAXBLUR}; chain: HalfFloat MSAA-4x scene -> packed-depth prepass -> transcribed r170 bokeh -> Neutral+sRGB output"
+        "wrote {out} ({width}x{height}) — scene dof-chart: panels at 2..30 m, focus {FOCUS} m, aperture {APERTURE}, maxblur {MAXBLUR}; chain: HalfFloat MSAA-4x scene -> packed-depth prepass -> transcribed r170 bokeh -> Neutral+sRGB output{tag}"
     );
     Ok(())
 }

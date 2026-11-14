@@ -582,7 +582,12 @@ fn pack_u32(data: &[u32]) -> Vec<u8> {
     out
 }
 
-pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str, post_stage: u8) -> crate::errors::TaleResult<()> {
+pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str, post_stage: u8, knobs: crate::Knobs) -> crate::errors::TaleResult<()> {
+    let tag = if knobs.is_draft() {
+        format!(" {}", knobs.tag())
+    } else {
+        String::new()
+    };
     let instance = crate::gpucore::new_instance();
     let adapter = crate::gpucore::request_adapter(&instance).await?;
     let info = adapter.get_info();
@@ -1544,7 +1549,7 @@ pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str, pos
 
     let img = image::RgbaImage::from_raw(width, height, pixels).expect("pixel buffer size mismatch");
     img.save(out).map_err(|e| crate::errors::TaleError::image_io(out, e))?;
-    println!("wrote {out} ({width}x{height})");
+    println!("wrote {out} ({width}x{height}){tag}");
     Ok(())
 }
 

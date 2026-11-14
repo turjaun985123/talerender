@@ -3401,8 +3401,13 @@ fn overlay_calendar(px: &mut [u8], w: u32, h: u32, assets: &Assets, cal: &Calend
     // drawCalendar transform: translate(352, 648) rotate(-0.03)
     // scale(0.92, 0.92*sy); plate local frame x [-180,180],
     // y [-220,220] at 2 px per unit.
-    let (cx, cy) = (352.0f32, 648.0f32);
-    let (rot, sx, sy) = (-0.03f32, 0.92f32, 0.92 * cal.sy);
+    // F8 (KNOBS-W43 s4.1): the overlay scales WITH the frame
+    // (captions contract: strips are part of the composed
+    // image). At 1080x1920 ux == uy == 1.0 exactly and every
+    // expression below is bit-identical to the pre-knob form.
+    let (ux, uy) = (w as f32 / 1080.0, h as f32 / 1920.0);
+    let (cx, cy) = (352.0f32 * ux, 648.0f32 * uy);
+    let (rot, sx, sy) = (-0.03f32, 0.92f32 * ux, 0.92 * cal.sy * uy);
     let (sr, cr) = rot.sin_cos();
     let fwd = |lx: f32, ly: f32| -> (f32, f32) {
         let (x, y) = (lx * sx, ly * sy);
@@ -3449,14 +3454,18 @@ fn overlay_calendar(px: &mut [u8], w: u32, h: u32, assets: &Assets, cal: &Calend
 
 fn overlay_caption(px: &mut [u8], w: u32, h: u32, assets: &Assets, idx: usize, scale: f32) {
     let strip = &assets.strips[idx];
-    let (cx, cy) = (540.0f32, 1340.0f32);
-    let (hw, hh) = (540.0 * scale, 150.0 * scale);
+    // F8: frame scale folded into the same expressions (see
+    // overlay_calendar); the strip is still sampled in design
+    // coordinates, so the bounds checks below are unchanged.
+    let (ux, uy) = (w as f32 / 1080.0, h as f32 / 1920.0);
+    let (cx, cy) = (540.0f32 * ux, 1340.0f32 * uy);
+    let (hw, hh) = (540.0 * scale * ux, 150.0 * scale * uy);
     let (ix0, iy0) = (((cx - hw).floor() as i32).max(0), ((cy - hh).floor() as i32).max(0));
     let (ix1, iy1) = (((cx + hw).ceil() as i32).min(w as i32 - 1), ((cy + hh).ceil() as i32).min(h as i32 - 1));
     for y in iy0..=iy1 {
         for x in ix0..=ix1 {
-            let su = cx + (x as f32 - cx) / scale;
-            let sv = cy + (y as f32 - cy) / scale;
+            let su = 540.0 + (x as f32 - cx) / (scale * ux);
+            let sv = 1340.0 + (y as f32 - cy) / (scale * uy);
             let src_x = su;
             let src_y = sv - (1340.0 - 150.0);
             if src_x < 0.0 || src_x >= strip.1 as f32 || src_y < 0.0 || src_y >= strip.2 as f32 {
@@ -3481,7 +3490,12 @@ fn apply_fade(px: &mut [u8], fade: f32) {
 // The film driver.
 // ---------------------------------------------------------------------
 
-pub(crate) async fn run_film(width: u32, height: u32, film_dir: &str, out_dir: &str, from: u32, to: u32) -> crate::errors::TaleResult<()> {
+pub(crate) async fn run_film(width: u32, height: u32, film_dir: &str, out_dir: &str, from: u32, to: u32, knobs: crate::Knobs) -> crate::errors::TaleResult<()> {
+    let tag = if knobs.is_draft() {
+        format!(" {}", knobs.tag())
+    } else {
+        String::new()
+    };
     let dir = Path::new(film_dir);
     let data = load_film_data(dir).map_err(|e| crate::errors::TaleError::data_load(dir, e))?;
     let assets = load_assets(dir, &data).map_err(|e| crate::errors::TaleError::data_load(dir, e))?;
@@ -3491,7 +3505,7 @@ pub(crate) async fn run_film(width: u32, height: u32, film_dir: &str, out_dir: &
     let mut renderer = Renderer::new(width, height, &assets.sign).await?;
     std::fs::create_dir_all(out_dir).map_err(|e| crate::errors::TaleError::image_io(out_dir, e))?;
     println!(
-        "film: {} — {} frames @30fps, rendering {}..{} at {}x{} (clean PNG frames; decision B)",
+        "film: {} — {} frames @30fps, rendering {}..{} at {}x{} (clean PNG frames; decision B){tag}",
         "THE SOLDIER WHO DIDN'T KNOW THE WAR WAS OVER", frames_total, from, to, width, height
     );
     let mut cache = PaintCache::new();
@@ -3521,13 +3535,13 @@ pub(crate) async fn run_film(width: u32, height: u32, film_dir: &str, out_dir: &
         done += 1;
         if done % 25 == 0 {
             println!(
-                "  frame {n} (t = {t:.2}s) — {done} rendered, {skipped} skipped · {}",
+                "  frame {n} (t = {t:.2}s) — {done} rendered, {skipped} skipped · {}{tag}",
                 clock.timing_suffix((done + skipped) as u64, (to - from) as u64)
             );
         }
     }
     println!(
-        "film render complete: {done} rendered, {skipped} skipped (resume), range {from}..{to} · {} · {}",
+        "film render complete: {done} rendered, {skipped} skipped (resume), range {from}..{to} · {} · {}{tag}",
         clock.summary_suffix(),
         cache.stats_line()
     );
