@@ -1428,7 +1428,6 @@ pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str, pos
         let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("ab1 scene pass"),
             color_attachments: &[Some(scene_attachment)],
-            })],
             depth_stencil_attachment: Some(wgpu::RenderPassDepthStencilAttachment {
                 view: &hdr_depth_view,
                 depth_ops: Some(wgpu::Operations { load: wgpu::LoadOp::Clear(1.0), store: wgpu::StoreOp::Store }),
