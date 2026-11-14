@@ -2380,16 +2380,16 @@ pub(crate) struct Renderer {
 }
 
 impl Renderer {
-    pub(crate) async fn new(width: u32, height: u32, sign: &(Vec<u8>, u32, u32)) -> Renderer {
+    pub(crate) async fn new(width: u32, height: u32, sign: &(Vec<u8>, u32, u32)) -> crate::errors::TaleResult<Renderer> {
         let instance = crate::gpucore::new_instance();
-        let adapter = crate::gpucore::request_adapter(&instance).await;
+        let adapter = crate::gpucore::request_adapter(&instance).await?;
         let info = adapter.get_info();
         println!(
             "renderer: {} | backend: {:?} | device type: {:?} | driver: {} {}",
             info.name, info.backend, info.device_type, info.driver, info.driver_info
         );
         let (device, queue) =
-            crate::gpucore::request_device_default(&adapter, "talerender film device").await;
+            crate::gpucore::request_device_default(&adapter, "talerender film device").await?;
         let ceil_motif = {
             let (r, g, b) = crate::scene::shade_rgb("#3A2E22", 1.25);
             format!("#{r:02X}{g:02X}{b:02X}")
@@ -2756,7 +2756,7 @@ impl Renderer {
             sampler_clamp,
             sampler_repeat,
             sampler_nearest,
-        }
+        })
     }
 }
 
@@ -2792,7 +2792,7 @@ impl Renderer {
         tex
     }
 
-    pub(crate) fn render(&mut self, spec: &FrameSpec, dyn_tex: &[std::rc::Rc<Painted>]) -> Vec<u8> {
+    pub(crate) fn render(&mut self, spec: &FrameSpec, dyn_tex: &[std::rc::Rc<Painted>]) -> crate::errors::TaleResult<Vec<u8>> {
         let (device, queue) = (&self.device, &self.queue);
         let (width, height) = (self.width, self.height);
         let aspect = width as f32 / height as f32;
@@ -3264,7 +3264,7 @@ impl Renderer {
         // batching GPU-CORE-W07 s4 names) ----
         let rb = crate::gpucore::Readback::record(device, &mut encoder, &self.final_tex, width, height, "readback buffer");
         queue.submit(Some(encoder.finish()));
-        let pixels = rb.collect(device);
+        let pixels = rb.collect(device)?;
         drop(dyn_keep);
         pixels
     }
@@ -3403,7 +3403,7 @@ pub(crate) async fn run_film(width: u32, height: u32, film_dir: &str, out_dir: &
     let looks = look_registry();
     let frames_total = (data.duration * 30.0).ceil() as u32;
     let to = if to == 0 { frames_total } else { to.min(frames_total) };
-    let mut renderer = Renderer::new(width, height, &assets.sign).await;
+    let mut renderer = Renderer::new(width, height, &assets.sign).await?;
     std::fs::create_dir_all(out_dir).map_err(|e| crate::errors::TaleError::image_io(out_dir, e))?;
     println!(
         "film: {} — {} frames @30fps, rendering {}..{} at {}x{} (clean PNG frames; decision B)",
@@ -3421,7 +3421,7 @@ pub(crate) async fn run_film(width: u32, height: u32, film_dir: &str, out_dir: &
         let t = n as f64 / 30.0;
         let mut spec = eval_frame(&data, &looks, t);
         let (dyn_tex, _) = resolve_chars(&mut spec, &looks, &assets, &mut cache);
-        let mut px = renderer.render(&spec, &dyn_tex);
+        let mut px = renderer.render(&spec, &dyn_tex)?;
         if let Some(cal) = &spec.calendar {
             overlay_calendar(&mut px, width, height, &assets, cal);
         }

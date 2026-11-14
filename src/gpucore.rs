@@ -55,11 +55,14 @@ pub(crate) fn new_instance() -> wgpu::Instance {
 /// Canonical adapter request — the verbatim semantics of the
 /// helper formerly defined in main.rs and already called by every
 /// site: try a high-performance adapter first; if none answers,
-/// retry with the fallback (software) adapter forced. Panics with
-/// the project's established message when no adapter exists at
-/// all — that message is load-bearing (PERF.md's failure table
-/// quotes it verbatim for the "No adapter" row).
-pub(crate) async fn request_adapter(instance: &wgpu::Instance) -> wgpu::Adapter {
+/// retry with the fallback (software) adapter forced. When no
+/// adapter exists at all it returns `GpuInit` (exit 3) carrying
+/// the project's established message VERBATIM as its source —
+/// that message is load-bearing (PERF.md's failure table quotes
+/// it for the "No adapter" row; ERRORS-W05 step 2 / W35 §5).
+pub(crate) async fn request_adapter(
+    instance: &wgpu::Instance,
+) -> crate::errors::TaleResult<wgpu::Adapter> {
     if let Some(adapter) = instance
         .request_adapter(&wgpu::RequestAdapterOptions {
             power_preference: wgpu::PowerPreference::HighPerformance,
@@ -68,7 +71,7 @@ pub(crate) async fn request_adapter(instance: &wgpu::Instance) -> wgpu::Adapter 
         })
         .await
     {
-        return adapter;
+        return Ok(adapter);
     }
     instance
         .request_adapter(&wgpu::RequestAdapterOptions {
@@ -77,10 +80,15 @@ pub(crate) async fn request_adapter(instance: &wgpu::Instance) -> wgpu::Adapter 
             force_fallback_adapter: true,
         })
         .await
-        .expect("no wgpu adapter found — a Vulkan driver (hardware or lavapipe) is required")
+        .ok_or_else(|| {
+            crate::errors::TaleError::gpu_init(
+                "request_adapter (gpucore)",
+                "no wgpu adapter found — a Vulkan driver (hardware or lavapipe) is required",
+            )
+        })
 }
 
-/// Device + queue with the project's error message preserved.
+/// Device + queue, failures as `DeviceRequest` (exit 3).
 /// `limits` is explicit because the sites legitimately differ
 /// today (standard everywhere except main.rs::run's downlevel);
 /// new code should use `request_device_default`.
@@ -88,7 +96,7 @@ pub(crate) async fn request_device(
     adapter: &wgpu::Adapter,
     label: &'static str,
     limits: wgpu::Limits,
-) -> (wgpu::Device, wgpu::Queue) {
+) -> crate::errors::TaleResult<(wgpu::Device, wgpu::Queue)> {
     adapter
         .request_device(
             &wgpu::DeviceDescriptor {
@@ -100,7 +108,12 @@ pub(crate) async fn request_device(
             None,
         )
         .await
-        .expect("request_device failed")
+        .map_err(|e| {
+            crate::errors::TaleError::device_request(
+                format!("request_device ({label})"),
+                e,
+            )
+        })
 }
 
 /// The common case: standard limits (NOT downlevel — those cap
@@ -108,7 +121,7 @@ pub(crate) async fn request_device(
 pub(crate) async fn request_device_default(
     adapter: &wgpu::Adapter,
     label: &'static str,
-) -> (wgpu::Device, wgpu::Queue) {
+) -> crate::errors::TaleResult<(wgpu::Device, wgpu::Queue)> {
     request_device(adapter, label, wgpu::Limits::default()).await
 }
 
@@ -216,6 +229,7 @@ pub(crate) struct Readback {
     height: u32,
     bytes_per_pixel: u32,
     padded_row: u32,
+    label: &'static str,
 }
 
 impl Readback {
@@ -268,36 +282,43 @@ impl Readback {
             },
             wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
         );
-        Readback { buffer, width, height, bytes_per_pixel, padded_row }
+        Readback { buffer, width, height, bytes_per_pixel, padded_row, label }
     }
 
     /// Map the buffer (after the caller submitted the encoder),
     /// wait, and return the tight rows with padding stripped.
-    /// Map-failure messages are the majority spelling used by
-    /// main.rs / ab1.rs / film.rs / scenefile.rs.
-    pub(crate) fn collect(self, device: &wgpu::Device) -> Vec<u8> {
+    /// Map failures are `BufferMap` (exit 3) since ERRORS-W05
+    /// step 2 — the two layers stay distinguishable in the error
+    /// source ("map channel closed" vs the wgpu map error).
+    pub(crate) fn collect(self, device: &wgpu::Device) -> crate::errors::TaleResult<Vec<u8>> {
         let (width, height, bpp, padded_row) =
             (self.width, self.height, self.bytes_per_pixel, self.padded_row);
-        let (padded, _) = self.collect_padded(device);
-        strip_padding(&padded, width, height, bpp, padded_row)
+        let (padded, _) = self.collect_padded(device)?;
+        Ok(strip_padding(&padded, width, height, bpp, padded_row))
     }
 
     /// Like `collect`, but returns the raw padded rows plus the
     /// row stride — for callers that index the mapped layout in
     /// place (dof.rs's packed-depth panel sampler).
-    pub(crate) fn collect_padded(self, device: &wgpu::Device) -> (Vec<u8>, u32) {
+    pub(crate) fn collect_padded(
+        self,
+        device: &wgpu::Device,
+    ) -> crate::errors::TaleResult<(Vec<u8>, u32)> {
+        let ctx = format!("readback collect ({})", self.label);
         let slice = self.buffer.slice(..);
         let (tx, rx) = mpsc::channel();
         slice.map_async(wgpu::MapMode::Read, move |result| {
             let _ = tx.send(result);
         });
         device.poll(wgpu::Maintain::Wait);
-        rx.recv().expect("map channel closed").expect("buffer map failed");
+        rx.recv()
+            .map_err(|_| crate::errors::TaleError::buffer_map(&ctx, "map channel closed"))?
+            .map_err(|e| crate::errors::TaleError::buffer_map(&ctx, e))?;
         let data = slice.get_mapped_range();
         let out = data.to_vec();
         drop(data);
         self.buffer.unmap();
-        (out, self.padded_row)
+        Ok((out, self.padded_row))
     }
 }
 
@@ -310,7 +331,7 @@ pub(crate) fn readback_rgba(
     texture: &wgpu::Texture,
     width: u32,
     height: u32,
-) -> Vec<u8> {
+) -> crate::errors::TaleResult<Vec<u8>> {
     let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
         label: Some("gpucore readback"),
     });

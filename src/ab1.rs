@@ -584,7 +584,7 @@ fn pack_u32(data: &[u32]) -> Vec<u8> {
 
 pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str, post_stage: u8) -> crate::errors::TaleResult<()> {
     let instance = crate::gpucore::new_instance();
-    let adapter = crate::gpucore::request_adapter(&instance).await;
+    let adapter = crate::gpucore::request_adapter(&instance).await?;
     let info = adapter.get_info();
     println!(
         "adapter: {} | backend: {:?} | device type: {:?} | driver: {} {}",
@@ -604,7 +604,7 @@ pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str, pos
     // limits (8192) are what the scene needs; lavapipe admits
     // them — request_device_default's law (gpucore).
     let (device, queue) =
-        crate::gpucore::request_device_default(&adapter, "talerender device").await;
+        crate::gpucore::request_device_default(&adapter, "talerender device").await?;
 
     // ---- camera: S01's extracted frame ----
     let aspect = width as f32 / height as f32;
@@ -1540,7 +1540,7 @@ pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str, pos
     // ---- readback ----
     let rb = crate::gpucore::Readback::record(&device, &mut encoder, &final_tex, width, height, "readback buffer");
     queue.submit(Some(encoder.finish()));
-    let pixels = rb.collect(&device);
+    let pixels = rb.collect(&device)?;
 
     let img = image::RgbaImage::from_raw(width, height, pixels).expect("pixel buffer size mismatch");
     img.save(out).map_err(|e| crate::errors::TaleError::image_io(out, e))?;

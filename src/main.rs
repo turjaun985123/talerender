@@ -463,7 +463,7 @@ fn character_texture(size: u32) -> Vec<u8> {
 
 async fn run(width: u32, height: u32, out: &str) -> errors::TaleResult<()> {
     let instance = crate::gpucore::new_instance();
-    let adapter = crate::gpucore::request_adapter(&instance).await;
+    let adapter = crate::gpucore::request_adapter(&instance).await?;
     let info = adapter.get_info();
     println!(
         "adapter: {} | backend: {:?} | device type: {:?} | driver: {} {}",
@@ -479,7 +479,7 @@ async fn run(width: u32, height: u32, out: &str) -> errors::TaleResult<()> {
         "talerender device",
         wgpu::Limits::downlevel_defaults(),
     )
-    .await;
+    .await?;
 
     // ---- camera & transforms -------------------------------------------
     let aspect = width as f32 / height as f32;
@@ -821,7 +821,7 @@ async fn run(width: u32, height: u32, out: &str) -> errors::TaleResult<()> {
     }
     let rb = crate::gpucore::Readback::record(&device, &mut encoder, &texture, width, height, "readback buffer");
     queue.submit(Some(encoder.finish()));
-    let pixels = rb.collect(&device);
+    let pixels = rb.collect(&device)?;
 
     let img = image::RgbaImage::from_raw(width, height, pixels).expect("pixel buffer size mismatch");
     img.save(out).map_err(|e| errors::TaleError::image_io(out, e))?;

@@ -134,14 +134,14 @@ fn panel_geometry(aspect: f32) -> (Vec<f32>, Vec<u32>) {
 
 pub async fn run_dof(width: u32, height: u32, out: &str) -> crate::errors::TaleResult<()> {
     let instance = crate::gpucore::new_instance();
-    let adapter = crate::gpucore::request_adapter(&instance).await;
+    let adapter = crate::gpucore::request_adapter(&instance).await?;
     let info = adapter.get_info();
     println!(
         "adapter: {} ({:?}, driver {}) — software rasteriser, no performance claim",
         info.name, info.backend, info.driver
     );
     let (device, queue) =
-        crate::gpucore::request_device_default(&adapter, "talerender-dof-device").await;
+        crate::gpucore::request_device_default(&adapter, "talerender-dof-device").await?;
 
     let aspect = width as f32 / height as f32;
     // Packed-depth storage format. The pack is a BYTE packing, so a
@@ -488,12 +488,12 @@ pub async fn run_dof(width: u32, height: u32, out: &str) -> crate::errors::TaleR
 
     let rb = crate::gpucore::Readback::record(&device, &mut encoder, &final_tex, width, height, "dof-readback");
     queue.submit(Some(encoder.finish()));
-    let rgba = rb.collect(&device);
+    let rgba = rb.collect(&device)?;
     image::save_buffer(out, &rgba, width, height, image::ColorType::Rgba8)
         .map_err(|e| crate::errors::TaleError::image_io(out, e))?;
 
     if dump_depth {
-        dump_packed_depth(&device, &queue, &packed_depth, width, height, depth_format);
+        dump_packed_depth(&device, &queue, &packed_depth, width, height, depth_format)?;
     }
 
     println!(
@@ -511,7 +511,7 @@ fn dump_packed_depth(
     width: u32,
     height: u32,
     format: wgpu::TextureFormat,
-) {
+) -> crate::errors::TaleResult<()> {
     let bytes_per_px: usize = if format == wgpu::TextureFormat::Rgba8Unorm { 4 } else { 8 };
     fn f16_to_f32(h: u16) -> f32 {
         let sign = ((h >> 15) & 1) as u32;
@@ -548,7 +548,7 @@ fn dump_packed_depth(
         "dof-depth-readback",
     );
     queue.submit(Some(encoder.finish()));
-    let (mapped, padded_u32) = rb.collect_padded(device);
+    let (mapped, padded_u32) = rb.collect_padded(device)?;
     let padded = padded_u32 as usize;
     println!("packed-depth dump (panel centres):");
     for &(nx, ny, d) in PANELS.iter() {
@@ -566,6 +566,7 @@ fn dump_packed_depth(
         let view_z = depth_to_view_z(unpack_rgba_depth(ch), NEAR, FAR);
         println!("  panel d={d:>5} m @({px},{py}): packed={ch:?} -> viewZ {view_z:.4} (expect {})", -d);
     }
+    Ok(())
 }
 
 // ---- CPU mirrors of the packing arithmetic (transcription tests) ----

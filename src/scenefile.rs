@@ -1131,9 +1131,11 @@ fn upload_texture(device: &wgpu::Device, queue: &wgpu::Queue, px: &[u8], w: u32,
     tex.create_view(&wgpu::TextureViewDescriptor::default())
 }
 
-async fn make_device(label: &'static str) -> (wgpu::Device, wgpu::Queue) {
+async fn make_device(
+    label: &'static str,
+) -> crate::errors::TaleResult<(wgpu::Device, wgpu::Queue)> {
     let instance = crate::gpucore::new_instance();
-    let adapter = crate::gpucore::request_adapter(&instance).await;
+    let adapter = crate::gpucore::request_adapter(&instance).await?;
     let info = adapter.get_info();
     println!(
         "adapter: {} | backend: {:?} | device type: {:?} | driver: {} {}",
@@ -1229,7 +1231,7 @@ pub async fn run_scene_file(width: u32, height: u32, out: &str, path: &str) -> c
 // ---------------------------------------------------------------------
 
 async fn run_direct(width: u32, height: u32, out: &str, scene: &Loaded) -> crate::errors::TaleResult<()> {
-    let (device, queue) = make_device("talerender scene-file device").await;
+    let (device, queue) = make_device("talerender scene-file device").await?;
     println!(
         "scene: file — {} (format v{}, direct path, {} draws, {} textures)",
         scene.version,
@@ -1477,7 +1479,7 @@ async fn run_direct(width: u32, height: u32, out: &str, scene: &Loaded) -> crate
     }
     let rb = crate::gpucore::Readback::record(&device, &mut encoder, &texture, width, height, "readback buffer");
     queue.submit(Some(encoder.finish()));
-    let pixels = rb.collect(&device);
+    let pixels = rb.collect(&device)?;
 
     let img = image::RgbaImage::from_raw(width, height, pixels).expect("pixel buffer size mismatch");
     img.save(out).map_err(|e| crate::errors::TaleError::image_io(out, e))?;
@@ -1519,7 +1521,7 @@ fn draw_model(draw: &Draw) -> &Mat4 {
 
 async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded) -> crate::errors::TaleResult<()> {
     let bokeh = scene.bokeh.as_ref().expect("composer path requires post.bokeh");
-    let (device, queue) = make_device("talerender scene-file composer device").await;
+    let (device, queue) = make_device("talerender scene-file composer device").await?;
     println!(
         "scene: file — {} (format v{}, composer path: HalfFloat MSAA-4x -> packed-depth prepass -> r170 bokeh -> Neutral+sRGB; focus {} m, aperture {}, maxblur {})",
         scene.name, scene.version, bokeh.focus, bokeh.aperture, bokeh.maxblur
@@ -2124,7 +2126,7 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded) -> cra
 
     let rb = crate::gpucore::Readback::record(&device, &mut encoder, &final_tex, width, height, "composer readback");
     queue.submit(Some(encoder.finish()));
-    let rgba = rb.collect(&device);
+    let rgba = rb.collect(&device)?;
     image::save_buffer(out, &rgba, width, height, image::ColorType::Rgba8)
         .map_err(|e| crate::errors::TaleError::image_io(out, e))?;
     println!("wrote {out} ({width}x{height})");
