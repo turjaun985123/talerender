@@ -1,0 +1,1 @@
+{"duration":5.0,"name":"bad-apply","nodes":[{"channels":{"lean":{"apply":"lean = bowA * 0.6","keys":[[0,0],[2.5,3.5,0.45]],"kind":"poseTrack"}},"name":"Hero","type":"character"}]}

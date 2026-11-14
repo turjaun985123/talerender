@@ -1,0 +1,274 @@
+{
+  "generatedBy": "tools/format/stage_clips.py",
+  "source": "tools/format/fixtures/stage_clips/fragment-camera-character.fragment.json",
+  "clips": {
+    "fragment-camera-character-camera": {
+      "duration": 6.0,
+      "tracks": [
+        {
+          "target": {
+            "node": "camera",
+            "channel": "eye"
+          },
+          "keys": [
+            {
+              "t": 0.0,
+              "value": [
+                0,
+                2,
+                8
+              ]
+            },
+            {
+              "t": 3.0,
+              "value": [
+                1,
+                2,
+                6
+              ],
+              "ease": "linear"
+            },
+            {
+              "t": 6.0,
+              "value": [
+                2,
+                3,
+                5
+              ]
+            }
+          ]
+        },
+        {
+          "target": {
+            "node": "camera",
+            "channel": "target"
+          },
+          "keys": [
+            {
+              "t": 0.0,
+              "value": [
+                0,
+                1,
+                0
+              ]
+            },
+            {
+              "t": 3.0,
+              "value": [
+                0,
+                1,
+                0
+              ],
+              "ease": "linear"
+            },
+            {
+              "t": 6.0,
+              "value": [
+                0,
+                1.2000000476837158,
+                0
+              ]
+            }
+          ]
+        },
+        {
+          "target": {
+            "node": "camera",
+            "channel": "fovY"
+          },
+          "keys": [
+            {
+              "t": 0.0,
+              "value": 50
+            },
+            {
+              "t": 3.0,
+              "value": 46,
+              "ease": "linear"
+            },
+            {
+              "t": 6.0,
+              "value": 44
+            }
+          ]
+        }
+      ]
+    },
+    "fragment-camera-character-hero": {
+      "duration": 6.0,
+      "tracks": [
+        {
+          "target": {
+            "node": "Hero",
+            "channel": "armR.0"
+          },
+          "keys": [
+            {
+              "t": 0.0,
+              "value": 12
+            },
+            {
+              "t": 1.8899999856948853,
+              "value": 12
+            },
+            {
+              "t": 2.190000057220459,
+              "value": 56,
+              "ease": "smoother"
+            },
+            {
+              "t": 2.9600000381469727,
+              "value": 56
+            },
+            {
+              "t": 3.4100000858306885,
+              "value": 14,
+              "ease": "smoother"
+            }
+          ]
+        },
+        {
+          "target": {
+            "node": "Hero",
+            "channel": "armR.1"
+          },
+          "keys": [
+            {
+              "t": 0.0,
+              "value": 4
+            },
+            {
+              "t": 1.8899999856948853,
+              "value": 4
+            },
+            {
+              "t": 2.190000057220459,
+              "value": -116,
+              "ease": "smoother"
+            },
+            {
+              "t": 2.9600000381469727,
+              "value": -116
+            },
+            {
+              "t": 3.4100000858306885,
+              "value": 6,
+              "ease": "smoother"
+            }
+          ]
+        },
+        {
+          "target": {
+            "node": "Hero",
+            "channel": "headTurn"
+          },
+          "keys": [
+            {
+              "t": 0.0,
+              "value": -0.44999998807907104
+            },
+            {
+              "t": 0.4000000059604645,
+              "value": -0.44999998807907104
+            },
+            {
+              "t": 2.5999999046325684,
+              "value": 0.4000000059604645,
+              "ease": "smoother"
+            },
+            {
+              "t": 3.0,
+              "value": 0.4000000059604645
+            },
+            {
+              "t": 5.199999809265137,
+              "value": -0.20000000298023224,
+              "ease": "smoother"
+            }
+          ]
+        },
+        {
+          "target": {
+            "node": "Hero",
+            "channel": "mood"
+          },
+          "keys": [
+            {
+              "t": 0.0,
+              "value": "tired",
+              "ease": "step"
+            },
+            {
+              "t": 1.2000000476837158,
+              "value": "neutral",
+              "ease": "step"
+            }
+          ]
+        },
+        {
+          "target": {
+            "node": "Hero",
+            "channel": "position"
+          },
+          "keys": [
+            {
+              "t": 0.20000000298023224,
+              "value": [
+                -0.5,
+                0,
+                -1.7599999904632568
+              ]
+            },
+            {
+              "t": 1.850000023841858,
+              "value": [
+                2.200000047683716,
+                0,
+                -2.299999952316284
+              ],
+              "ease": "linear"
+            }
+          ]
+        }
+      ]
+    },
+    "fragment-camera-character-guide": {
+      "duration": 6.0,
+      "tracks": [
+        {
+          "target": {
+            "node": "Guide",
+            "channel": "mood"
+          },
+          "keys": [
+            {
+              "t": 0.0,
+              "value": "neutral",
+              "ease": "step"
+            },
+            {
+              "t": 3.5,
+              "value": "shock",
+              "ease": "step"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "nodes": [
+    {
+      "name": "Hero",
+      "type": "character",
+      "clip": "fragment-camera-character-hero"
+    },
+    {
+      "name": "Guide",
+      "type": "character",
+      "clip": "fragment-camera-character-guide"
+    }
+  ],
+  "camera": {
+    "clip": "fragment-camera-character-camera"
+  }
+}

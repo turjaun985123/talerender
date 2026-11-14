@@ -1,0 +1,154 @@
+{
+  "generatedBy": "tools/format/stage_clips.py",
+  "source": "tools/format/fixtures/stage_clips/fragment-nodes.fragment.json",
+  "clips": {
+    "fragment-nodes-plane": {
+      "duration": 4.0,
+      "tracks": [
+        {
+          "target": {
+            "node": "plane",
+            "channel": "translate"
+          },
+          "keys": [
+            {
+              "t": 0.0,
+              "value": [
+                -13,
+                9.600000381469727,
+                -13
+              ]
+            },
+            {
+              "t": 0.05000000074505806,
+              "value": [
+                -13,
+                9.600000381469727,
+                -13
+              ]
+            },
+            {
+              "t": 3.125999927520752,
+              "value": [
+                11,
+                9.600000381469727,
+                -13
+              ],
+              "ease": "linear"
+            },
+            {
+              "t": 3.1760001182556152,
+              "value": [
+                11,
+                9.600000381469727,
+                -13
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "fragment-nodes-leaflet-0": {
+      "duration": 4.0,
+      "tracks": [
+        {
+          "target": {
+            "node": "leaflet 0",
+            "channel": "rotate.x"
+          },
+          "keys": [
+            {
+              "t": 0.0,
+              "value": 36.35279846191406
+            },
+            {
+              "t": 3.1760001182556152,
+              "value": 41.75199890136719,
+              "ease": "linear"
+            }
+          ]
+        },
+        {
+          "target": {
+            "node": "leaflet 0",
+            "channel": "rotate.y"
+          },
+          "keys": [
+            {
+              "t": 0.0,
+              "value": 0
+            },
+            {
+              "t": 3.1760001182556152,
+              "value": 0,
+              "ease": "linear"
+            }
+          ]
+        },
+        {
+          "target": {
+            "node": "leaflet 0",
+            "channel": "rotate.z"
+          },
+          "keys": [
+            {
+              "t": 0.0,
+              "value": 23.52239990234375
+            },
+            {
+              "t": 3.1760001182556152,
+              "value": 27.016000747680664,
+              "ease": "linear"
+            }
+          ]
+        },
+        {
+          "target": {
+            "node": "leaflet 0",
+            "channel": "translate"
+          },
+          "keys": [
+            {
+              "t": 0.0,
+              "value": [
+                0,
+                9.399999618530273,
+                0
+              ]
+            },
+            {
+              "t": 0.5,
+              "value": [
+                0.10000000149011612,
+                9.199999809265137,
+                0.10000000149011612
+              ],
+              "ease": "linear"
+            },
+            {
+              "t": 1.0,
+              "value": [
+                0.20000000298023224,
+                8.899999618530273,
+                0.20000000298023224
+              ],
+              "ease": "linear"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "nodes": [
+    {
+      "name": "plane",
+      "type": "group",
+      "clip": "fragment-nodes-plane"
+    },
+    {
+      "name": "leaflet 0",
+      "type": "mesh",
+      "clip": "fragment-nodes-leaflet-0"
+    }
+  ]
+}

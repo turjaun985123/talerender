@@ -1,0 +1,1 @@
+{"duration":3.0,"name":"bad-key-shape","nodes":[{"channels":{"headTurn":{"keys":[[0,0.0],[1.5,0.3,0.5,99]],"kind":"poseTrack"}},"name":"Hero","type":"character"}]}
