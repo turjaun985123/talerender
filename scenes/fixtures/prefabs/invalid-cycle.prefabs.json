@@ -1,0 +1,1 @@
+{"format":"talerender-scene","name":"prefabs fixture — INVALID library: loop-a instantiates loop-b, loop-b instantiates loop-a","prefabs":{"loop-a":{"node":{"children":[{"prefab":"loop-b"}],"type":"group"}},"loop-b":{"node":{"children":[{"prefab":"loop-a"}],"type":"group"}}},"version":2}

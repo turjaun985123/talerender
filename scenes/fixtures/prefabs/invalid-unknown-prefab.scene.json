@@ -1,0 +1,1 @@
+{"camera":{"eye":[0,1.6,6],"fovY":40,"target":[0,1,0]},"format":"talerender-scene","name":"prefabs fixture — INVALID: instance names a prefab that does not exist","nodes":[{"params":{},"prefab":"ghost-fence"}],"version":2}

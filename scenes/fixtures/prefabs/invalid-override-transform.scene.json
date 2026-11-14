@@ -1,0 +1,1 @@
+{"camera":{"eye":[0,1.6,6],"fovY":40,"target":[0,1,0]},"format":"talerender-scene","name":"prefabs fixture — INVALID: override carries a transform (transforms compose via the instance key, never override)","nodes":[{"overrides":{"cap":{"transform":[{"translate":[0,0,0]}]}},"params":{"height":1},"prefab":"marker-post"}],"version":2}

@@ -1,0 +1,1 @@
+{"camera":{"eye":[0,1.6,6],"fovY":40,"target":[0,1,0]},"format":"talerender-scene","name":"prefabs fixture — INVALID: param 'weight' is not declared by marker-post","nodes":[{"params":{"height":1,"weight":3},"prefab":"marker-post"}],"version":2}

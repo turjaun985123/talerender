@@ -1,0 +1,1 @@
+{"camera":{"eye":[0,1.6,6],"fovY":40,"target":[0,1,0]},"format":"talerender-scene","name":"prefabs fixture — INVALID: param 'height' is declared number, given a string","nodes":[{"params":{"height":"tall"},"prefab":"marker-post"}],"version":2}

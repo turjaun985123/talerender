@@ -1,0 +1,1 @@
+{"camera":{"eye":[0,1.6,6],"fovY":40,"target":[0,1,0]},"format":"talerender-scene","name":"prefabs fixture — INVALID: required param 'height' of marker-post is not supplied","nodes":[{"params":{},"prefab":"marker-post"}],"version":2}

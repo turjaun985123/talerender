@@ -1,0 +1,1 @@
+{"camera":{"eye":[0,1.6,6],"fovY":40,"target":[0,1,0]},"format":"talerender-scene","name":"prefabs fixture — INVALID: uses loop-a from invalid-cycle.prefabs.json (run with --library invalid-cycle.prefabs.json, without the good library)","nodes":[{"prefab":"loop-a"}],"version":2}

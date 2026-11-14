@@ -1,0 +1,154 @@
+name: Bench (dispatch)
+
+# Bounded performance harness on the CI lavapipe (ubuntu-22.04,
+# Mesa 23.2) — the same environment as render.yml, mirrored below.
+#
+# ⚠ HONESTY RULE (docs/runbook/PERF.md): lavapipe is a SOFTWARE
+# renderer. Timings from this workflow are indicative only — they
+# exercise the harness, the log formats, and relative comparisons
+# (e.g. paint-cache cap 160 vs 24). They are NOT hardware
+# performance and must never be quoted as such. The real numbers
+# come from the RADV run on the user's PC per PERF.md.
+#
+# What it does: builds the binary, then renders one bounded film
+# chunk twice — default paint cache (cap 160) and
+# TALERENDER_PAINT_CACHE=24 (the two configurations of PERF §4) —
+# each wrapped in /usr/bin/time -v (wall time + peak RSS), each
+# into a fresh output directory (the driver resumes by skipping
+# existing frames; a re-run over existing frames measures
+# nothing). Raw logs, time files, exit codes, an environment
+# capture, and per-frame PNG sizes are uploaded as one artifact;
+# tools/perf/bench_report.py turns them into PERF-shaped tables.
+#
+# The bound — frames 0..100 (100 frames), fixed, no inputs:
+#   * Proven envelope: the Wave-1 full-film proof rendered all
+#     1,811 frames as 10 render.yml dispatch jobs tiling
+#     [0, 1811) — ≈181 frames per job — every job inside this
+#     workflow family's 120-minute limit on this same lavapipe
+#     image. 100 frames is ~55% of that proven chunk; two legs
+#     (200 frames) plus the build still fit one job.
+#   * 100 is a multiple of the driver's 25-frame progress
+#     cadence → exactly 4 progress boundaries per leg, so the
+#     report gets real per-range rows.
+#   * Starting at 0 is deliberate and differs from PERF §3's
+#     mid-film chunk (1027..1117): the CI bench measures the
+#     startup-inclusive cost (process start, asset load, first
+#     segment + the S01→S02 transition). PERF's PC protocol
+#     measures steady state. The report labels which is which;
+#     never merge the two.
+#
+# The frames themselves are NOT uploaded (100 clean PNG masters
+# are ~100–300 MB of masters, not logs); their per-frame sizes
+# are recorded in frames-*.sizes for the report's §5 table.
+
+on:
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+  RUSTFLAGS: "-C link-arg=-fuse-ld=mold"
+
+jobs:
+  bench:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+      - name: Install mold + lavapipe + GNU time
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mold mesa-vulkan-drivers vulkan-tools time
+          ICD=$(ls /usr/share/vulkan/icd.d/lvp_icd*.json | head -n 1)
+          echo "VK_ICD_FILENAMES=$ICD" >> "$GITHUB_ENV"
+          echo "lavapipe ICD: $ICD"
+      - name: Build
+        run: cargo build --release
+      - name: Capture environment
+        run: |
+          mkdir -p bench-out
+          {
+            echo "== date ==";    date -Is
+            echo "== kernel ==";  uname -r
+            echo "== ram ==";     free -h
+            echo "== icds ==";    ls /usr/share/vulkan/icd.d/
+            echo "== binary ==";  sha256sum ./target/release/talerender
+            echo "== version =="; ./target/release/talerender --version
+            echo "== bench ==";   echo "film frames 0..100, legs: cap160 (default), cap24 (TALERENDER_PAINT_CACHE=24)"
+          } > bench-out/env.txt 2>&1
+          cat bench-out/env.txt
+      - name: Bench leg A — film 0..100, default paint cache (cap 160)
+        run: |
+          set +e
+          /usr/bin/time -v -o bench-out/bench-default.time \
+            ./target/release/talerender --film film \
+              --out bench-out/frames-default --from 0 --to 100 \
+            > bench-out/bench-default.log 2>&1
+          echo $? > bench-out/bench-default.exit
+          set -e
+          grep -E "^(renderer:|  frame |film render complete)" bench-out/bench-default.log || true
+          stat -c '%s %n' bench-out/frames-default/frame_*.png > bench-out/frames-default.sizes 2>/dev/null \
+            || touch bench-out/frames-default.sizes
+          wc -l bench-out/frames-default.sizes
+      - name: Bench leg B — film 0..100, TALERENDER_PAINT_CACHE=24
+        run: |
+          set +e
+          TALERENDER_PAINT_CACHE=24 /usr/bin/time -v -o bench-out/bench-cache24.time \
+            ./target/release/talerender --film film \
+              --out bench-out/frames-cache24 --from 0 --to 100 \
+            > bench-out/bench-cache24.log 2>&1
+          echo $? > bench-out/bench-cache24.exit
+          set -e
+          grep -E "^(renderer:|  frame |film render complete)" bench-out/bench-cache24.log || true
+          stat -c '%s %n' bench-out/frames-cache24/frame_*.png > bench-out/frames-cache24.sizes 2>/dev/null \
+            || touch bench-out/frames-cache24.sizes
+          wc -l bench-out/frames-cache24.sizes
+      - name: Job summary — with the honesty rule
+        if: always()
+        run: |
+          {
+            echo "## TaleRender bench — CI lavapipe"
+            echo
+            echo "> ⚠ **SOFTWARE RENDERER — INDICATIVE ONLY.** This job ran on lavapipe (llvmpipe, CPU). These timings are **not hardware performance** and must never be quoted as such (PERF.md honesty rule). The real numbers come from the RADV run on the user's PC per \`docs/runbook/PERF.md\`. What this run does prove: the harness works end-to-end, the log formats parse, and the two paint-cache configurations compare under identical conditions."
+            echo
+            echo "| leg | renderer (from log) | completion line | wall (from time -v) | peak RSS (from time -v) | exit |"
+            echo "|---|---|---|---|---|---|"
+            for leg in bench-default bench-cache24; do
+              renderer=$(grep -m1 '^renderer:' "bench-out/$leg.log" || echo '(no renderer line found)')
+              complete=$(grep -m1 '^film render complete' "bench-out/$leg.log" || echo '(no completion line found)')
+              wall=$(grep 'Elapsed (wall clock)' "bench-out/$leg.time" | sed 's/.*: //' || echo '?')
+              rss=$(grep 'Maximum resident set size' "bench-out/$leg.time" | sed 's/.*: //' || echo '?')
+              rc=$(cat "bench-out/$leg.exit" 2>/dev/null || echo '?')
+              echo "| $leg | $renderer | $complete | $wall | $rss KiB | $rc |"
+            done
+            echo
+            echo "Full tables: download the \`bench-*\` artifact (raw logs) and run \`python3 tools/perf/bench_report.py <dir>\`."
+          } >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload bench logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-${{ github.run_id }}
+          path: |
+            bench-out/*.log
+            bench-out/*.time
+            bench-out/*.exit
+            bench-out/*.txt
+            bench-out/*.sizes
+          retention-days: 7
+      - name: Verdict — a failed leg fails the job (after upload)
+        if: always()
+        run: |
+          fail=0
+          for leg in bench-default bench-cache24; do
+            rc=$(cat "bench-out/$leg.exit" 2>/dev/null || echo missing)
+            if [ "$rc" != "0" ]; then
+              echo "leg $leg exited $rc — see its log in the artifact"
+              fail=1
+            fi
+          done
+          exit $fail

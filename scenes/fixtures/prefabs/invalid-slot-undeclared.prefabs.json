@@ -1,0 +1,1 @@
+{"format":"talerender-scene","name":"prefabs fixture — INVALID library: broken-post's template references $param 'widht', which it does not declare","prefabs":{"broken-post":{"node":{"geometry":{"kind":"box","size":[0.12,{"$param":"widht"},0.12]},"material":{"color":"#8A6B42"},"type":"mesh"},"params":{"height":{"required":true,"type":"number"}}}},"version":2}

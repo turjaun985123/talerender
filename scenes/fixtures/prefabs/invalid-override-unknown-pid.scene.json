@@ -1,0 +1,1 @@
+{"camera":{"eye":[0,1.6,6],"fovY":40,"target":[0,1,0]},"format":"talerender-scene","name":"prefabs fixture — INVALID: override addresses pid 'roof', which marker-post does not declare","nodes":[{"overrides":{"roof":{"material":{"roughness":0.1}}},"params":{"height":1},"prefab":"marker-post"}],"version":2}

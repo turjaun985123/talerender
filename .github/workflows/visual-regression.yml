@@ -1,0 +1,151 @@
+name: Visual Regression (dispatch)
+
+# Same-renderer visual regression against the native golden pins:
+# render a small, fixed set of pinned references on CI lavapipe and
+# measure per-pin drift with tools/ci/visual_regression.py.
+#
+# Environment mirrors render.yml / determinism.yml exactly
+# (ubuntu-22.04, Mesa 23.2 lavapipe, ICD pinned via
+# VK_ICD_FILENAMES, mold, rust-cache) — deliberately: the gate is
+# only meaningful when the renders and the pins share a renderer.
+# The determinism contract (§2) forbids gating cross-renderer
+# equality (the GRADE grain's fp32 sin() is vendor territory), so
+# this job exists for the CI lavapipe renderer ONLY. PC RADV frames
+# must never be fed to it; RADV keeps its own future pins.
+#
+# WHAT IT RENDERS — 3 frames, on purpose:
+#   ab1        -> checked against TWO pins: ab1-composer (the M5
+#                 living reference) and s28-onoda-t150, whose
+#                 manifest entry names mode=ab1 as its current-
+#                 chain equivalent. One render, both pins.
+#   dof-chart  -> the M3 chart pin.
+#   film [1231, 1232) -> the single mid frame of segment s08b
+#                 (frame 1231, the shortest segment at 41 frames /
+#                 1.37 s), immediately past the historic 1195-1199
+#                 paint-cache-boundary defect zone — the highest-
+#                 value film canary per frame rendered.
+# The full film (1,811 frames) is NOT rendered here: at CI render
+# rates that is a production dispatch (render.yml mode=film), not
+# a routine regression job. Three frames keep this dispatch in
+# the same cost class as determinism.yml.
+#
+# The 14 film mids are UNPINNED today (staged candidates in
+# docs/golden/frames*/ are not pins — pinning is a human act,
+# docs/golden/NATIVE-GOLDEN.md). The film frame above therefore
+# reports UNPINNED: listed, never failed. When a human pins the
+# film set, this job starts gating those frames with no edit here.
+#
+# KNOWN DEBT — READ BEFORE THE FIRST DISPATCH: the ab1-composer
+# and s28-onoda-t150 pins predate the shade root-fix c00897d, and
+# the golden pack's own analysis (tools/golden/RUNNER.md) records
+# both as EXPECTED STALE on re-render — "certain" for ab1-composer.
+# Until a human re-pins them under the re-baseline protocol, a
+# correct run of this job is EXPECTED TO FAIL on those two pins;
+# that failure is the re-pin debt surfacing, not new drift.
+# dof-chart carries no such expectation (its chart texture never
+# passes through shade_rgb) and is this job's clean control: a
+# DRIFT on dof-chart is real drift until explained. Nobody widens
+# the band or whitelists a pin to make this job green — the fix
+# for the debt is the human re-pin, not a weaker gate.
+#
+# VERDICT DISCIPLINE (same as determinism.yml): the runner prints
+#   VISUAL REGRESSION: PASS (n pins, 0 drift)   exit 0
+#   VISUAL REGRESSION: FAIL (n pins, m drift)   exit 1
+#   (input error: exit 2, ERROR line, NO verdict line)
+# This job passes ONLY on exit 0 with a PASS verdict line present
+# in the report; the verdict step checks both. The markdown table
+# is uploaded as an artifact either way.
+
+on:
+  workflow_dispatch:
+
+# Cancel superseded runs on the same ref (same as ci.yml).
+concurrency:
+  group: visual-regression-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+  RUSTFLAGS: "-C link-arg=-fuse-ld=mold"
+
+jobs:
+  visual-regression:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+      - name: Install mold + lavapipe
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mold mesa-vulkan-drivers vulkan-tools
+          ICD=$(ls /usr/share/vulkan/icd.d/lvp_icd*.json | head -n 1)
+          echo "VK_ICD_FILENAMES=$ICD" >> "$GITHUB_ENV"
+          echo "lavapipe ICD: $ICD"
+
+      # The runner's stack, pinned to the versions the tools are
+      # proven under (same pins as tools-ci.yml).
+      - name: Set up Python for the regression runner
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install pinned Python dependencies
+        run: python3 -m pip install pillow==10.2.0 numpy==1.26.4
+
+      - name: Build
+        run: cargo build --release
+
+      - name: Render the pinned references (3 frames)
+        run: |
+          mkdir -p visual-out/frames
+          ./target/release/talerender --scene ab1 \
+            --out visual-out/ab1.png
+          ./target/release/talerender --scene dof-chart \
+            --out visual-out/dof-chart.png
+          ./target/release/talerender --film film \
+            --out visual-out/frames --from 1231 --to 1232
+          ls -la visual-out visual-out/frames
+
+      - name: Visual regression (per-pin drift vs the golden pins)
+        id: vr
+        run: |
+          set +e
+          python3 tools/ci/visual_regression.py \
+            --render ab1-composer=visual-out/ab1.png \
+            --render s28-onoda-t150=visual-out/ab1.png \
+            --render dof-chart=visual-out/dof-chart.png \
+            --render film-s08b=visual-out/frames/frame_01231.png \
+            --out visual-regression.md
+          rc=$?
+          echo "runner exit code: $rc (0 = PASS, 1 = FAIL, 2 = input error / no verdict)"
+          echo "script_rc=$rc" >> "$GITHUB_OUTPUT"
+
+      - name: Verdict (the PASS line is the verdict)
+        run: |
+          echo "----- visual-regression.md -----"
+          cat visual-regression.md 2>/dev/null || echo "(no report — the runner refused before writing one)"
+          echo "--------------------------------"
+          rc="${{ steps.vr.outputs.script_rc }}"
+          if [ "$rc" != "0" ]; then
+            echo "::error::visual regression runner exited $rc (1 = FAIL — drift beyond band; 2 = refusal, no verdict). See the report artifact. NOTE: ab1-composer + s28-onoda-t150 carry documented pre-c00897d re-pin debt (EXPECTED STALE on re-render, tools/golden/RUNNER.md) — a FAIL confined to those two pins is that debt, cleared only by a human re-pin."
+            exit 1
+          fi
+          if ! grep -q "^VISUAL REGRESSION: PASS" visual-regression.md; then
+            echo "::error::no 'VISUAL REGRESSION: PASS' verdict line in visual-regression.md — not a pass."
+            exit 1
+          fi
+          echo "VISUAL REGRESSION: PASS confirmed (runner exit 0 + PASS line present)."
+
+      - name: Upload visual regression report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-regression-${{ github.run_id }}
+          path: |
+            visual-regression.md
+            visual-out
+          retention-days: 7
