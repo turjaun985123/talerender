@@ -187,7 +187,7 @@ def calendar_plate(year: str):
     d.text((ox, oy - 166 * S), "C A L E N D A R", font=ImageFont.truetype(XBD, int(30 * S)), fill=(244, 235, 214, 255), anchor="mm")
     d.text((ox, oy + 8 * S), year, font=ImageFont.truetype(BLACK, int(118 * S)), fill=INK, anchor="mm")
     d.text((ox, oy + 118 * S), "LUBANG ISLAND", font=ImageFont.truetype(XBD, int(25 * S)), fill=(139, 131, 120, 255), anchor="mm")
-    d.rectangle([ox - 110 * S, oy + 158 * S, ox + 110 * S, oy + 163 * S], fill=INK)
+    d.rectangle([ox - 110 * S, oy + 158 * S, ox + 110 * S, oy + 163 * S], fill=(139, 131, 120, 255))  # D19: source rule colour #8B8378 (drawCalendar), not INK
     return img
 
 

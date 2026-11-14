@@ -708,7 +708,12 @@ fn add_palm(draws: &mut Vec<StdDraw>, pos: [f32; 3], s: f32, lean: f32, rot_y: f
     for i in 0..7 {
         let a = (i as f32 / 7.0) * std::f32::consts::TAU + 0.4;
         let (sa, ca) = a.sin_cos();
-        let col = if i % 2 == 0 { leaf } else { leaf2 };
+        // Source (shots.ts palm): frond = i%2 ? leaf : leaf2;
+        // tip = i%2 ? leaf2 : leaf (the OPPOSITE colour), tip
+        // sphere 8x5. Port had parity inverted, the tip sharing
+        // the frond colour at 10x6 (D10).
+        let col = if i % 2 == 1 { leaf } else { leaf2 };
+        let tip_col = if i % 2 == 1 { leaf2 } else { leaf };
         let frond_model = math::mul(
             &math::mul(&base, &t3(sa * 1.0, top_y + 0.1 - (i % 3) as f32 * 0.07, ca * 1.0)),
             &math::mul(&math::rotate_y(a), &math::scale(0.17, 0.05, 1.2)),
@@ -718,7 +723,7 @@ fn add_palm(draws: &mut Vec<StdDraw>, pos: [f32; 3], s: f32, lean: f32, rot_y: f
             &math::mul(&base, &t3(sa * 1.85, top_y - 0.28 - (i % 3) as f32 * 0.06, ca * 1.85)),
             &math::mul(&math::euler_xyz(ca * 0.5, a, -sa * 0.5), &math::scale(0.13, 0.04, 0.8)),
         );
-        add(draws, sphere_geo(1.0, 10, 6, col), tip_model, sm(0.9, 0.0), true, false);
+        add(draws, sphere_geo(1.0, 8, 5, tip_col), tip_model, sm(0.9, 0.0), true, false);
     }
     let nut = hex_lin("#6B4A2E");
     for &(nx, nz) in [(0.14f32, 0.0f32), (-0.12, 0.1), (0.0, -0.14)].iter() {
@@ -796,7 +801,7 @@ fn add_clouds(f: &mut FrameSpec, list: &[([f32; 3], f32)], eye: [f32; 3], target
             geo: g,
             model: math::identity(),
             tex: TexSrc::S(TEX_CLOUD),
-            tint: [1.0, 1.0, 1.0],
+            tint: hex_lin("#EFF4EA"), // D17: the source cloud sprite material colour (world.ts clouds); port rendered untinted
             opacity: 1.0,
             alpha_test: 0.0,
             depth_write: false,
@@ -958,7 +963,7 @@ pub(crate) fn build_sh(f: &mut FrameSpec) {
         (0.0, 13.0, 1.8), (-4.0, 11.0, 1.3), (4.5, 12.0, 1.35),
     ];
     for (i, &(x, z, s)) in trees.iter().enumerate() {
-        add_tree(&mut f.std, [x, 0.0, z], i as f32 * 1.7, s, "#3E7A34", i % 2 == 1, false);
+        add_tree(&mut f.std, [x, 0.0, z], 0.0, s, "#3E7A34", i % 2 == 0, false); // D8/D9: shore loop sets NO rotation and even i = round (shots.ts set builder); i*1.7 rotation + odd-round were the JG ring's
     }
     add_palm(&mut f.std, [-6.2, 0.0, 4.5], 1.0, 0.18, 0.0);
     add_palm(&mut f.std, [6.8, 0.0, 5.5], 0.92, -0.14, 0.0);
@@ -991,29 +996,29 @@ fn shelf_unit(f: &mut FrameSpec, w: f32, h: f32, seed: f64, model: Mat4) {
     let put = |f: &mut FrameSpec, geo: Geo, local: Mat4| {
         add(&mut f.std, geo, math::mul(&model, &local), sm(0.85, 0.0), true, true);
     };
-    put(f, box_geo(0.06, h, 0.34, frame), t3(-(w / 2.0 - 0.03), h / 2.0, 0.0));
-    put(f, box_geo(0.06, h, 0.34, frame), t3(w / 2.0 - 0.03, h / 2.0, 0.0));
+    put(f, box_geo(0.06, h, 0.34, frame), t3(-(w / 2.0), h / 2.0, 0.0));
+    put(f, box_geo(0.06, h, 0.34, frame), t3(w / 2.0, h / 2.0, 0.0));
     put(f, box_geo(w, 0.06, 0.34, frame), t3(0.0, h - 0.03, 0.0));
-    put(f, box_geo(w, 0.06, 0.34, frame), t3(0.0, 0.03, 0.0));
+    put(f, box_geo(w, 0.06, 0.3, frame), t3(0.0, 0.03, 0.0));
     let cols = ["#7A4A3A", "#4A5A6A", "#6A6248", "#54455E", "#77603A", "#3F5A50", "#83584A", "#5E5142"];
     for r in 0..4u32 {
         let by = 0.12 + r as f32 * 0.58;
-        put(f, box_geo(w - 0.12, 0.04, 0.3, frame), t3(0.0, by, 0.0));
+        put(f, box_geo(w, 0.05, 0.32, frame), t3(0.0, by, 0.0));
         let mut x = -w / 2.0 + 0.12;
         let mut i = 0u32;
-        while x < w / 2.0 - 0.14 {
+        while x < w / 2.0 - 0.16 {
             let bw = 0.055 + rnd(seed * 31.0 + r as f64 * 17.0 + i as f64) as f32 * 0.05;
-            if rnd(seed * 91.0 + r as f64 * 13.0 + i as f64) <= 0.86 {
+            if rnd(seed * 91.0 + r as f64 * 13.0 + i as f64) > 0.14 {
                 let bh = 0.34 + rnd(seed * 47.0 + r as f64 * 7.0 + i as f64 * 3.0) as f32 * 0.13;
                 let col = cols[((i + r * 3 + seed as u32) % 8) as usize];
                 let tilt = rnd(i as f64 * 7.0 + r as f64 + seed) > 0.93;
-                let mut local = t3(x + bw / 2.0, by + 0.02 + bh / 2.0, 0.02);
+                let mut local = t3(x + bw / 2.0, by + 0.03 + bh / 2.0, 0.02);
                 if tilt {
                     local = math::mul(&local, &math::rotate_z(0.1));
                 }
                 add(&mut f.std, box_geo(bw, bh, 0.2, hex_lin(col)), math::mul(&model, &local), sm(0.85, 0.0), true, true);
             }
-            x += bw + 0.005;
+            x += bw + 0.012;
             i += 1;
         }
     }
@@ -1401,8 +1406,10 @@ fn s02(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
     f.post.aperture = 0.0007;
     build_sh(&mut f);
     let k = cam_k(lt, d, 0.03);
-    let kk = if k > 0.97 { 0.97 } else { k };
-    let travelled = kk * 6.8;
+    // Source: travelled = k * 6.8 UNCLAMPED (shots.ts:333) — in
+    // the final 3% the legs stand (k > 0.97) while the group
+    // still slides 0.204 m with planted feet. Staged truth (D6).
+    let travelled = k * 6.8;
     let ph = walk_phase(travelled, 0.62);
     let bob = walk_bob(ph, 5.0);
     let legs = if k > 0.97 { Legs::Stand } else { Legs::Walk };
@@ -1457,7 +1464,7 @@ fn s03(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
     onoda.arm_r = (5.0, 3.0);
     onoda.arm_l = (5.0, 3.0);
     onoda.blink = blink_of(3.0, t, &[w_never]);
-    char(&mut f, SH_ONODA, [1.0, 0.0, 0.75], onoda, TINT_NOON, true);
+    char(&mut f, SH_ONODA, [1.0, 0.0, 0.75], onoda, TINT_NOON, false); // D7: S03 shStage carries no rifle flag (shots.ts S03) — the rifle is hidden this shot
     let mut ca = fs();
     ca.arm_r = (5.0, 3.0);
     ca.arm_l = (5.0, 3.0);
@@ -1814,7 +1821,7 @@ fn s10(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
     let ph = walk_phase(wk * 0.55, 0.58);
     tani.phase = ph as f32;
     tani.bob = walk_bob(ph, 3.0) as f32;
-    tani.legs = if wk >= 1.0 { Legs::Stand } else { Legs::Walk };
+    tani.legs = if wk > 0.0 && wk < 1.0 { Legs::Walk } else { Legs::Stand }; // D12: source stands until wk > 0 (shots.ts S10)
     tani.arm_r = (pose_track(&[key(0.0, 42.0), keym(w_flew - st0, 17.0, 0.5)], lt) as f32, -28.0);
     tani.arm_l = (14.0, 8.0);
     if t >= w_flew {
@@ -1880,6 +1887,8 @@ fn s11(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
         onoda.bob = walk_bob(ph, 4.0) as f32;
         onoda.legs = if wk >= 1.0 { Legs::Stand } else { Legs::Walk };
         onoda.mood = if t >= w_order { Mood::Awe } else { Mood::Determined };
+        onoda.arm_r = (16.0, -6.0); // D15: source S11 walk-in arms
+        onoda.arm_l = (10.0, 5.0);
         onoda.lean = 1.0;
         onoda.blink = Blinker { seed: 3.0 }.at(t) as f32;
         char(&mut f, ONODA, [lerp(-2.65, -0.15, wk) as f32, 0.0, lerp(-0.45, -0.95, wk) as f32], onoda, tint_dusk(), true);
@@ -1890,7 +1899,10 @@ fn s11(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
             pose_track(&[key(0.0, 0.0), keym(drop_t - st0 + 0.55, 3.0, 0.45)], lt) as f32,
         );
         onoda.mood = if t >= drop_t + 0.85 { Mood::Relieved } else { Mood::Awe };
-        onoda.lean = pose_track(&[key(0.0, 1.0), keym(drop_t - st0 + 0.55, 0.0, 0.45)], lt) as f32;
+        onoda.arm_l = (8.0, 4.0); // D15: source Onoda2 armL
+        // D14: source lean is a STEP at dropT + 0.55, not the
+        // poseTrack ease the port used.
+        onoda.lean = if t >= drop_t + 0.55 { 0.0 } else { 1.0 };
         onoda.blink = Blinker { seed: 3.0 }.at(t) as f32;
         char(&mut f, ONODA2, [-0.15, 0.0, -0.95], onoda, tint_dusk(), false);
     }
