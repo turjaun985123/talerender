@@ -408,6 +408,17 @@ jobs:
       # ubuntu-22.04 hosted image ships both; if a future image
       # drops them this step fails loudly inside case A/D, never
       # silently). ~9 s on the dev VM.
+      # The sheet suite drives ffmpeg/ffprobe via PATH; the
+      # hosted ubuntu-22.04 image does not guarantee them (wave-2
+      # tools-ci run 43625940101: every suite case exited 2,
+      # ffmpeg absent). Install them for this step only — the
+      # suite's own ffmpeg-absent case manipulates PATH itself
+      # and is unaffected.
+      - name: Install ffmpeg (sheet suite dependency)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg
+
       - name: Native contact sheet suite (10/10)
         run: python3 tools/film/fixtures/sheet/run_tests.py
 
