@@ -2457,7 +2457,12 @@ mod felt_tests {
         // linear curve lifts mid-tones. Pinned from the r170
         // arithmetic above.
         assert_eq!(shade_three("#1F5A45", 0.85), (28, 83, 64));
-        assert_ne!(
+        // Post root-fix (shade_rgb IS the THREE.Color linear
+        // multiply now, c00897d) the two implementations agree —
+        // this assertion pinned their difference against the old
+        // byte multiply and is inverted deliberately: agreement
+        // on the corpus witness is the pinned truth now.
+        assert_eq!(
             shade_three("#1F5A45", 0.85),
             shade_rgb("#1F5A45", 0.85)
         );
