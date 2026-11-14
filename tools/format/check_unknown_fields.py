@@ -126,7 +126,7 @@ LIGHTING = {"directional"}
 LIGHTING_DIR = {"direction", "ambient"}
 LIGHTS = {"key", "rim", "hemisphere", "points", "envIntensity"}
 LIGHT_KEY = {"color", "intensity", "position", "target", "shadow",
-             "shadowBox", "far", "bias", "normalBias"}
+             "shadowBox", "far", "near", "bias", "normalBias"}
 LIGHT_RIM = {"color", "intensity", "position"}
 LIGHT_HEMI = {"sky", "ground", "intensity"}
 LIGHT_POINT = {"color", "intensity", "position", "distance",

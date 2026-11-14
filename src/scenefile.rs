@@ -90,6 +90,7 @@ pub(crate) struct KeyCfg {
     pub shadow: bool,
     pub shadow_box: f32,
     pub far: f32,
+    pub key_near: f32,
     pub bias: f32,
     pub normal_bias: f32,
 }
@@ -958,6 +959,7 @@ fn load(path: &str) -> Result<Loaded, String> {
                     shadow: truthy(k.get("shadow")),
                     shadow_box: f32_field_or(k, "shadowBox", "scene.lights.key", 3.0)?,
                     far: f32_field_or(k, "far", "scene.lights.key", 20.0)?,
+                    key_near: f32_field_or(k, "near", "scene.lights.key", 0.5)?,
                     bias: f32_field_or(k, "bias", "scene.lights.key", -0.0004)?,
                     normal_bias: f32_field_or(k, "normalBias", "scene.lights.key", 0.02)?,
                 }),

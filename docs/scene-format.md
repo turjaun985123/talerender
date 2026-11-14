@@ -391,7 +391,7 @@ world.ts sunlight):
 "lights": {
   "key":  { "color": "#FFF0D6", "intensity": 2.6,
             "position": [7, 12, 5], "target": [0, 0, -2],
-            "shadow": true, "shadowBox": 17, "far": 80,
+            "shadow": true, "shadowBox": 17, "far": 80, "near": 0.5,
             "bias": -0.0006, "normalBias": 0.02 },
   "rim":  { "color": "#FFFFFF", "intensity": 0.4, "position": [-3, 3, -3] },
   "hemisphere": { "sky": "#CFE6FF", "ground": "#C48A5A", "intensity": 1.25 },

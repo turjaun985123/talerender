@@ -87,6 +87,7 @@
    "shadow": true,
    "shadowBox": 8,
    "far": 30,
+   "near": 0.5,
    "bias": -0.0006,
    "normalBias": 0
   },

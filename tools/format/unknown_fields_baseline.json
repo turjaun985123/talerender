@@ -1,9 +1,8 @@
 {
- "_about": "Ratchet baseline for tools/format/check_unknown_fields.py, consumed by the tools-ci strictness step specified in docs/integration/TOOLSCI2-W55.md. Lowered 24 -> 3 by the F3-b/c landing (docs/integration/F3BC-W88.md): all 19 F3-b paths dispositioned CITE and stripped with citations recorded (prose already documented in scenes/film/ASSUMPTIONS.md, scenes/sets/README.md, or the src/scene.rs painter headers); F3-c nodes[].materials stripped via the s10-form decomposition staged in docs/integration/f3bc/. Survivors: fps/frames (F3-a-kept, HARD readers in the Python tooling) and lights.key near (F3-c, recommended CONSUME: the loader learns the field; when that lands in the same PR series this entry leaves the baseline and the register drops to 2 occurrences in 2 paths). Tolerated rose 7043 -> 7047: the decomposition adds four node `name` labels (group + two children replacing one named mesh, x2 nodes). The ratchet FAILS if any path not listed here appears, or any listed path's occurrence count grows.",
+ "_about": "Ratchet baseline for tools/format/check_unknown_fields.py, consumed by the tools-ci strictness step specified in docs/integration/TOOLSCI2-W55.md. Lowered 24 -> 3 by the F3-b/c landing (docs/integration/F3BC-W88.md), then 3 -> 2 by the lights.key `near` CONSUME landing: scenefile.rs KeyCfg learned `near` beside `far` (default 0.5, the value film.rs rig_bk() already carries), the checker's LIGHT_KEY set gained it, and scene-format s14.2's key example shows it. Survivors: fps/frames only (F3-a-kept, HARD readers in the Python tooling). Tolerated 7047: the F3-b/c decomposition added four node `name` labels (group + two children replacing one named mesh, x2 nodes). The ratchet FAILS if any path not listed here appears, or any listed path's occurrence count grows.",
  "checker": "tools/format/check_unknown_fields.py",
  "classes": {
-  "F3-a-kept": "film/onoda.json root fps/frames: not dead - HARD reads in tools/perf/blink_cost.py, tools/perf/blink_census.py, tools/lipsync/evaluate_track.py (F3A-STRIP-W74.md). Kept as baselined findings until the checker learns a tooling-known set for them.",
-  "F3-c": "scenes/sets/bookshop.scene.json lights.key.near: three.js shadow-camera literal, value already in force as film.rs rig_bk() key_near 0.5. Recommended CONSUME (scenefile.rs learns `near` beside `far`; checker LIGHT_KEY gains it) - see F3BC-W88.md section 3. Baselined only until that landing."
+  "F3-a-kept": "film/onoda.json root fps/frames: not dead - HARD reads in tools/perf/blink_cost.py, tools/perf/blink_census.py, tools/lipsync/evaluate_track.py (F3A-STRIP-W74.md). Kept as baselined findings until the checker learns a tooling-known set for them."
  },
  "corpus": [
   "scenes/*.scene.json",
@@ -15,7 +14,7 @@
   "film/onoda.json",
   "film/assets/plates.json"
  ],
- "distinctPaths": 3,
+ "distinctPaths": 2,
  "paths": [
   {
    "class": "F3-a-kept",
@@ -32,17 +31,9 @@
    "key": "frames",
    "occurrences": 1,
    "pattern": "$"
-  },
-  {
-   "class": "F3-c",
-   "context": "light-key",
-   "file": "scenes/sets/bookshop.scene.json",
-   "key": "near",
-   "occurrences": 1,
-   "pattern": "$.lights.key"
   }
  ],
- "source": "docs/integration/F3BC-W88.md section 4 (scratch-corpus runs: pristine 196/15/7043, +F3-a strip 24/9/7043, +F3-b/c staged 3/3/7047)",
+ "source": "docs/integration/F3BC-W88.md section 4 + the near-consume landing (register re-run at the landing head: 2 occurrences in 2 paths)",
  "toleratedOccurrences": 7047,
- "totalOccurrences": 3
+ "totalOccurrences": 2
 }
