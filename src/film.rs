@@ -2098,34 +2098,54 @@ pub(crate) struct CharInfo {
 /// gigabytes over a film (and starved this VM's renderers when a
 /// telemetry run held one). Painting is a pure function of the
 /// EXACT state key (see state_key), so eviction can only cost
-/// time, never a pixel — determinism is unaffected. Cap 160
-/// entries (~4.6 GB worst case, far above the live working set
-/// of any single shot).
+/// time, never a pixel — determinism is unaffected. Eviction is
+/// governed by PaintBudget (PAINT-BUDGET-W06): the entry cap
+/// (default 160) AND a byte budget (default min(cap × canvas,
+/// 2 GiB)), with hits/misses/evictions accounted for the
+/// end-of-run stats line.
 pub(crate) struct PaintCache {
     map: HashMap<String, std::rc::Rc<Painted>>,
     order: std::collections::VecDeque<String>,
+    budget: crate::paintbudget::PaintBudget,
 }
 
 impl PaintCache {
     fn new() -> PaintCache {
-        PaintCache { map: HashMap::new(), order: std::collections::VecDeque::new() }
+        // TALERENDER_PAINT_CACHE overrides the entry cap for
+        // memory-tight runs (telemetry on a shared VM); the byte
+        // budget derives from it (TALERENDER_PAINT_BUDGET_MB
+        // overrides the budget; 0 disables byte enforcement).
+        let cap: usize = std::env::var("TALERENDER_PAINT_CACHE").ok()
+            .and_then(|v| v.parse().ok())
+            .unwrap_or(crate::paintbudget::DEFAULT_ENTRY_CAP);
+        PaintCache {
+            map: HashMap::new(),
+            order: std::collections::VecDeque::new(),
+            budget: crate::paintbudget::PaintBudget::from_env(
+                cap,
+                crate::paintbudget::CANVAS_BYTES,
+            ),
+        }
     }
     fn get_or_paint(&mut self, key: String, look: &FullLook, st: &FullState) -> std::rc::Rc<Painted> {
         if let Some(v) = self.map.get(&key) {
+            self.budget.on_hit();
             return v.clone();
         }
+        self.budget.on_miss(&key);
         let v = std::rc::Rc::new(paint_toon_full(look, st));
+        self.budget.on_insert(crate::paintbudget::entry_bytes(&v.0));
         self.map.insert(key.clone(), v.clone());
         self.order.push_back(key);
-        // TALERENDER_PAINT_CACHE overrides the cap for memory-tight
-        // runs (telemetry on a shared VM): eviction is pixel-neutral.
-        let cap: usize = std::env::var("TALERENDER_PAINT_CACHE").ok()
-            .and_then(|v| v.parse().ok()).unwrap_or(160);
-        while self.map.len() > cap {
+        while self.budget.should_evict() {
             let old = self.order.pop_front().expect("cache order");
-            self.map.remove(&old);
+            let old_v = self.map.remove(&old).expect("cache order");
+            self.budget.on_evict(&old, crate::paintbudget::entry_bytes(&old_v.0));
         }
         v
+    }
+    fn stats_line(&self) -> String {
+        self.budget.stats_line()
     }
 }
 
@@ -3466,6 +3486,7 @@ pub(crate) async fn run_film(width: u32, height: u32, film_dir: &str, out_dir: &
     );
     let mut cache = PaintCache::new();
     let (mut done, mut skipped) = (0u32, 0u32);
+    let clock = crate::runlog::RunClock::new();
     for n in from..to {
         let path = format!("{out_dir}/frame_{n:05}.png");
         if Path::new(&path).exists() {
@@ -3489,10 +3510,17 @@ pub(crate) async fn run_film(width: u32, height: u32, film_dir: &str, out_dir: &
         img.save(&path).map_err(|e| crate::errors::TaleError::image_io(&path, e))?;
         done += 1;
         if done % 25 == 0 {
-            println!("  frame {n} (t = {t:.2}s) — {done} rendered, {skipped} skipped");
+            println!(
+                "  frame {n} (t = {t:.2}s) — {done} rendered, {skipped} skipped · {}",
+                clock.timing_suffix((done + skipped) as u64, (to - from) as u64)
+            );
         }
     }
-    println!("film render complete: {done} rendered, {skipped} skipped (resume), range {from}..{to}");
+    println!(
+        "film render complete: {done} rendered, {skipped} skipped (resume), range {from}..{to} · {} · {}",
+        clock.summary_suffix(),
+        cache.stats_line()
+    );
     Ok(())
 }
 
@@ -3634,6 +3662,7 @@ pub(crate) fn run_film_telemetry(dir: &Path) -> Result<bool, String> {
         audit.sample(t, &cuts);
         t += 0.25;
     }
+    println!("{}", cache.stats_line());
     // Caption audit: rendered width = ink bbox of the film's own
     // strip; raw width = rendered / fit.
     let mut caps: Vec<CaptionInfo> = Vec::new();

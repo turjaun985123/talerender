@@ -101,6 +101,13 @@ ENVIRONMENT:
                             Cap the paint cache at N entries
                             (default: 160). Lower it on low-RAM
                             machines; telemetry runs often use 24.
+    TALERENDER_PAINT_BUDGET_MB <N>
+                            Cap the paint cache at N MiB of
+                            painted canvases (default: derived —
+                            the entry cap's bytes, at most
+                            2048 MiB). 0 disables the byte budget
+                            (entry cap alone). Eviction under
+                            either cap costs time, never pixels.
 
 EXIT CODES:
     0   Success.
