@@ -2149,7 +2149,7 @@ fn state_key(look: usize, st: &FullState, hold_l: Option<&str>, hold_r: Option<&
         q(st.phase), q(st.lean), q(st.bob), q(st.squash),
         match st.legs { Legs::Stand => "stand", Legs::Walk => "walk", Legs::Run => "run", Legs::Sit => "sit", Legs::Jump => "jump" },
         q(st.head_tilt), q(st.head_turn), q(st.cam_pitch),
-        st.sit_drop.map(q).unwrap_or(-1),
+        st.sit_drop.map(q).map(|v| v as i64).unwrap_or(-1),
         hold_l.unwrap_or("-"),
         hold_r.unwrap_or("-"),
     )
