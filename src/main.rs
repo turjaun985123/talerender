@@ -474,28 +474,24 @@ fn character_texture(size: u32) -> Vec<u8> {
 }
 
 async fn run(width: u32, height: u32, out: &str) -> errors::TaleResult<()> {
-    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
-        backends: wgpu::Backends::VULKAN,
-        ..Default::default()
-    });
-    let adapter = request_adapter(&instance).await;
+    let instance = crate::gpucore::new_instance();
+    let adapter = crate::gpucore::request_adapter(&instance).await;
     let info = adapter.get_info();
     println!(
         "adapter: {} | backend: {:?} | device type: {:?} | driver: {} {}",
         info.name, info.backend, info.device_type, info.driver, info.driver_info
     );
 
-    let (device, queue) = adapter
-        .request_device(
-            &wgpu::DeviceDescriptor {
-                label: Some("talerender device"),
-                required_features: wgpu::Features::empty(),
-                required_limits: wgpu::Limits::downlevel_defaults(),
-            },
-            None,
-        )
-        .await
-        .expect("request_device failed");
+    // Downlevel limits are this site's deliberate divergence
+    // (GPU-CORE-W07 s1/s4): the M1 smoke scene's textures are
+    // tiny; every other site takes standard limits because the
+    // real character canvas (2560x2816) exceeds the 2048 cap.
+    let (device, queue) = crate::gpucore::request_device(
+        &adapter,
+        "talerender device",
+        wgpu::Limits::downlevel_defaults(),
+    )
+    .await;
 
     // ---- camera & transforms -------------------------------------------
     let aspect = width as f32 / height as f32;
@@ -776,36 +772,24 @@ async fn run(width: u32, height: u32, out: &str) -> errors::TaleResult<()> {
     });
 
     // ---- frame target + depth --------------------------------------------
-    let texture = device.create_texture(&wgpu::TextureDescriptor {
-        label: Some("frame target"),
-        size: wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
-        mip_level_count: 1,
-        sample_count: 1,
-        dimension: wgpu::TextureDimension::D2,
-        format: wgpu::TextureFormat::Rgba8UnormSrgb,
-        usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
-        view_formats: &[],
-    });
-    let view_tex = texture.create_view(&wgpu::TextureViewDescriptor::default());
-    let depth = device.create_texture(&wgpu::TextureDescriptor {
-        label: Some("depth target"),
-        size: wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
-        mip_level_count: 1,
-        sample_count: 1,
-        dimension: wgpu::TextureDimension::D2,
-        format: wgpu::TextureFormat::Depth32Float,
-        usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
-        view_formats: &[],
-    });
-    let depth_view = depth.create_view(&wgpu::TextureViewDescriptor::default());
-
-    let padded = math::padded_row_bytes(width);
-    let readback = device.create_buffer(&wgpu::BufferDescriptor {
-        label: Some("readback buffer"),
-        size: (padded * height) as u64,
-        usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
-        mapped_at_creation: false,
-    });
+    let (texture, view_tex) = crate::gpucore::make_target_viewed(
+        &device,
+        width,
+        height,
+        wgpu::TextureFormat::Rgba8UnormSrgb,
+        1,
+        wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
+        "frame target",
+    );
+    let (_depth, depth_view) = crate::gpucore::make_target_viewed(
+        &device,
+        width,
+        height,
+        wgpu::TextureFormat::Depth32Float,
+        1,
+        wgpu::TextureUsages::RENDER_ATTACHMENT,
+        "depth target",
+    );
 
     let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
         label: Some("frame encoder"),
@@ -847,41 +831,9 @@ async fn run(width: u32, height: u32, out: &str) -> errors::TaleResult<()> {
         pass.set_index_buffer(quad_ib.slice(..), wgpu::IndexFormat::Uint32);
         pass.draw_indexed(0..quad_idx.len() as u32, 0, 0..1);
     }
-    encoder.copy_texture_to_buffer(
-        wgpu::ImageCopyTexture {
-            texture: &texture,
-            mip_level: 0,
-            origin: wgpu::Origin3d::ZERO,
-            aspect: wgpu::TextureAspect::All,
-        },
-        wgpu::ImageCopyBuffer {
-            buffer: &readback,
-            layout: wgpu::ImageDataLayout {
-                offset: 0,
-                bytes_per_row: Some(padded),
-                rows_per_image: Some(height),
-            },
-        },
-        wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
-    );
+    let rb = crate::gpucore::Readback::record(&device, &mut encoder, &texture, width, height, "readback buffer");
     queue.submit(Some(encoder.finish()));
-
-    let slice = readback.slice(..);
-    let (tx, rx) = std::sync::mpsc::channel();
-    slice.map_async(wgpu::MapMode::Read, move |result| {
-        let _ = tx.send(result);
-    });
-    device.poll(wgpu::Maintain::Wait);
-    rx.recv().expect("map channel closed").expect("buffer map failed");
-    let data = slice.get_mapped_range();
-    let row = (width * 4) as usize;
-    let stride = padded as usize;
-    let mut pixels = Vec::with_capacity(row * height as usize);
-    for y in 0..height as usize {
-        pixels.extend_from_slice(&data[y * stride..y * stride + row]);
-    }
-    drop(data);
-    readback.unmap();
+    let pixels = rb.collect(&device);
 
     let img = image::RgbaImage::from_raw(width, height, pixels).expect("pixel buffer size mismatch");
     img.save(out).map_err(|e| errors::TaleError::image_io(out, e))?;
