@@ -3,3 +3,5 @@ frame.png
 *.png
 !docs/**/*.png
 !film/assets/*.png
+!scenes/fixtures/**/*.png
+!tools/**/fixtures/**/*.png
