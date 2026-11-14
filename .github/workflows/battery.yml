@@ -9,11 +9,18 @@ name: Stroke battery (dispatch)
 # render.yml mode, and cargo test does not cover it).
 #
 # The battery is the CPU painter (src/scene.rs Painter); no GPU
-# is involved. The leg's verdict is the count: the run must
-# complete and write exactly 46 cards. A panic or early exit
-# fails the run step itself; a short count fails the verdict
-# step. Environment mirrors knobs.yml (ubuntu-22.04, mold,
-# rust-cache) for build parity.
+# is involved. Its output contract (src/battery.rs) is SEVEN
+# named cards — prims.png, toon.png, face-{neutral,determined,
+# angry,laugh,shock}.png — painting the M4 spec's 46 stroke
+# cases between them ("46/46" names the stroke cases inside
+# the cards, not a file count; the first dispatch of this leg
+# failed 7/46 on exactly that misreading — the run itself was
+# clean). The leg's verdict: the run completes and all seven
+# cards are written. Byte-pinning the cards is deliberately
+# NOT part of this leg: the founding stroke-toon pin predates
+# the current 2560x2816 @ res 2 output contract, and its
+# re-baseline is a separate deliberate act (the VR register
+# carries stroke-toon as NOT-RENDERED debt until then).
 
 on:
   workflow_dispatch:
@@ -46,15 +53,21 @@ jobs:
             --out "$RUNNER_TEMP/battery/cards" \
             > "$RUNNER_TEMP/battery/battery.log" 2>&1
           cat "$RUNNER_TEMP/battery/battery.log"
-      - name: Verdict (46 cards or the leg fails)
+      - name: Verdict (all seven cards or the leg fails)
         run: |
-          n=$(find "$RUNNER_TEMP/battery/cards" -name '*.png' | wc -l)
-          echo "cards written: $n"
           grep -q "TaleRender CPU painter" "$RUNNER_TEMP/battery/battery.log"
-          if [ "$n" -eq 46 ]; then
-            echo "BATTERY: 46/46"
+          ok=1
+          for c in prims toon face-neutral face-determined face-angry face-laugh face-shock; do
+            if [ -f "$RUNNER_TEMP/battery/cards/$c.png" ]; then
+              echo "card ok: $c.png"
+            else
+              echo "card MISSING: $c.png"; ok=0
+            fi
+          done
+          if [ "$ok" -eq 1 ]; then
+            echo "BATTERY: PASS (7/7 cards)"
           else
-            echo "BATTERY: FAIL ($n/46 cards)"
+            echo "BATTERY: FAIL (card set incomplete)"
             exit 1
           fi
       - name: Upload battery output
