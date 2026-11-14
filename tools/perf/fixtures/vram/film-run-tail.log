@@ -1,0 +1,13 @@
+# SYNTHETIC FIXTURE — not a captured run. Composed by W56 to the formats
+# pinned in src/runlog.rs, src/paintbudget.rs (stats_line test),
+# src/bufferpool.rs (stats_line test), and the gpu-mem line PROPOSED in
+# docs/integration/VRAM-TELEMETRY-W56.md §3. The gpu-mem accounted figure
+# equals the design note's §4 steady-state formula total for the film
+# lane at 1080x1920 (classes A+B+C+D = 220,930,688) so doc and fixture
+# cross-check each other. The buffer-pool line is included even though
+# the pool has no production caller at HEAD aa92cee — the parser must
+# handle it for the day the gpucore::Readback adoption wires it.
+  frame 1800 (t = 60.00s) — 1800 rendered, 0 skipped · elapsed 41:07 · eta 00:15
+film render complete: 1811 rendered, 0 skipped (resume), range 0..1811 · elapsed 41:22 · peak RSS 2314.6 MB · paint-cache: entries=74 bytes=2133852160 hits=1204 misses=611 evictions=537 rerenders=74 peak_bytes=2133852160 budget_bytes=2147483648
+gpu-mem: accounted_bytes=220930688 peak_accounted_bytes=229286528 textures=41 buffers=18 readback_bytes=8355840 sysfs_gtt_used_bytes=unavailable sysfs_vram_used_bytes=unavailable
+buffer-pool: retained_bytes=8355840 free=1 hits=1811 misses=1 evictions=0 peak_retained_bytes=8355840 budget_bytes=67108864
