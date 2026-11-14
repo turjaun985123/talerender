@@ -75,6 +75,9 @@ MODES (choose one; the default is a built-in scene render):
                             verdict is the printed line
                             \"FILM TELEMETRY: CHECK OK\" /
                             \"CHECK FAILED (...)\" — read the line.
+    --tables                With --film-telemetry: also print the
+                            shot, caption and cast tables after the
+                            verdict line. Default output is unchanged.
     --telemetry <MODE>      M6 QA telemetry (CPU only):
                             ab1 | ab1-file | ab1-variant.
                             Pair ab1-file with --scene-file.
@@ -296,6 +299,7 @@ fn main() {
     let mut cutouts_out: Option<String> = None;
     let mut film_dir: Option<String> = None;
     let mut film_telemetry_dir: Option<String> = None;
+    let mut tables = false;
     let mut film_from: u32 = 0;
     let mut film_to: u32 = 0;
     let mut i = 1;
@@ -344,6 +348,9 @@ fn main() {
             "--film-telemetry" => {
                 i += 1;
                 film_telemetry_dir = Some(value(&args, i, "--film-telemetry"));
+            }
+            "--tables" => {
+                tables = true;
             }
             "--film" => {
                 i += 1;
@@ -400,7 +407,7 @@ fn main() {
         // by run_film_telemetry stays authoritative; the exit code
         // agrees with it (EXIT-CODES-W02): 0 OK, 1 FAILED, 3 could
         // not run.
-        match film::run_film_telemetry(std::path::Path::new(dir)) {
+        match film::run_film_telemetry(std::path::Path::new(dir), tables) {
             Ok(true) => {}
             Ok(false) => std::process::exit(1),
             Err(e) => {

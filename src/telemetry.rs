@@ -1132,6 +1132,359 @@ pub(crate) fn print_caption_audit(caps: &[CaptionInfo], strict: bool, out: &mut 
 }
 
 // ---------------------------------------------------------------------
+// Film tables (--film-telemetry --tables; TABLES-IMPL-W85) — a pure
+// re-print of values the audit already computed, appended AFTER the
+// verdict line. Default telemetry output is byte-unchanged; nothing
+// here feeds the verdict, the exit code, or the adapter's scan.
+// ---------------------------------------------------------------------
+
+/// The Audit's attribution rule as a free function over the shots
+/// slice (Audit::shot_id_at, telemetry.rs, is the same rule over
+/// the Audit's own vec): the last shot with `at <= t + 1e-9`,
+/// defaulting to the first shot. Equivalence is unit-tested.
+pub(crate) fn shot_at<'a>(shots: &'a [ShotInfo], t: f64) -> &'a ShotInfo {
+    let mut cur = &shots[0];
+    for s in shots {
+        if s.at <= t + 1e-9 {
+            cur = s;
+        } else {
+            break;
+        }
+    }
+    cur
+}
+
+/// Per (shot, identity) sampled presence, accumulated by the film
+/// telemetry sample loop (state lives in film.rs; the update rule
+/// lives here beside the type so it is unit-testable).
+#[derive(Clone)]
+pub(crate) struct PresenceRow {
+    pub id: String,
+    pub shot: String,
+    pub samples: u32,
+    pub max_simul: u32,
+    pub first: f64,
+    pub last: f64,
+}
+
+/// Record one sample: `ids` is the sample's cutout identities WITH
+/// multiplicity. Each distinct id gains one sample; max_simul tracks
+/// the largest simultaneous instance count (S11's Onoda swap = 2).
+pub(crate) fn note_presence(rows: &mut Vec<PresenceRow>, shot: &str, t: f64, ids: &[&str]) {
+    let mut distinct: Vec<(&str, u32)> = Vec::new();
+    for id in ids {
+        if let Some(d) = distinct.iter_mut().find(|d| d.0 == *id) {
+            d.1 += 1;
+        } else {
+            distinct.push((id, 1));
+        }
+    }
+    for (id, count) in distinct {
+        if let Some(r) = rows.iter_mut().find(|r| r.id == id && r.shot == shot) {
+            r.samples += 1;
+            r.max_simul = r.max_simul.max(count);
+            r.last = t;
+        } else {
+            rows.push(PresenceRow {
+                id: id.to_string(),
+                shot: shot.to_string(),
+                samples: 1,
+                max_simul: count,
+                first: t,
+                last: t,
+            });
+        }
+    }
+}
+
+/// Per-shot frame ranges by audit attribution (W85 D3): frame n
+/// belongs to the shot shot_at names at t = n/30. Closed form:
+/// shot i's first frame = ceil((at_i - 1e-9) * 30), clamped to be
+/// non-decreasing and, for shot 1, to 0; its last = next first - 1;
+/// the last shot runs to total - 1. The ranges tile [0, total).
+pub(crate) fn shot_frame_ranges(shots: &[ShotInfo], total: u32) -> Vec<(u32, u32)> {
+    let mut firsts: Vec<u32> = Vec::with_capacity(shots.len());
+    for (i, s) in shots.iter().enumerate() {
+        if i == 0 {
+            firsts.push(0);
+        } else {
+            let raw = ((s.at - 1e-9) * 30.0).ceil();
+            let raw = if raw < 0.0 { 0 } else { raw as u32 };
+            firsts.push(raw.max(firsts[i - 1]));
+        }
+    }
+    let mut ranges = Vec::with_capacity(shots.len());
+    for i in 0..shots.len() {
+        let last = if i + 1 < shots.len() {
+            firsts[i + 1].saturating_sub(1)
+        } else {
+            total.saturating_sub(1)
+        };
+        ranges.push((firsts[i], last));
+    }
+    ranges
+}
+
+/// Frames n in [0, total) inside the blink_at window of a beat:
+/// 0 <= n/30 - beat < 0.12 (the film.rs blink_at rule, transcribed;
+/// the unit test ties this counter to blink_at itself).
+pub(crate) fn beat_frames(beat: f64, total: u32) -> u32 {
+    (0..total)
+        .filter(|&n| {
+            let d = n as f64 / 30.0 - beat;
+            (0.0..0.12).contains(&d)
+        })
+        .count() as u32
+}
+
+/// Set + atmosphere per shot — TRANSCRIBED from the staging code
+/// (W85 D4): the telemetry path loads no manifest, and the staging
+/// functions apply atmospheres numerically, never by name. The
+/// staging functions are the source of truth; this table is a
+/// citation of them (s01 film.rs staging order: s01, s02, s03,
+/// s04, s05a, s05b, s06, s07, s08, s08b, s09, s10, s11, s12).
+const SHOT_DRESSING: [(&str, &str, &str); 14] = [
+    ("S01", "JG", "noon"),
+    ("S02", "SH", "noon"),
+    ("S03", "SH", "noon"),
+    ("S04", "JG", "noon"),
+    ("S05a", "JG", "noon"),
+    ("S05b", "JG", "noon"),
+    ("S06", "JG", "fog"),
+    ("S07", "JG", "golden"),
+    ("S08", "JG", "noon"),
+    ("S08b", "JG", "noon"),
+    ("S09", "JG", "noon"),
+    ("S10", "BK", "noon"),
+    ("S11", "JG", "dusk"),
+    ("S12", "JG", "dusk"),
+];
+
+/// Authored blink beats — TRANSCRIBED bindings (W85 §1.3): beat
+/// times are data (FilmData.anchors); the anchor -> (identity,
+/// shot) binding exists only in the staging code's blink_of call
+/// sites, cited here: years0 s01, never2 s03, message3 s04,
+/// found7 s08, commander8 s09, bookseller9 s10, loyal11 s12.
+const BEAT_BINDINGS: [(&str, &str, &str); 7] = [
+    ("years0", "onoda", "S01"),
+    ("never2", "onoda", "S03"),
+    ("message3", "onoda", "S04"),
+    ("found7", "suzuki", "S08"),
+    ("commander8", "onoda", "S09"),
+    ("bookseller9", "tani", "S10"),
+    ("loyal11", "onoda", "S12"),
+];
+
+pub(crate) struct FilmTables<'a> {
+    pub shots: &'a [ShotInfo],
+    pub duration: f64,
+    pub caps: &'a [CaptionInfo],
+    pub presence: &'a [PresenceRow],
+    pub anchors: &'a std::collections::HashMap<String, f64>,
+}
+
+fn shot_end(shots: &[ShotInfo], idx: usize, duration: f64) -> f64 {
+    if idx + 1 < shots.len() {
+        shots[idx + 1].at
+    } else {
+        duration
+    }
+}
+
+pub(crate) fn print_film_tables(t: &FilmTables, out: &mut Vec<String>) {
+    let total = (t.duration * 30.0).ceil() as u32;
+    // ---- shot table ----
+    out.push(format!(
+        "SHOT TABLE — {} shots, {} frames @ 30 fps, {} s",
+        t.shots.len(),
+        total,
+        fixed2(t.duration)
+    ));
+    out.push(format!(
+        "{:<6}{:<13}{:<16}{:>6}  {:<5}{:<11}characters",
+        "shot", "frames", "time (s)", "dur", "set", "atmosphere"
+    ));
+    let ranges = shot_frame_ranges(t.shots, total);
+    for (i, s) in t.shots.iter().enumerate() {
+        let end = shot_end(t.shots, i, t.duration);
+        let (set, atmosphere) = SHOT_DRESSING
+            .iter()
+            .find(|d| d.0 == s.id)
+            .map(|d| (d.1, d.2))
+            .unwrap_or(("", ""));
+        let mut chars: Vec<String> = Vec::new();
+        for r in t.presence.iter().filter(|r| r.shot == s.id) {
+            if r.max_simul > 1 {
+                chars.push(format!("{} x{}", r.id, r.max_simul));
+            } else {
+                chars.push(r.id.clone());
+            }
+        }
+        let chars = if chars.is_empty() {
+            "(none)".to_string()
+        } else {
+            chars.join(", ")
+        };
+        out.push(format!(
+            "{:<6}{:<13}{:<16}{:>6.2}  {:<5}{:<11}{}",
+            s.id,
+            format!("{}-{}", ranges[i].0, ranges[i].1),
+            format!("{:.2}-{:.2}", s.at, end),
+            end - s.at,
+            set,
+            atmosphere,
+            chars
+        ));
+    }
+    out.push(String::new());
+    // ---- caption table ----
+    out.push(format!(
+        "CAPTION TABLE — {} chunks (audit bars: rendered > 850 px = WIDTH fail, fit < 0.68 = FIT fail; strict)",
+        t.caps.len()
+    ));
+    out.push(format!(
+        "{:<5}{:<6}{:<6}{:<17}{:>5}{:>6}{:>7}  {:<10}text",
+        "idx", "line", "shot", "window (s)", "fit", "rend", "raw", "flag"
+    ));
+    let mut notes: Vec<String> = Vec::new();
+    for (i, c) in t.caps.iter().enumerate() {
+        let owner = shot_at(t.shots, c.s);
+        let owner_idx = t.shots.iter().position(|s| s.id == owner.id).unwrap_or(0);
+        // The flag predicates are print_caption_audit's own
+        // literals (rendered_w > 850.0, fit < 0.68) — duplicated
+        // deliberately, NOT hoisted (W85 §1.2 behaviour freeze).
+        let wide = c.rendered_w > 850.0;
+        let low_fit = c.fit < 0.68;
+        let flag = match (wide, low_fit) {
+            (true, true) => "WIDTH+FIT",
+            (true, false) => "WIDTH",
+            (false, true) => "FIT",
+            (false, false) => "",
+        };
+        out.push(format!(
+            "{:<5}{:<6}{:<6}{:<17}{:>5.2}{:>6.0}{:>7.0}  {:<10}\"{}\"",
+            i,
+            c.line + 1,
+            owner.id,
+            format!("{:.2}-{:.2}", c.s, c.e),
+            c.fit,
+            c.rendered_w,
+            c.raw_w,
+            flag,
+            c.text
+        ));
+        let end = shot_end(t.shots, owner_idx, t.duration);
+        if c.e > end {
+            notes.push(format!(
+                "note: chunk {} ({}) straddles the cut — its window runs {:.2} s into the next shot; the driver draws it across the cut (window rule, film.rs eval_frame)",
+                i,
+                owner.id,
+                c.e - end
+            ));
+        }
+    }
+    out.extend(notes);
+    out.push(String::new());
+    // ---- cast list ----
+    // Identity order: first appearance (earliest first-sample time;
+    // ties by the presence vec's own order, which is sample order).
+    let mut order: Vec<String> = Vec::new();
+    for r in t.presence {
+        if !order.contains(&r.id) {
+            order.push(r.id.clone());
+        }
+    }
+    order.sort_by(|a, b| {
+        let fa = t.presence.iter().filter(|r| &r.id == a).map(|r| r.first).fold(f64::MAX, f64::min);
+        let fb = t.presence.iter().filter(|r| &r.id == b).map(|r| r.first).fold(f64::MAX, f64::min);
+        fa.partial_cmp(&fb).unwrap_or(std::cmp::Ordering::Equal)
+    });
+    out.push(format!(
+        "CAST LIST — {} identities (frame counts are sampled presence: 0.25 s audit samples x 7.5 frames per sample)",
+        order.len()
+    ));
+    out.push(format!(
+        "{:<9}{:>6}{:>8}{:>7}  shot list / authored blink beats",
+        "id", "shots", "frames", "beats"
+    ));
+    let mut beat_notes: Vec<String> = Vec::new();
+    for id in &order {
+        let rows: Vec<&PresenceRow> = t.presence.iter().filter(|r| &r.id == id).collect();
+        let total_samples: u32 = rows.iter().map(|r| r.samples).sum();
+        let frames = (total_samples * 15 + 1) / 2;
+        let shot_list: Vec<&str> = t
+            .shots
+            .iter()
+            .filter(|s| rows.iter().any(|r| r.shot == s.id))
+            .map(|s| s.id.as_str())
+            .collect();
+        let bindings: Vec<&(&str, &str, &str)> = BEAT_BINDINGS.iter().filter(|b| b.1 == id.as_str()).collect();
+        out.push(format!(
+            "{:<9}{:>6}{:>8}{:>7}  {}",
+            id,
+            shot_list.len(),
+            frames,
+            bindings.len(),
+            shot_list.join(", ")
+        ));
+        let mut entries: Vec<String> = Vec::new();
+        for (anchor, _bid, bshot) in &bindings {
+            // D7 verification against this run's own data: the
+            // anchor exists, the beat time falls in its shot's
+            // [at, end) window, the identity was sampled there.
+            let verified = match t.anchors.get(*anchor) {
+                None => {
+                    beat_notes.push(format!(
+                        "note: beat {} ({}, {}) unverified: anchor missing from film data",
+                        anchor, id, bshot
+                    ));
+                    None
+                }
+                Some(&bt) => {
+                    let sidx = t.shots.iter().position(|s| &s.id == bshot).unwrap_or(0);
+                    let (at, end) = (t.shots[sidx].at, shot_end(t.shots, sidx, t.duration));
+                    if bt < at || bt >= end {
+                        beat_notes.push(format!(
+                            "note: beat {} ({}, {}) unverified: beat time {:.2} outside shot window {:.2}-{:.2}",
+                            anchor, id, bshot, bt, at, end
+                        ));
+                        None
+                    } else if !rows.iter().any(|r| &r.shot == bshot && r.samples > 0) {
+                        beat_notes.push(format!(
+                            "note: beat {} ({}, {}) unverified: identity not sampled in that shot",
+                            anchor, id, bshot
+                        ));
+                        None
+                    } else {
+                        Some(bt)
+                    }
+                }
+            };
+            match verified {
+                Some(bt) => entries.push(format!(
+                    "{} @ {:.2} ({}, {}f)",
+                    anchor,
+                    bt,
+                    bshot,
+                    beat_frames(bt, total)
+                )),
+                None => entries.push(format!("{} (unverified)", anchor)),
+            }
+        }
+        let beat_s = if entries.is_empty() {
+            "-".to_string()
+        } else {
+            entries.join("; ")
+        };
+        out.push(format!(
+            "{:<9}{:>6}{:>8}{:>7}  beats: {}",
+            "", "", "", "", beat_s
+        ));
+    }
+    out.extend(beat_notes);
+}
+
+// ---------------------------------------------------------------------
 // Scene assembly — ab1 (Onoda S01 @ t = 1.50) in its three forms
 // ---------------------------------------------------------------------
 
@@ -1615,5 +1968,116 @@ mod tests {
         let fails2 = print_caption_audit(&caps, true, &mut lines2);
         assert_eq!(fails2, 1);
         assert!(lines2.iter().any(|l| l.contains("CAPTION WIDTH FAIL:")));
+    }
+
+    // ---- film tables (TABLES-IMPL-W85 §6.1) ----
+
+    fn cap(line: i64, s: f64, e: f64, text: &str, fit: f64, rendered: f64) -> CaptionInfo {
+        CaptionInfo {
+            line,
+            s,
+            e,
+            text: text.to_string(),
+            auto: true,
+            raw_w: if fit > 0.0 { rendered / fit } else { rendered },
+            fit,
+            rendered_w: rendered,
+        }
+    }
+
+    #[test]
+    fn tables_caption_rows_flags_and_line_conversion() {
+        let shots = vec![
+            ShotInfo { id: "S01".into(), at: 0.0 },
+            ShotInfo { id: "S02".into(), at: 10.0 },
+        ];
+        let caps = vec![
+            cap(0, 0.27, 0.43, "This", 1.00, 208.0),
+            cap(4, 12.0, 12.5, "Onoda still refused", 1.00, 844.0),
+            cap(2, 3.0, 3.2, "II", 1.00, 60.0),
+            cap(1, 4.0, 4.4, "wide", 1.00, 851.0),
+            cap(1, 5.0, 5.4, "lowfit", 0.67, 100.0),
+            cap(1, 6.0, 6.4, "both", 0.67, 900.0),
+        ];
+        let anchors = std::collections::HashMap::new();
+        let ft = FilmTables { shots: &shots, duration: 20.0, caps: &caps, presence: &[], anchors: &anchors };
+        let mut out: Vec<String> = Vec::new();
+        print_film_tables(&ft, &mut out);
+        let rows: Vec<&String> = out.iter().filter(|l| l.chars().next().is_some_and(|c| c.is_ascii_digit()) && l.contains('"')).collect();
+        assert_eq!(rows.len(), 6);
+        // chunk 0: line is 0-based in the data, 1-based in print.
+        assert!(rows[0].starts_with("0    1     S01"), "{}", rows[0]);
+        assert!(rows[0].contains("\"This\""));
+        assert_eq!(&rows[0][54..64], "          ");
+        // 844 px is under the strict > 850 bar: no flag.
+        assert!(rows[1].starts_with("1    5     S02"), "{}", rows[1]);
+        assert_eq!(&rows[1][54..64], "          ");
+        assert!(rows[2].contains("\"II\""));
+        // The predicates are print_caption_audit's: 851 -> WIDTH,
+        // fit 0.67 -> FIT, both -> WIDTH+FIT (prototype join order).
+        assert_eq!(&rows[3][54..64], "WIDTH     ");
+        assert_eq!(&rows[4][54..64], "FIT       ");
+        assert_eq!(&rows[5][54..64], "WIDTH+FIT ");
+    }
+
+    #[test]
+    fn tables_shot_at_matches_audit_attribution() {
+        let shots = vec![
+            ShotInfo { id: "S01".into(), at: 0.21 },
+            ShotInfo { id: "S06".into(), at: 25.0 },
+            ShotInfo { id: "S07".into(), at: 30.39 },
+        ];
+        let audit = Audit::new(shots.clone());
+        for t in [0.0, 0.21, 0.21 - 1e-6, 0.21 + 1e-6, 25.0, 30.29, 30.39, 30.39 - 1e-6, 30.39 + 1e-6, 60.0] {
+            assert_eq!(shot_at(&shots, t).id, audit.shot_id_at(t), "t={t}");
+        }
+        // The named boundaries: first-shot default + chunk 41's cut.
+        assert_eq!(shot_at(&shots, 0.0).id, "S01");
+        assert_eq!(shot_at(&shots, 30.29).id, "S06");
+        assert_eq!(shot_at(&shots, 30.39).id, "S07");
+    }
+
+    #[test]
+    fn tables_frame_ranges_tile_by_attribution() {
+        let shots = vec![
+            ShotInfo { id: "S01".into(), at: 0.21 },
+            ShotInfo { id: "S02".into(), at: 5.88 },
+            ShotInfo { id: "S03".into(), at: 11.0 },
+        ];
+        let ranges = shot_frame_ranges(&shots, 1811);
+        assert_eq!(ranges[0], (0, 176)); // S01 first frame 0 despite at = 0.21
+        assert_eq!(ranges[1].0, 177); // ceil((5.88 - 1e-9) * 30)
+        assert_eq!(ranges[2], (330, 1810));
+        for w in ranges.windows(2) {
+            assert_eq!(w[0].1 + 1, w[1].0, "ranges tile contiguously");
+        }
+    }
+
+    #[test]
+    fn tables_beat_frames_tie_to_blink_at() {
+        for (beat, want) in [(4.20, 4u32), (14.78, 3u32)] {
+            let via_blink = (0..200u32)
+                .filter(|&n| crate::film::blink_at(n as f64 / 30.0, &[beat]) == 1.0)
+                .count() as u32;
+            assert_eq!(via_blink, want);
+            assert_eq!(beat_frames(beat, 200), want);
+        }
+    }
+
+    #[test]
+    fn tables_presence_accumulator_semantics() {
+        let mut rows: Vec<PresenceRow> = Vec::new();
+        note_presence(&mut rows, "S01", 0.0, &["onoda"]);
+        note_presence(&mut rows, "S01", 0.25, &["onoda"]);
+        note_presence(&mut rows, "S01", 0.5, &["onoda", "onoda"]);
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].samples, 3);
+        assert_eq!(rows[0].max_simul, 2); // two instances in one sample: +1 sample, simul 2
+        assert_eq!((rows[0].samples * 15 + 1) / 2, 23); // sampled-presence frames
+        assert_eq!(rows[0].first, 0.0);
+        assert_eq!(rows[0].last, 0.5);
+        // An id absent from a shot has no row for it (S05a's (none)).
+        note_presence(&mut rows, "S05a", 1.0, &[]);
+        assert!(rows.iter().all(|r| r.shot != "S05a"));
     }
 }

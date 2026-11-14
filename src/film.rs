@@ -3633,7 +3633,7 @@ const INSTANCE_IDS: [&str; 11] = [
     "onoda", "compA", "compB", "suzuki", "tani", "onoda", "compA", "compB", "tani", "tani", "onoda",
 ];
 
-pub(crate) fn run_film_telemetry(dir: &Path) -> Result<bool, String> {
+pub(crate) fn run_film_telemetry(dir: &Path, tables: bool) -> Result<bool, String> {
     use crate::telemetry::*;
     let data = load_film_data(dir)?;
     let looks = look_registry();
@@ -3656,8 +3656,10 @@ pub(crate) fn run_film_telemetry(dir: &Path) -> Result<bool, String> {
         ShotInfo { id: "S11".into(), at: l0(10) },
         ShotInfo { id: "S12".into(), at: l0(11) },
     ];
+    let shots_keep = shots.clone();
     let mut audit = Audit::new(shots);
     let mut cache = PaintCache::new();
+    let mut presence: Vec<PresenceRow> = Vec::new();
     let mut t = 0.0f64;
     let mut sample_no = 0u32;
     while t < data.duration {
@@ -3698,6 +3700,12 @@ pub(crate) fn run_film_telemetry(dir: &Path) -> Result<bool, String> {
             })
             .collect();
         audit.sample(t, &cuts);
+        // Sampled presence for the --tables cast list (W85 §1.3):
+        // the staging work is already paid; this is one pass over
+        // the sample's cutouts, attributed by the audit's own rule.
+        let sid = shot_at(&shots_keep, t).id.clone();
+        let ids: Vec<&str> = cuts.iter().map(|c| c.id.as_str()).collect();
+        note_presence(&mut presence, &sid, t, &ids);
         t += 0.25;
     }
     println!("{}", cache.stats_line());
@@ -3752,6 +3760,24 @@ pub(crate) fn run_film_telemetry(dir: &Path) -> Result<bool, String> {
     });
     for line in &out {
         println!("{line}");
+    }
+    if tables {
+        // --tables (W85): the tables print AFTER the verdict line,
+        // from their own Vec — `out` above is a frozen surface (the
+        // adapter's verdict scan reads it), so the default output
+        // stays a strict prefix of the --tables output.
+        let ft = FilmTables {
+            shots: &shots_keep,
+            duration: data.duration,
+            caps: &caps,
+            presence: &presence,
+            anchors: &data.anchors,
+        };
+        let mut tlines: Vec<String> = vec![String::new()];
+        print_film_tables(&ft, &mut tlines);
+        for line in &tlines {
+            println!("{line}");
+        }
     }
     // Ok(true) = CHECK OK, Ok(false) = CHECK FAILED; the verdict
     // line above is printed either way and stays authoritative —
