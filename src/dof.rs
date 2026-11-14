@@ -132,50 +132,16 @@ fn panel_geometry(aspect: f32) -> (Vec<f32>, Vec<u32>) {
     (verts, idx)
 }
 
-fn make_target(
-    device: &wgpu::Device,
-    w: u32,
-    h: u32,
-    format: wgpu::TextureFormat,
-    samples: u32,
-    usage: wgpu::TextureUsages,
-    label: &str,
-) -> wgpu::Texture {
-    device.create_texture(&wgpu::TextureDescriptor {
-        label: Some(label),
-        size: wgpu::Extent3d { width: w, height: h, depth_or_array_layers: 1 },
-        mip_level_count: 1,
-        sample_count: samples,
-        dimension: wgpu::TextureDimension::D2,
-        format,
-        usage,
-        view_formats: &[],
-    })
-}
-
 pub async fn run_dof(width: u32, height: u32, out: &str) -> crate::errors::TaleResult<()> {
-    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
-        backends: wgpu::Backends::VULKAN,
-        ..Default::default()
-    });
-    let adapter = crate::request_adapter(&instance).await;
+    let instance = crate::gpucore::new_instance();
+    let adapter = crate::gpucore::request_adapter(&instance).await;
     let info = adapter.get_info();
     println!(
         "adapter: {} ({:?}, driver {}) — software rasteriser, no performance claim",
         info.name, info.backend, info.driver
     );
-    let (device, queue) = adapter
-        .request_device(
-            &wgpu::DeviceDescriptor {
-                label: Some("talerender-dof-device"),
-                required_features: wgpu::Features::empty(),
-                required_limits: wgpu::Limits::default(),
-                ..Default::default()
-            },
-            None,
-        )
-        .await
-        .expect("request device");
+    let (device, queue) =
+        crate::gpucore::request_device_default(&adapter, "talerender-dof-device").await;
 
     let aspect = width as f32 / height as f32;
     // Packed-depth storage format. The pack is a BYTE packing, so a
@@ -271,15 +237,15 @@ pub async fn run_dof(width: u32, height: u32, out: &str) -> crate::errors::TaleR
 
     // ---- targets ----
     // Scene colour: HalfFloat + MSAA 4x (the composer's render target).
-    let scene_msaa = make_target(&device, width, height, wgpu::TextureFormat::Rgba16Float, 4, wgpu::TextureUsages::RENDER_ATTACHMENT, "dof-scene-msaa");
-    let scene_resolved = make_target(&device, width, height, wgpu::TextureFormat::Rgba16Float, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING, "dof-scene-resolved");
-    let scene_depth = make_target(&device, width, height, wgpu::TextureFormat::Depth32Float, 4, wgpu::TextureUsages::RENDER_ATTACHMENT, "dof-scene-depth");
+    let scene_msaa = crate::gpucore::make_target(&device, width, height, wgpu::TextureFormat::Rgba16Float, 4, wgpu::TextureUsages::RENDER_ATTACHMENT, "dof-scene-msaa");
+    let scene_resolved = crate::gpucore::make_target(&device, width, height, wgpu::TextureFormat::Rgba16Float, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING, "dof-scene-resolved");
+    let scene_depth = crate::gpucore::make_target(&device, width, height, wgpu::TextureFormat::Depth32Float, 4, wgpu::TextureUsages::RENDER_ATTACHMENT, "dof-scene-depth");
     // Packed-depth prepass target: HalfFloat, single-sample, cleared to
     // white (BokehPass renders its depth target with a white clear).
-    let packed_depth = make_target(&device, width, height, depth_format, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_SRC, "dof-packed-depth");
-    let prepass_depth = make_target(&device, width, height, wgpu::TextureFormat::Depth32Float, 1, wgpu::TextureUsages::RENDER_ATTACHMENT, "dof-prepass-depth");
-    let bokeh_out = make_target(&device, width, height, wgpu::TextureFormat::Rgba16Float, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING, "dof-bokeh-out");
-    let final_tex = make_target(&device, width, height, wgpu::TextureFormat::Rgba8Unorm, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC, "dof-final");
+    let packed_depth = crate::gpucore::make_target(&device, width, height, depth_format, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_SRC, "dof-packed-depth");
+    let prepass_depth = crate::gpucore::make_target(&device, width, height, wgpu::TextureFormat::Depth32Float, 1, wgpu::TextureUsages::RENDER_ATTACHMENT, "dof-prepass-depth");
+    let bokeh_out = crate::gpucore::make_target(&device, width, height, wgpu::TextureFormat::Rgba16Float, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING, "dof-bokeh-out");
+    let final_tex = crate::gpucore::make_target(&device, width, height, wgpu::TextureFormat::Rgba8Unorm, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC, "dof-final");
 
     // ---- pipelines ----
     let tex_module = device.create_shader_module(wgpu::ShaderModuleDescriptor { label: Some("dof-shader-tex"), source: wgpu::ShaderSource::Wgsl(SHADER_TEX.into()) });
@@ -520,38 +486,9 @@ pub async fn run_dof(width: u32, height: u32, out: &str) -> crate::errors::TaleR
         pass.draw(0..3, 0..1);
     }
 
-    let unpadded = (width * 4) as usize;
-    let align = wgpu::COPY_BYTES_PER_ROW_ALIGNMENT as usize;
-    let padded = unpadded.div_ceil(align) * align;
-    let out_buf = device.create_buffer(&wgpu::BufferDescriptor {
-        label: Some("dof-readback"),
-        size: (padded * height as usize) as u64,
-        usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
-        mapped_at_creation: false,
-    });
-    encoder.copy_texture_to_buffer(
-        wgpu::ImageCopyTexture { texture: &final_tex, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
-        wgpu::ImageCopyBuffer { buffer: &out_buf, layout: wgpu::ImageDataLayout { offset: 0, bytes_per_row: Some(padded as u32), rows_per_image: Some(height) } },
-        wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
-    );
+    let rb = crate::gpucore::Readback::record(&device, &mut encoder, &final_tex, width, height, "dof-readback");
     queue.submit(Some(encoder.finish()));
-
-    let slice = out_buf.slice(..);
-    let (tx, rx) = std::sync::mpsc::channel();
-    slice.map_async(wgpu::MapMode::Read, move |r| {
-        let _ = tx.send(r);
-    });
-    device.poll(wgpu::Maintain::Wait);
-    rx.recv().expect("map channel").expect("map readback");
-    let mapped = slice.get_mapped_range();
-    let mut rgba = vec![0u8; unpadded * height as usize];
-    for y in 0..height as usize {
-        let src = y * padded;
-        let dst = y * unpadded;
-        rgba[dst..dst + unpadded].copy_from_slice(&mapped[src..src + unpadded]);
-    }
-    drop(mapped);
-    out_buf.unmap();
+    let rgba = rb.collect(&device);
     image::save_buffer(out, &rgba, width, height, image::ColorType::Rgba8)
         .map_err(|e| crate::errors::TaleError::image_io(out, e))?;
 
@@ -600,30 +537,19 @@ fn dump_packed_depth(
         };
         f32::from_bits(bits)
     }
-    let unpadded = width as usize * bytes_per_px;
-    let align = wgpu::COPY_BYTES_PER_ROW_ALIGNMENT as usize;
-    let padded = unpadded.div_ceil(align) * align;
-    let buf = device.create_buffer(&wgpu::BufferDescriptor {
-        label: Some("dof-depth-readback"),
-        size: (padded * height as usize) as u64,
-        usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
-        mapped_at_creation: false,
-    });
     let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("dof-depth-copy") });
-    encoder.copy_texture_to_buffer(
-        wgpu::ImageCopyTexture { texture: tex, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
-        wgpu::ImageCopyBuffer { buffer: &buf, layout: wgpu::ImageDataLayout { offset: 0, bytes_per_row: Some(padded as u32), rows_per_image: Some(height) } },
-        wgpu::Extent3d { width, height, depth_or_array_layers: 1 },
+    let rb = crate::gpucore::Readback::record_bpp(
+        device,
+        &mut encoder,
+        tex,
+        width,
+        height,
+        bytes_per_px as u32,
+        "dof-depth-readback",
     );
     queue.submit(Some(encoder.finish()));
-    let slice = buf.slice(..);
-    let (tx, rx) = std::sync::mpsc::channel();
-    slice.map_async(wgpu::MapMode::Read, move |r| {
-        let _ = tx.send(r);
-    });
-    device.poll(wgpu::Maintain::Wait);
-    rx.recv().expect("map channel").expect("map depth readback");
-    let mapped = slice.get_mapped_range();
+    let (mapped, padded_u32) = rb.collect_padded(device);
+    let padded = padded_u32 as usize;
     println!("packed-depth dump (panel centres):");
     for &(nx, ny, d) in PANELS.iter() {
         let px = (((nx + 1.0) / 2.0) * width as f32) as usize;
@@ -640,8 +566,6 @@ fn dump_packed_depth(
         let view_z = depth_to_view_z(unpack_rgba_depth(ch), NEAR, FAR);
         println!("  panel d={d:>5} m @({px},{py}): packed={ch:?} -> viewZ {view_z:.4} (expect {})", -d);
     }
-    drop(mapped);
-    buf.unmap();
 }
 
 // ---- CPU mirrors of the packing arithmetic (transcription tests) ----
