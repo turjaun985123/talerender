@@ -490,6 +490,23 @@ pins the grade time to 0 (src/film.rs, the composer's GradeParams
 time field). Any time-animated grain would diverge from Chrome
 on every frame by the grain term.
 
+**Loader status addendum (2026-11-14, post-Batch-6).** The
+scene-file loader now consumes everything this section
+declares: the `lights` rig (carried; consumed in full by the
+film evaluator), the character node incl. `attachments`
+(rifle, hand-anchored), camera keys, `post.grade` with the
+canonical keys **sat / warm / exposure / time** (`exposure`
+feeds the OutputPass uniform; `saturation` is NOT a key —
+files are renamed to `sat`), the top-level **`fog` block**
+{color, near, far} (composer path: three's fog_fragment over
+the packed-depth prepass, verified against the analytic fog
+chart to ≤1 sRGB code at every panel), and the full texture
+registry (grass, sky-gradient, cloud, blob-shadow, onoda-card,
+dof-chart-pattern, planks, wallpaper, felt, parcel, picture,
+sign, solid). The direct (non-composer) path applies no fog;
+every fog-carrying production file routes through the
+composer via `post.bokeh`.
+
 **R5 — Scene files name atmospheres by PRESET; the driver
 resolves (set × preset).** A scene file's `atmosphere` field
 carries the preset name (`noon`, `fog`, `golden`, …) — the
