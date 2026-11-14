@@ -72,7 +72,7 @@
     "fovY": 46
    },
    {
-    "t": 3.819,
+    "t": 3.819000005722046,
     "eye": [
      3.6,
      5.4,
@@ -10312,7 +10312,7 @@
     "bob": 4,
     "lean": 0,
     "headTilt": -3,
-    "camPitch": 0.1108
+    "camPitch": 0.11076913774013519
    },
    "envTint": {
     "sat": 1.02,
@@ -10375,12 +10375,12 @@
        12
       ],
       [
-       1.91,
+       1.909999966621399,
        136,
        0.3
       ],
       [
-       2.86,
+       2.859999895095825,
        34,
        0.5
       ]
@@ -10417,7 +10417,7 @@
     "holdL": {
      "kind": "fromTime",
      "at": 1.96,
-     "atFilm": 32.35,
+     "atFilm": 32.349998474121094,
      "plate": "coconut",
      "x0": -100,
      "y0": -108,
@@ -10432,8 +10432,8 @@
     "camPitch": {
      "kind": "camPitchOf",
      "divisor": 0.9,
-     "atStart": 0.1108,
-     "atEnd": 0.4726,
+     "atStart": 0.11076913774013519,
+     "atEnd": 0.4726085364818573,
      "law": "camPitch = clamp(atan2(eye.y - (pos.y + 1.75*0.6), hypot(eye.x-pos.x, eye.z-pos.z)) / 0.9, -1, 1), per frame (film.rs cam_pitch_of)"
     }
    },

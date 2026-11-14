@@ -67,7 +67,7 @@
     "fovY": 46
    },
    {
-    "t": 4.837,
+    "t": 4.836999893188477,
     "eye": [
      1.6,
      4.6,
@@ -10561,7 +10561,7 @@
      "kind": "blinkDirector",
      "directorSeed": 3,
      "beats": [
-      58.12
+      58.119998931884766
      ],
      "evaluatedAt": "film t",
      "law": "blink = max(blinkDirector(3)(t), blinkAt(t, [58.12])) (shots.ts blinkOf.onoda + the 'loyal' beat); state.blink = 0 is the value at film t = 59.0 (director phase 0; beat 0.88 s past its 0.12 s window)"

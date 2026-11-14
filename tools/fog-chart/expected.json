@@ -1,0 +1,616 @@
+{
+ "chart": "fog-chart",
+ "spec": "shaders/fog/FOG.md \u00a77 (verification plan) + \u00a71\u2013\u00a72 (ground truth)",
+ "gatedComparison": "native panel-centre means vs the analytic expectedSrgb column below \u2014 computed from the formulas, not from either renderer",
+ "fog": {
+  "color": "#C9CFC2",
+  "linear": [
+   0.5840784178911641,
+   0.6239603916750761,
+   0.5394794890121072
+  ],
+  "near": 4.5,
+  "far": 20.0,
+  "formula": "factor = smoothstep(near, far, axisDepth); rgb = mix(litLinear, fogLinear, factor) \u2014 three.js fog_fragment, linear Fog branch; applied pre-tonemap, inside the material shaders; alpha never fogged",
+  "depthIsAxisDepth": "-mvPosition.z (three) == dot(world-camPos, camFwd) (native PBR) == -viewPos.z (native basic)"
+ },
+ "outputPass": {
+  "chain": "fogged linear -> NeutralToneMapping (exposure 1.0) -> sRGBTransferOETF -> byte",
+  "source": "src/shader_output.wgsl (transcription of three r170 OutputPass); the scene-file composer path uses this shader; post.grade is absent from the chart files, so no GRADE pass runs; post.bokeh aperture is 0 (identity)",
+  "oetfExponent": 0.41666,
+  "byteRule": "round-half-up of 255 x oetf (a floor/truncation convention shifts a value by at most 1 code, inside the \u00b12 bar)",
+  "neutralCompressionNote": "every panel's post-offset peak is < 0.76 (checked in the generator), so Neutral's compression branch never triggers on this chart; only its offset subtraction applies"
+ },
+ "houseLight": {
+  "consumedBy": "the scene-file colour pipeline (src/shader_scene3d.wgsl) via the files' `lighting` block \u2014 the v2 `lights` rig is carried-not-consumed by still renderers (spec \u00a714.2) and is deliberately omitted from the chart files",
+  "direction": [
+   0.5,
+   0.8,
+   0.6
+  ],
+  "ambient": 0.35,
+  "formula": "col x (ambient + (1 - ambient) x max(dot(n, normalize(dir)), 0))",
+  "frontFaceNormal": [
+   0,
+   0,
+   1
+  ],
+  "frontFaceDiffuse": 0.5366563145999494,
+  "factor": 0.6988266044899671
+ },
+ "layout": {
+  "frame": "1080x1920",
+  "fovY": 40.0,
+  "law": "panel centres at fixed NDC (basic x -0.45, standard x +0.45; rows y +0.62/+0.31/0/-0.31/-0.62 for 3/6/10/15/25 m); panel size 0.62 x 0.30 of the frustum half-extents at its depth (~335 x 288 px on screen at every depth \u2014 the dof-chart's screen-constant property). Standard panels are 0.1 m boxes seated so the FRONT FACE is at the stated depth.",
+  "panelScreenSizePx": [
+   335,
+   288
+  ]
+ },
+ "passBars": {
+  "analytic": "each native panel-centre mean (over the \u00b120 px box in each panel's entry) within \u00b12 sRGB codes of expectedSrgb, per channel, both materials, all five depths",
+  "chrome": "native-vs-Chrome full-chart PSNR >= 45 dB (flat regions; the Chrome master's JPEG floor is the bound, as at M3); judge panel centres, not edges",
+  "formulaDiscrimination": "the 6/10/15 m panels separate three's smoothstep from the classic ramp by the per-depth maxChannelDeltaCodes in `discriminators` (worst channel across both panels at that depth) \u2014 every one of them clears the \u00b12 bar several times over, so a wrong-formula build fails decisively",
+  "noFogControl": "scenes/fog-chart-nofog.scene.json must reproduce expectedSrgbNoFog at every panel centre (\u00b12 codes) with the same binary"
+ },
+ "panels": [
+  {
+   "id": "basic-3m",
+   "material": "basic",
+   "depthM": 3,
+   "baseColor": "#D94F30",
+   "baseLinear": [
+    0.6938717612919899,
+    0.07818742180518633,
+    0.0295568344378088
+   ],
+   "preFogLinear": [
+    0.6938717612919899,
+    0.07818742180518633,
+    0.0295568344378088
+   ],
+   "fogFactor": 0.0,
+   "foggedLinear": [
+    0.6938717612919899,
+    0.07818742180518633,
+    0.0295568344378088
+   ],
+   "expectedSrgb": [
+    214,
+    66,
+    17
+   ],
+   "expectedSrgbNoFog": [
+    214,
+    66,
+    17
+   ],
+   "centreNdc": [
+    -0.45,
+    0.62
+   ],
+   "centrePixel": {
+    "x": 297,
+    "y": 365
+   },
+   "sampleBoxPx": 20
+  },
+  {
+   "id": "standard-3m",
+   "material": "standard",
+   "depthM": 3,
+   "baseColor": "#30D94F",
+   "baseLinear": [
+    0.0295568344378088,
+    0.6938717612919899,
+    0.07818742180518633
+   ],
+   "preFogLinear": [
+    0.020655102249646052,
+    0.4848960468951543,
+    0.05463945049394318
+   ],
+   "fogFactor": 0.0,
+   "foggedLinear": [
+    0.020655102249646052,
+    0.4848960468951543,
+    0.05463945049394318
+   ],
+   "expectedSrgb": [
+    9,
+    182,
+    54
+   ],
+   "expectedSrgbNoFog": [
+    9,
+    182,
+    54
+   ],
+   "centreNdc": [
+    0.45,
+    0.62
+   ],
+   "centrePixel": {
+    "x": 783,
+    "y": 365
+   },
+   "sampleBoxPx": 20
+  },
+  {
+   "id": "basic-6m",
+   "material": "basic",
+   "depthM": 6,
+   "baseColor": "#3F6FD9",
+   "baseLinear": [
+    0.04970656598412723,
+    0.1589608350608804,
+    0.6938717612919899
+   ],
+   "preFogLinear": [
+    0.04970656598412723,
+    0.1589608350608804,
+    0.6938717612919899
+   ],
+   "fogFactor": 0.026283105635930316,
+   "foggedLinear": [
+    0.06375151781666759,
+    0.17118246752803207,
+    0.6898138528902864
+   ],
+   "expectedSrgb": [
+    44,
+    102,
+    211
+   ],
+   "expectedSrgbNoFog": [
+    33,
+    99,
+    212
+   ],
+   "centreNdc": [
+    -0.45,
+    0.31
+   ],
+   "centrePixel": {
+    "x": 297,
+    "y": 662
+   },
+   "sampleBoxPx": 20
+  },
+  {
+   "id": "standard-6m",
+   "material": "standard",
+   "depthM": 6,
+   "baseColor": "#D9B83F",
+   "baseLinear": [
+    0.6938717612919899,
+    0.4793201831008268,
+    0.04970656598412723
+   ],
+   "preFogLinear": [
+    0.4848960468951543,
+    0.33496169601986014,
+    0.034736270727544136
+   ],
+   "fogFactor": 0.026283105635930316,
+   "foggedLinear": [
+    0.4875028676292645,
+    0.3425574792664123,
+    0.04800249005273674
+   ],
+   "expectedSrgb": [
+    180,
+    151,
+    32
+   ],
+   "expectedSrgbNoFog": [
+    180,
+    151,
+    21
+   ],
+   "centreNdc": [
+    0.45,
+    0.31
+   ],
+   "centrePixel": {
+    "x": 783,
+    "y": 662
+   },
+   "sampleBoxPx": 20
+  },
+  {
+   "id": "basic-10m",
+   "material": "basic",
+   "depthM": 10,
+   "baseColor": "#7A8B99",
+   "baseLinear": [
+    0.1946178304415758,
+    0.2581828529215958,
+    0.31854677812509186
+   ],
+   "preFogLinear": [
+    0.1946178304415758,
+    0.2581828529215958,
+    0.31854677812509186
+   ],
+   "fogFactor": 0.2883756839313887,
+   "foggedLinear": [
+    0.30692879371167126,
+    0.36366420082637074,
+    0.3822583997299507
+   ],
+   "expectedSrgb": [
+    141,
+    154,
+    158
+   ],
+   "expectedSrgbNoFog": [
+    110,
+    129,
+    144
+   ],
+   "centreNdc": [
+    -0.45,
+    0.0
+   ],
+   "centrePixel": {
+    "x": 297,
+    "y": 960
+   },
+   "sampleBoxPx": 20
+  },
+  {
+   "id": "standard-10m",
+   "material": "standard",
+   "depthM": 10,
+   "baseColor": "#8E44AD",
+   "baseLinear": [
+    0.2704977910130658,
+    0.05780543019106723,
+    0.4178850708481375
+   ],
+   "preFogLinear": [
+    0.18903105281569754,
+    0.040395972501505346,
+    0.29202920512785324
+   ],
+   "fogFactor": 0.2883756839313887,
+   "foggedLinear": [
+    0.3029531069046282,
+    0.2086817609987074,
+    0.36338784998199125
+   ],
+   "expectedSrgb": [
+    140,
+    114,
+    154
+   ],
+   "expectedSrgbNoFog": [
+    111,
+    26,
+    140
+   ],
+   "centreNdc": [
+    0.45,
+    0.0
+   ],
+   "centrePixel": {
+    "x": 783,
+    "y": 960
+   },
+   "sampleBoxPx": 20
+  },
+  {
+   "id": "basic-15m",
+   "material": "basic",
+   "depthM": 15,
+   "baseColor": "#2FA89B",
+   "baseLinear": [
+    0.028426039504420793,
+    0.39157247774972326,
+    0.3277780980565422
+   ],
+   "preFogLinear": [
+    0.028426039504420793,
+    0.39157247774972326,
+    0.3277780980565422
+   ],
+   "fogFactor": 0.754959551542412,
+   "foggedLinear": [
+    0.44792110990475115,
+    0.5670159530306843,
+    0.4876040852332604
+   ],
+   "expectedSrgb": [
+    171,
+    192,
+    178
+   ],
+   "expectedSrgbNoFog": [
+    16,
+    163,
+    150
+   ],
+   "centreNdc": [
+    -0.45,
+    -0.31
+   ],
+   "centrePixel": {
+    "x": 297,
+    "y": 1258
+   },
+   "sampleBoxPx": 20
+  },
+  {
+   "id": "standard-15m",
+   "material": "standard",
+   "depthM": 15,
+   "baseColor": "#C94F7C",
+   "baseLinear": [
+    0.5840784178911641,
+    0.07818742180518633,
+    0.20155625379439707
+   ],
+   "preFogLinear": [
+    0.4081695375307543,
+    0.05463945049394318,
+    0.14085287245285655
+   ],
+   "fogFactor": 0.754959551542412,
+   "foggedLinear": [
+    0.5409736269599771,
+    0.48445373293175525,
+    0.4417998441232974
+   ],
+   "expectedSrgb": [
+    188,
+    178,
+    170
+   ],
+   "expectedSrgbNoFog": [
+    164,
+    37,
+    91
+   ],
+   "centreNdc": [
+    0.45,
+    -0.31
+   ],
+   "centrePixel": {
+    "x": 783,
+    "y": 1258
+   },
+   "sampleBoxPx": 20
+  },
+  {
+   "id": "basic-25m",
+   "material": "basic",
+   "depthM": 25,
+   "baseColor": "#8C8C46",
+   "baseLinear": [
+    0.26225065752969623,
+    0.26225065752969623,
+    0.06124605423161761
+   ],
+   "preFogLinear": [
+    0.26225065752969623,
+    0.26225065752969623,
+    0.06124605423161761
+   ],
+   "fogFactor": 1.0,
+   "foggedLinear": [
+    0.5840784178911641,
+    0.6239603916750761,
+    0.5394794890121072
+   ],
+   "expectedSrgb": [
+    195,
+    201,
+    187
+   ],
+   "expectedSrgbNoFog": [
+    130,
+    130,
+    42
+   ],
+   "centreNdc": [
+    -0.45,
+    -0.62
+   ],
+   "centrePixel": {
+    "x": 297,
+    "y": 1555
+   },
+   "sampleBoxPx": 20
+  },
+  {
+   "id": "standard-25m",
+   "material": "standard",
+   "depthM": 25,
+   "baseColor": "#466B8C",
+   "baseLinear": [
+    0.06124605423161761,
+    0.14702726649759498,
+    0.26225065752969623
+   ],
+   "preFogLinear": [
+    0.042800372117089716,
+    0.10274656541395581,
+    0.18326773652673886
+   ],
+   "fogFactor": 1.0,
+   "foggedLinear": [
+    0.5840784178911641,
+    0.6239603916750761,
+    0.5394794890121072
+   ],
+   "expectedSrgb": [
+    195,
+    201,
+    187
+   ],
+   "expectedSrgbNoFog": [
+    28,
+    76,
+    109
+   ],
+   "centreNdc": [
+    0.45,
+    -0.62
+   ],
+   "centrePixel": {
+    "x": 783,
+    "y": 1555
+   },
+   "sampleBoxPx": 20
+  }
+ ],
+ "discriminators": [
+  {
+   "depthM": 6,
+   "smoothstepFactor": 0.026283105635930316,
+   "classicRampFactor": 0.0967741935483871,
+   "deltaFactor": 0.07049108791245678,
+   "perMaterial": {
+    "basic": {
+     "smoothstepSrgb": [
+      44,
+      102,
+      211
+     ],
+     "classicRampSrgb": [
+      70,
+      113,
+      209
+     ],
+     "maxChannelDeltaCodes": 26
+    },
+    "standard": {
+     "smoothstepSrgb": [
+      180,
+      151,
+      32
+     ],
+     "classicRampSrgb": [
+      180,
+      154,
+      59
+     ],
+     "maxChannelDeltaCodes": 27
+    }
+   },
+   "maxChannelDeltaCodes": 27
+  },
+  {
+   "depthM": 10,
+   "smoothstepFactor": 0.2883756839313887,
+   "classicRampFactor": 0.3548387096774194,
+   "deltaFactor": 0.06646302574603069,
+   "perMaterial": {
+    "basic": {
+     "smoothstepSrgb": [
+      141,
+      154,
+      158
+     ],
+     "classicRampSrgb": [
+      147,
+      159,
+      161
+     ],
+     "maxChannelDeltaCodes": 6
+    },
+    "standard": {
+     "smoothstepSrgb": [
+      140,
+      114,
+      154
+     ],
+     "classicRampSrgb": [
+      146,
+      126,
+      158
+     ],
+     "maxChannelDeltaCodes": 12
+    }
+   },
+   "maxChannelDeltaCodes": 12
+  },
+  {
+   "depthM": 15,
+   "smoothstepFactor": 0.754959551542412,
+   "classicRampFactor": 0.6774193548387096,
+   "deltaFactor": 0.07754019670370238,
+   "perMaterial": {
+    "basic": {
+     "smoothstepSrgb": [
+      171,
+      192,
+      178
+     ],
+     "classicRampSrgb": [
+      163,
+      189,
+      175
+     ],
+     "maxChannelDeltaCodes": 8
+    },
+    "standard": {
+     "smoothstepSrgb": [
+      188,
+      178,
+      170
+     ],
+     "classicRampSrgb": [
+      185,
+      170,
+      164
+     ],
+     "maxChannelDeltaCodes": 8
+    }
+   },
+   "maxChannelDeltaCodes": 8
+  }
+ ],
+ "spotChecks": [
+  {
+   "name": "golden range at 60 m",
+   "fogColor": "#FFD98A",
+   "near": 30,
+   "far": 140,
+   "depthM": 60,
+   "factor": 0.18256949661908337,
+   "baseColor": "#7A8B99",
+   "material": "basic",
+   "expectedSrgb": [
+    149,
+    148,
+    141
+   ]
+  },
+  {
+   "name": "dusk range at 60 m",
+   "fogColor": "#F59C6B",
+   "near": 28,
+   "far": 120,
+   "depthM": 60,
+   "factor": 0.27878688255116296,
+   "baseColor": "#7A8B99",
+   "material": "basic",
+   "expectedSrgb": [
+    161,
+    134,
+    132
+   ]
+  }
+ ],
+ "prerequisites": [
+  "loader fog wiring (FOG.md \u00a78): scenefile.rs must read the top-level `fog` block and enable the fog term; today it is ignored and both chart files render unfogged",
+  "a `solid` texture generator arm in resolve_texture (one flat RGBA buffer of the entry's `color` bytes, uploaded Rgba8UnormSrgb like every scene texture); the basic panels' textures use it"
+ ],
+ "regressions": [
+  "ab1 and a noon film frame render bit-identical before/after the fog wiring (the fog2.y = 0 skip)",
+  "dof-chart unchanged (no fog block there)",
+  "this chart's no-fog control: centres match expectedSrgbNoFog"
+ ]
+}

@@ -46,7 +46,7 @@
     "fovY": 54.0
    },
    {
-    "t": 0.2889,
+    "t": 0.2888999879360199,
     "eye": [
      0.2,
      2.0,
@@ -60,7 +60,7 @@
     "fovY": 54.0
    },
    {
-    "t": 2.6001,
+    "t": 2.600100040435791,
     "eye": [
      0.05,
      1.85,
@@ -74,7 +74,7 @@
     "fovY": 54.0
    },
    {
-    "t": 2.889,
+    "t": 2.8889999389648438,
     "eye": [
      0.05,
      1.85,
@@ -157,6 +157,33 @@
   {
    "id": "cloud",
    "generator": "cloud"
+  },
+  {
+   "id": "grass-hills",
+   "generator": "grass",
+   "base": "#5E8F52",
+   "repeat": [
+    6.0,
+    3.0
+   ]
+  },
+  {
+   "id": "planks-crate",
+   "generator": "planks",
+   "base": "#B07A48",
+   "repeat": [
+    0.5,
+    0.5
+   ]
+  },
+  {
+   "id": "planks-barrel",
+   "generator": "planks",
+   "base": "#9A6337",
+   "repeat": [
+    1.0,
+    1.0
+   ]
   }
  ],
  "nodes": [
@@ -251,7 +278,8 @@
       "base": 0.92,
       "span": 0.16
      }
-    }
+    },
+    "map": "grass-hills"
    },
    "transform": [
     {
@@ -1427,7 +1455,8 @@
       "base": 0.92,
       "span": 0.16
      }
-    }
+    },
+    "map": "grass-hills"
    },
    "transform": [
     {
@@ -2603,7 +2632,8 @@
       "base": 0.92,
       "span": 0.16
      }
-    }
+    },
+    "map": "grass-hills"
    },
    "transform": [
     {
@@ -3779,7 +3809,8 @@
       "base": 0.92,
       "span": 0.16
      }
-    }
+    },
+    "map": "grass-hills"
    },
    "transform": [
     {
@@ -7258,121 +7289,169 @@
    ]
   },
   {
-   "type": "mesh",
-   "geometry": {
-    "kind": "box",
-    "size": [
-     0.6,
-     0.6,
-     0.6
-    ]
-   },
-   "name": "crate",
-   "material": {
-    "color": "#B07A48"
-   },
+   "type": "group",
+   "name": "crate 0.6",
    "transform": [
     {
      "translate": [
       2.7,
-      0.3,
+      0.0,
       -1.9
+     ]
+    }
+   ],
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.6,
+       0.6,
+       0.6
+      ]
+     },
+     "name": "crate",
+     "material": {
+      "map": "planks-crate"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.3,
+        0.0
+       ]
+      }
      ]
     }
    ]
   },
   {
-   "type": "mesh",
-   "geometry": {
-    "kind": "box",
-    "size": [
-     0.45,
-     0.45,
-     0.45
-    ]
-   },
-   "name": "crate (small)",
-   "material": {
-    "color": "#B07A48"
-   },
+   "type": "group",
+   "name": "crate 0.45",
    "transform": [
     {
      "translate": [
       3.3,
-      0.225,
+      0.0,
       -2.5
      ]
     },
     {
      "rotate_y": 0.5
     }
+   ],
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.45,
+       0.45,
+       0.45
+      ]
+     },
+     "name": "crate",
+     "material": {
+      "map": "planks-crate"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.225,
+        0.0
+       ]
+      }
+     ]
+    }
    ]
   },
   {
-   "type": "mesh",
-   "geometry": {
-    "kind": "cylinder",
-    "radiusTop": 0.33,
-    "radiusBottom": 0.33,
-    "height": 0.8,
-    "segments": 16
-   },
+   "type": "group",
    "name": "barrel",
-   "material": {
-    "color": "#6E4525"
-   },
    "transform": [
     {
      "translate": [
       2.4,
-      0.4,
+      0.0,
       -2.95
      ]
     }
-   ]
-  },
-  {
-   "type": "mesh",
-   "geometry": {
-    "kind": "cylinder",
-    "radiusTop": 0.345,
-    "radiusBottom": 0.345,
-    "height": 0.05,
-    "segments": 16
-   },
-   "name": "barrel band",
-   "material": {
-    "color": "#3A3A3F"
-   },
-   "transform": [
+   ],
+   "children": [
     {
-     "translate": [
-      2.4,
-      0.12,
-      -2.95
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.33,
+      "radiusBottom": 0.33,
+      "height": 0.8,
+      "segments": 16
+     },
+     "name": "barrel body",
+     "material": {
+      "color": "#9A6337",
+      "map": "planks-barrel"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.4,
+        0.0
+       ]
+      }
      ]
-    }
-   ]
-  },
-  {
-   "type": "mesh",
-   "geometry": {
-    "kind": "cylinder",
-    "radiusTop": 0.345,
-    "radiusBottom": 0.345,
-    "height": 0.05,
-    "segments": 16
-   },
-   "name": "barrel band",
-   "material": {
-    "color": "#3A3A3F"
-   },
-   "transform": [
+    },
     {
-     "translate": [
-      2.4,
-      0.68,
-      -2.95
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.345,
+      "radiusBottom": 0.345,
+      "height": 0.05,
+      "segments": 16
+     },
+     "name": "barrel band",
+     "material": {
+      "color": "#3A3A3F",
+      "metalness": 0.4
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.12,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.345,
+      "radiusBottom": 0.345,
+      "height": 0.05,
+      "segments": 16
+     },
+     "name": "barrel band",
+     "material": {
+      "color": "#3A3A3F",
+      "metalness": 0.4
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.68,
+        0.0
+       ]
+      }
      ]
     }
    ]
@@ -7458,7 +7537,7 @@
        68.0
       ],
       [
-       1.589,
+       1.5889999866485596,
        96.0,
        0.3
       ]
@@ -7516,7 +7595,7 @@
       {
        "word": "never",
        "line": 2,
-       "t": 14.78
+       "t": 14.779999732971191
       }
      ],
      "source": "shots.ts S03 set(): max(blinkDirector(3)(t), blinkAt(t, [wNever]))"

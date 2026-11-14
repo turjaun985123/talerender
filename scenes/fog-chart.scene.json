@@ -1,0 +1,328 @@
+{
+ "format": "talerender-scene",
+ "version": 2,
+ "name": "fog chart \u2014 S06 fog (#C9CFC2, 4.5, 20) on basic + standard panels at 3/6/10/15/25 m (FOG.md \u00a77)",
+ "time": 0,
+ "camera": {
+  "fovY": 40.0,
+  "near": 0.05000000074505806,
+  "far": 800.0,
+  "eye": [
+   0,
+   0,
+   0
+  ],
+  "target": [
+   0,
+   0,
+   -1
+  ],
+  "up": [
+   0,
+   1,
+   0
+  ]
+ },
+ "lighting": {
+  "directional": {
+   "direction": [
+    0.5,
+    0.800000011920929,
+    0.6000000238418579
+   ],
+   "ambient": 0.3499999940395355
+  }
+ },
+ "clear": "#C9CFC2",
+ "fog": {
+  "color": "#C9CFC2",
+  "near": 4.5,
+  "far": 20.0
+ },
+ "textures": [
+  {
+   "id": "panel-basic-25m",
+   "generator": "solid",
+   "color": "#8C8C46"
+  },
+  {
+   "id": "panel-basic-15m",
+   "generator": "solid",
+   "color": "#2FA89B"
+  },
+  {
+   "id": "panel-basic-10m",
+   "generator": "solid",
+   "color": "#7A8B99"
+  },
+  {
+   "id": "panel-basic-6m",
+   "generator": "solid",
+   "color": "#3F6FD9"
+  },
+  {
+   "id": "panel-basic-3m",
+   "generator": "solid",
+   "color": "#D94F30"
+  }
+ ],
+ "post": {
+  "bokeh": {
+   "focus": 10.0,
+   "aperture": 0,
+   "maxblur": 0.006000000052154064
+  }
+ },
+ "nodes": [
+  {
+   "type": "mesh",
+   "name": "ground \u2014 not gated (axis depth varies across it)",
+   "geometry": {
+    "kind": "box",
+    "size": [
+     80.0,
+     0.10000000149011612,
+     72.0
+    ]
+   },
+   "material": {
+    "color": "#2E4A34",
+    "roughness": 1.0
+   },
+   "transform": [
+    {
+     "translate": [
+      0.0,
+      -8.050000190734863,
+      -29.0
+     ]
+    }
+   ]
+  },
+  {
+   "type": "mesh",
+   "name": "basic panel 25 m \u2014 #8C8C46 (unlit)",
+   "geometry": {
+    "kind": "quad",
+    "width": 3.173365592956543,
+    "height": 2.7297768592834473,
+    "y0": -1.3648884296417236
+   },
+   "texture": "panel-basic-25m",
+   "transform": [
+    {
+     "translate": [
+      -2.3032491207122803,
+      -5.641538619995117,
+      -25.0
+     ]
+    }
+   ]
+  },
+  {
+   "type": "mesh",
+   "name": "standard panel 25 m \u2014 #466B8C (house-lit; front face at 25 m)",
+   "geometry": {
+    "kind": "box",
+    "size": [
+     3.173365592956543,
+     2.7297768592834473,
+     0.10000000149011612
+    ]
+   },
+   "material": {
+    "color": "#466B8C",
+    "roughness": 1.0
+   },
+   "transform": [
+    {
+     "translate": [
+      2.3032491207122803,
+      -5.641538619995117,
+      -25.049999237060547
+     ]
+    }
+   ]
+  },
+  {
+   "type": "mesh",
+   "name": "basic panel 15 m \u2014 #2FA89B (unlit)",
+   "geometry": {
+    "kind": "quad",
+    "width": 1.9040192365646362,
+    "height": 1.6378660202026367,
+    "y0": -0.8189330101013184
+   },
+   "texture": "panel-basic-15m",
+   "transform": [
+    {
+     "translate": [
+      -1.3819494247436523,
+      -1.692461609840393,
+      -15.0
+     ]
+    }
+   ]
+  },
+  {
+   "type": "mesh",
+   "name": "standard panel 15 m \u2014 #C94F7C (house-lit; front face at 15 m)",
+   "geometry": {
+    "kind": "box",
+    "size": [
+     1.9040192365646362,
+     1.6378660202026367,
+     0.10000000149011612
+    ]
+   },
+   "material": {
+    "color": "#C94F7C",
+    "roughness": 1.0
+   },
+   "transform": [
+    {
+     "translate": [
+      1.3819494247436523,
+      -1.692461609840393,
+      -15.050000190734863
+     ]
+    }
+   ]
+  },
+  {
+   "type": "mesh",
+   "name": "basic panel 10 m \u2014 #7A8B99 (unlit)",
+   "geometry": {
+    "kind": "quad",
+    "width": 1.2693462371826172,
+    "height": 1.091910719871521,
+    "y0": -0.5459553599357605
+   },
+   "texture": "panel-basic-10m",
+   "transform": [
+    {
+     "translate": [
+      -0.9212996363639832,
+      0.0,
+      -10.0
+     ]
+    }
+   ]
+  },
+  {
+   "type": "mesh",
+   "name": "standard panel 10 m \u2014 #8E44AD (house-lit; front face at 10 m)",
+   "geometry": {
+    "kind": "box",
+    "size": [
+     1.2693462371826172,
+     1.091910719871521,
+     0.10000000149011612
+    ]
+   },
+   "material": {
+    "color": "#8E44AD",
+    "roughness": 1.0
+   },
+   "transform": [
+    {
+     "translate": [
+      0.9212996363639832,
+      0.0,
+      -10.050000190734863
+     ]
+    }
+   ]
+  },
+  {
+   "type": "mesh",
+   "name": "basic panel 6 m \u2014 #3F6FD9 (unlit)",
+   "geometry": {
+    "kind": "quad",
+    "width": 0.7616077065467834,
+    "height": 0.6551464200019836,
+    "y0": -0.3275732100009918
+   },
+   "texture": "panel-basic-6m",
+   "transform": [
+    {
+     "translate": [
+      -0.5527797937393188,
+      0.6769846081733704,
+      -6.0
+     ]
+    }
+   ]
+  },
+  {
+   "type": "mesh",
+   "name": "standard panel 6 m \u2014 #D9B83F (house-lit; front face at 6 m)",
+   "geometry": {
+    "kind": "box",
+    "size": [
+     0.7616077065467834,
+     0.6551464200019836,
+     0.10000000149011612
+    ]
+   },
+   "material": {
+    "color": "#D9B83F",
+    "roughness": 1.0
+   },
+   "transform": [
+    {
+     "translate": [
+      0.5527797937393188,
+      0.6769846081733704,
+      -6.050000190734863
+     ]
+    }
+   ]
+  },
+  {
+   "type": "mesh",
+   "name": "basic panel 3 m \u2014 #D94F30 (unlit)",
+   "geometry": {
+    "kind": "quad",
+    "width": 0.3808038532733917,
+    "height": 0.3275732100009918,
+    "y0": -0.1637866050004959
+   },
+   "texture": "panel-basic-3m",
+   "transform": [
+    {
+     "translate": [
+      -0.2763898968696594,
+      0.6769846081733704,
+      -3.0
+     ]
+    }
+   ]
+  },
+  {
+   "type": "mesh",
+   "name": "standard panel 3 m \u2014 #30D94F (house-lit; front face at 3 m)",
+   "geometry": {
+    "kind": "box",
+    "size": [
+     0.3808038532733917,
+     0.3275732100009918,
+     0.10000000149011612
+    ]
+   },
+   "material": {
+    "color": "#30D94F",
+    "roughness": 1.0
+   },
+   "transform": [
+    {
+     "translate": [
+      0.2763898968696594,
+      0.6769846081733704,
+      -3.049999952316284
+     ]
+    }
+   ]
+  }
+ ]
+}

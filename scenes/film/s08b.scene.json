@@ -28,9 +28,9 @@
  },
  "camera": {
   "eye": [
-   0.275,
-   1.74,
-   4.824999999999999
+   0.2750000059604645,
+   1.7400000095367432,
+   4.824999809265137
   ],
   "target": [
    0.25,
@@ -10409,17 +10409,8 @@
    }
   }
  ],
+ "captionsNote": "chunk 46 ('Onoda still refused', 39.95-40.83) starts in S08 and is owned by s08 under the manifest start-time rule (scenes/film/film.json); it bleeds 0.47 s into this shot's head and is not listed here (seat W31). Captions are film-global, drawn by time.",
  "captions": [
-  {
-   "id": "cap_046",
-   "line": 7,
-   "s": 39.949999999999996,
-   "e": 40.83,
-   "text": "Onoda still refused",
-   "width": 834.8,
-   "fit": 1.0,
-   "strip": "cap_046.png"
-  },
   {
    "id": "cap_047",
    "line": 7,

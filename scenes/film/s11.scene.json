@@ -68,7 +68,7 @@
     "fovY": 48
    },
    {
-    "t": 4.872,
+    "t": 4.872000217437744,
     "eye": [
      0.3,
      1.7,
@@ -10381,7 +10381,7 @@
     "visible": {
      "window": [
       0,
-      2.922000000000004
+      2.921999931335449
      ],
      "clock": "lt",
      "source": "jgStage({onoda: t < dropT, ...}) — at dropT the stage swaps to the rifle-less second instance (shots.ts S11)"
@@ -10390,7 +10390,7 @@
      "kind": "segLerp",
      "segment": [
       0.1,
-      0.882
+      0.8820000290870667
      ],
      "from": [
       -2.65,
@@ -10427,7 +10427,7 @@
        "determined"
       ],
       [
-       1.132000000000005,
+       1.1319999694824219,
        "awe"
       ]
      ],
@@ -10503,7 +10503,7 @@
    "channels": {
     "visible": {
      "window": [
-      2.922000000000004,
+      2.921999931335449,
       null
      ],
      "clock": "lt",
@@ -10517,7 +10517,7 @@
        34
       ],
       [
-       3.4720000000000013,
+       3.4719998836517334,
        7,
        0.45
       ]
@@ -10530,7 +10530,7 @@
         0
        ],
        [
-        3.4720000000000013,
+        3.4719998836517334,
         3,
         0.45
        ]
@@ -10546,7 +10546,7 @@
        "awe"
       ],
       [
-       3.7720000000000056,
+       3.7720000743865967,
        "relieved"
       ]
      ],
@@ -10560,7 +10560,7 @@
        1
       ],
       [
-       3.4720000000000013,
+       3.4719998836517334,
        0
       ]
      ],
@@ -10573,7 +10573,7 @@
       {
        "word": "surrendered",
        "line": 10,
-       "t": 53.02
+       "t": 53.02000045776367
       }
      ],
      "evaluatedAt": "film t",
@@ -10647,12 +10647,12 @@
        12
       ],
       [
-       1.002000000000005,
+       1.0019999742507935,
        112,
        0.32
       ],
       [
-       3.072000000000007,
+       3.072000026702881,
        14,
        0.5
       ]
@@ -10668,7 +10668,7 @@
        0
       ],
       [
-       4.0720000000000045,
+       4.072000026702881,
        7,
        0.5
       ]
@@ -11077,17 +11077,8 @@
    "note": "makeRifle() (shots.ts): modelled along +Y with the grip at the origin (butt -0.44, muzzle +0.68); castShadow/receiveShadow on every part in the source (the format carries no per-node shadow flags). The group's static transform is its state at first visibility (drop start, u = 0); before dropT the node is invisible and the SAME rifle renders as Onoda's hand attachment."
   }
  ],
+ "captionsNote": "chunk 56 ('to the island.', 49.63-50.69) starts in S10 and is owned by s10 under the manifest start-time rule (scenes/film/film.json); it bleeds 0.042 s into this shot's head and is not listed here (seat W31). Captions are film-global, drawn by time.",
  "captions": [
-  {
-   "id": "cap_056",
-   "line": 9,
-   "s": 49.629999999999995,
-   "e": 50.69,
-   "text": "to the island.",
-   "width": 573.62,
-   "fit": 1.0,
-   "strip": "cap_056.png"
-  },
   {
    "id": "cap_057",
    "line": 10,

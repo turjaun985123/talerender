@@ -2809,3 +2809,138 @@ file (70 where the shot has no flame nodes).
 All edited files re-parse as JSON and were re-audited after
 the edits: zero remaining C1–C8 violations in the JG files,
 and the C9 numbers above re-derived from the written files.
+
+## SH C6/C7 COMPLETION — seat W32
+
+Closed the follow-up W26 flagged above: the two SH film files
+(`s02`, `s03`) carried the C6/C7 classes uncorrected — hills
+with no `grass-hills` map, and crates / barrel as flat colour
+meshes instead of the shore set's planks group forms. Both
+files were identical in every node touched. All edits are
+node-level; atmosphere, lights, camera, characters, channels
+and captions are untouched, and each file's own trailing-byte
+convention was preserved (s02 ends with a newline, s03
+without).
+
+Per file (`s02.scene.json`, `s03.scene.json` — same changes):
+
+- **C6 — hills ×4 regained the map.** Each hill's material
+  gained `"map": "grass-hills"` after its colour
+  (`#5E8F52` × shadeHash, the file's own plain-decimal
+  spelling kept — the same form W26 left in the JG files);
+  the `grass-hills` texture entry was added, identical to
+  `scenes/sets/shore.scene.json`'s (`generator: "grass"`,
+  base `#5E8F52`, repeat [6, 3]).
+- **C7 — crates regrouped.** The flat `crate` mesh (0.6,
+  at [2.7, 0.3, −1.9], flat `#B07A48`) became group
+  `crate 0.6` at [2.7, 0, −1.9] with one child box (0.6,
+  y 0.3, map-only `planks-crate`); the flat `crate (small)`
+  mesh (0.45, at [3.3, 0.225, −2.5], rotate_y 0.5) became
+  group `crate 0.45` with the rotation on the group and one
+  child box (0.45, y 0.225). Group names and child form
+  follow the shore set file; positions were derived from
+  each file's own flat meshes.
+- **C7 — barrel regrouped.** The flat body (`#6E4525`,
+  the ab1 averaged shade) and the two flat band meshes
+  became one `barrel` group at [2.4, 0, −2.95]: body child
+  renamed `barrel body`, colour `#9A6337` × `planks-barrel`;
+  band children keep the name `barrel band`, colour
+  `#3A3A3F`, and regain `metalness: 0.4` (the G3 extra-field
+  rule; plain 0.4 as in the W26 JG files). Child heights are
+  the files' own (body y 0.4, bands y 0.12 / 0.68).
+  Texture entries `planks-crate` / `planks-barrel` added,
+  identical to the set file's.
+- **Verification.** Group + child world transforms were
+  checked against `scenes/sets/shore.scene.json`'s groups:
+  every component is f32-equal to the set file's expanded
+  spellings (e.g. group x 2.7 vs 2.700000047683716, child
+  band y 0.12 vs 0.11999999731779099). The git diff is
+  confined to the textures block, the four hill materials
+  and the crate/barrel node region in each file; both files
+  re-parse as JSON.
+
+Node counts (top-level / total incl. children):
+`s02` 52 / 266 → 50 / 269; `s03` 53 / 267 → 51 / 270.
+Top-level drops by 2 (three barrel meshes → one group);
+total rises by 3 (each regroup adds one group node: two
+crates +1 each, barrel +1) while leaf meshes are unchanged
+(2 crate boxes, 3 barrel cylinders).
+
+## F32 EXACTNESS + CAPTION OWNERSHIP (46/56) — seat W31
+
+Closed the two failures the W27 run left: the 69 computed values
+written rounded (check 3) and caption chunks 46 + 56 double-listed
+(check 5). Validator now **7/7 PASS** (run recorded in
+`tools/film/VALIDATION.md`).
+
+### Method (check 3)
+
+- Every flagged value was recomputed in f64 (Python floats are
+  IEEE754 doubles, as in JS) from its documented source, then
+  written as the exact f32 of the recomputed value in the files'
+  shortest-round-trip spelling (the sibling style — cf. s02's
+  17.22808837890625). No value was merely re-cast from its rounded
+  decimal; each was re-derived:
+  - **Cut times** (camera keys in s02/s04/s05a/s05b/s08/s09/s10;
+    local durations in s03/s11/s12): cut(i) = lines[i].start −
+    0.06 from `film/onoda.json`; s03's keys are 0.1·d / 0.9·d / d
+    of d = cut(3) − cut(2); s07's duration key is cut(7) −
+    (decades6 − 0.25); s12's is 60.357 − cut(11).
+  - **Anchor arithmetic** (channel/beat times): from the
+    `anchors` table in `film/onoda.json` via each shot's own
+    formulas — e.g. s09 armR keys at commander8 − cut(8) − 0.12
+    and + 1.1; s05b armL key at (trick4 + 0.55) − (thought4 −
+    0.12); s11's drop chain: dropLt = (surrendered10 + 0.55) −
+    cut(10), Onoda2's armR/elbow/lean keys at dropLt + 0.55,
+    mood at dropLt + 0.85, Taniguchi's lean at dropLt + 1.15 and
+    his walk-in segment end max(0.4, order10 − cut(10) − 0.25)
+    = 0.882.
+  - **Evaluated states**: s04 bob = −4.5·|sin(4.6t)| (compA) and
+    −4.5·|sin(4.6t + 1.2)| (compB) at the file's t = 18.67; s04
+    headTurn = poseTrack [[0, 0.5], [2.2, −0.35, 1.9],
+    [4.6, 0.3, 1.9]] at lt = 18.67 − cut(3) (poseTrack semantics,
+    `core/motion.ts`); s02 walk positions z = −11 + dz +
+    camK(d/2, d, hold 0.03)·6.8 (dz 0 / −1.5); s05b and s09 fire
+    = (4.6 + 0.7·sin(17t) + 0.5·sin(7.3t))·1 at t = 25.31 /
+    43.92 — the s09 value recomputed bit-identical to the seat's
+    full-precision f64, confirming formula and instant; s07
+    camPitch = camPitchOf (`core/toon.ts:720`: atan2(eye.y −
+    (charY + 1.75·0.6), hypot(Δx, Δz)) / 0.9, clamped ±1) at the
+    file's own camera keys and the position channel's endpoints
+    (character (−0.5, 0, −1.76) → (2.2, 0, −2.3)) — the file
+    evaluates at lt 0, so state.camPitch = atStart by
+    construction; s08b's static eye = three.js lerp
+    a + (b − a)·0.5 of (0.3, 1.78, 5.1) → (0.25, 1.7, 4.55)
+    (camK hold 0.1 at mid-shot gives k = 0.5 exactly).
+  - **Staging constants** (s06): compB's exit endpoint
+    z = −10.9 (= −5.6 − 5.3 at wk = 1, `shots.ts` S06) and the
+    Onoda z-segment end time 3.8 (= sitAt 3.55 + 0.25), written
+    as their exact f32s.
+- Verification: every rewritten value sits within 5×10⁻⁵ of the
+  rounded decimal it replaced (max 4.84×10⁻⁵, s04 compB bob —
+  the seat's 4-dp rounding), i.e. each replacement is the exact
+  f32 of the same quantity the authoring seat documented, not a
+  different value. Node indices had shifted since W27's listing
+  (W26/W32 regrouping); paths were re-taken from a fresh run —
+  the 69 values themselves were unchanged.
+- Rewrite counts per file: s02 4, s03 5, s04 6, s05a 2, s05b 4,
+  s06 2, s07 7, s08 4, s08b 3, s09 10, s10 7, s11 13, s12 2 —
+  69 total. Check 3 now: 883 exact f32, 506 source literals,
+  0 computed failures (1389 numbers checked).
+
+### Captions (check 5)
+
+- `s08b.scene.json`: chunk 46 ("Onoda still refused",
+  39.95–40.83) REMOVED from `captions`. It starts in S08
+  (34.209–40.36) and is owned by s08 under the manifest
+  start-time rule; it bleeds 0.47 s into S08b's head. A
+  top-level `captionsNote` in the file records the bleed (the
+  W27 house style). S08b now lists chunk 47 only.
+- `s11.scene.json`: chunk 56 ("to the island.", 49.63–50.69)
+  REMOVED from `captions`. It starts in S10 (45.365–50.648)
+  and is owned by s10; it bleeds 0.042 s into S11's head.
+  `captionsNote` likewise. S11 now lists chunks 57–60, exactly
+  its manifest range.
+- Check 5 now: 66 listings, 66 unique, 0 duplicates,
+  0 uncovered. (This supersedes the S08b/S11 sections above,
+  which recorded chunks 46/56 as listed in both files.)
