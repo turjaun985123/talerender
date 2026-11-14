@@ -2056,22 +2056,34 @@ pub(crate) fn load_assets(dir: &Path, data: &FilmData) -> Result<Assets, String>
     let origins_text = std::fs::read_to_string(adir.join("plates.json")).map_err(|e| format!("plates.json: {e}"))?;
     let origins = crate::scene::parse_json(&origins_text)?;
     let mut plate_map = HashMap::new();
-    if let Value::Obj(m) = &origins {
-        for name in ["paper-map", "leaflet", "book-open", "book-closed", "coconut"] {
-            let (px, w, h) = load_png(&adir.join(format!("{name}.png")))?;
-            let (mut x0, mut y0) = (0.0f32, 0.0f32);
-            let entry = m.iter().find(|(k, _)| k == name).map(|(_, v)| v);
-            if let Some(Value::Arr(a)) = entry {
-                if let (Some(a0), Some(a1)) = (a.first(), a.get(1)) {
-                    x0 = a0.as_f64().unwrap_or(0.0) as f32;
-                    y0 = a1.as_f64().unwrap_or(0.0) as f32;
-                }
-            }
-            plate_map.insert(name.to_string(), Plate { px, w, h, x0, y0 });
-        }
+    // F2 (W41 s3.3): a non-object plates.json used to load ZERO
+    // plates silently and let staging lookups miss. It is a data
+    // error — fail loud, in the words check_assets' guard uses.
+    let Value::Obj(m) = &origins else {
+        return Err("plates.json: top level is not an object — no plates loaded".to_string());
+    };
+    for name in ["paper-map", "leaflet", "book-open", "book-closed", "coconut"] {
+        let (px, w, h) = load_png(&adir.join(format!("{name}.png")))?;
+        // A missing or malformed origin used to default to (0, 0)
+        // silently; the plate's placement is data, so name it.
+        let entry = m.iter().find(|(k, _)| k == name).map(|(_, v)| v);
+        let (x0, y0) = match entry {
+            Some(Value::Arr(a)) if a.len() == 2 => (
+                a[0].as_f64().ok_or_else(|| format!("plates.json: origin for {name:?} is not [x, y] numbers"))? as f32,
+                a[1].as_f64().ok_or_else(|| format!("plates.json: origin for {name:?} is not [x, y] numbers"))? as f32,
+            ),
+            _ => return Err(format!("plates.json: no [x, y] origin for {name:?}")),
+        };
+        plate_map.insert(name.to_string(), Plate { px, w, h, x0, y0 });
     }
     let mut strips = Vec::new();
-    for c in &data.captions {
+    for (i, c) in data.captions.iter().enumerate() {
+        // strip defaults to "" in the data loader when the field
+        // is absent; name the caption instead of failing on the
+        // bare assets path (W41 s3.2 caveat).
+        if c.strip.is_empty() {
+            return Err(format!("captions[{i}].strip: missing or empty"));
+        }
         strips.push(load_png(&adir.join(&c.strip))?);
     }
     let mut cal = Vec::new();
