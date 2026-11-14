@@ -228,6 +228,7 @@ jobs:
         run: |
           python3 tools/format/check_assets.py scenes/fixtures/assets/valid-scene/mini.scene.json
           python3 tools/format/check_assets.py scenes/fixtures/assets/valid-driver
+          python3 tools/format/check_assets.py scenes/fixtures/assets/abs-path
           for t in missing wrong-kind; do
             if python3 tools/format/check_assets.py scenes/fixtures/assets/$t; then
               echo "::error::assets fixture $t unexpectedly PASSED"; exit 1

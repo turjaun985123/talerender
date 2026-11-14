@@ -42,7 +42,17 @@ Checks:
                   or manifest film dir with film.json); every
                   referenced JSON file parses
   2. references   every reference the loaders read resolves to an
-                  existing file under its own resolution rule
+                  existing file under its own resolution rule.
+                  References rooted in an absolute machine path
+                  (the manifest's `project` and everything resolved
+                  under it) are the exception: they can only exist
+                  on the authoring machine, so check 2 does not
+                  existence-check them — check 4 classifies them
+                  as portability warnings instead. A manifest that
+                  only resolves at home must not fail CI on any
+                  other machine, while a missing RELATIVE
+                  reference still fails here (W28 F2; wave-2
+                  urgent fix, see scenes/fixtures/assets/abs-path)
   3. kinds        referenced files are the kind their name and the
                   loader imply: PNG magic bytes for .png (the
                   loaders hand them to image::open), RIFF/WAVE for
@@ -271,12 +281,20 @@ def report(title, results):
 def evaluate(refs, guards, orphan_files, orphan_scope, mode_note):
     """Shared checks 2-6 over a collected reference set."""
     results = []
+    # Absolute machine paths are check 4's classification, not
+    # check 2 failures: they name the authoring machine's tree
+    # and cannot exist anywhere else (W28 F2). Everything else
+    # that is missing fails here, relative references included.
     missing = ["%s: %r (%s) -> %s — not found"
                % (r.where, r.raw, r.base_desc, r.resolved)
-               for r in refs if not r.exists]
-    results.append(("2 references", not missing,
-                    "%d references walked (%s)"
-                    % (len(refs), mode_note), missing))
+               for r in refs if not r.exists and not r.absolute]
+    n_machine = sum(1 for r in refs if r.absolute)
+    headline2 = "%d references walked (%s)" % (len(refs), mode_note)
+    if n_machine:
+        headline2 += ("; %d rooted in absolute machine paths — "
+                      "classified in check 4, not existence-checked"
+                      % n_machine)
+    results.append(("2 references", not missing, headline2, missing))
     bad_kinds = [k for k in (kind_failure(r) for r in refs) if k]
     results.append(("3 kinds", not bad_kinds,
                     "magic-byte / parse sanity of every referenced "
@@ -449,7 +467,11 @@ def check_manifest(d, manifest, manifest_path, root):
                             "the manifest's project dir",
                             os.path.normpath(os.path.join(project,
                                                           raw)),
-                            "wav"))
+                            "wav",
+                            # resolved under `project`: when that
+                            # is an absolute machine path, so is
+                            # this reference (check 4's class)
+                            absolute=os.path.isabs(project)))
     # segment scenes contribute their own references (scene rules)
     for spath, sdoc in seg_docs:
         if isinstance(sdoc, dict):

@@ -1,0 +1,10 @@
+{
+  "format": "talerender-film",
+  "note": "Fixture for the check-2/check-4 classification rule (W28 F2): every reference below is rooted in an absolute path on a machine that does not exist, so on any other machine check 2 must NOT existence-fail them and check 4 must warn on all three. A missing RELATIVE reference failing check 2 is proven by the sibling `missing` fixture.",
+  "project": "/nonexistent-author-machine/faceless-shorts/the-soldier-who-didnt-know",
+  "audio": {
+    "projectPath": "/nonexistent-author-machine/faceless-shorts/the-soldier-who-didnt-know/data/mix.wav",
+    "file": "data/mix.wav"
+  },
+  "segments": []
+}
