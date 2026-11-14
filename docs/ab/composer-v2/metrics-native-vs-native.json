@@ -1,0 +1,28 @@
+{
+  "mode": "pair",
+  "reference": {
+    "path": "docs/ab/composer/native.png",
+    "label": "REFERENCE \u2014 production engine (three.js r170) in headless Chrome, review JPEG q~0.92 (one JPEG generation)"
+  },
+  "native": {
+    "path": "/tmp/w57/ab1-postfix/ab1.png",
+    "label": "NATIVE \u2014 talerender (wgpu), clean PNG (no JPEG generation, decision B)"
+  },
+  "size": [
+    1080,
+    1920
+  ],
+  "resize_note": null,
+  "metrics": {
+    "psnr_db": 41.351,
+    "mean_abs_delta_per_channel": 0.81309,
+    "pct_pixels_max_channel_delta_gt_10": 2.08131,
+    "pct_pixels_any_channel_delta_gt_0": 36.96291,
+    "max_abs_delta": 30
+  },
+  "images": [
+    "pair_side-by-side.png",
+    "pair_diff.png"
+  ],
+  "jpeg_floor_note": "JPEG floor: the reference frames are JPEG (q~0.92, one generation from the Chrome canvas via Chromium toDataURL image/jpeg 0.93). Measured floor (docs/ab/telemetry/jpeg-decision.md): on flat/step content two otherwise-identical images agree no better than 50.78-57.71 dB; on a detailed frame, one JPEG generation alone measures 42.31 dB against the clean source (mean |d| 1.225, 94.47% of pixels changed, max d 48). A pixel-perfect native frame therefore cannot exceed ~42 dB (detailed) / ~51-58 dB (flat) against these references. The bias is one-directional: JPEG error in the reference is counted as native error, so every number here UNDERSTATES native accuracy; it can never overstate it."
+}

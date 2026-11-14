@@ -134,6 +134,7 @@
    "source": "shots.ts:289"
   }
  },
+ "captionsNote": "chunk 20 ('never surrender.', 14.75-16.01) starts in S03 and is owned by s03 under the manifest start-time rule (scenes/film/film.json); it bleeds 0.06 s into this shot's head and is not listed here (seat W55). Captions are film-global, drawn by time.",
  "captions": [
   {
    "index": 21,

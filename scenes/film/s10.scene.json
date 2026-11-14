@@ -9993,6 +9993,7 @@
    }
   }
  ],
+ "captionsNote": "chunk 51 ('commander ordered it.', 44.01-45.395) starts in S09 and is owned by s09 under the manifest start-time rule (scenes/film/film.json); it bleeds 0.03 s into this shot's head and is not listed here (seat W55). Captions are film-global, drawn by time.",
  "captions": [
   {
    "index": 52,

@@ -151,3 +151,68 @@ Pinned hashes (full): `tools/golden/golden-hashes.json` —
 `dof-chart` 957d5573497e626991a81f719745e5b861e40a28a59159e9a505790939eb36de ·
 `stroke-toon` 9ba9ff890402b6cf3aba82c6d488f035ab0caab95cd0a4dbdd0b9bf853b2347c ·
 `ab1-composer` d7bd71a02a3dfc96232957123bfb82766bf7a4e96676f96e72db4e6c7adaf4f3.
+
+## Re-pin debt — the shade root-fix (`c00897d`)
+
+The four founding pins above were struck from **pre-fix
+bytes**. After this pack's founding, `c00897d` root-fixed
+`shade_rgb` in `src/scene.rs` — sRGB byte-multiply →
+THREE.Color linear-space multiply (the old form ran 25–40
+LSB darker on derived shades) — and routed every texture
+painter through it, declaring the re-baseline in its own
+message: "ab1/hills/grass/felt shades change".
+
+The pins and the reference files on disk are still the same
+pre-fix bytes, so **verification today still reads 4 OK** —
+nothing above is STALE yet. The debt is against the next
+*re-render*: the moment a reference is regenerated with a
+binary at or after `c00897d`, its bytes move or don't
+according to whether its content passes through the changed
+helper. Full analysis: `tools/golden/RUNNER.md` ("Current
+expectation: the founding four vs the shade fix").
+
+- **`ab1-composer` — EXPECTED STALE on re-render
+  (certain).** The grass ground is `paint_grass` (per-blade
+  `shade_rgb` shades); the hills are per-face
+  `shade_lin("#5E8F52", …)` and the tufts likewise — the
+  surfaces are shade-derived end to end, and the fix commit
+  names this exact scene.
+- **`s28-onoda-t150` — EXPECTED STALE on re-render (same
+  mechanism, historical-pin caveat).** The same ab1 staging.
+  The pinned PNG is the §28 prototype's historical output,
+  produced before the current painter code existed, and
+  milestone packages are not overwritten by renders — so the
+  file on disk keeps verifying OK until deliberately
+  regenerated. `ab1-composer` is the living reference for
+  the same chain.
+- **`stroke-toon` — EXPECTED STALE on re-render (real, but
+  confined).** The battery card is `paint_toon` output, and
+  `paint_toon` calls the redefined helper: the head's shade
+  crescent is filled with `shade_rgb(head, 0.9)`, the body
+  shade ellipse uses `shade_rgb(body, 0.8)`, cap shades
+  (0.75 / 1.15) apply when drawn. Flat fills and ink strokes
+  do not move. **This corrects the illustrative example in
+  "Re-baselining" step 4 above** — "a composer-chain change
+  legitimately moves `ab1-composer` and every film frame,
+  but not `stroke-toon`" — which was written for a change
+  confined to the composer chain. The shade fix is not
+  composer-confined: it sits in the shared helper the CPU
+  painter also routes through. The example's principle
+  (scope stays visible) stands; its prediction does not
+  cover this fix.
+- **`dof-chart` — NOT expected STALE from the shade fix.**
+  `chart_pattern` is literal arithmetic only (white border,
+  (238,238,238)/(20,20,20) checker, (128,128,128) band) —
+  no `shade()` call anywhere in its construction. If
+  `dof-chart` ever verifies STALE, the shade fix is not the
+  explanation: treat it as drift and investigate before any
+  re-pin.
+
+**Clearing the debt is a human act.** Render the item with
+a post-fix binary, measure the diff against the pin
+("Re-baselining" steps 1–2), name `c00897d` as the cause,
+and only then `--pin`. No seat re-pins on the strength of
+this note, and the runner (`tools/golden/run_golden.sh`)
+refuses `--pin` outright. The 14 film items carry no such
+debt — they have never been pinned, and their first pins
+will be struck from post-fix frames.

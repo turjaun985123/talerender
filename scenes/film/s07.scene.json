@@ -10449,7 +10449,7 @@
    }
   }
  ],
- "captionsNote": "chunk 39 ('for decades,', 30.29-31.55) starts in S06 and is owned by s06 under the manifest start-time rule (scenes/film/film.json); it stays on screen for this shot's first 1.16 s and is not listed here (seat W27). Captions are film-global, drawn by time.",
+ "captionsNote": "chunk 39 ('for decades,', 30.29-31.55) starts in S06 and is owned by s06 under the manifest start-time rule (scenes/film/film.json); it bleeds 1.16 s into this shot's head and is not listed here (seat W27). Captions are film-global, drawn by time.",
  "captions": [
   {
    "id": "cap_040",

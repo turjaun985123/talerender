@@ -515,7 +515,7 @@ film evaluator in src/film.rs s01):
 5. **Audio cue + fades**: recorded in `shot.cues` / `shot.fades`
    as data only; neither exists in the scene format.
 
-## S06 — s06.scene.json (JG FOG, film t 26.13–30.39)
+## S06 — s06.scene.json (JG FOG, film t 26.129–30.39)
 
 ### Timing / shot identity
 - `shot.at = cut(5) = 26.13`, `end = cut(6) = 30.39`,
@@ -661,6 +661,31 @@ film evaluator in src/film.rs s01):
 8. **Caption strips**: chunk ids/timing/fit are data (above);
    the strip images are film assets (film/gen_assets.py), not
    scene-format textures.
+
+**[W51 correction, 2026-11-14]** — this section's derivation
+took `shot.at` from INVENTORY.md's 2-dp display row (26.13)
+instead of the computed cut; AUDIT-W42 §1 (M1–M3) caught it.
+Corrected in the file (original text above retained): `shot.at
+= cut(5) = 26.189 − 0.06 = 26.129` (spelled as in s05b's
+`end`, the same cut); `end = 30.39` stands — it is S07's start
+`Wd('decades',6) − 0.25`, not cut(6); `duration = 30.39 −
+26.129 = 4.261` (shot.duration, top-level duration and
+camera keys[1].t all carry f32(4.261) = 4.261000156402588).
+The still's film t is therefore 29.729, not 29.73, and every
+state evaluated at it was recomputed (f64 compute, f32 store —
+the chain reproduces the old values exactly at 29.73 / d
+4.26): fire point intensity 0.6314269304275513 →
+0.6333622932434082 (the f32 store of W42's f64
+0.6333623112323646); camera k = camK(3.6, 4.261) =
+0.9970566759099173 → eye [1.1516188383102417,
+1.6806474924087524, 2.9044148921966553], bokeh focus
+6.306201934814453 → 6.30625057220459; flame flicker f(29.729)
+= 1.0402969061745695 → flame scale y 0.1382376104593277 →
+0.1387062519788742, flame-inner scale y 0.12842905521392822
+→ 0.1279604136943817. The Fire section's "grade time = film t
+29.73" is likewise superseded: post.grade.time is 0 (W41/R3).
+Validator after the fix: 7/7 PASS. See AUDIT-W42.md's
+Resolution addendum (seat W51).
 
 ## S07 — s07.scene.json + s07-calendar.json (JG GOLDEN, film t 30.39–34.21) — seat W09
 
@@ -2964,3 +2989,66 @@ written rounded (check 3) and caption chunks 46 + 56 double-listed
 - Check 5 now: 66 listings, 66 unique, 0 duplicates,
   0 uncovered. (This supersedes the S08b/S11 sections above,
   which recorded chunks 46/56 as listed in both files.)
+
+## CAPTIONSNOTE CONSISTENCY — seat W55
+
+Closes the documentation inconsistency AUDIT-W42 §5 named: the
+head-bleed disclosure existed inside the scene file as a top-level
+`captionsNote` in only 4 of the files that open mid-chunk (s06,
+s07, s08b, s11); in the rest it lived only here in ASSUMPTIONS, so
+a reader of the scene files alone could not tell an intentional
+ownership exclusion from an omission. Every segment that opens
+mid-chunk now carries the note, in the one house shape (the
+W27/W31 wording): chunk id, text, film times, owning segment
+under the manifest start-time rule, bleed seconds measured
+against the `scenes/film/film.json` boundary, "not listed here".
+
+Census — recomputed from `assets/captions/manifest.json` chunk
+times against the manifest boundaries (a bleed-in for segment N
+is the same chunk as the bleed-out of segment N−1; the note lives
+in the receiving file, per the established convention):
+
+| file | bleed-in (chunk, owner, seconds) | bleed-out (chunk, seconds) | note |
+|---|---|---|---|
+| s01 | none (film opens at 0.0; first chunk starts 0.27) | 12 ('ended.') → s02, 0.03 | none — no bleed-in |
+| s02 | 12 ('ended.', 5.29–5.937), s01, 0.03 | 17 ('in 1944.') → s03, 0.089 | ADDED |
+| s03 | 17 ('in 1944.', 10.39–13.15), s02, 0.089 | 20 ('never surrender.') → s04, 0.06 | ADDED |
+| s04 | 20 ('never surrender.', 14.75–16.01), s03, 0.06 | 25 ('the message.') → s05a, 0.226 | ADDED |
+| s05a | 25 ('the message.', 20.47–21.61), s04, 0.226 | 29 ('He thought it') → s05b, 0.41 | ADDED |
+| s05b | 29 ('He thought it', 24.49–24.97), s05a, 0.41 | 31 ('trick.') → s06, 0.061 | ADDED |
+| s06 | 31 ('trick.', 25.57–26.19), s05b, 0.061 | 39 ('for decades,') → s07, 1.16 | existed (W27); duration normalised 0.06 → 0.061 |
+| s07 | 39 ('for decades,', 30.29–31.55), s06, 1.16 | 41 ('and bananas.') → s08, 0.061 | existed (W27); phrasing normalised to the house shape |
+| s08 | 41 ('and bananas.', 32.99–34.27), s07, 0.061 | 46 ('Onoda still refused') → s08b, 0.47 | ADDED |
+| s08b | 46 ('Onoda still refused', 39.95–40.83), s08, 0.47 | 47 ('to leave.') → s09, 0.03 | existed (W31), already house shape |
+| s09 | 47 ('to leave.', 40.83–41.762), s08b, 0.03 | 51 ('commander ordered it.') → s10, 0.03 | ADDED |
+| s10 | 51 ('commander ordered it.', 44.01–45.395), s09, 0.03 | 56 ('to the island.') → s11, 0.042 | ADDED |
+| s11 | 56 ('to the island.', 49.63–50.69), s10, 0.042 | 60 ('after 29 years.') → s12, 0.03 | existed (W31), already house shape |
+| s12 | 60 ('after 29 years.', 53.57–55.55), s11, 0.03 | none (chunk 65 ends at 60.357 = film end) | ADDED |
+
+Two findings beyond W42's eight:
+
+- **s03 also opens mid-chunk** (chunk 17, 0.089 s). It was in
+  neither audit's bleed list — W40 sampled s03 without a
+  head-bleed row and W42's segment set excluded s03 — and the
+  chunk is not named in the S03 section above. The note is new
+  in both places; the data itself was always correct (chunk 17
+  is listed by its owner s02; captions are film-global).
+- **s06's note duration basis.** The pre-existing note said
+  0.06 s, which W42 verified as exact against the file's own
+  `shot.at` (26.13 — the rounded value AUDIT-W42 M1 corrects to
+  26.129). Every other note's duration is chunk-end minus the
+  manifest boundary, so s06's was normalised to 0.061 s
+  (26.19 − 26.129) to keep one basis across all notes. The
+  `shot.at` value itself is untouched here (W42 M1's file).
+
+s01 gets no note: it has no bleed-in, and its only overrun
+(chunk 12) is disclosed in s02's note, as the convention puts
+the disclosure in the receiving file.
+
+Verification: all 14 files re-parse; the diff is exactly one
+added line in each of the 9 files, one changed line in s06 and
+s07. Validator after the edits: **7/7 PASS (exit 0)**, counts
+identical to the W31 run (check 3: 883 exact f32 / 506 literals
+/ 0 failures; check 5: 66 listings / 66 unique / 0 duplicates /
+0 uncovered) — `captionsNote` is top-level data the validator
+ignores, as expected.

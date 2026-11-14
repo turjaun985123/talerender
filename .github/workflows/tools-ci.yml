@@ -1,0 +1,157 @@
+name: Tools CI
+
+# The wave's Python toolchain — the data-side gates that until now
+# only ran by hand on the dev VM: the film validator, the caption
+# generator, the native golden pack and the bridge packager. This
+# workflow runs them on every push/PR that touches the trees they
+# read, so a data edit that breaks the film manifest, desyncs a
+# caption strip, stales a golden pin or breaks the skill bridge
+# fails here instead of surfacing at render time.
+#
+# Division of labour: ci.yml owns the Rust build/tests and the
+# smoke render; render.yml owns dispatch renders. This workflow
+# never builds Rust and never renders — tools/CI-WORKFLOW.md is
+# the full contract (what each step proves, and what it refuses
+# to do).
+
+on:
+  push:
+    paths:
+      - "tools/**"
+      - "scenes/**"
+      - "assets/captions/**"
+      - "film/**"
+      - "docs/golden/**"
+      - "docs/ab/**"
+      - ".github/workflows/tools-ci.yml"
+  pull_request:
+    paths:
+      - "tools/**"
+      - "scenes/**"
+      - "assets/captions/**"
+      - "film/**"
+      - "docs/golden/**"
+      - "docs/ab/**"
+      - ".github/workflows/tools-ci.yml"
+  workflow_dispatch:
+
+# Cancel superseded runs on the same ref — fix rounds pushed in
+# quick succession don't queue behind stale runs (same as ci.yml).
+concurrency:
+  group: tools-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tools:
+    # Same ubuntu-22.04 pin as ci.yml/render.yml: one runner image
+    # for the whole repo, so the tools behave identically wherever
+    # the gates run.
+    runs-on: ubuntu-22.04
+    # The suite itself is seconds of CPU; the timeout only guards
+    # against a hung pip install or a tool waiting on input.
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Pinned to the versions the tools are proven under on the
+      # dev VM (CPython 3.12.3, Pillow 10.2.0, numpy 1.26.4). The
+      # caption determinism check below is a byte comparison, so
+      # the rendering stack must not drift under it.
+      - name: Install pinned Python dependencies
+        run: python3 -m pip install pillow==10.2.0 numpy==1.26.4
+
+      # Exit 0 from the validator IS the 7/7 verdict: it returns 1
+      # on any failed check and 2 on unreadable input, and prints
+      # its full report either way.
+      - name: Film data validator (7/7)
+        run: python3 tools/film/validate_film.py --root .
+
+      # The generator's inputs (script.json, data/words.json,
+      # data/lines.json, fonts/Inter-Black.otf) live in the film's
+      # project dir, NOT in this repo — a GitHub-hosted runner has
+      # nothing to regenerate from. There the step reports itself
+      # UNVERIFIED with a ::warning:: (never a silent pass); where
+      # the project exists (dev VM, self-hosted runner, or the
+      # CAPTIONS_PROJECT repository variable set) it runs the full
+      # check: regenerate into a temp dir, byte-diff against the
+      # committed strips. --out is always the temp dir — the
+      # generator's default writes into the repo's
+      # assets/captions/, which CI must never do. If
+      # CAPTIONS_PROJECT is explicitly set but wrong, that is a
+      # configuration error and the step fails.
+      - name: Caption strips determinism (regen + byte diff)
+        env:
+          CAPTIONS_PROJECT: ${{ vars.CAPTIONS_PROJECT }}
+        run: |
+          if [ -n "${CAPTIONS_PROJECT}" ]; then
+            PROJECT="${CAPTIONS_PROJECT}"
+            REQUIRED=1
+          else
+            PROJECT="$HOME/faceless-shorts/the-soldier-who-didnt-know"
+            REQUIRED=0
+          fi
+          if [ ! -f "$PROJECT/data/words.json" ] || [ ! -f "$PROJECT/fonts/Inter-Black.otf" ]; then
+            if [ "$REQUIRED" = "1" ]; then
+              echo "::error::CAPTIONS_PROJECT is set to '$PROJECT' but the caption source project is not there (missing data/words.json or fonts/Inter-Black.otf)."
+              exit 1
+            fi
+            echo "::warning::Caption determinism NOT verified in this run — the caption source project (script.json, data/words.json, data/lines.json, fonts/Inter-Black.otf) is not in this repo and not present at $PROJECT. The regen + byte-diff runs on machines that have the project (dev VM / self-hosted), or set the CAPTIONS_PROJECT repository variable. See tools/CI-WORKFLOW.md."
+            echo "Caption determinism: SKIPPED (source project unavailable)"
+            exit 0
+          fi
+          python3 tools/captions/gen_caption_strips.py --project "$PROJECT" --out "$RUNNER_TEMP/captions"
+          diff -r "$RUNNER_TEMP/captions" assets/captions
+          echo "Caption determinism: regenerated strips + manifest byte-identical to assets/captions"
+
+      # Verify only. --pin is a deliberate human re-baseline act
+      # (docs/golden/NATIVE-GOLDEN.md) and is never run in CI.
+      # The tool exits 1 iff any item is STALE; MISSING — the 14
+      # film mid-frames, until the film renders — does not fail.
+      - name: Native golden pack verify (STALE fails; CI never pins)
+        run: python3 tools/golden/make_golden.py
+
+      # The packager exits 2 unless the project dir already exists
+      # (hence the mkdir), 1 if its own verification fails, 0 only
+      # when every check passes. Its output is captured so the
+      # tool's own words land in the log on success AND failure.
+      # The 21/21 line is asserted, not just exit 0: a future tool
+      # change that silently drops a check turns this red until a
+      # human re-pins the count here on purpose.
+      - name: Bridge packager self-verification (21/21)
+        run: |
+          mkdir -p "$RUNNER_TEMP/bridge-project"
+          LOG="$RUNNER_TEMP/bridge.log"
+          if ! python3 tools/bridge/package_bridge.py --repo . --project "$RUNNER_TEMP/bridge-project" > "$LOG" 2>&1; then
+            cat "$LOG"
+            exit 1
+          fi
+          cat "$LOG"
+          grep -F "VERIFICATION PASSED" "$LOG"
+          grep -F "21/21 checks" "$LOG"
+
+      # Scenefile-independent: every JSON under scenes/ must at
+      # least parse. (The Rust loader's schema checks belong to
+      # ci.yml's build; this catches truncated/corrupt data files
+      # the moment they are pushed.)
+      - name: Scene JSON parse sweep
+        run: |
+          python3 - <<'EOF'
+          import glob, json, sys
+          files = sorted(glob.glob("scenes/**/*.json", recursive=True))
+          bad = []
+          for f in files:
+              try:
+                  json.loads(open(f, encoding="utf-8").read())
+              except Exception as e:
+                  bad.append(f"{f}: {e}")
+          print(f"JSON sweep: {len(files)} files under scenes/ parsed, {len(bad)} invalid")
+          for b in bad:
+              print("  INVALID:", b)
+          sys.exit(1 if bad else 0)
+          EOF

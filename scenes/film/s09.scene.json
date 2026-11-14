@@ -134,6 +134,7 @@
    "source": "shots.ts fireLevel(1, t); static scaleY in this file = formula at time (1.166407)"
   }
  },
+ "captionsNote": "chunk 47 ('to leave.', 40.83-41.762) starts in S08B and is owned by s08b under the manifest start-time rule (scenes/film/film.json); it bleeds 0.03 s into this shot's head and is not listed here (seat W55). Captions are film-global, drawn by time.",
  "captions": [
   {
    "id": "cap_048",

@@ -120,6 +120,7 @@
    "source": "shots.ts fireLevel(0, t): flame cones hidden — omitted from this file's nodes"
   }
  },
+ "captionsNote": "chunk 25 ('the message.', 20.47-21.61) starts in S04 and is owned by s04 under the manifest start-time rule (scenes/film/film.json); it bleeds 0.226 s into this shot's head and is not listed here (seat W55). Captions are film-global, drawn by time.",
  "captions": [
   {
    "index": 26,

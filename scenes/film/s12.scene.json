@@ -10623,6 +10623,7 @@
    }
   }
  ],
+ "captionsNote": "chunk 60 ('after 29 years.', 53.57-55.55) starts in S11 and is owned by s11 under the manifest start-time rule (scenes/film/film.json); it bleeds 0.03 s into this shot's head and is not listed here (seat W55). Captions are film-global, drawn by time.",
  "captions": [
   {
    "id": "cap_061",

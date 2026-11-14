@@ -526,3 +526,73 @@ cap_039 when this audit read the file.)
   walk phase/bob chains, POSES bundle fields, shelf/plank/grass
   texture parameters — the seats' stated derivations agree with
   my independent recomputation.
+
+---
+
+## Resolution — seat W51 (2026-11-14)
+
+All three s06 mismatches are fixed in `scenes/film/s06.scene.json`.
+Every recomputation below was redone first-hand; the evaluation
+chain (f64 compute, f32 store — the file's own convention for
+evaluated states) was validated by reproducing the file's OLD
+values exactly at the old instants (fire formula at t = 29.73,
+camK at d = 4.26, flicker at t = 29.73) before any value was
+recomputed at the corrected instant.
+
+**M1 — `shot.at`: 26.13 → 26.129.** Verified first-hand from
+`film/onoda.json`: L(5) = 26.189, so cut(5) = 26.189 − 0.06 =
+26.129. Spelled `26.129`, identical to s05b's `end` for the same
+cut. (One correction to §1's parenthetical: s05b's `end` carries
+the plain decimal `26.129`, not an f32 expansion — and f32(26.129)
+is in fact 26.128999710083008. The value and the verdict are
+unaffected.) The file's `name` line now reads film t = 29.729.
+
+**M2 — `shot.duration`: 4.260000228881836 → 4.261000156402588**
+(= f32(4.261)). `end` = 30.39 stands: verified against
+s07.scene.json (`shot.at` = 30.39; source S07 `st =
+Wd('decades',6) − 0.25`, shots.ts:424) — note the duration is
+end − at, NOT cut(6) − cut(5) (cut(6) = 29.381 − 0.06 = 29.321;
+S06 runs past it into line 6's head, whose tail is S07). The same
+replacement was applied to the top-level `duration` and to
+`camera.keys[1].t` (the camK end key sits at t = d) — three
+occurrences of the old spelling, all now f32(4.261).
+
+**M3 — `lights.points[0].intensity`: 0.6314269304275513 →
+0.6333622932434082.** Recomputed from source: `seg` is linear
+(lib.ts:21, `clamp((t−a)/(b−a))`), so at lt 3.6 level =
+1 − (3.6 − 2.95)/(3.7 − 2.95) = 0.133333…; film t = 26.129 + 3.6
+= 29.729; intensity = (4.6 + 0.7·sin(17·29.729) +
+0.5·sin(7.3·29.729)) × level = **0.6333623112323646** in f64 —
+W42's figure confirmed to the last digit. The stored value is
+its f32 cast, matching the chain that reproduces the old file
+value exactly (f32 of the f64 formula at t = 29.73 =
+0.6314269304275513, the file's pre-fix bytes).
+
+**Knock-on sweep (values W42 sampled as MATCH within tolerance,
+or did not sample — all re-verified at the corrected instant):**
+- `camera.eye`: camK(3.6, 4.261) — smootherstep(((3.6/4.261)
+  − 0.1)/0.8) = 0.9970566759099173 (W42's 0.9970567 ✓) →
+  [1.151602029800415, 1.6806408166885376, 2.9043691158294678] →
+  **[1.1516188383102417, 1.6806474924087524, 2.9044148921966553]**
+  (f32 stores of the f64 mix; W42's f64 recomputation agrees).
+- `post.bokeh.focus` = |eye − target| from the corrected eye:
+  6.306201934814453 → **6.30625057220459**.
+- Flame node scales (absolute-t flicker, unsampled by W42):
+  f(29.729) = 1 + 0.16·sin(13·29.729) + 0.07·sin(29·29.729 + 1)
+  = 1.0402969061745695 (vs 1.0367821126473498 at 29.73) → flame
+  scale y 0.1382376104593277 → **0.1387062519788742**; flame
+  inner scale y 0.12842905521392822 → **0.1279604136943817**
+  (x/z stay f32(level) = 0.13333334028720856).
+- Everything else in the file is lt-anchored or absolute from
+  source and does not move: character positions/phase/bob/squash
+  (seg/walkPhase/walkBob on lt 3.6), fire `levelKeys` (lt),
+  caption chunk times (onoda.json absolutes), fog/sat/lights rig.
+
+**`post.grade.time` in s06: confirmed 0** (W41's fix untouched
+by these edits).
+
+**Validator after fixes: 7/7 PASS (exit 0)** — check 3 counts
+unchanged (883 exact f32 / 506 source literals / 0 failures);
+the corrected spellings classify exactly as the ones they
+replaced. A dated correction note was also added to the S06
+section of `scenes/film/ASSUMPTIONS.md`.

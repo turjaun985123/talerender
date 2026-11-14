@@ -128,6 +128,18 @@ project's own master, muxed, not remixed.
 - `CAP_CHECK=strict` — makes the `--telemetry` caption audit
   fail instead of warn. Telemetry modes only; not needed for
   the film gate in §4.
+- `TALERENDER_PAINT_CACHE=<entries>` — caps the painted-
+  canvas cache (default **160** entries; added in `e5860b4`).
+  Eviction is **pixel-neutral**: paints are pure functions of
+  their inputs, so a smaller cap costs re-paint time, never a
+  different pixel. The numbers that matter on **this machine
+  (~6.7 GiB usable RAM)**: each canvas is ~29 MB, so the
+  default cap's worst case is ≈ **4.6 GB**, while
+  `TALERENDER_PAINT_CACHE=24` bounds the cache to
+  ≈ **700 MB** — the setting telemetry runs use on
+  memory-tight machines. Prefer 24 for long film renders if
+  the machine is doing anything else at the same time; §8's
+  out-of-memory note assumes the default cap.
 
 ## 8. Troubleshooting
 

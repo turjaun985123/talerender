@@ -22,6 +22,92 @@ paths. Commits: `0972e2c` (Batch 1), `532dc5f` (Batch 2),
 
 ---
 
+## Addendum — W52 (state at HEAD after Batch 5, 2026-11-14)
+
+This record's body is a snapshot verified against HEAD
+`311656d`. Since then the lead's `3e88c60`, `c00897d` and
+`e5860b4`, Batch 4 (`c7db74d`) and Batch 5 (`dbf90b9`) all
+landed. `docs/integration/REVIEW-W50.md` catalogued the
+resulting drift (6 contradictions, 11 stale items); this
+addendum is the correction layer. **Where the body and this
+addendum disagree, the addendum is right.**
+
+- **Validator: 7/7 PASS** (§1's "5/7" is superseded).
+  `tools/film/VALIDATION.md` holds the current run: 883 exact
+  f32 + 506 verified source literals, 0 computed failures.
+- **All three §4 follow-ups landed** (`c7db74d`): the 69
+  rounded computed values rewritten at exact f32 and caption
+  chunks 46/56 single-owned (W31); the SH C6/C7 completion in
+  s02/s03 (W32). §4's "not yet landed at this writing" no
+  longer holds for any of them.
+- **`grade.time` — scope was 7 files, all zeroed; the
+  "inert" framing (R3 row, D20) is corrected.** s02, s03,
+  s04, s05a, s05b, s06 and s07 carried film-t values; W41
+  zeroed all seven (`dbf90b9`). film.rs pins 0 in its own
+  hardcoded path, but the scene-file loader reads the field
+  (`src/scenefile.rs:976` → `GradeParams`, `:2051`), so the
+  values were live on the loader path — AUDIT-W40 had it
+  right, this record's body had it wrong.
+- **The saturation key-name defect spans 12 of 14 files.**
+  Only s03 and s06 write `sat`, the key the loader reads
+  (`src/scenefile.rs:975`); the other twelve write
+  `saturation`, which is never read, so the loader's default
+  1.12 applies to them. AUDIT-W42 confirmed every sampled
+  value is correct — only the key goes unread. §6 item 2's
+  limits list omits this defect entirely (it names only the
+  loader's missing `exposure` field). **Lead decision
+  pending:** rename the keys in the data, or teach the
+  loader the `saturation` spelling.
+- **Shade (D13): root-fixed in `c00897d` — no longer a held
+  integrator decision.** `shade_rgb` (`src/scene.rs`) now
+  performs the THREE.Color linear-space multiply itself and
+  every texture painter routes through it; the corpus pins
+  reproduce exactly. The commit declares a re-baseline
+  (ab1/hills/grass/felt shades changed) — the golden
+  consequences are recorded in `docs/golden/NATIVE-GOLDEN.md`
+  and analysed in `tools/golden/RUNNER.md`.
+- **Black trapezoid: root-caused and fixed in `3e88c60`**
+  (§5's "unresolved at this writing" is superseded). The
+  composer path's scene TEX pipeline blended REPLACE into
+  the HDR target, writing card transparency as opaque black;
+  ALPHA_BLENDING now matches the source, and the TEMP diag
+  scene variants were removed.
+- **Painter tests have been run: 52/52 pass** (§6 item 6 is
+  corrected in place) — 41 painter tests + 11 baseline in a
+  combined scratch harness against the repo's real
+  scene.rs/math.rs. Record: `painters/TEST-RUN.md`.
+- **Fog chart: built, still unrun** (§6 item 8's fog clause
+  is corrected in place). `scenes/fog-chart.scene.json`,
+  `scenes/fog-chart-nofog.scene.json` and `tools/fog-chart/`
+  landed in `c7db74d`. Its prerequisites are named in
+  `tools/fog-chart/README.md`: the loader fog wiring
+  (FOG.md §8) and a `solid` texture-generator arm.
+- **Skill wiring has landed in the work copy** (§6 item 9 is
+  corrected in place). `~/workspace/talerender-skill-wiring/`
+  holds the capture adapter (W33), docs reconciled to the
+  adapter as built (W34, W43), the native selftest (W35),
+  and a dry run (W44) that found **no fail-open path** — the
+  telemetry gate fails closed, proven against the stale
+  binary. The shipped skill and the Chrome path remain
+  untouched.
+- **§3 correction — unknown texture generators are a hard
+  error, not a flat-shade fallback.** The body's claim that
+  scene files naming unwired generators "fall back to
+  averaged flat shades in the still loader" is wrong:
+  `resolve_texture` ends in `Err("unknown texture
+  generator …")` (`src/scenefile.rs`), with no averaging
+  fallback anywhere in the loader. `painters/INDEX.md` had
+  it right. (`painters/planks.md` repeats the body's claim
+  and needs the same correction.)
+- **§6 item 8's proof state is unchanged and still true:**
+  there is still **no completed full-film verdict** — the
+  1,811-frame render, the whole-film telemetry gate, the
+  per-shot A/B table, the finished MP4's evidence and the
+  14 golden mid-frames remain the integration phase's open
+  proof items. Only that item's fog-chart clause was stale.
+
+---
+
 ## 1. The film data set — state
 
 Film: **"THE SOLDIER WHO DIDN'T KNOW THE WAR WAS OVER"**
@@ -285,7 +371,9 @@ character / without attachments) — unresolved at this writing.
    truncated 0.41666, reproduced deliberately. Painter tests
    for planks/wallpaper/picture/sign are written but **not yet
    run** — no local cargo; CI verifies on integration (the
-   standing CI-only law).
+   standing CI-only law). [W52 correction: the tests have
+   since been run — **52/52 pass** in a combined scratch
+   harness; `painters/TEST-RUN.md`. See the addendum.]
 7. **This VM cannot render the PBR path locally:** llvmpipe's
    JIT segfaults on `shader_pbr` (Mesa 23.2/24.0/25.2 alike),
    so PBR/film renders run through the dispatch-only CI
@@ -303,13 +391,20 @@ character / without attachments) — unresolved at this writing.
    milestone metrics digit-for-digit), the finished MP4's
    technical evidence, and the 14 golden mid-frames are the
    integration phase's remaining proof items. The fog chart
-   (FOG.md §7) is likewise planned, not run.
-9. **Skill wiring is specified, not landed:** TaleRender as
+   (FOG.md §7) is likewise planned, not run. [W52 correction:
+   the chart has since been **built** (`c7db74d`) — still
+   unrun, prerequisites named in `tools/fog-chart/README.md`;
+   see the addendum.]
+9. **Skill wiring (at this writing: specified, not landed):** TaleRender as
    an alternative capture backend at the frame(t) seam
    (A6/ADR-001) has its design in the audits and the
    integration README; the skill-side adapter in a work copy
    is Batch-4 scope. The Chrome path and the skill's golden
-   law are untouched by everything above.
+   law are untouched by everything above. [W52 correction:
+   the wiring has since **landed in the work copy** —
+   adapter, reconciled docs, selftest, dry run (no fail-open
+   found); see the addendum. The shipped skill remains
+   untouched, as does the Chrome path.]
 10. **Preserved source mismatches (do not "fix"):** S06's
     scene fog (#C9CFC2, 4.5, 20 — shots.ts:409) vs the
     character tint's fog colour (#E6E9EA, the preset's —

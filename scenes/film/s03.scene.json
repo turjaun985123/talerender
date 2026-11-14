@@ -127,6 +127,7 @@
   "points": [],
   "envIntensity": 0.25
  },
+ "captionsNote": "chunk 17 ('in 1944.', 10.39-13.15) starts in S02 and is owned by s02 under the manifest start-time rule (scenes/film/film.json); it bleeds 0.089 s into this shot's head and is not listed here (seat W55). Captions are film-global, drawn by time.",
  "captions": [
   {
    "id": "cap_018",

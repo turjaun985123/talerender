@@ -321,10 +321,27 @@ reference rendering.
 
 THREE.Color `shade(hex, k)` (world.ts:35: hex → **linear**,
 multiply, → sRGB hex) was implemented **four times** in the
-pack, because `src/scene.rs`'s existing `shade_rgb` is a
-different function (canvas `shadeOf`: sRGB **byte** multiply —
-it must not be "fixed"; it ports toon.ts) and `shade_lin`
-multiplies the bytes first, then converts:
+pack, because at pack time `src/scene.rs`'s existing
+`shade_rgb` was a different function (canvas `shadeOf`: sRGB
+**byte** multiply — a port of toon.ts) and `shade_lin`
+multiplied the bytes first, then converted:
+
+**[W52 update — post-`c00897d`: that premise is gone.** The
+lead root-fixed `shade_rgb` in `c00897d`: it now performs
+the THREE.Color linear-space multiply itself (f64 body in
+`src/scene.rs`), and `shade_lin` is defined over it. The
+four implementations below therefore no longer exist
+*because the registry helper is wrong* — they exist because
+each module was staged self-contained. The dedupe
+recommendation stands unchanged, with one refinement: there
+are now two candidate canonical bodies — felt's
+`shade_three` (three r170's literal constants, strict `<`
+at the boundary) and the registry's own `shade_rgb`
+(spec-exact 1/2.4 exponent, `<=` boundary). The pinned
+witnesses under the table agree under both; the ≤1 LSB
+unpinned-boundary caveat is exactly the difference between
+those constants, so the choice should be made deliberately,
+once.]
 
 | implementation | where | form | pinned witnesses |
 |---|---|---|---|
@@ -375,6 +392,18 @@ calls (planks.md item 5, felt-parcel.md). Switching them to
 `shade_three` changes already-measured A/B frames — an
 integrator decision, flagged by W21/W23, deliberately not done
 by any seat in this pack.
+
+**[W52 update: that decision was taken at the root in
+`c00897d`.** Rather than moving the callers to `shade_three`,
+the lead redefined `shade_rgb` itself to the linear-space
+arithmetic — so `paint_grass` and film.rs's painters carry
+the corrected shades through the helper they already call.
+Already-measured A/B frames did change, exactly as flagged
+here; the re-baseline is declared in `c00897d`'s message,
+and its golden consequences are recorded in
+`docs/golden/NATIVE-GOLDEN.md` and `tools/golden/RUNNER.md`.
+The dedupe above is now only about the pack's own four
+implementations.]
 
 ## 9. Wiring order
 

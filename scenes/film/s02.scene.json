@@ -105,6 +105,7 @@
   },
   "envIntensity": 0.25
  },
+ "captionsNote": "chunk 12 ('ended.', 5.29-5.937) starts in S01 and is owned by s01 under the manifest start-time rule (scenes/film/film.json); it bleeds 0.03 s into this shot's head and is not listed here (seat W55). Captions are film-global, drawn by time.",
  "captions": [
   {
    "index": 13,

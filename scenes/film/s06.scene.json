@@ -1,13 +1,13 @@
 {
  "format": "talerender-scene",
  "version": 2,
- "name": "S06 — fog: his two friends walk away into the mist; the fire dies; he sits alone (shot-local t=3.60, film t=29.73)",
+ "name": "S06 — fog: his two friends walk away into the mist; the fire dies; he sits alone (shot-local t=3.60, film t=29.729)",
  "time": 3.5999999046325684,
  "shot": {
   "id": "S06",
-  "at": 26.13,
+  "at": 26.129,
   "end": 30.39,
-  "duration": 4.260000228881836,
+  "duration": 4.261000156402588,
   "line": 5,
   "atmosphere": "fog",
   "grade": "jungle",
@@ -17,7 +17,7 @@
   },
   "note": "fog: his two friends walk away into the mist and do not come back; the fire dies; he sits alone"
  },
- "duration": 4.260000228881836,
+ "duration": 4.261000156402588,
  "atmosphere": "fog",
  "fog": {
   "color": "#C9CFC2",
@@ -42,9 +42,9 @@
   "near": 0.05,
   "far": 800,
   "eye": [
-   1.151602029800415,
-   1.6806408166885376,
-   2.9043691158294678
+   1.1516188383102417,
+   1.6806474924087524,
+   2.9044148921966553
   ],
   "target": [
    -0.3,
@@ -72,7 +72,7 @@
     "fovY": 46
    },
    {
-    "t": 4.260000228881836,
+    "t": 4.261000156402588,
     "eye": [
      1.15,
      1.68,
@@ -125,7 +125,7 @@
   "points": [
    {
     "color": "#FF9A3C",
-    "intensity": 0.6314269304275513,
+    "intensity": 0.6333622932434082,
     "position": [
      -1.35,
      0.6,
@@ -159,7 +159,7 @@
   ],
   "law": "level = clamp(1 - seg(lt, 2.95, 3.70), 0, 1) (fireLevel, shots.ts S06); point intensity = level > 0.02 ? (4.6 + 0.7 sin(17 t) + 0.5 sin(7.3 t)) * level : 0, t = film time; flame scale = (level, f * level, level) / (level, (2 - f) * level, level), f = 1 + 0.16 sin(13 t) + 0.07 sin(29 t + 1)"
  },
- "captionsNote": "chunk 31 ('trick.', 25.57-26.19) starts in S05b and is owned by s05b under the manifest start-time rule (scenes/film/film.json); it bleeds 0.06 s into this shot's head and is not listed here (seat W27). Captions are film-global, drawn by time.",
+ "captionsNote": "chunk 31 ('trick.', 25.57-26.19) starts in S05b and is owned by s05b under the manifest start-time rule (scenes/film/film.json); it bleeds 0.061 s into this shot's head and is not listed here (seat W27). Captions are film-global, drawn by time.",
  "captions": [
   {
    "index": 32,
@@ -9974,7 +9974,7 @@
     {
      "scale": [
       0.13333334028720856,
-      0.1382376104593277,
+      0.1387062519788742,
       0.13333334028720856
      ]
     }
@@ -10004,7 +10004,7 @@
     {
      "scale": [
       0.13333334028720856,
-      0.12842905521392822,
+      0.1279604136943817,
       0.13333334028720856
      ]
     }
@@ -10585,7 +10585,7 @@
  ],
  "post": {
   "bokeh": {
-   "focus": 6.306201934814453,
+   "focus": 6.30625057220459,
    "aperture": 0.0012,
    "maxblur": 0.007
   },
