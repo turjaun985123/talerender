@@ -761,6 +761,15 @@ fn add_mapped(f: &mut FrameSpec, geo: MapGeo, model: Mat4, tex: usize, mat: StdM
     f.map_tex.push(tex);
 }
 
+fn s3(a: [f32; 3], b: [f32; 3]) -> [f32; 3] { [a[0] - b[0], a[1] - b[1], a[2] - b[2]] }
+fn x3(a: [f32; 3], b: [f32; 3]) -> [f32; 3] {
+    [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]
+}
+fn n3(a: [f32; 3]) -> [f32; 3] {
+    let l = (a[0] * a[0] + a[1] * a[1] + a[2] * a[2]).sqrt();
+    if l > 0.0 { [a[0] / l, a[1] / l, a[2] / l] } else { a }
+}
+
 /// Cloud sprites for a camera at `eye` looking at `target`
 /// (three Sprite billboarding; world.ts clouds()).
 fn add_clouds(f: &mut FrameSpec, list: &[([f32; 3], f32)], eye: [f32; 3], target: [f32; 3]) {
@@ -2040,7 +2049,7 @@ fn state_key(look: usize, st: &FullState, hold_l: Option<&str>, hold_r: Option<&
         q(st.look[0]), q(st.look[1]), q(st.blink), q(st.talk),
         q(st.arm_l.0), q(st.arm_l.1), q(st.arm_r.0), q(st.arm_r.1),
         q(st.phase), q(st.lean), q(st.bob), q(st.squash),
-        match st.legs { Legs::Stand => "stand", Legs::Walk => "walk", Legs::Sit => "sit", Legs::Kneel => "kneel" },
+        match st.legs { Legs::Stand => "stand", Legs::Walk => "walk", Legs::Run => "run", Legs::Sit => "sit", Legs::Jump => "jump" },
         q(st.head_tilt), q(st.head_turn), q(st.cam_pitch),
         st.sit_drop.map(q).unwrap_or(-1),
         hold_l.unwrap_or("-"),
@@ -2795,11 +2804,7 @@ impl Renderer {
             (vb, ib, idx.len() as u32)
         };
         // PBR texture bind groups (group 1), cached per (tex, repeat).
-        let mut bg1_cache: HashMap<(Option<usize>, bool), wgpu::BindGroup> = HashMap::new();
-        let mut bg1 = |r: &Renderer, tex: Option<usize>, repeat: bool, cache: &mut HashMap<(Option<usize>, bool), wgpu::BindGroup>| -> wgpu::BindGroup {
-            if let Some(b) = cache.get(&(tex, repeat)) {
-                return b.clone();
-            }
+        let bg1 = |r: &Renderer, tex: Option<usize>, repeat: bool| -> wgpu::BindGroup {
             let bg = {
                     let (view, smp) = match tex {
                         Some(i) => (&r.tex_views[i], if repeat { &r.sampler_repeat } else { &r.sampler_clamp }),
@@ -2817,7 +2822,6 @@ impl Renderer {
                         ],
                     })
             };
-            cache.insert((tex, repeat), bg.clone());
             bg
         };
         let pbr_bg = |r: &Renderer, draw_ub: &wgpu::Buffer| -> wgpu::BindGroup {
@@ -2994,7 +2998,7 @@ impl Renderer {
                 wgpu::BindGroupEntry { binding: 4, resource: wgpu::BindingResource::Sampler(&self.sampler_nearest) },
             ],
         });
-        let bg1_std = bg1(self, None, false, &mut bg1_cache);
+        let bg1_std = bg1(self, None, false);
         // ---- passes ----
         let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("film frame encoder") });
         {
@@ -3095,7 +3099,7 @@ impl Renderer {
             pass.set_pipeline(&self.pbr_tex_pipeline);
             pass.set_bind_group(1, &bg1_std, &[]);
             for (p, d) in tex_p.iter().zip(spec.texmapped.iter()) {
-                let bg = bg1(self, Some(d.tex), d.repeat, &mut bg1_cache);
+                let bg = bg1(self, Some(d.tex), d.repeat);
                 pass.set_bind_group(0, p.bg0.as_ref().unwrap(), &[]);
                 pass.set_bind_group(1, &bg, &[]);
                 pass.set_vertex_buffer(0, p.vb.slice(..));
@@ -3112,7 +3116,7 @@ impl Renderer {
             }
             pass.set_pipeline(&self.pbr_map_pipeline);
             for (i, p) in map_p.iter().enumerate() {
-                let bg = bg1(self, Some(spec.map_tex[i]), true, &mut bg1_cache);
+                let bg = bg1(self, Some(spec.map_tex[i]), true);
                 pass.set_bind_group(0, p.bg0.as_ref().unwrap(), &[]);
                 pass.set_bind_group(1, &bg, &[]);
                 pass.set_vertex_buffer(0, p.vb.slice(..));
