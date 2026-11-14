@@ -852,7 +852,7 @@ pub(crate) struct JgDyn {
     pub extra_std: Vec<StdDraw>, // plane + leaflets + drop leaf + fallen rifle
 }
 
-pub(crate) fn build_jg(f: &mut FrameSpec, dyn: JgDyn) {
+pub(crate) fn build_jg(f: &mut FrameSpec, jd: JgDyn) {
     add_sky(f, TEX_SKY_JG);
     // grass ground (textured, the ab1 ground pattern)
     f.texmapped.push(TexMapDraw {
@@ -914,9 +914,9 @@ pub(crate) fn build_jg(f: &mut FrameSpec, dyn: JgDyn) {
         let model = math::mul(&t3(fx + dx, 0.09, fz + dz), &math::euler_xyz(0.0, i as f32 * 0.7, std::f32::consts::FRAC_PI_2));
         add(&mut f.std, cyl_geo(0.05, 0.05, 0.72, 7, log_col), model, sm(0.95, 0.0), true, true);
     }
-    if dyn.fire > 0.02 {
-        let fl = dyn.fire as f32;
-        let ff = (1.0 + 0.16 * (13.0 * dyn.t).sin() + 0.07 * (29.0 * dyn.t + 1.0).sin()) as f32;
+    if jd.fire > 0.02 {
+        let fl = jd.fire as f32;
+        let ff = (1.0 + 0.16 * (13.0 * jd.t).sin() + 0.07 * (29.0 * jd.t + 1.0).sin()) as f32;
         let m1 = math::mul(&t3(fx, 0.34, fz), &math::scale(fl, ff * fl, fl));
         add(&mut f.std, cone_geo(0.17, 0.52, 8, hex_lin("#3A1C08")), m1, sme(1.0, 0.0, hex_lin("#FF7A1A").map(|c| c * 2.4)), false, false);
         let m2 = math::mul(&t3(fx + 0.03, 0.30, fz + 0.04), &math::scale(fl, (2.0 - ff) * fl, fl));
@@ -939,7 +939,7 @@ pub(crate) fn build_jg(f: &mut FrameSpec, dyn: JgDyn) {
     }
     let bed_model = math::mul(&t3(-3.3, 0.05, -2.1), &math::rotate_y(0.2));
     add(&mut f.std, box_geo(1.5, 0.09, 0.55, hex_lin("#77805E")), bed_model, sm(1.0, 0.0), true, true);
-    f.std.extend(dyn.extra_std);
+    f.std.extend(jd.extra_std);
 }
 
 // ---------------------------------------------------------------------
@@ -2059,7 +2059,7 @@ type PaintCache = HashMap<String, std::rc::Rc<Painted>>;
 fn state_key(look: usize, st: &FullState, hold_l: Option<&str>, hold_r: Option<&str>) -> String {
     let q = |v: f32| (v * 100.0).round() as i32;
     format!(
-        "{look}|{:?}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{:?}|{}|{}|{}|{}|{}",
+        "{look}|{:?}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}",
         st.mood,
         q(st.look[0]), q(st.look[1]), q(st.blink), q(st.talk),
         q(st.arm_l.0), q(st.arm_l.1), q(st.arm_r.0), q(st.arm_r.1),
