@@ -239,9 +239,9 @@ EOF
 | full-film budget @ mean × 1811 | GB |
 | full-film bound @ max × 1811 | GB |
 
-Prior expectation to confirm or replace: USER-PC.md estimated
-1.2–3.1 MB per frame (≈2.2–5.6 GB for the film) from earlier native
-PNGs. The measured distribution supersedes it. Note the frames
+Prior expectation to confirm or replace: USER-PC.md budgets
+roughly 2–6 GB for the full PNG set. The measured distribution
+supersedes it. Note the frames
 directory must hold the full 1,811 PNGs at once during a production
 render — the budget is a disk requirement, not a transfer size.
 

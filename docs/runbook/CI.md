@@ -1,9 +1,13 @@
 # Runbook — CI routes (GitHub Actions)
 
-Repo: `turjaun985123/talerender`. Two workflows:
+Repo: `turjaun985123/talerender`. Three workflows:
 `.github/workflows/ci.yml` (build + test + smoke render on every
-push) and `.github/workflows/render.yml` (manual dispatch renders
-— the PBR-path workhorse). Builds happen **only** here; neither
+push), `.github/workflows/render.yml` (manual dispatch renders
+— the PBR-path workhorse) and `.github/workflows/tools-ci.yml`
+(the Python toolchain gates — film validator, captions, golden,
+bridge — on pushes/PRs touching the data trees; it builds no
+Rust and renders nothing; contract in `tools/CI-WORKFLOW.md`).
+Builds happen **only** here; neither
 the dev VM nor the user's PC compiles Rust.
 
 ## Division of labour

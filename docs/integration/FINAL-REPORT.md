@@ -1,13 +1,16 @@
-# TaleRender Production Integration — 100-Agent Wave: Final Report (DRAFT)
+# TaleRender Production Integration — 100-Agent Wave: Final Report
 
-> **Status of this document:** draft assembled at Batch 7 (seat W69);
-> completion pass at Batch 8 (seat W75) brought it to current truth
-> at HEAD `3781eb2` (70 of 100 seats complete). Sections tagged
-> **[TO COMPLETE]** are filled by the remaining batches from
-> evidence as it lands; nothing in them is asserted yet. Every other
-> number in this report was verified against the tree or the git log
-> at writing time. Where a figure is taken from a wave record rather
-> than re-measured here, the record is cited.
+> **Status of this document:** assembled at Batch 7 (seat W69);
+> completion passes at Batch 8 (W75) and Batch 9 (dated addenda);
+> **final completion pass at Batch 10 (seat W91), audited
+> 2026-11-14T09:14Z against local HEAD `8af40eb` (`origin/main`
+> at `ede0e92`)**. All earlier [TO COMPLETE] tags are resolved by
+> this pass: each is filled with the final fact, or moved into
+> the single closing list in §5.3 ("Open at wave close") with an
+> owner. Every number in this report was verified against the
+> tree, the git log, or the cited evidence document at writing
+> time. Where a figure is taken from a wave record rather than
+> re-measured here, the record is cited.
 
 ---
 
@@ -146,8 +149,10 @@ tests, as measured on the Batch-4 tree). The wiring has since landed
 CI cargo tests. One of the 52 harness assertions — felt's shade
 cross-check — pinned the pre-fix divergence the lead's shade
 root-fix abolished; the red team caught the resulting 51/52 at
-`ce06011` and the lead re-pinned the production copy (`d8fbe83`);
-the full account is in §2.7.
+`ce06011` and the lead re-pinned the production copy (`d8fbe83`).
+The wave's staging copy was then reconciled to the same assertion
+(W82, Batch 9, `8af40eb`), and GATE-W90 re-ran both harness forms:
+**52/52 staging, 45/45 integrated**. The full account is in §2.7.
 
 ### 2.3 Fog package + verification chart
 
@@ -187,6 +192,12 @@ fog-free) and verified it in `5b0889d`: **fog chart ≤1 code at
 every panel**, inside the ±2-code bar. The route shipped differs
 from the one W74's checklist proposed — the full account is the
 closure addendum in `docs/integration/FOG-STATUS-W74.md` §5.
+Batch 9 (W86, `docs/integration/LOADER-EVIDENCE-W86.md`)
+independently reproduced the native gate from the lead's CI
+artifacts with the current CI binary (@`5b0889d`): every fog-chart
+centre ≤1 code against `expectedSrgb`, and the no-fog control ≤1
+code against `expectedSrgbNoFog` — agreement with the lead's
+verdict, reproduced exactly.
 
 ### 2.4 Tooling: A/B, golden, bridge, hardening, tools CI
 
@@ -200,8 +211,16 @@ closure addendum in `docs/integration/FOG-STATUS-W74.md` §5.
   native references are baselined natively, never conflated with the
   skill's Chrome golden; re-pinning is a deliberate, disclosed,
   human-only act. State at this writing (re-verified): **4 OK /
-  0 STALE / 14 MISSING of 18**; the 14 missing are the film segments'
-  mid frames, which exist only after a film render.
+  0 STALE / 14 MISSING of 18 pins**. The 14 film segments' mid
+  frames now exist (CI render, §4.2) and are **staged**,
+  hash-verified, in `docs/golden/frames/` (W87,
+  `docs/integration/GOLDEN-STAGING-W87.md`); the verify headline is
+  unchanged because the pin column is still empty — staging is not
+  pinning. The pins are outstanding human acts (§5.3), with one
+  interaction to respect: with all 14 staged, a single `--pin` run
+  would strike the 14 film first-pins and the ab1-composer re-pin
+  in one act; they are two decisions and must be committed
+  separately (W87).
   `tools/golden/run_golden.sh` stages mid frames from a render,
   requires a renderer label (CI lavapipe / PC RADV), and refuses
   `--pin` by design.
@@ -220,15 +239,33 @@ closure addendum in `docs/integration/FOG-STATUS-W74.md` §5.
   Every step was executed green locally before commit; caption
   determinism is honestly environment-gated on hosted runners (the
   generator's inputs live in the project dir, not this repo), with a
-  visible warning rather than a silent pass.
+  visible warning rather than a silent pass. One hosted-runner
+  failure did occur and was fixed in Batch 9: at `381ff47` the
+  validator step failed in Tools CI (run 43573712817) because
+  check 3 greps source literals from the project tree, which
+  hosted runners do not have — all 506 legitimate short decimals
+  were convicted as non-round-tripping. Environmental, not data.
+  W83 (`8af40eb`) added a source-absent mode to the validator
+  (`--no-source` flag plus auto-detection): the exact-f32
+  round-trip is still enforced on all 1,389 numbers, the 506
+  literals are reported UNVERIFIED — never silently passed —
+  under an explicit `COVERAGE: REDUCED` line, and values with
+  >6 significant digits that fail to round-trip still FAIL
+  (negative control proven). Full mode is byte-identical to
+  before: 7/7 where the project tree exists (GATE-W90).
 - **Format fixtures** (`scenes/fixtures/`): minimal valid v2 files
   per feature plus a census of what the loader consumes today —
   6/7 fixtures load; `fx-textures` failed exactly where designed (it
   names the unwired generators) and was the wiring's acceptance
   test. Since `c74cf0c` every generator it names has a
   `resolve_texture` arm (verified by source inspection), so the
-  designed failure condition is removed; a load run against a
-  current binary has not been executed on this VM.
+  designed failure condition was removed — and the load run has
+  since been executed (W86, Batch 9): with the current CI binary
+  (@`5b0889d`), `fx-textures` renders on this VM and its PNG is
+  **byte-identical to the CI dispatch frame** for the same
+  fixture (run 43575103004, head `69952ab`): loader-lane local
+  and CI agree bit-for-bit
+  (`docs/integration/LOADER-EVIDENCE-W86.md`).
 
 ### 2.5 Skill wiring — in a work copy, shipped skill untouched
 
@@ -257,7 +294,13 @@ only differences are the 7 additions.
   pre-validation accumulates across stages). Stub-binary proofs
   exercised the telemetry PASS path end-to-end for the first time —
   stubs prove the adapter's logic, not the real binary; a live pass
-  still awaits a current binary.
+  still awaits a current binary. **[W91 update:** a current binary
+  has since been provisioned locally (CI artifact @`5b0889d`) and
+  the real whole-film telemetry verdict obtained — `CHECK FAILED`
+  on caption widths (§4.2). The adapter has not been re-run
+  against that verdict line, and its PASS path with a real binary
+  awaits a passing verdict, which turns on the caption
+  disposition in §5.3.**]**
 - **Docs, corrected to true** (`docs/NATIVE-BACKEND.md`): an early
   draft claimed the native path was "proven end-to-end on one
   complete short". That was false — the fresh-eyes review (W50)
@@ -333,9 +376,10 @@ Disposition of all eight mismatches:
   loader consumes metalness nowhere today — but the value would be
   unrecoverable from scene data if a future loader started
   consuming it. The fix (one field in two files, plus the stale
-  ASSUMPTIONS sentence) was assigned to seat W73 this batch and is
-  in the working tree at this writing, pending the Batch-8 central
-  commit.
+  ASSUMPTIONS sentence) was landed by seat W73 and committed in
+  the Batch-8 central commit `743d248`; s02/s03 now carry
+  `metalness: 0.08` in the committed tree (GATE-W90 verified the
+  substance).
 - **Cross-cutting, not counted above:** the grade-saturation key
   defect (W40 §4) — files write `saturation`/`exposure`, the loader
   read only `sat`. The lead's decision has since landed (`c74cf0c`):
@@ -354,10 +398,12 @@ Disposition of all eight mismatches:
   and this seat verified it first-hand: all 14 files now carry
   `sat` in `post.grade` with the authored values (0.52–1.08),
   zero `saturation` keys remain anywhere in `scenes/film/`, and
-  the validator passes 7/7 on the renamed tree. At this writing
-  the rename is in the working tree, pending the Batch-9 central
-  commit — so the loader-lane default-grading described above is
-  closed on the data side once that commit lands.
+  the validator passes 7/7 on the renamed tree. The rename was
+  committed in the Batch-9 central commit `8af40eb`, so the
+  loader-lane default-grading described above is closed on the
+  data side; the lead closed the documentation lag the same day
+  (`ede0e92`: scene-format declares the canonical grade key
+  `sat`).
 
 A third review (W50, `docs/integration/REVIEW-W50.md`) read the
 whole doc set as a stranger: 20 findings (6 contradictions, 11
@@ -385,11 +431,13 @@ pin still passes. The claim had been accurate for the tree W39
 measured; as a present-tense claim it was stale. **Resolution:**
 the lead re-pinned the production copy in `src/scene.rs`
 (`d8fbe83`) — the assertion now pins the post-fix agreement, with
-the reasoning in the commit message. One residue is named: the
-wave's staging copy `painters/felt.rs` still carries the superseded
-`assert_ne!`, so a fresh run of the wave's scratch harness over
-`painters/` still reads 51/52 until that copy is reconciled; the
-production tests are correct.
+the reasoning in the commit message. One residue was named at
+the time: the wave's staging copy `painters/felt.rs` still
+carried the superseded `assert_ne!`. That residue is closed:
+W82 reconciled the staging copy to assert the same agreement
+(Batch 9, `8af40eb`), and GATE-W90 re-ran both harness forms —
+**52/52 staging, 45/45 integrated**. Both copies now pin the
+post-fix agreement.
 
 ### 2.8 The wave record
 
@@ -413,7 +461,8 @@ The lead integrated throughout, in its own commits:
   render workflow (`render.yml`) because this VM's llvmpipe JIT
   segfaults on the PBR shader path; a FIFO-capped paint cache (160
   entries — the unbounded cache starved renderers here; paints are
-  pure, so eviction is pixel-neutral).
+  pure, so eviction is pixel-neutral — the strong form of that
+  claim is qualified by measurement in §4.2).
 - **Generated assets committed** (`b3f3c0a`): the repo-wide `*.png`
   ignore had silently excluded the film's plates/caption strips;
   caught by the first CI film render, fixed by exempting
@@ -467,12 +516,25 @@ The lead integrated throughout, in its own commits:
   refutation (§2.7) closed in the production copy — the test now
   asserts `shade_three == shade_rgb`, the post-root-fix truth,
   with the inversion explained in the commit message.
+- **Loader fog wiring** (`69952ab`, verified `5b0889d`): the
+  loader parses the v2 `fog` block and a new `shader_fog.wgsl`
+  applies three's fog_fragment to the resolved HDR before bokeh;
+  the spec §14.5 addendum records the verification — fog chart
+  ≤1 code at every panel (§2.3, §4.1).
+- **Sky dome + atmosphere re-dressing** (`0f6c033`): the sky
+  dome is corrected to the source shader and atmosphere
+  re-dressing is wired. This commit postdates the proof render
+  below — its provenance consequence is in §4.2/§5.3.
+- **Canonical-key documentation** (`ede0e92`): scene-format
+  declares the canonical grade key `sat` (not `saturation`) and
+  documents the sky-gradient dome formula + ground field.
 
-At this writing the lead's declared next step — the full film
-re-render from `381ff47`, followed by the whole-film telemetry
-verdict and ffmpeg finishing — is in progress. **[TO COMPLETE:
-the render, telemetry verdict, and finished MP4 evidence, as
-reported by the lead and verified by CI.]**
+The lead's declared sequence has since run end to end: the full
+film re-render from `381ff47` completed in CI (dispatch runs,
+frames tiling [0, 1811)), the whole-film telemetry verdict is
+recorded — `FILM TELEMETRY: CHECK FAILED`, on caption widths
+only — and ffmpeg finishing is done and evidenced. The details
+and the one open decision they leave are in §4.2 and §5.3.
 
 ---
 
@@ -485,20 +547,23 @@ Closed since the draft of this report:
 - **Painter arms — LANDED** (`c74cf0c`, §3): all six registry
   painters plus the `solid` arm are in `resolve_texture`; no
   data-named generator fails a file at load any more, and the
-  `fx-textures` acceptance condition is removed by source
-  inspection (a current-binary load run is still unexecuted here).
+  `fx-textures` acceptance condition is removed — first by
+  source inspection, then by execution: W86 ran the fixture
+  with the current binary and its render is byte-identical to
+  the CI dispatch frame (§2.4).
 - **film.rs divergence register — CLOSED** (`381ff47`, §3): all
   20 WAVE-RECORD §5 entries are resolved, benign, or equivalent,
   including the 8 RENDER-READINESS had marked fidelity-blocking
   (D6, D7, D8, D9, D10, D11, D14, D15).
-- **Saturation key decision — DECIDED** (`c74cf0c`): canonical
-  keys sat/warm/exposure/time; exposure parsed and wired. The
-  remaining piece is data-side, not a decision: 12 of 14 files'
-  `post.grade` blocks still spell `saturation` and are not read on
-  the loader lane until renamed (§2.7). **[W89, 2026-11-14:
-  that rename has landed in the working tree (W81) — all 14
-  files verified carrying `sat` with their authored values,
-  validator 7/7; pending the Batch-9 central commit.]**
+- **Saturation key decision — DECIDED + EXECUTED** (`c74cf0c`;
+  rename `8af40eb`): canonical keys sat/warm/exposure/time;
+  exposure parsed and wired. The data-side residue — 12 of 14
+  files' `post.grade` blocks spelling `saturation`, unread on
+  the loader lane — was closed by W81's rename (Batch 9,
+  committed in `8af40eb`): all 14 files carry `sat` with their
+  authored values, validator 7/7 (§2.7). The lead's `ede0e92`
+  corrected the scene-format documentation to the canonical
+  key.
 - **Fog loader wiring — CLOSED** (**[W89, 2026-11-14]**;
   `69952ab`, verified `5b0889d`): scenefile parses the v2 `fog`
   block `{color, near, far}` and the composer path applies
@@ -510,39 +575,106 @@ Closed since the draft of this report:
   lead's, not W74's proposed uniform extension — closure account
   in `docs/integration/FOG-STATUS-W74.md` §5.
 
-Still open:
+Nothing else in this section remains open. One dated trace is
+kept for the record:
 
 - **Fog loader wiring — CLOSED** ([W89, 2026-11-14]: moved to
   the closed list above; `69952ab` / `5b0889d`. The text this
   entry replaces reported the loader reading zero fog fields,
   true at the W75 pass's HEAD.)
 
-### 4.2 The proof run — PENDING
+### 4.2 The proof run — EXECUTED (one decision open)
 
-No completed full-film verdict exists yet. Outstanding, in the
-order RENDER-READINESS §3 sequences them:
+The proof run sequenced by RENDER-READINESS §3 has run. All five
+items are executed; the package is `docs/ab/film/` (README
+charter + JPEG-floor caveat, EXPECTED.md hypotheses, RESULTS.md,
+ab-report, TELEMETRY-W85.md, MP4-EVIDENCE.md). The reference set
+was verified first-hand: exactly 60 stills, t0.50…t59.50, no
+gaps. In order:
 
-1. The full **1,811-frame native render** (CI render workflow in
-   chunks, or the user's PC under RADV — never this VM's llvmpipe
-   for the PBR path).
-2. The **whole-film telemetry verdict** (the printed
-   `FILM TELEMETRY: CHECK OK` line; exit codes carry nothing).
-3. The **per-shot A/B table** over the 60 review stills.
-4. **Golden staging** of the 14 segment mid frames.
-5. **ffmpeg finishing + MP4 evidence** (ffprobe fields, counted
-   frames = 1,811, loudness on the mux ≈ −14.0 LUFS from the
-   unchanged mix).
-
-The package skeleton is ready so completion is mechanical:
-`docs/ab/film/README.md` (charter + JPEG-floor caveat),
-`EXPECTED.md` (per-segment expectations with risk hypotheses —
-S06 fog, S07 calendar glyphs, S10 bookshop shades split on the
-rendering binary's commit relative to `c00897d`, S12 darkness), and
-`MP4-EVIDENCE.md` (the evidence template). The reference set was
-verified first-hand: exactly 60 stills, t0.50…t59.50, no gaps.
-
-**[TO COMPLETE: proof-run results — render provenance and renderer
-label, telemetry verdict, the A/B table headline, MP4 evidence.]**
+1. **Full 1,811-frame native render — DONE.** CI render
+   workflow, 10 dispatch runs at `381ff47` (CI lavapipe), all
+   success; 9 chunk artifacts tile [0, 1811) exactly plus a
+   10-frame probe straddling a chunk boundary (artifacts expire
+   ~2026-11-21). Chunk overlap: frames 1200–1204 are
+   byte-identical across invocations; frames 1195–1199 differ at
+   72.34 dB (1,787 px, 86% at |Δ| = 1, lower-left foliage) —
+   the leading hypothesis is paint re-render after the
+   160-entry FIFO paint-cache cap (the chunk had rendered 195
+   frames, the probe 0–4), recorded in RESULTS.md and carried
+   into the determinism item in §5.3. **Provenance caveat:**
+   these frames predate the lead's `0f6c033` sky-dome
+   correction; whether the proof re-renders at the current
+   head is the lead's call (§5.3).
+2. **Whole-film telemetry verdict — RECORDED, and it is a
+   FAIL on captions only.** Verbatim:
+   `FILM TELEMETRY: CHECK FAILED (0 overflow groups, 0 continuity violations, 7 caption failures)`
+   (the binary exits 0 either way; the line is the verdict).
+   The recording run is W85's independent one:
+   `TALERENDER_PAINT_CACHE=24` with the CI binary from run
+   43575835793 at head `5b0889d` (sha256-verified,
+   `docs/ab/film/TELEMETRY-W85.md`); the lead's own logs
+   (telemetry4/telemetry5) end with the identical verdict line
+   and matching failure lines — the two settings agree. What
+   failed, precisely: **7 caption chunks render over the
+   850 px width floor** — the same seven the Batch-1 caption
+   census counted (§2.1). Widths 871–1051 px; widest "Planes
+   dropped leaflets" 1051 px at t=21.61 s, then "and Onoda
+   surrendered" 1050, "was a Japanese soldier" 1039,
+   "commander ordered it." 1015, "surviving on coconuts" 1002,
+   "named Norio Suzuki" 892, "his old commander," 871. W85
+   independently reproduced every width with PIL over the
+   driver-side `film/assets/cap_*.png` strips, digit-for-digit.
+   Overflow groups: **none**. Continuity violations: **none**
+   (5 named characters clean). The audit's own remedy line is
+   "split the chunk". Disposition — re-chunk the seven or
+   accept the film with a waiver — is **open** (§5.3); seat
+   W92's decision pack (Batch 10) sets out the split proposal
+   and its per-chunk outcomes, not applied.
+3. **Per-shot A/B table — DONE.** 60/60 pairs measured, 0
+   missing, against the Chrome review stills (native CI
+   lavapipe @`381ff47` vs Chrome SwiftShader q0.93 stills —
+   reported, never gated, per decision B): overall PSNR
+   **min 18.378 / mean 21.836 dB** (recomputing the mean from
+   the stored 3-dp pair values gives 21.837 — a rounding
+   artefact, GATE-W90). The s01 anchor pair (t = 1.50)
+   measures **24.094 dB**, above the M5 milestone chain's
+   23.850; s01 is the best segment (mean 25.005). EXPECTED's
+   hypotheses: the **S06 fog risk is refuted** (mean 24.77 dB,
+   no depth-growing delta signature); S12's darkness concern
+   does not materialise; S07's calendar pattern is as
+   predicted; S10 confirms post-shade-fix behaviour. Two
+   findings are referred to the lead (§5.3): the s08/s08b/s09
+   broad-delta cluster (mean |Δ| 17.5–19.7, %px >10 83–87%;
+   s09 has the film's highest mean |Δ|, 19.66, and EXPECTED
+   had registered no hypothesis for it), and **s11, the lowest
+   segment** (mean 18.523 dB, all three worst pairs) despite
+   its register items D14/D15 closing in `381ff47`, the very
+   commit rendered.
+4. **Golden staging — DONE; pins open.** All 14 segment mid
+   frames are staged and hash-verified in
+   `docs/golden/frames/` (W87, §2.4). Pinning is the human
+   act, carried in §5.3 as two separate decisions.
+5. **ffmpeg finishing + MP4 evidence — DONE.**
+   `~/workspace/your_files/onoda-native-381ff47.mp4`
+   (29,722,802 bytes, sha256 `f357a004…`), finished by
+   `film/finish.sh` verbatim from the assembled 1,811 frames
+   (assembly hash-verified against the golden-mid table, so
+   the encoded frames are the frames W77 measured) with the
+   project's `data/mix.wav` muxed unchanged. Evidence
+   (`docs/ab/film/MP4-EVIDENCE.md`): ffprobe counted frames
+   **1811**; container duration 60.457 s (the audio master
+   governs; video stream 60.3667 s = 1811/30); loudness on
+   the mux **−14.00 LUFS** vs the mix's −13.99 (Δ 0.01;
+   true peak −1.58 vs −1.65 dBTP; LRA identical 1.40);
+   faststart confirmed by box order; `.part` discipline
+   clean. One finding, recorded not patched — **F1: colour
+   tags only partially landed** (`color_space=bt709`, but
+   `color_primaries` and `color_transfer` are `unknown`
+   despite finish.sh passing all three BT.709 flags; ffmpeg
+   8.1.2). The lead's call (§5.3). The file is labelled a
+   technical-proof MP4, not a channel master — the RADV
+   render on the user's PC remains the master path.
 
 ### 4.3 Golden re-pins — human acts, packets prepared
 
@@ -566,28 +698,36 @@ pending-not-required (no re-pin owed unless a verification
 re-render drifts). Re-pinning remains a deliberate human act; the
 runner refuses `--pin`.
 
-**[TO COMPLETE: re-pin decisions and outcomes for the three
-expected-STALE references.]**
+No re-pin has been struck. The decisions are carried in §5.3
+as open human acts — and they are now **two separate
+decisions**, not one: with the 14 film mids staged (§4.2), a
+single `--pin` run would strike the film first-pins and the
+ab1-composer re-pin together (W87); they must be decided and
+committed separately.
 
 ### 4.4 Adoption — the user's decision
 
 The skill wiring lives only in the work copy; the shipped skill is
 untouched (0-file drift, §2.5). ADOPTION-REVIEW-W59 sets out the
 decision as the user's: adopt as an opt-in alternative now, or wait
-for the §4.2 proof; adoption is not defaulting — the backend
-becomes default only on accepted proof. Of the review's 8 adoption
+for the §4.2 proof — which has since run (§4.2), with the
+telemetry caption disposition still open (§5.3); adoption is not
+defaulting — the backend becomes default only on accepted proof. Of the review's 8 adoption
 gaps, five were closed in the work copy during Batch 7 (W64/W65):
 G1 binary provisioning (exact CI-artifact commands; the discovery
 fallback had silently selected the stale build in every local run)
 and the binary↔bridge era-pairing rule, G2 retrofit instructions
 for existing projects, G5 the dry-run record's freshness header,
 G7 version discipline, and G8 the env-table correction. One
-document defect is being repaired this batch: the on-disk
-ADOPTION-REVIEW-W59.md itself is truncated (it ends mid-sentence
-in §2; the gap list survives only in W59's completion report) —
-restoration of §§3–4 from that report, marked as restored, is
-assigned to seat W72. **[TO COMPLETE: the user's adoption
-decision, when given.]**
+document defect was found and repaired: the on-disk
+ADOPTION-REVIEW-W59.md was truncated (it ended mid-sentence in
+§2; the gap list survived only in W59's completion report).
+Seat W72 restored §§3–4 from that report in the work copy,
+marked as a restoration; the restored text is summary-grade
+where the original wording was lost, and two gap topics
+(among G3/G4/G6) are recorded as unrecoverable rather than
+invented. The adoption decision itself is the user's; it is
+carried in §5.3.
 
 ### 4.5 Smaller open items
 
@@ -597,27 +737,35 @@ decision, when given.]**
   `FILM TELEMETRY: CHECK OK`); it claims chunk-resume purity
   "proven" while its own proof section lists the byte-compare as
   TBD; its fog-validation sentence is wrong on both halves (no S06
-  A/B frames exist yet, and a separate fog gate — the chart — does
-  exist). **[TO COMPLETE: lead's disposition.]**
-- Known residuals that survive a successful render (RENDER-READINESS
-  §4): S06 fog fidelity, the caption PIL-vs-Skia bound (≤0.15 px),
-  calendar glyphs as approximation vs PIL plates, RADV fp16
-  rounding unverified from this VM.
-- Push state: **[W89 correction, 2026-11-14]** — `origin/main`
-  is at `5b0889d`; local `main` is at `743d248`, ahead by exactly
-  that one commit (the Batch-8 central commit). The lead's
-  `69952ab` (fog wiring) and `5b0889d` (spec §14.5 addendum) were
-  pushed during Batch 8 — W80's audit caught the ref mid-move at
-  `69952ab` — so the pushed line now runs through `5b0889d`, not
-  `d8fbe83` as this entry previously read, and local is ahead by
-  `743d248`, not `3781eb2`. Commit census at this correction:
-  21 since base `34d7882` on local `main`, 20 of them on
-  `origin/main`. Batches 9–10 still to land; the remaining
-  commits push at wave close per the user's order. (The
-  `e5860b4` CI run 43569768582 success recorded in
-  RENDER-READINESS stands.) **[TO COMPLETE: final
-  push commit + CI verdicts on the final HEAD, including the new
-  tools-ci workflow.]**
+  A/B frames existed at review time — S06's A/B has since been
+  measured, §4.2 — and a separate fog gate, the chart, does
+  exist). A paste-ready patch proposal now exists
+  (`docs/integration/README-PROOF-PATCH-W88.md`, W88: 6 items —
+  4 corrections, 2 completions — each quoting the current text
+  at its line numbers, giving the exact replacement, and citing
+  the evidence; the determinism replacement is the measured
+  two-part statement of §4.2, no stronger, no weaker). Applying
+  it is the lead's act — carried in §5.3.
+- Known residuals after the render (RENDER-READINESS §4): the
+  caption PIL-vs-Skia bound (≤0.15 px), calendar glyphs as
+  approximation vs PIL plates, RADV fp16 rounding unverified
+  from this VM (§5.3). The S06 fog-fidelity residual is
+  discharged by measurement: s06's A/B mean is 24.77 dB with no
+  depth-growing delta signature (§4.2), and the fog chart gates
+  both sides at ≤1 code (§2.3).
+- Push state at this pass (2026-11-14T09:14Z): `origin/main`
+  is at `ede0e92`; local `main` is at `8af40eb`, ahead by
+  exactly one commit (the Batch-9 central commit). Census
+  since base `34d7882`: **24 commits on local main — 15 lead,
+  9 wave batch commits** (§5.1) — 23 of them on `origin/main`.
+  Earlier readings of this entry (18, then 21 commits) were
+  each correct when written and were overtaken by concurrent
+  landings; this census supersedes them. The Batch-10 central
+  commit and the final push land at wave close per the user's
+  order; the final pushed HEAD and its CI verdicts (ci.yml +
+  tools-ci.yml, with run ids) are recorded by the orchestrator
+  at close (§5.3). (The `e5860b4` CI run 43569768582 success
+  recorded in RENDER-READINESS stands.)
 
 ---
 
@@ -634,16 +782,24 @@ decision, when given.]**
 | 5 | W41–W50 | 10 | `dbf90b9` |
 | 6 | W51–W60 | 10 | `ce06011` |
 | 7 | W61–W70 | 10 seats (13 runs — W62, W67, W68 each needed a replacement or finisher after silent endings) | `3781eb2` |
-| 8 | W71–W80 | [TO COMPLETE] | [TO COMPLETE] |
-| 9 | W81–W90 | [TO COMPLETE] | [TO COMPLETE] |
-| 10 | W91–W100 | [TO COMPLETE] | [TO COMPLETE] |
-| **Total ordered** | | **100** | |
+| 8 | W71–W80 | 10 | `743d248` |
+| 9 | W81–W90 | 10 | `8af40eb` |
+| 10 | W91–W100 | 10 seats, running concurrently with this pass | central commit at batch close |
+| **Total ordered** | | **100 seats** | |
 
-Lead commits in the wave window (since base `34d7882`): 11 —
+Agent *runs* exceed seats where a seat needed a replacement or
+finisher after a silent ending — Batch 7 is the recorded case
+(13 runs for 10 seats). Batches 8 and 9 ran 10-for-10 per their
+batch records; Batch 10's run count is finalised by the
+orchestrator at close (§5.3).
+
+Lead commits in the wave window (since base `34d7882`): **15** —
 `5e5b0a0`, `1475b66`, `4c06a1e`, `b3f3c0a`, `12c7a5e` (TEMP
 diagnostics, superseded by `3e88c60`), `3e88c60`, `c00897d`,
-`e5860b4`, `381ff47`, `c74cf0c`, `d8fbe83`. Wave batch commits:
-7 (above). Total commits since base at this writing: 18.
+`e5860b4`, `381ff47`, `c74cf0c`, `d8fbe83`, `69952ab`, `5b0889d`,
+`0f6c033`, `ede0e92`. Wave batch commits: **9** (above; Batch
+10's lands at batch close). Total commits since base at this
+writing: **24** on local main, 23 of them pushed (§4.5).
 
 ### 5.2 Verification state at this writing (all re-run or re-read
 for this report unless noted)
@@ -651,34 +807,147 @@ for this report unless noted)
 | Check | Result |
 |---|---|
 | Film validator (`tools/film/validate_film.py`) | **7/7 PASS** — 883 exact f32 + 506 literals + 0 failures; captions 66/66/0/0; tiling exact, 1,811 frames |
-| Painter tests (scratch harness, TEST-RUN.md) | **41/41** painter; 52/52 with baseline as measured on the Batch-4 tree — red team read **51/52** at `ce06011` (one felt assertion pinned the abolished pre-fix divergence); production copy re-pinned by the lead (`d8fbe83`), staging copy residue named in §2.7 |
-| Consolidated gate (W62, at `381ff47`) | **7/7 PASS** — validator, caption determinism, golden verify, bridge + adapter fail-closed, JSON sweep, manifest tiling |
-| Red team (W70, at `ce06011`) | **7 reproduced / 1 refuted** — the refutation (painter 52/52) resolved by `d8fbe83` (§2.7) |
-| Fog chart, Chrome side (W66) | Static verify **144/144**; basic panels **≤ 1 sRGB code** vs analytic smoothstep at all depths; standard-panel offset explained as house/π (≤ 2 codes) |
+| Painter tests (scratch harnesses, TEST-RUN.md) | **52/52 staging form; 45/45 integrated form** (GATE-W90) — the **51/52** read at `ce06011` (one felt assertion pinned the abolished pre-fix divergence) was resolved in production by the lead (`d8fbe83`) and in the staging copy by W82 (`8af40eb`); both copies now pin the post-fix agreement (§2.7) |
+| Consolidated gates | W62 at `381ff47`: **7/7 PASS** (validator, caption determinism, golden verify, bridge + adapter fail-closed, JSON sweep, manifest tiling); W90 at Batch-9 close: **6/6 PASS** (validator in both modes, captions, golden, bridge, JSON sweep, both painter harnesses) |
+| Red team (W70, at `ce06011`) | **7 reproduced / 1 refuted** — the refutation (painter 52/52) resolved by `d8fbe83` + W82 (§2.7) |
+| Fog chart (W66 + lead CI + W86) | Chrome side: static verify **144/144**, basic panels **≤ 1 sRGB code** vs analytic smoothstep at all depths, standard-panel offset explained as house/π (≤ 2 codes); native side: **≤1 code at every panel** (lead CI, `5b0889d`), independently reproduced from CI artifacts by W86 |
 | Bridge packager self-verification | **21/21 PASS**, 94 files hash-verified |
-| Golden pack verify | **4 OK / 0 STALE / 14 MISSING** of 18 |
+| fx-textures acceptance (current binary, W86) | **PASS** — renders locally; PNG byte-identical to the CI dispatch frame |
+| Golden pack verify | **4 OK / 0 STALE / 14 MISSING** of 18 pins — the 14 film mids are **staged** hash-verified in `docs/golden/frames/`; pins outstanding (human, §5.3) |
 | Independent data audits | **395 sampled, 387 match, 8 mismatch — all resolved, reclassified, or fix-landed (§2.7)** |
 | A/B tool control | Reproduces committed packages digit-for-digit (23.850 / 21.820 / 84.486 dB) |
 | ab1 A/B, post-shade-fix (CI lavapipe, at `c00897d`) | **23.96 dB** (pre-fix 23.850); mean \|Δ\| 4.82505; %px >10 11.44483 |
 | Skill work copy drift vs shipped skill | **0 files differ**; 7 additions |
 | Adapter dry run | Fail-closed on all gated modes; **no fail-open found** |
 | Caption determinism | Regeneration byte-identical (66 strips + manifest) |
-| Full-film render / telemetry verdict / MP4 | **PENDING (§4.2)** |
+| Full-film render (CI lavapipe @`381ff47`) | **DONE** — 10 dispatch runs, frames tile [0, 1811); provenance predates `0f6c033` (§4.2) |
+| Film A/B (60 review-still pairs) | **min 18.378 / mean 21.836 dB**; s01 anchor 24.094; s11 lowest (mean 18.523) — reported, not gated (decision B) |
+| Whole-film telemetry verdict | **`FILM TELEMETRY: CHECK FAILED`** — 0 overflow groups, 0 continuity violations, **7 caption failures** (over-850 px chunks, §4.2); two independent runs agree verbatim; disposition open (§5.3) |
+| MP4 finish | **DONE** — counted frames 1811; mux −14.00 LUFS vs mix −13.99; faststart confirmed; colour-tag finding F1 open (§4.2) |
 
-### 5.3 [TO COMPLETE — final tallies]
+### 5.3 Open at wave close
 
-- Final agent count actually run vs the 100 ordered.
-- Final commit list and the pushed HEAD.
-- CI verdicts on the final push (ci.yml, tools-ci.yml, and any
-  render dispatches), with run ids.
-- Proof-run numbers (§4.2) and golden re-pin outcomes (§4.3).
-- Goal close-out: goal `goal_b21124e71eb3` is closed only when the
-  whole path above is verified done; until then it stays open with
-  the remainders named here.
+Everything not in this list is done and evidenced above. Each
+item names its owner and its discharge condition.
+
+- **Telemetry caption disposition** — *owner: lead, with the
+  user.* The whole-film verdict is `CHECK FAILED` on 7 caption
+  chunks over the 850 px floor (§4.2); overflow and continuity
+  are clean. Choose: re-chunk the seven (seat W92's decision
+  pack, Batch 10, sets out the generator-rule split and its
+  per-chunk outcomes — prepared, not applied) or accept the
+  film with a recorded waiver. Discharge: a re-run printing
+  `FILM TELEMETRY: CHECK OK`, or the waiver recorded in the
+  integration record. The skill adapter's real-binary PASS
+  path (§2.5) also waits on this.
+- **Golden pins, decision 1 — the 14 film first-pins** —
+  *owner: human pin act.* Strike the pins from the staged
+  frames (`docs/golden/frames/`, `381ff47` provenance) or
+  first re-render at the current head (next item). Four
+  staged mids (frames 560, 760, 969, 1593) sit at chunk
+  offsets ≥160, past the paint-cache cap, and carry the
+  ±1-class re-render caveat of §4.2.
+- **Golden pins, decision 2 — the ab1-composer re-pin** —
+  *owner: human pin act.* Candidate in hand (post-fix frame,
+  23.96 dB, hash `a415ead8…`). Must be decided and committed
+  **separately** from decision 1: with the film mids staged,
+  one `--pin` run would strike both (§4.3). Related, from
+  the packets: the s28 packet recommends **against**
+  re-pinning s28 (structural difference, 21.711 dB);
+  stroke-toon awaits a post-fix candidate; dof-chart is
+  pending-not-required.
+- **Re-render at the post-`0f6c033` head** — *owner: lead's
+  call.* The proof package (frames, A/B, MP4, staged mids)
+  carries `381ff47` provenance; `0f6c033` (sky dome +
+  atmosphere re-dressing) and `ede0e92` postdate it.
+- **MP4 colour-tag finding F1** — *owner: lead's call.*
+  finish.sh passes all three BT.709 flags; the finished MP4
+  carries only the matrix (`color_primaries` /
+  `color_transfer` = `unknown`; MP4-EVIDENCE.md, Finding
+  F1). Amend the flag set (e.g. an x264 VUI companion) or
+  amend the expectation; the file was not re-encoded.
+- **s08/s08b/s09 broad-delta explanation** — *owner: lead.*
+  The cluster is measured (s09 highest mean |Δ| 19.66; s11
+  lowest at 18.523 dB with a broad component, §4.2) and
+  referred; no explanation is in the record yet.
+- **Determinism formal PASS per renderer** — *owner: pack
+  criteria* (`tools/determinism/README.md`). Discharge
+  requires a recorded `DETERMINISM: PASS` from the pack for
+  each renderer of record (CI lavapipe **and** PC RADV).
+  Supporting evidence exists — the pack is stub-proven in
+  both directions (W67/W78) and production chunk overlap
+  1200–1204 is byte-identical — but the pack's own criterion
+  is not discharged, and past the 160-entry paint-cache cap
+  cross-invocation frames can differ at the ±1 class
+  (1195–1199, 72.34 dB, §4.2), so the tested ranges are part
+  of the claim. A formal run attempt is recorded by seat W96
+  (Batch 10).
+- **Fog-chart PSNR leg** — *owner: reference side.* The
+  ±2-code centre gate passes on both sides (§2.3). A
+  full-frame PSNR against the shipped Chrome chart frame is
+  not a valid leg until that reference is re-captured with
+  the ×π-amended rig (its standard panels carry the house/π
+  factor); W86 measured 23.565 dB against the unamended
+  frame and records why that number cannot gate.
+- **PC RADV evidence** — *owner: user's PC.* Every native
+  number in this report is CI/VM lavapipe (or VM llvmpipe
+  where named). RADV fp16 rounding and all performance
+  figures await the PC run under `docs/runbook/USER-PC.md`
+  and the `docs/runbook/PERF.md` protocol (whose §9 signal
+  requests to the lead also stand).
+- **Skill adoption decision** — *owner: user.* Adopt the
+  native backend into the shipped skill as an opt-in
+  alternative (work copy ready, 0-file drift, §2.5/§4.4) or
+  wait. Adoption is not defaulting.
+- **Lead's README disposition** — *owner: lead.* Apply or
+  decline the paste-ready patch in
+  `docs/integration/README-PROOF-PATCH-W88.md` (the C4/C5/B1
+  corrections + proof-section completion for the lead-owned
+  integration README, §4.5).
+- **Final push + CI verdicts + goal close-out** — *owner:
+  orchestrator at wave close.* Push the Batch-9/10 central
+  commits; record the final pushed HEAD, the ci.yml +
+  tools-ci.yml verdicts with run ids, and the final
+  agent-run tally (100 seats; runs exceeded seats only
+  where replacements ran — Batch 7: 13). Goal
+  `goal_b21124e71eb3` closes only when the whole path is
+  verified done; if it stays open, the items above are its
+  named remainders.
 
 ---
 
-*Draft ends. Batches 8–10 complete the tagged sections from
-evidence; the close-out report to the user follows the final push
-and its CI verdict, after which the wave holds for the user's next
-instruction.*
+*Report ends. This is the final completion pass (W91); nothing
+in it is tagged as awaiting a later batch — what remains open
+is listed once, with owners, in §5.3. The close-out report to
+the user follows the final push and its CI verdict, after
+which the wave holds for the user's next instruction, per the
+original order.*
+
+---
+
+## Addendum — orchestrator, 2026-11-14 (post-audit lead landings)
+
+This report was audited against HEAD `8af40eb`. After that stamp
+the lead landed four commits, all pushed (origin = `f021991`):
+
+- `6ca97fc` — finish.sh BT.709 fix (x264 VUI params; verified on
+  a test clip: bt709/bt709/bt709). **§5.3 item 5 (finding F1) is
+  CLOSED by the lead.** The delivered proof MP4 predates the fix.
+- `cabcc30` — determinism root fix: paint-cache keys are now
+  exact (f32 bit patterns) — the suspected mechanism behind the
+  frames 1195–1199 ±1-code diffs. §5.3 item 7's formal
+  per-renderer PASS is still owed, but renders now run on
+  exact keys.
+- `1fc6fab` — atmosphere state inheritance: the S06 fog dome
+  setter (was missing) + S08/S08b/S09 inherit S07's golden
+  dressing. §5.3 item 6 is addressed at the source; the A/B
+  re-measure lands with the re-render below.
+- `f021991` — E0600 fix from the exact-key change.
+
+Census at the Batch-10 commit: 28 commits since `34d7882` =
+19 lead + 9 wave, plus this wave batch-10 commit (10 wave).
+At addendum time the lead had dispatched a full film re-render
+at `f021991` (Render workflow, 2026-11-14T09:45–46Z, chunks
+succeeding / in progress) — §5.3 item 4 (re-render at the final
+head) is being exercised by the lead; its verdict lands with
+the lead's completion report.
