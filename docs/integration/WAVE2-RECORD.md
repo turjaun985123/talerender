@@ -395,10 +395,28 @@ stale-binary side. True gaps:
   F3-c — bookshop `nodes[].materials` is a shadow format
   (sharpest): resolve at the §15 fold-in — either the loader
   consumes it or the data stops carrying it, never both.
-- **F4 — SPEC LANDED (W43), implementation via Batch-6 W54
-  pack + `knobs_gate.py`.** Laws: defaults byte-identical
+- **F4 — SPEC + PATCH PACKS COMPLETE; IMPLEMENTATION NOT
+  STARTED (CORRECTION, 2026-11-15).** A phase-1 landing
+  (`--res` + DRAFT tag) was relayed during Batch 7/8 and is
+  **retracted as a record error** (W73 register item P6):
+  W73 verified airtight at `b2e46d2` — no Knobs struct, no
+  `effective_size`, no parse arms for `--res`/`--aa`/`--shadow`
+  in `src/`; the parse loop rejects all four flags as unknown
+  arguments; HELP ends OPTIONS at `--to`. W79's audit and
+  W76's HELP check independently grep the same absence. The
+  540×960 / 22.35 dB figure attached to the claim cannot have
+  come through this repo's render.yml (it has no size input);
+  W73 §1's divergence register (P1–P6) is the full account,
+  and the orchestrator has corrected it with the user. TRUE
+  state: spec = KNOBS-W43 (truncation repaired by the lead's
+  W61-tail splice, T2 included) + patch packs W54 and
+  KNOBS-P23-W73 (phases 2–3 cites refreshed; W73 is now the
+  implementation basis). Laws: defaults byte-identical
   (the gate proves it); knobs are draft/preview only, finals
-  stay full quality; draft output is TAGGED as draft. **Gate
+  stay full quality; draft output is TAGGED as draft — and
+  per W73's warning, `is_draft()` gains the aa/shadow terms
+  in the SAME commits that land those knobs, or untagged
+  drafts pass as finals. **Gate
   conflict (3) — lead ruling:** W43's caption-scale behaviour
   vs the strips contract — captions are pre-rendered strips
   composited post-grade (standing contract); at draft
