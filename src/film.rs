@@ -2056,7 +2056,36 @@ pub(crate) struct CharInfo {
     pub head_tilt: f32,
     pub head_turn: f32,
 }
-type PaintCache = HashMap<String, std::rc::Rc<Painted>>;
+/// Painted-card cache with a FIFO cap. A painted canvas is
+/// 2560x2816 RGBA (~29 MB), so an unbounded cache grows by
+/// gigabytes over a film (and starved this VM's renderers when a
+/// telemetry run held one). Painting is a pure function of the
+/// state key, so eviction can only cost time, never a pixel —
+/// determinism is unaffected. Cap 160 entries (~4.6 GB worst
+/// case, far above the live working set of any single shot).
+pub(crate) struct PaintCache {
+    map: HashMap<String, std::rc::Rc<Painted>>,
+    order: std::collections::VecDeque<String>,
+}
+
+impl PaintCache {
+    fn new() -> PaintCache {
+        PaintCache { map: HashMap::new(), order: std::collections::VecDeque::new() }
+    }
+    fn get_or_paint(&mut self, key: String, look: &FullLook, st: &FullState) -> std::rc::Rc<Painted> {
+        if let Some(v) = self.map.get(&key) {
+            return v.clone();
+        }
+        let v = std::rc::Rc::new(paint_toon_full(look, st));
+        self.map.insert(key.clone(), v.clone());
+        self.order.push_back(key);
+        while self.map.len() > 160 {
+            let old = self.order.pop_front().expect("cache order");
+            self.map.remove(&old);
+        }
+        v
+    }
+}
 
 fn state_key(look: usize, st: &FullState, hold_l: Option<&str>, hold_r: Option<&str>) -> String {
     let q = |v: f32| (v * 100.0).round() as i32;
@@ -2116,10 +2145,7 @@ fn resolve_chars(
         st.hold_l = plate_of(c.hold_l);
         st.hold_r = plate_of(c.hold_r);
         let key = state_key(c.look, &st, c.hold_l, c.hold_r);
-        let entry = cache
-            .entry(key)
-            .or_insert_with(|| std::rc::Rc::new(paint_toon_full(look, &st)))
-            .clone();
+        let entry = cache.get_or_paint(key, look, &st);
         let hand_r = entry.4;
         let h_t = 1.75f32 / 0.96;
         let su = h_t / 1024.0;
@@ -3383,7 +3409,7 @@ pub(crate) async fn run_film(width: u32, height: u32, film_dir: &str, out_dir: &
         "film: {} — {} frames @30fps, rendering {}..{} at {}x{} (clean PNG frames; decision B)",
         "THE SOLDIER WHO DIDN'T KNOW THE WAR WAS OVER", frames_total, from, to, width, height
     );
-    let mut cache: PaintCache = HashMap::new();
+    let mut cache = PaintCache::new();
     let (mut done, mut skipped) = (0u32, 0u32);
     for n in from..to {
         let path = format!("{out_dir}/frame_{n:05}.png");
@@ -3509,7 +3535,7 @@ pub(crate) fn run_film_telemetry(dir: &Path) -> Result<(), String> {
         ShotInfo { id: "S12".into(), at: l0(11) },
     ];
     let mut audit = Audit::new(shots);
-    let mut cache: PaintCache = HashMap::new();
+    let mut cache = PaintCache::new();
     let mut t = 0.0f64;
     while t < data.duration {
         let mut spec = eval_frame(&data, &looks, t);
