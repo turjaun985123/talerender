@@ -87,13 +87,18 @@ for k, c in enumerate(caps):
     c["fit"] = round(min(1.0, 960.0 / w), 5)
     c["strip"] = f"cap_{k:03d}.png"
 
+# F3-a strip (W74): captions[] "line"/"width" were generator
+# bookkeeping read by no consumer — the loader takes s/e/text/
+# fit/strip, gen_assets.py takes text/strip. "line" has done its
+# work above (the e-window pass); it is not emitted.
+caps = [{k: v for k, v in c.items() if k not in ("line", "width")}
+        for c in caps]
+
 out = {
-    "film": "THE SOLDIER WHO DIDN'T KNOW THE WAR WAS OVER",
-    "project": str(PROJ),
     "duration": T_DUR,
     "fps": 30,
     "frames": int(T_DUR * 30) + 1,
-    "lines": [{"i": l["i"], "start": l["start"], "end": l["end"], "text": l["text"]} for l in LINES],
+    "lines": [{"start": l["start"], "end": l["end"]} for l in LINES],
     "anchors": anchors,
     "captions": caps,
     # F2 migration (W53 s1.2): the calendar set, dark plate and

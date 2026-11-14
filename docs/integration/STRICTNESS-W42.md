@@ -259,6 +259,17 @@ Reading them:
   ({i, start, end, text}), captions carry their generator's
   bookkeeping (line index, measured width). Harmless today;
   exactly the class that hides a typo tomorrow.
+  **Disposition (landed per F3A-STRIP-W74):** the six truly-dead
+  paths (root `film`/`project`; lines[] `i`/`text`; captions[]
+  `line`/`width` — 172 occurrences) are STRIPPED from
+  `film/onoda.json` and from `gen_film_data.py`'s emissions;
+  root `fps`/`frames` are re-classed **F3-a-kept** — they have
+  hard readers in the Python tooling (tools/perf/blink_cost.py,
+  tools/perf/blink_census.py; fallback reads in
+  tools/lipsync/evaluate_track.py, tools/film/rerender_plan.py)
+  and stay baselined (24 occurrences / 9 paths) until the
+  checker's film-data known set learns them — a checker landing,
+  not a data change.
 - **F3-b — uncited prose `note` fields (18 occurrences) + 
   `motifLaw` (1).** Texture/node `note` strings in s10, s11,
   s12 and bookshop are deliberate-looking provenance prose, and
