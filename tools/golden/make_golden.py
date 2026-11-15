@@ -22,6 +22,12 @@ Exit code: 0 when every pinned item verifies OK (MISSING items that
 have never been pinned are reported but do not fail the run — the
 film frames are expected MISSING until the film renders); 1 when any
 pinned item is STALE (on disk but not the pinned bytes); 2 on input
+error. Since 2026-11-15 rendered photos are NOT kept in git (user
+rule: photos go to the user as a zip), a pinned item whose image is
+absent from the checkout reports LOCAL-ONLY — pin verification for
+it is a local act against the restored images, and CI gates on the
+pins in golden-hashes.json (text), telemetry and tests instead.
+LOCAL-ONLY does not fail the run; STALE still does.
 error (golden-hashes.json unreadable, invalid, or not an id->sha256
 object, or a golden path that exists but is not a file — one-line
 ERROR on stderr, no table).
@@ -154,7 +160,7 @@ def main():
               f"(re-baseline act — commit it with the measured diff and reason)")
         pins = new_pins
 
-    rows, counts = [], {"OK": 0, "STALE": 0, "MISSING": 0}
+    rows, counts = [], {"OK": 0, "STALE": 0, "MISSING": 0, "LOCAL-ONLY": 0}
     manifest = []
     for item in ITEMS:
         p = ROOT / item["path"]
@@ -163,7 +169,10 @@ def main():
         current = sha256_of(p) if p.exists() else None
         recorded = pins.get(item["id"])
         if current is None:
-            status = "MISSING"
+            # Pinned but absent: since 2026-11-15 the images are not in
+            # git (user rule) — verification is a local act. Unpinned and
+            # absent stays MISSING (expected until first pin).
+            status = "LOCAL-ONLY" if recorded is not None else "MISSING"
         elif recorded is None:
             status = "MISSING"  # on disk but never pinned: not a reference yet
         elif current == recorded:
@@ -177,11 +186,18 @@ def main():
                          "sha256_current": current, "status": status})
 
     w = max(len(r[0]) for r in rows)
-    print(f"{'item':<{w}}  {'status':<7}  {'pinned':<16}  {'current':<16}  path")
+    print(f"{'item':<{w}}  {'status':<10}  {'pinned':<16}  {'current':<16}  path")
     for rid, status, path, pin_h, cur_h in rows:
-        print(f"{rid:<{w}}  {status:<7}  {pin_h:<16}  {cur_h:<16}  {path}")
+        print(f"{rid:<{w}}  {status:<10}  {pin_h:<16}  {cur_h:<16}  {path}")
     print(f"\n{counts['OK']} OK / {counts['STALE']} STALE / "
-          f"{counts['MISSING']} MISSING of {len(ITEMS)} golden items")
+          f"{counts['MISSING']} MISSING / {counts['LOCAL-ONLY']} LOCAL-ONLY "
+          f"of {len(ITEMS)} golden items")
+    if counts["LOCAL-ONLY"]:
+        print("NOTE: LOCAL-ONLY items are pinned but their images are not "
+              "in this checkout — rendered photos are not kept in git "
+              "(user rule, 2026-11-15). Verify them locally against the "
+              "restored images; CI gates on the text pins, telemetry "
+              "and tests.")
 
     if "--json" in sys.argv:
         print(json.dumps(manifest, indent=2))

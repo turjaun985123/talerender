@@ -18,6 +18,20 @@ changed, `docs/ab/telemetry/jpeg-decision.md`); the native frames do
 not. Conflating the two goldens would bake that loss back in as an
 equality target, which is exactly what decision (b) refused.
 
+## Where the images live (user rule, 2026-11-15)
+
+Rendered photos are NOT kept in git: all 77 docs images were removed
+from the repo in `3e2820a` and delivered to the user as zips. The
+golden reference images therefore live LOCALLY only (restored into
+this tree as gitignored files when verification is needed). The pins
+in `tools/golden/golden-hashes.json` (text) stay in git. Consequences:
+`make_golden.py` verify reports pinned-but-absent items as
+LOCAL-ONLY (not a failure; STALE still fails); CI can no longer
+verify image pins — pin verification is a local/PC act, and CI gates
+on the text pins, film telemetry and the test suites instead. The
+same applies to the visual-regression runner: its reference images
+are local-only, so a CI dispatch cannot fully verify pins either.
+
 ## The golden set (17 items)
 
 Four milestone references, already committed as milestone evidence
@@ -27,7 +41,7 @@ honest state until the frames exist).
 
 | item | what it pins | reference path |
 |---|---|---|
-| `s28-onoda-t150` | **RETIRED 2026-11-15** (user ruling approving the DECISIONS-W94 recommendation; re-pinning rejected — VR fed it the same render as `ab1-composer`, so it guarded nothing new). The §28 first-light frame (Onoda S01 @ t = 1.50) stays in the repo as a historical artefact at `docs/ab/onoda-s01-t150/native.png`; it is no longer a golden item, carries no pin, and is not a regression reference. | `docs/ab/onoda-s01-t150/native.png` (artefact only) |
+| `s28-onoda-t150` | **RETIRED 2026-11-15** (user ruling approving the DECISIONS-W94 recommendation; re-pinning rejected — VR fed it the same render as `ab1-composer`, so it guarded nothing new). The §28 first-light frame (Onoda S01 @ t = 1.50) stays as a historical artefact at `docs/ab/onoda-s01-t150/native.png` — held LOCALLY only since the 2026-11-15 no-photos rule removed it from git (delivered to the user in the photos zip); it is no longer a golden item, carries no pin, and is not a regression reference. | `docs/ab/onoda-s01-t150/native.png` (artefact only) |
 | `dof-chart` | M3 DoF chart (contract §1): the transcribed BokehShader against known depths | `docs/ab/dof-chart/native.png` |
 | `stroke-toon` | M4 stroke-battery character card (contract §2): the CPU painter's stroke rasterisation | `docs/ab/stroke-battery/native-toon.png` |
 | `ab1-composer` | M5: ab1 through the full composer chain (Render → Bokeh → Bloom → Output → GRADE) | `docs/ab/composer/native.png` |
