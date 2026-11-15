@@ -3643,7 +3643,7 @@ fn apply_fade(px: &mut [u8], fade: f32) {
 // The film driver.
 // ---------------------------------------------------------------------
 
-pub(crate) async fn run_film(width: u32, height: u32, film_dir: &str, out_dir: &str, from: u32, to: u32, knobs: crate::Knobs, adapter_policy: &str) -> crate::errors::TaleResult<()> {
+pub(crate) async fn run_film(width: u32, height: u32, film_dir: &str, out_dir: &str, from: u32, to: u32, knobs: crate::Knobs, adapter_policy: &str, output_mode: crate::streammodes::OutputMode, queue_capacity: usize) -> crate::errors::TaleResult<()> {
     let tag = if knobs.is_draft() {
         format!(" {}", knobs.tag())
     } else {
@@ -3656,6 +3656,18 @@ pub(crate) async fn run_film(width: u32, height: u32, film_dir: &str, out_dir: &
     let frames_total = (data.duration * 30.0).ceil() as u32;
     let to = if to == 0 { frames_total } else { to.min(frames_total) };
     let mut renderer = Renderer::new(width, height, &assets.sign, knobs, adapter_policy).await?;
+    // WP4 streaming session (CR-B1-02): in stream mode the
+    // frames flow straight into the encoder and NO PNGs are
+    // written; `out_dir` is the output MP4 path. The branch
+    // sits after the shared setup and before everything the
+    // PNG path owns (create_dir_all, the banner, the loop),
+    // and early-returns — PNG execution cannot observe it.
+    if output_mode == crate::streammodes::OutputMode::Stream {
+        return run_film_stream(
+            width, height, dir, &data, &assets, &looks,
+            &mut renderer, from, to, knobs, out_dir, queue_capacity,
+        );
+    }
     std::fs::create_dir_all(out_dir).map_err(|e| crate::errors::TaleError::image_io(out_dir, e))?;
     println!(
         "film: {} — {} frames @30fps, rendering {}..{} at {}x{} (clean PNG frames; decision B){tag}",
@@ -3714,6 +3726,97 @@ pub(crate) async fn run_film(width: u32, height: u32, film_dir: &str, out_dir: &
     // VRAM ledger (W84 §5.3): its own line, immediately after
     // the completion block — the Renderer is still alive here,
     // so the standing set is what the line accounts.
+    println!("{}", crate::gpucore::mem_stats_line());
+    Ok(())
+}
+
+// ---------------------------------------------------------------------
+// WP4 streaming session (CR-B1-02): run_film's stream branch.
+// The producer is the PNG loop body minus skip + save; the
+// session (streamsession) owns the encoder, the accounting
+// and the ffprobe validation. Streams cannot resume — an
+// interrupted .part is discarded and the encode restarts.
+// ---------------------------------------------------------------------
+
+fn run_film_stream(
+    width: u32, height: u32, film_dir: &Path, data: &FilmData,
+    assets: &Assets, looks: &[(FullLook, bool, f64)],
+    renderer: &mut Renderer, from: u32, to: u32,
+    knobs: crate::Knobs, out_mp4: &str, queue_capacity: usize,
+) -> crate::errors::TaleResult<()> {
+    let tag = if knobs.is_draft() {
+        format!(" {}", knobs.tag())
+    } else {
+        String::new()
+    };
+    // Audio discovery is the CALLER's (CR-B1-02 §4.4): the
+    // session never searches. The two candidates cover the
+    // two layouts in the tree — film data packaged inside a
+    // project, and the contracts §0 layout (<project>/native/
+    // beside <project>/data/). First existing wins; none ->
+    // explicit Silent (the adapter's fallback, reported in
+    // the completion line, never an accident).
+    let mix = [film_dir.join("data/mix.wav"),
+               film_dir.join("../data/mix.wav")]
+        .into_iter().find(|p| p.is_file());
+    let audio = match &mix {
+        Some(path) => crate::streamsession::AudioSpec::Mix {
+            path: path.clone(),
+            start_secs: from as f64 / 30.0,
+            duration_secs: (to - from) as f64 / 30.0,
+        },
+        None => crate::streamsession::AudioSpec::Silent,
+    };
+    let spec = crate::streamsession::StreamSpec {
+        out_mp4: PathBuf::from(out_mp4),
+        width,
+        height,
+        fps: 30, // run_film's own rate: t = n / 30, frames_total = ceil(duration * 30)
+        first_index: from,
+        expected_frames: to - from,
+        profile: if knobs.is_draft() {
+            crate::streamsession::EncodeProfile::Draft
+        } else {
+            crate::streamsession::EncodeProfile::Master
+        },
+        audio,
+        queue_capacity,
+    };
+    let mut cache = PaintCache::new();
+    let clock = crate::runlog::RunClock::new();
+    let mut done = 0u32;
+    // The producer: run_film's loop body, minus skip + save.
+    // Overlay order is main.ts order, as in the PNG loop.
+    let producer = |n: u32| -> crate::errors::TaleResult<Vec<u8>> {
+        let t = n as f64 / 30.0;
+        let mut spec_f = eval_frame(data, looks, t);
+        let (dyn_tex, _) = resolve_chars(&mut spec_f, looks, assets, &mut cache);
+        let mut px = renderer.render(&spec_f, &dyn_tex)?;
+        if let Some(cal) = &spec_f.calendar {
+            overlay_calendar(&mut px, width, height, assets, cal);
+        }
+        if spec_f.fade > 0.0 {
+            apply_fade(&mut px, spec_f.fade);
+        }
+        if let Some(ci) = spec_f.caption {
+            overlay_caption(&mut px, width, height, assets, ci, spec_f.caption_scale);
+        }
+        done += 1;
+        if done % 25 == 0 {
+            println!(
+                "  frame {n} (t = {t:.2}s) — {done} streamed · {}{tag}",
+                clock.timing_suffix(done as u64, (to - from) as u64)
+            );
+        }
+        Ok(px)
+    };
+    let report = crate::streamsession::run_session(&spec, producer)?;
+    println!(
+        "film stream complete: {} frames encoded, {} produced -> {} ({}, {}) · {} · {}{tag}",
+        report.frames_encoded, report.frames_produced,
+        report.out_final.display(), report.profile, report.audio,
+        clock.summary_suffix(), cache.stats_line()
+    );
     println!("{}", crate::gpucore::mem_stats_line());
     Ok(())
 }

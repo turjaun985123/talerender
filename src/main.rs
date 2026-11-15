@@ -47,6 +47,7 @@ mod projectfile;
 mod scenefile;
 mod streamq;
 mod streammodes;
+mod streamsession;
 mod telemetry;
 mod ffstream;
 mod film;
@@ -104,7 +105,9 @@ OPTIONS:
     --height <PX>           Frame height (default: 1920).
     --out <PATH>            Output PNG file — or, for --film and
                             stroke-battery, the output directory
-                            (default: frame.png).
+                            (default: frame.png). For --film in
+                            stream output mode, the output MP4
+                            file instead.
     --caption <PATH>        Caption strip PNG composited by
                             --scene ab1 (default: the §28 strip
                             under docs/ab/ — a repo-relative path,
@@ -145,8 +148,9 @@ OPTIONS:
     --output-mode <MODE>    Film output: png | stream | auto
                             (default: png). The resolved mode
                             is printed on every --film run;
-                            stream is not yet wired into the
-                            --film driver and fails loudly.
+                            stream encodes straight to MP4
+                            through the streaming session
+                            (no PNG frames are written).
     --perf-record-dir <DIR> Directory for performance records
                             (bench tooling; see docs/v2/
                             PERF-LAB.md).
@@ -508,20 +512,12 @@ fn main() {
             cfg.mem_profile, cfg.adapter_policy, cfg.output_mode
         );
         // C3 mode resolution: the choice is printed, never
-        // silent. Streaming is implemented (streamq/ffstream/
-        // streammodes) but not yet wired into this driver —
-        // a resolved Stream request fails loudly here rather
-        // than silently writing PNGs.
+        // silent. A resolved Stream is dispatched inside
+        // run_film (streamsession); PNG remains the default
+        // and its path is unchanged.
         let requested = streammodes::mode_from_config(&cfg.output_mode);
         let resolved = streammodes::resolve_mode(requested, ffstream::ffmpeg_available());
         println!("output-mode: {} — {}", resolved.mode.as_str(), resolved.reason);
-        if resolved.mode == streammodes::OutputMode::Stream {
-            cli_error(
-                "output_mode=stream resolved, but streaming output is not yet wired \
-                 into the --film driver (streamq/ffstream/streammodes are landed; \
-                 the driver wiring is a follow-up) — use --output-mode png",
-            );
-        }
         // C1: the resolved memory profile, reported with its
         // derived values. Consumers (paint-cache budget feed,
         // frame-queue caps) wire incrementally; the profile
@@ -542,6 +538,8 @@ fn main() {
             film_to,
             knobs,
             &cfg.adapter_policy,
+            resolved.mode,
+            mp.frame_queue_capacity(),
         )));
         return;
     }
