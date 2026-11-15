@@ -24,6 +24,7 @@ mod bufferpool;
 mod charanim;
 mod composer;
 mod config;
+mod dirtyrect;
 mod dof;
 mod errors;
 mod gpucore;
