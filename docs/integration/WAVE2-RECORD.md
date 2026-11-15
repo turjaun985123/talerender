@@ -670,3 +670,19 @@ landed (`cb93083`, `52ca55f`, `13ad26b` + follow-up `2294f23`,
 `2cbd090`), and the closing head `2294f23` is green on both
 workflows: CI 43632390675 + Tools CI 43632390729, both
 SUCCESS (§7, Close row).
+
+## 13. Post-wave addendum — decisions execution + v1.0.1 release row (2026-11-15)
+
+The six DECISIONS-W94 rulings (user, 2026-11-15 07:21 +06) were
+executed the same day; the full record is
+`docs/integration/DECISIONS-EXECUTION.md`. Release row (per
+RELEASE-101B-W89 Step 7): **tag `v1.0.1`** · target (bump SHA)
+`967fa37f34e84b2fa42f1f17440730172596f66c` · CI run `43676800502`
+SUCCESS · Tools CI run `43677393319` SUCCESS (manual dispatch —
+path filter) · knobs gate run `43677367966` SUCCESS, exact line
+`KNOBS GATE: PASS` · determinism run `43677370242` SUCCESS ·
+golden verify LOCAL 17 OK / 0 STALE (no-photos rule) · telemetry
+`FILM TELEMETRY: CHECK OK` exit 0 · binary SHA-256
+`b331f6704ebc8836057aa0e1b0f97421cb638c41ce9757abf0da230846903128` ·
+release https://github.com/turjaun985123/talerender/releases/tag/v1.0.1
+(published, binary-only asset; v1.0.0 untouched).
