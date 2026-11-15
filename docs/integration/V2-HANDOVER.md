@@ -54,6 +54,23 @@ correctness fix that must land alone under the byte-probe
 protocol, with the differing frames quantified and
 reported, not folded into any other landing.
 
+**RESOLVED 2026-11-15** (user order "Fix the sweat/tears
+cache defect now", 16:14 +06): fixed in `b1355b1` —
+`state_key` now appends `st.sweat, st.tears`. Full record:
+docs/integration/STATE-KEY-FIX.md. Outcome under the
+byte-probe protocol: a full-film census (1,811 frames, CI
+lavapipe, pre-fix `a098c33` vs post-fix `b1355b1`) shows
+ZERO differing frames — the film never exercises a
+sweat/tears-true state (both flags are constant false in
+the film path; its sweat/tear pixels arrive via the
+Worried/Sad moods, which were always keyed), so no frame's
+paint changed and no golden pin moved. The collision
+itself is proven by the new regression tests in film.rs
+`state_key_tests` (failed pre-fix, CI 43703339048; pass
+post-fix, 405 passed / 0 failed, CI 43703592030).
+Telemetry: FILM TELEMETRY: CHECK OK, exit 0, on both
+census runs (43703307203 pre, 43710059527 post).
+
 ## Dependency inventory
 
 wgpu **30.0.2**, pollster **1.0.1**, image **0.25.10**
