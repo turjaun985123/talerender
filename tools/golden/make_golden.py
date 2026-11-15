@@ -66,19 +66,13 @@ def film_item(seg, start, end):
 
 
 ITEMS = [
-    {
-        "id": "s28-onoda-t150",
-        "kind": "first-light A/B frame (§28)",
-        "source": "Onoda S01 @ t = 1.50, hand-authored ab1 staging "
-                  "(docs/ab/onoda-s01-t150/)",
-        "generator": "produced by the §28 prototype run (package scripts in "
-                     "docs/ab/onoda-s01-t150/scripts/); the current-chain "
-                     "equivalent is " + RENDER + " mode=ab1 -> "
-                     "talerender --scene ab1 --out render-out/ab1.png. "
-                     "Kept as the historical first-light pin; the M5-chain "
-                     "ab1 reference is ab1-composer below.",
-        "path": "docs/ab/onoda-s01-t150/native.png",
-    },
+    # s28-onoda-t150 RETIRED 2026-11-15 (user ruling approving the
+    # DECISIONS-W94 recommendation): the §28 first-light pin predated
+    # the whole fix chain and VR fed it the same render as
+    # ab1-composer, so it guarded nothing ab1-composer does not.
+    # The artefact stays as history at
+    # docs/ab/onoda-s01-t150/native.png; it is no longer a golden
+    # item or a regression reference.
     {
         "id": "dof-chart",
         "kind": "DoF chart (contract §1, M3 gate)",

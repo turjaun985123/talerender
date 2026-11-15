@@ -5,7 +5,6 @@ Band: PSNR >= 80 dB = WITHIN-BAND; below = DRIFT. Byte-identity (MATCH) is the p
 
 | pin | status | PSNR (dB) | mean \|d\| | %px > 10 | max d | pinned sha | rendered sha | note |
 |---|---|---|---|---|---|---|---|---|---|
-| s28-onoda-t150 | DRIFT | 21.65 | 0.51230 | 1.20400 | 87 | ff68fad3bbcc | 3f9a1c77e2b4 | PSNR < band 80 dB — same-renderer drift |
 | dof-chart | MISSING-RENDER | — | — | — | — | 957d5573497e | - | rendered file not found: visual-out/dof-chart.png |
 | stroke-toon | NOT-RENDERED | — | — | — | — | 9ba9ff890402 | - | pinned, but no rendered frame supplied this run |
 | ab1-composer | MATCH | inf | — | — | — | 60c32c1af021 | 60c32c1af021 | sha256 == pin (byte-identical) |
@@ -24,6 +23,6 @@ Band: PSNR >= 80 dB = WITHIN-BAND; below = DRIFT. Byte-identity (MATCH) is the p
 | film-s11 | NOT-RENDERED | — | — | — | — | 7bed0da5f199 | - | pinned, but no rendered frame supplied this run |
 | film-s12 | NOT-RENDERED | — | — | — | — | dfabc09a542d | - | pinned, but no rendered frame supplied this run |
 
-Counts: 3 MATCH · 1 DRIFT · 1 MISSING-RENDER · 13 NOT-RENDERED (of 18 golden items).
+Counts: 3 MATCH · 0 DRIFT · 1 MISSING-RENDER · 13 NOT-RENDERED (of 17 golden items).
 
-VISUAL REGRESSION: FAIL (4 pins, 2 drift)
+VISUAL REGRESSION: FAIL (3 pins, 1 drift)

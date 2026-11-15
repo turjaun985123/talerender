@@ -14,10 +14,12 @@ name: Visual Regression (dispatch)
 # must never be fed to it; RADV keeps its own future pins.
 #
 # WHAT IT RENDERS — 3 frames, on purpose:
-#   ab1        -> checked against TWO pins: ab1-composer (the M5
-#                 living reference) and s28-onoda-t150, whose
-#                 manifest entry names mode=ab1 as its current-
-#                 chain equivalent. One render, both pins.
+#   ab1        -> checked against the ab1-composer pin (the M5
+#                 living reference). It was formerly checked
+#                 against s28-onoda-t150 as well; that pin was
+#                 RETIRED 2026-11-15 (user ruling, DECISIONS-W94)
+#                 because it was fed this same render and guarded
+#                 nothing ab1-composer does not.
 #   dof-chart  -> the M3 chart pin.
 #   film [1231, 1232) -> the single mid frame of segment s08b
 #                 (frame 1231, the shortest segment at 41 frames /
@@ -35,18 +37,16 @@ name: Visual Regression (dispatch)
 # reports UNPINNED: listed, never failed. When a human pins the
 # film set, this job starts gating those frames with no edit here.
 #
-# KNOWN DEBT — READ BEFORE THE FIRST DISPATCH: the ab1-composer
-# and s28-onoda-t150 pins predate the shade root-fix c00897d, and
-# the golden pack's own analysis (tools/golden/RUNNER.md) records
-# both as EXPECTED STALE on re-render — "certain" for ab1-composer.
-# Until a human re-pins them under the re-baseline protocol, a
-# correct run of this job is EXPECTED TO FAIL on those two pins;
-# that failure is the re-pin debt surfacing, not new drift.
-# dof-chart carries no such expectation (its chart texture never
-# passes through shade_rgb) and is this job's clean control: a
-# DRIFT on dof-chart is real drift until explained. Nobody widens
-# the band or whitelists a pin to make this job green — the fix
-# for the debt is the human re-pin, not a weaker gate.
+# KNOWN DEBT — none outstanding. The pre-c00897d re-pin debt this
+# header originally warned about is settled: ab1-composer was
+# re-pinned in Act 2 (166873c) and renders byte-identical, and the
+# s28-onoda-t150 pin was RETIRED 2026-11-15 (user ruling,
+# DECISIONS-W94). A correct run of this job is now expected to
+# PASS outright (3 pins, 0 drift); any FAIL is new drift until
+# explained. dof-chart is this job's clean control (its chart
+# texture never passes through shade_rgb): a DRIFT on dof-chart
+# is real drift until explained. Nobody widens the band or
+# whitelists a pin to make this job green.
 #
 # VERDICT DISCIPLINE (same as determinism.yml): the runner prints
 #   VISUAL REGRESSION: PASS (n pins, 0 drift)   exit 0
@@ -116,7 +116,6 @@ jobs:
           set +e
           python3 tools/ci/visual_regression.py \
             --render ab1-composer=visual-out/ab1.png \
-            --render s28-onoda-t150=visual-out/ab1.png \
             --render dof-chart=visual-out/dof-chart.png \
             --render film-s08b=visual-out/frames/frame_01231.png \
             --out visual-regression.md
@@ -131,7 +130,7 @@ jobs:
           echo "--------------------------------"
           rc="${{ steps.vr.outputs.script_rc }}"
           if [ "$rc" != "0" ]; then
-            echo "::error::visual regression runner exited $rc (1 = FAIL — drift beyond band; 2 = refusal, no verdict). See the report artifact. NOTE: ab1-composer + s28-onoda-t150 carry documented pre-c00897d re-pin debt (EXPECTED STALE on re-render, tools/golden/RUNNER.md) — a FAIL confined to those two pins is that debt, cleared only by a human re-pin."
+            echo "::error::visual regression runner exited $rc (1 = FAIL — drift beyond band; 2 = refusal, no verdict). See the report artifact. NOTE: no re-pin debt is outstanding (ab1-composer re-pinned in Act 2; s28-onoda-t150 retired 2026-11-15) — a FAIL here is new drift until explained."
             exit 1
           fi
           if ! grep -q "^VISUAL REGRESSION: PASS" visual-regression.md; then

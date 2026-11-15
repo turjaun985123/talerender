@@ -18,7 +18,7 @@ changed, `docs/ab/telemetry/jpeg-decision.md`); the native frames do
 not. Conflating the two goldens would bake that loss back in as an
 equality target, which is exactly what decision (b) refused.
 
-## The golden set (18 items)
+## The golden set (17 items)
 
 Four milestone references, already committed as milestone evidence
 and pinned at this pack's founding, plus one mid frame per film
@@ -27,7 +27,7 @@ honest state until the frames exist).
 
 | item | what it pins | reference path |
 |---|---|---|
-| `s28-onoda-t150` | §28 first-light frame: Onoda S01 @ t = 1.50, the first real scene reproduced natively | `docs/ab/onoda-s01-t150/native.png` |
+| `s28-onoda-t150` | **RETIRED 2026-11-15** (user ruling approving the DECISIONS-W94 recommendation; re-pinning rejected — VR fed it the same render as `ab1-composer`, so it guarded nothing new). The §28 first-light frame (Onoda S01 @ t = 1.50) stays in the repo as a historical artefact at `docs/ab/onoda-s01-t150/native.png`; it is no longer a golden item, carries no pin, and is not a regression reference. | `docs/ab/onoda-s01-t150/native.png` (artefact only) |
 | `dof-chart` | M3 DoF chart (contract §1): the transcribed BokehShader against known depths | `docs/ab/dof-chart/native.png` |
 | `stroke-toon` | M4 stroke-battery character card (contract §2): the CPU painter's stroke rasterisation | `docs/ab/stroke-battery/native-toon.png` |
 | `ab1-composer` | M5: ab1 through the full composer chain (Render → Bokeh → Bloom → Output → GRADE) | `docs/ab/composer/native.png` |

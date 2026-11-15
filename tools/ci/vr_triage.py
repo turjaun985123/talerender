@@ -3,13 +3,12 @@
 
 WHAT THIS IS
     tools/ci/visual_regression.py renders the pinned references
-    fresh and fails on same-renderer drift. A dispatch is
-    expected to FAIL — on exactly the known remaining debt (s28),
-    not on
-    new drift (VISUAL-REGRESSION-W16.md §4; the workflow header
-    says the same at the point of failure). A red job therefore
-    needs a second reading: which rows are the debt we already
-    know about, and which rows — if any — are new information?
+    fresh and fails on same-renderer drift. Since the s28
+    retirement (2026-11-15, user ruling) a dispatch is expected
+    to PASS outright — no drift debt remains on the register —
+    but a red job still needs a second reading: which rows are
+    the by-design states we already know about, and which rows —
+    if any — are new information?
     This tool is that second reading. It parses a
     visual_regression.py report (the markdown the workflow
     uploads as the `visual-regression-<run_id>` artifact) and
@@ -17,18 +16,18 @@ WHAT THIS IS
     against the register below.
 
 THE REGISTER — the post-pin steady state
-    golden-hashes.json pins all 18 items (make_golden verifies
-    18 OK / 0 STALE / 0 MISSING). Both pin acts and the Act-1
+    golden-hashes.json pins all 17 items (make_golden verifies
+    17 OK / 0 STALE / 0 MISSING). Both pin acts and the Act-1
     corrective have landed: Act 1 916a109 (the 14 film
     first-pins), Act 2 166873c (ab1-composer re-pinned
     d7bd71a0 -> 60c32c1a), corrective 2755ff3 (11 film pins
     moved to the f021991 candidates, after the canary caught
     the first act pinning staged 381ff47-era bytes). The
     workflow renders a canary set only: the ab1 render
-    (checked against ab1-composer AND s28-onoda-t150),
-    dof-chart, and film frame 1231 (film-s08b). Expected
-    dispatch (first measured on run 43625139818 at 2755ff3:
-    3 MATCH · 1 DRIFT · 14 NOT-RENDERED):
+    (checked against ab1-composer), dof-chart, and film frame
+    1231 (film-s08b). Expected dispatch (post-retirement form
+    of the state first measured on run 43625139818 at 2755ff3:
+    3 MATCH · 0 DRIFT · 14 NOT-RENDERED):
 
       ab1-composer    MATCH        re-pinned in Act 2; only
                                    MATCH is acceptable — it is
@@ -43,14 +42,8 @@ THE REGISTER — the post-pin steady state
                                    chart texture never passes
                                    through shade_rgb; anything
                                    but MATCH here is real drift
-      s28-onoda-t150  DRIFT        the sole remaining debt:
-                      (or          the pin predates c00897d and
-                      WITHIN-     neither act cleared it (the
-                      BAND)       repin packet recommends
-                                   against re-pinning the
-                                   historical prototype);
-                                   WITHIN-BAND is the same
-                                   debt in a milder form
+      (s28-onoda-t150 RETIRED 2026-11-15 — see CLEARING
+                      ACTIONS; it no longer appears in reports)
       film-* (13)     NOT-RENDERED pinned in Act 1 but
                                    rendered nowhere — the
                                    workflow's canary set is by
@@ -74,13 +67,16 @@ THE REGISTER — the post-pin steady state
     missing from the report altogether is a NEW-SIGNAL.
 
 CLEARING ACTIONS — the only ways debt leaves the register
-    * s28-onoda-t150 clears only with a separate human
-      disposition of that pin (a deliberate re-pin anyway —
-      which would make it a byte-duplicate of ab1-composer —
-      or retiring the pin), recorded per
-      docs/golden/NATIVE-GOLDEN.md. Expect the job to stay red
-      on s28 alone until then; that is this debt ageing, not
-      a new regression.
+    * s28-onoda-t150 — DISPOSITION RECORDED: RETIRED
+      2026-11-15 by user ruling (approving the DECISIONS-W94
+      recommendation; re-pinning was rejected because VR fed
+      the pin the same render as ab1-composer, so it guarded
+      nothing new). The pin left golden-hashes.json, the item
+      left make_golden.py's ITEMS and this register, and the
+      workflow no longer renders it. The historical artefact
+      stays in the repo at docs/ab/onoda-s01-t150/native.png;
+      it is no longer a regression reference. Recorded per
+      docs/golden/NATIVE-GOLDEN.md.
     * stroke-toon NOT-RENDERED clears with a future deliberate
       act: re-baseline the founding pin and add a battery
       render to the workflow (W16 §4).
@@ -141,24 +137,23 @@ STATUSES = {"MATCH", "WITHIN-BAND", "DRIFT", "MISSING-RENDER",
 #                             the first act pinning staged
 #                             381ff47-era bytes (film-s08b DRIFT
 #                             24.85 dB, run 43624398371)
-# golden-hashes.json now pins all 18 items; make_golden verifies
-# 18 OK / 0 STALE / 0 MISSING (GOLDEN-VERIFY-W63.md).
+# golden-hashes.json now pins all 17 items; make_golden verifies
+# 17 OK / 0 STALE / 0 MISSING (the count was 18 until the s28
+# retirement, 2026-11-15 — see the docstring's CLEARING ACTIONS).
 #
 # The workflow renders a canary set ONLY (.github/workflows/
 # visual-regression.yml, by design): the ab1 render — checked
-# against ab1-composer AND s28-onoda-t150 — dof-chart, and film
-# frame 1231 (film-s08b). Every other pinned item reports
-# NOT-RENDERED on every dispatch. Steady state, first measured
-# on run 43625139818 at 2755ff3: 3 MATCH (ab1-composer,
-# dof-chart, film-s08b — all byte-identical) · s28 DRIFT ·
-# 14 NOT-RENDERED. Expected classes:
+# against ab1-composer — dof-chart, and film frame 1231
+# (film-s08b). Every other pinned item reports NOT-RENDERED on
+# every dispatch. Steady state, first measured on run
+# 43625139818 at 2755ff3 (with s28 then the sole DRIFT; retired
+# since): 3 MATCH (ab1-composer, dof-chart, film-s08b — all
+# byte-identical) · 0 DRIFT · 14 NOT-RENDERED. Expected classes:
 #   ab1-composer    MATCH only — deliberately NOT in REGISTER,
 #                   like the dof-chart control: any non-MATCH
 #                   row is a NEW-SIGNAL
 #   film-s08b       MATCH only — the one film mid rendered;
 #                   same treatment as ab1-composer
-#   s28-onoda-t150  DRIFT / WITHIN-BAND = KNOWN-DEBT, the sole
-#                   expected red (see its entry)
 #   film-* (13)     NOT-RENDERED = expected by design; the
 #                   entry covers that ONE status only (see the
 #                   anti-whitelist rule in the docstring)
@@ -182,9 +177,9 @@ FILM_CANARY_ID = "film-s08b"
 FILM_NOT_RENDERED_ACTION = (
     "NOT-RENDERED by design: pinned in GOLDEN-RESTAGE-W03 "
     "Act 1 (916a109; corrective 2755ff3) and covered by the "
-    "make_golden pack verification (18 OK / 0 STALE / 0 "
+    "make_golden pack verification (17 OK / 0 STALE / 0 "
     "MISSING), but the visual-regression workflow renders a "
-    "canary set only — the ab1 render (two pins), dof-chart, "
+    "canary set only — the ab1 render (one pin), dof-chart, "
     "and film-s08b (frame 1231) — so this mid renders on no "
     "dispatch. This entry covers NOT-RENDERED ONLY: if the "
     "render set is deliberately extended to this mid, MATCH "
@@ -192,24 +187,6 @@ FILM_NOT_RENDERED_ACTION = (
     "row here is a NEW-SIGNAL, never debt.")
 
 REGISTER = {
-    "s28-onoda-t150": (
-        {"DRIFT", "WITHIN-BAND"},
-        "The sole remaining re-pin debt. The pin (ff68fad3) "
-        "predates the shade root-fix c00897d; Acts 1 (916a109) "
-        "and 2 (166873c) and the Act-1 corrective (2755ff3) "
-        "all landed WITHOUT touching it — the repin packet "
-        "recommends against re-pinning this historical "
-        "prototype artefact, and VR supplies the ab1 render as "
-        "its candidate, so the DRIFT (21.65 dB on run "
-        "43625139818) measures current output against the "
-        "prototype, not a regression. WITHIN-BAND is the same "
-        "debt in milder form. Clears ONLY with a separate "
-        "human disposition of the s28 pin (deliberate re-pin — "
-        "which would make it a byte-duplicate of ab1-composer "
-        "— or pin retirement), recorded per "
-        "docs/golden/NATIVE-GOLDEN.md. Until then the job "
-        "stays red on s28 alone; that is this debt ageing, "
-        "not a new regression."),
     "stroke-toon": (
         {"NOT-RENDERED"},
         "Expected: the workflow renders no battery card set "
@@ -229,8 +206,9 @@ for _fid in FILM_IDS:
 # with the control-specific follow-up below.
 CONTROL_ID = "dof-chart"
 
-# Every id the report must carry (make_golden.py ITEMS order).
-EXPECTED_IDS = (["s28-onoda-t150", "dof-chart", "stroke-toon",
+# Every id the report must carry (make_golden.py ITEMS order;
+# s28-onoda-t150 retired 2026-11-15 — see CLEARING ACTIONS).
+EXPECTED_IDS = (["dof-chart", "stroke-toon",
                  "ab1-composer"] + FILM_IDS)
 
 NEW_SIGNAL_FOLLOWUP = {
