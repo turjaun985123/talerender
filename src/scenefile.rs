@@ -1303,7 +1303,7 @@ async fn run_direct(width: u32, height: u32, out: &str, scene: &Loaded, knobs: c
             module: &shader_colour,
             entry_point: Some("vs_main"),
             buffers: &[Some(wgpu::VertexBufferLayout {
-                array_stride: 36), Some(step_mode: wgpu::VertexStepMode::Vertex), Some(attributes: &COLOUR_ATTRS), Some(})],
+                array_stride: 36, step_mode: wgpu::VertexStepMode::Vertex, attributes: &COLOUR_ATTRS })],
             compilation_options: Default::default(),
         },
         fragment: Some(wgpu::FragmentState {
@@ -1347,7 +1347,7 @@ async fn run_direct(width: u32, height: u32, out: &str, scene: &Loaded, knobs: c
             module: &shader_tex,
             entry_point: Some("vs_main"),
             buffers: &[Some(wgpu::VertexBufferLayout {
-                array_stride: 20), Some(step_mode: wgpu::VertexStepMode::Vertex), Some(attributes: &TEX_ATTRS), Some(})],
+                array_stride: 20, step_mode: wgpu::VertexStepMode::Vertex, attributes: &TEX_ATTRS })],
             compilation_options: Default::default(),
         },
         fragment: Some(wgpu::FragmentState {
@@ -1668,7 +1668,7 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded, knobs:
             module: &shader_tex,
             entry_point: Some("vs_main"),
             buffers: &[Some(wgpu::VertexBufferLayout {
-                array_stride: 20), Some(step_mode: wgpu::VertexStepMode::Vertex), Some(attributes: &TEX_ATTRS), Some(})],
+                array_stride: 20, step_mode: wgpu::VertexStepMode::Vertex, attributes: &TEX_ATTRS })],
             compilation_options: Default::default(),
         },
         fragment: Some(wgpu::FragmentState {
@@ -1709,7 +1709,7 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded, knobs:
             module: &shader_colour,
             entry_point: Some("vs_main"),
             buffers: &[Some(wgpu::VertexBufferLayout {
-                array_stride: 36), Some(step_mode: wgpu::VertexStepMode::Vertex), Some(attributes: &COLOUR_ATTRS), Some(})],
+                array_stride: 36, step_mode: wgpu::VertexStepMode::Vertex, attributes: &COLOUR_ATTRS })],
             compilation_options: Default::default(),
         },
         fragment: Some(wgpu::FragmentState {
@@ -1751,8 +1751,8 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded, knobs:
             module: &shader_depth,
             entry_point: Some("vs_main"),
             buffers: &[Some(wgpu::VertexBufferLayout {
-                array_stride: 12), Some(step_mode: wgpu::VertexStepMode::Vertex), Some(attributes: &[wgpu::VertexAttribute {
-                    format: wgpu::VertexFormat::Float32x3), Some(offset: 0), Some(shader_location: 0), Some(})],
+                array_stride: 12, step_mode: wgpu::VertexStepMode::Vertex, attributes: &[wgpu::VertexAttribute {
+                    format: wgpu::VertexFormat::Float32x3), Some(offset: 0), Some(shader_location: 0 })],
             }],
             compilation_options: Default::default(),
         },

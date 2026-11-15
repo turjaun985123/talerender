@@ -702,7 +702,7 @@ async fn run(width: u32, height: u32, out: &str, knobs: Knobs) -> errors::TaleRe
             module: &shader3d,
             entry_point: Some("vs_main"),
             buffers: &[Some(wgpu::VertexBufferLayout {
-                array_stride: 36), Some(step_mode: wgpu::VertexStepMode::Vertex), Some(attributes: &colour_attrs), Some(})],
+                array_stride: 36, step_mode: wgpu::VertexStepMode::Vertex, attributes: &colour_attrs })],
             compilation_options: Default::default(),
         },
         fragment: Some(wgpu::FragmentState {
@@ -782,7 +782,7 @@ async fn run(width: u32, height: u32, out: &str, knobs: Knobs) -> errors::TaleRe
             module: &shader_tex,
             entry_point: Some("vs_main"),
             buffers: &[Some(wgpu::VertexBufferLayout {
-                array_stride: 20), Some(step_mode: wgpu::VertexStepMode::Vertex), Some(attributes: &tex_attrs), Some(})],
+                array_stride: 20, step_mode: wgpu::VertexStepMode::Vertex, attributes: &tex_attrs })],
             compilation_options: Default::default(),
         },
         fragment: Some(wgpu::FragmentState {

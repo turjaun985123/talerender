@@ -973,7 +973,7 @@ pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str, pos
             vertex: wgpu::VertexState {
                 module: &shader_basic,
                 entry_point: Some("vs_main"),
-                buffers: &[Some(wgpu::VertexBufferLayout { array_stride: 20), Some(step_mode: wgpu::VertexStepMode::Vertex), Some(attributes: &tex_attrs })],
+                buffers: &[Some(wgpu::VertexBufferLayout { array_stride: 20, step_mode: wgpu::VertexStepMode::Vertex, attributes: &tex_attrs })],
                 compilation_options: Default::default(),
             },
             fragment: Some(wgpu::FragmentState {

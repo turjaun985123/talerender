@@ -752,7 +752,14 @@ class RustFile:
             bm = re.search(r"bind_group_layouts:\s*&\s*\[([^\]]*)\]", block)
             if not bm:
                 continue
-            names = [x.strip().lstrip("&").strip()
+            # wgpu 30 wraps each layout in Some(..) — unwrap
+            # before resolving the variable name.
+            def _unwrap(x):
+                x = x.strip()
+                if x.startswith("Some(") and x.endswith(")"):
+                    x = x[5:-1].strip()
+                return x.lstrip("&").strip()
+            names = [_unwrap(x)
                      for x in bm.group(1).split(",") if x.strip()]
             var = self._assigned_var_before(m.start())
             self.layout_defs.append({
@@ -812,7 +819,7 @@ class RustFile:
             block_t = t[m.start():close + 1]
             owner = self.owner(m.start())
             entry_seq = []
-            for em in re.finditer(r"entry_point:\s*(?:\"(\w+)\"|(\w+))", block_t):
+            for em in re.finditer(r"entry_point:\s*(?:Some\(\s*)?(?:\"(\w+)\"|(\w+))", block_t):
                 if em.group(1) is not None:
                     entry_seq.append(("lit", em.group(1)))
                 else:
