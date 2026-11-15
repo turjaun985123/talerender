@@ -754,8 +754,9 @@ mod tests {
         };
         let cfg = resolve(&CliOverrides::default(), &env, None);
         assert_eq!(cfg, Config::default());
+        let asked_ref = asked.borrow();
         let names: Vec<&str> =
-            asked.borrow().iter().map(|s| s.as_str()).collect();
+            asked_ref.iter().map(|s| s.as_str()).collect();
         assert_eq!(
             names,
             vec![
