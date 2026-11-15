@@ -105,7 +105,7 @@ jobs:
         run: |
           # 1) Remove any real browser the hosted image ships.
           sudo apt-get remove -y google-chrome-stable google-chrome chromium chromium-browser 2>/dev/null || true
-          sudo rm -f /usr/bin/google-chrome /usr/bin/google-chrome-stable /usr/bin/chromium /usr/bin/chromium-browser /usr/bin/chrome || true
+          sudo rm -f /usr/bin/google-chrome /usr/bin/google-chrome-stable /usr/bin/chromium /usr/bin/chromium-browser /usr/bin/chrome /usr/bin/chromedriver || true
           # 2) No browser env may point anywhere.
           echo "CHROME=" >> "$GITHUB_ENV"
           echo "PUPPETEER_EXECUTABLE_PATH=" >> "$GITHUB_ENV"
@@ -118,7 +118,7 @@ jobs:
           echo "CHROME_EXEC_LOG=$LOG" >> "$GITHUB_ENV"
           SHIM="$RUNNER_TEMP/chrome-shim"
           mkdir -p "$SHIM"
-          for name in google-chrome google-chrome-stable chromium chromium-browser chrome headless_shell chrome-headless-shell; do
+          for name in google-chrome google-chrome-stable chromium chromium-browser chrome chromedriver headless_shell chrome-headless-shell; do
             cat > "$SHIM/$name" <<EOF
           #!/bin/sh
           echo "\$(date -u +%FT%TZ) INVOKED: $name \$*" >> "$LOG"
@@ -133,7 +133,7 @@ jobs:
       - name: Verify the scrub (shim shadows every browser name)
         run: |
           echo "PATH=$PATH"
-          for name in google-chrome chromium chromium-browser chrome; do
+          for name in google-chrome chromium chromium-browser chrome chromedriver; do
             resolved=$(command -v "$name" || true)
             echo "$name -> ${resolved:-NOT FOUND}"
             case "$resolved" in
