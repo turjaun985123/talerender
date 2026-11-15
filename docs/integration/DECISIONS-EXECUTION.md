@@ -210,3 +210,21 @@ proof MP4 was NOT attached (standing prohibition).
 - Local SwiftShader film renders segfaulted under CPU/memory
   contention with a concurrent telemetry run; byte-probe evidence
   was taken from CI renders instead (§3b method note).
+- Artifact storage quota: the three full-film A/B renders
+  (~12.6 GB of Actions artifacts) plus the wave's own render
+  artifacts exhausted the account's artifact storage quota late in
+  this execution. Consequence: two CI runs — the tag-triggered
+  re-run at the bump SHA (`43678712849`) and the record commit's
+  run (`43678764623`, incl. its re-run after cleanup) — conclude
+  FAILURE with the only failed step being "Upload frame artifact"
+  ("Artifact storage quota has been hit"); build, the 189 tests,
+  the smoke render and the binary artifact all pass in those runs.
+  This does not affect the release: every v1.0.1 gate was proven on
+  the earlier green runs at the bump SHA, and the release asset is
+  a release asset (not an Actions artifact), verified by fresh
+  download. The three big render artifacts were deleted from
+  GitHub after their contents were preserved locally (frames +
+  hashes in the evidence folder); per GitHub's message, usage is
+  recalculated every 6-12 hours, so the upload step may keep
+  failing on quota until the next recalculation even though the
+  substantive steps are green.
