@@ -30,11 +30,83 @@ Stage-1 slice) → item 4. WP3 (FFmpeg streaming), WP4's
 evaluator depth (§15 step 2), WP5–WP9 are **not** Stage 1 and
 are not touched.
 
-## §2 Phase B — the four implementation items, in landing order
+## §2 Phase B — the implementation items, in landing order
 
 Each item lands separately (commit + push + CI verdicts
 checked at its head). A red gate stops that item's chain;
 byte-probe failure on a zero-pixel item stops it outright.
+
+**Restructure (user directive 2026-11-15 12:15 +06,
+corrected 12:16):** "must use everything latest versions
+crate" — a dependency upgrade is inserted as **item 0**,
+landing before items 2–4 and alone. Item 1 had already
+landed (`f9429a8`) when the directive arrived; its probe
+evidence doubles as the baseline-equivalence proof the
+upgrade's pixel gate needs (see item 0).
+
+### Item 0 — Dependency upgrade: everything to latest
+
+Directive: all dependencies to their latest versions.
+Verified on crates.io at implementation time (2026-11-15):
+
+| Dependency | Current | Target (verified latest) |
+|---|---|---|
+| wgpu | 0.20 | **30.0.2** (published 2026-11-12; MSRV rust 1.87) |
+| pollster | 0.3 | **1.0.1** |
+| image | 0.25 | **0.25.10** (MSRV rust 1.88) |
+| Rust toolchain | `dtolnay/rust-toolchain@stable` in every workflow (no pin, no rust-toolchain file) | unchanged — floating latest stable IS the policy; the upgrade build's rustc version is recorded from its CI log |
+
+Transitives resolve fresh (the repo carries no Cargo.lock,
+by standing policy), so the whole tree lands at latest
+compatible under the new direct specs.
+
+**Lands alone.** The upgrade's commit range contains only
+the version specs and the API-migration fallout the new
+versions force (call-shape renames, descriptor fields,
+poll/copy type renames). No feature work, no behaviour
+changes smuggled in; item 1's code is touched only where
+the wgpu 30 API compels it.
+
+**Pixel-neutrality gate (hard).** Byte probes over the
+standard ranges + film telemetry CHECK OK + local golden
+verify, against the pre-upgrade render — the local baseline
+of §3 (src-identical to `d101770`; item 1's probe run at
+`f9429a8` establishes that the current head renders
+byte-identically to it before the upgrade starts). wgpu
+upgrades can shift output subtly (naga translation, output
+stage). **If ANY frame byte differs, the upgrade chain
+stops**: the diff is quantified (frame count, PSNR, the
+pipeline stage responsible) and reported as a user
+decision. No waving through, no re-pinning over it.
+
+**If latest cannot pass:** if wgpu 30 cannot build or pass
+the CI lavapipe leg for a genuine upstream reason, the
+blocker is documented with evidence and the newest version
+that DOES pass is landed, with the gap reported — never a
+silent stay on 0.20.
+
+**Design impact on items 1–4.** (1) VRAM ledger: its
+`tex_bytes` prices formats via
+`TextureFormat::block_copy_size` — survival/shape in wgpu
+30 is confirmed at the upgrade build; if the API moved,
+the migration adapts that one call (forced fallout). The
+formula's semantics (byte sizes per format) do not change.
+(2) Paint-cache LRU: no wgpu surface — unaffected. (3)
+Adapter reporting + device loss: now targets the **wgpu
+30** APIs (AdapterInfo shape, the lost-device surface) —
+the 0.20-era survey in the original item-3 text is moot.
+(4) Benchmark automation: unchanged in design; its first
+record will be a post-upgrade record.
+
+**Edition 2024: DEFERRED, deliberately.** The directive
+targets crate versions. An edition migration is orthogonal,
+tree-wide churn (reserved keywords, lifetime-capture
+rules) that would confound this item's pixel-neutrality
+isolation — a differing frame byte could no longer be
+attributed to the dependency change alone. The toolchain
+supports edition 2024 (stable ≥ 1.85), so this is a
+sequencing choice, not a blocker: edition 2024 gets its
+own gated change after item 0 lands.
 
 ### Item 1 — VRAM telemetry (per `VRAM-IMPL-W84.md`)
 
@@ -86,7 +158,8 @@ painter's output is sacred.
   software note printed **only when the adapter's device
   type is actually Cpu** — CI lavapipe output stays
   byte-identical to today; RADV output becomes truthful.
-- Device loss: survey the wgpu 0.20 surface as built by CI.
+- Device loss: survey the wgpu **30** surface as built by
+  CI (item 0 moved the target; the 0.20-era survey is moot).
   If a lost-device callback exists, wire detection to a
   clean, diagnosed failure (named exit + message identifying
   the loss) at every render entry point. True
