@@ -221,6 +221,37 @@ pub(crate) fn walk_phase(dist: f64, stride: f64) -> f64 {
 pub(crate) fn walk_bob(phase: f64, amp: f64) -> f64 {
     amp * (1.0 - phase.sin().abs())
 }
+// walk_phase / walk_bob are superseded at the film walk sites by
+// the locomotion adoption (gait_eval below); retained as the
+// phase-law reference the locomotion module's tests cite
+// (phase_law_matches_film_walk_phase) — the same retention
+// pattern as the blink transcription below.
+
+/// Locomotion adoption (LOCOMOTION-AB-W57 §5 step 2 / §6,
+/// LOCOMOTION-W24 §4; user ruling 2026-11-15, DECISIONS-W94
+/// decision 3). Evaluate the gait module for one walk site:
+/// phase stays distance-driven (phase_for_distance — film's own
+/// law; painter_phase shifts the origin to the painter's passing
+/// pose), and bob is the module's support-drop waveform on EVERY
+/// gait-staged frame (D1 full replacement — static frames
+/// re-level constantly, per the census). Returns (painter phase,
+/// bob, full gait state). The caller writes g.arm_l / g.arm_r
+/// only for census-free arms and only while its driver is
+/// strictly inside its window (D3: swing on advancing frames
+/// only); s11 writes no arms at all (D4).
+pub(crate) fn gait_eval(step_length: f64, bob_amp: f64,
+                        arm_base: ((f64, f64), (f64, f64)),
+                        dist: f64)
+    -> (f32, f32, crate::locomotion::GaitState) {
+    let mut p = crate::locomotion::GaitParams::walk(1.0);
+    p.step_length = step_length;
+    p.bob_amp = bob_amp;
+    p.arm_base = arm_base;
+    let g = crate::locomotion::eval(
+        &p, crate::locomotion::phase_for_distance(&p, dist));
+    (crate::locomotion::painter_phase(&p, g.phase as f64) as f32,
+     g.bob, g)
+}
 // Superseded by crate::charanim::blink_amount (W58 adoption);
 // retained for one release cycle as the motion.ts
 // blinkDirector reference transcription the perf tools cite.
@@ -1472,9 +1503,16 @@ fn s02(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
     // the final 3% the legs stand (k > 0.97) while the group
     // still slides 0.204 m with planted feet. Staged truth (D6).
     let travelled = k * 6.8;
-    let ph = walk_phase(travelled, 0.62);
-    let bob = walk_bob(ph, 5.0);
+    let (ph, bob, g_onoda) = gait_eval(0.62, 5.0,
+        ((10.0, 6.0), (16.0, -6.0)), travelled);
+    let (_, _, g_comp) = gait_eval(0.62, 5.0,
+        ((8.0, 6.0), (8.0, 6.0)), travelled);
     let legs = if k > 0.97 { Legs::Stand } else { Legs::Walk };
+    // D3: swing only on ADVANCING frames (driver strictly inside
+    // its window and legs walking — census frames 184-353; the
+    // k > 0.97 slide tail and the endpoint statics keep staged
+    // arms).
+    let advancing = k > 0.0 && k < 1.0 && legs == Legs::Walk;
     // MO.crane: pos/look lerped on k, shot with the frame directly.
     f.eye = mix3([2.0, 3.1, 2.4], [0.9, 1.85, 0.6], k);
     f.target = mix3([-0.1, 1.25, -5.2], [0.0, 1.15, -4.2], k);
@@ -1485,21 +1523,33 @@ fn s02(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
     so.mood = Mood::Determined;
     so.arm_r = (16.0, -6.0);
     so.arm_l = (10.0, 6.0);
+    if advancing {
+        so.arm_l = g_onoda.arm_l;
+        so.arm_r = g_onoda.arm_r;
+    }
     so.legs = legs;
-    so.phase = ph as f32;
-    so.bob = bob as f32;
+    so.phase = ph;
+    so.bob = bob;
     so.blink = crate::charanim::blink_amount(3, t);
     char(&mut f, SH_ONODA, [0.0, 0.0, z as f32], so, TINT_NOON, true);
     let mut sa = fs();
     sa.legs = legs;
-    sa.phase = ph as f32;
-    sa.bob = bob as f32;
+    sa.phase = ph;
+    sa.bob = bob;
+    if advancing {
+        sa.arm_l = g_comp.arm_l;
+        sa.arm_r = g_comp.arm_r;
+    }
     sa.blink = crate::charanim::blink_amount(7, t);
     char(&mut f, SH_COMPA, [-1.4, 0.0, (z - 0.9) as f32], sa, TINT_NOON, false);
     let mut sb = fs();
     sb.legs = legs;
-    sb.phase = ph as f32;
-    sb.bob = bob as f32;
+    sb.phase = ph;
+    sb.bob = bob;
+    if advancing {
+        sb.arm_l = g_comp.arm_l;
+        sb.arm_r = g_comp.arm_r;
+    }
     sb.blink = crate::charanim::blink_amount(11, t);
     char(&mut f, SH_COMPB, [1.4, 0.0, (z - 1.5) as f32], sb, TINT_NOON, false);
     { let (e, tg) = (f.eye, f.target); add_clouds(&mut f, &[([-24.0, 22.0, -85.0], 12.0), ([30.0, 27.0, -90.0], 15.0)], e, tg); }
@@ -1674,10 +1724,17 @@ fn s06(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
     let wk = seg(lt, 0.1, sit_at);
     let mk_walk = |dist: f64, mood: Mood| -> FullState {
         let mut st = fs();
-        let ph = walk_phase(dist, 0.62);
-        st.phase = ph as f32;
-        st.bob = walk_bob(ph, 5.0) as f32;
+        // D2: companions keep their (8,6)/(8,6) resting pose as
+        // the swing base — NOT the module default.
+        let (ph, bob, g) = gait_eval(0.62, 5.0,
+            ((8.0, 6.0), (8.0, 6.0)), dist);
+        st.phase = ph;
+        st.bob = bob;
         st.legs = if wk >= 1.0 { Legs::Stand } else { Legs::Walk };
+        if wk > 0.0 && wk < 1.0 {
+            st.arm_l = g.arm_l;
+            st.arm_r = g.arm_r;
+        }
         st.mood = mood;
         st.head_tilt = -4.0;
         st
@@ -1756,9 +1813,10 @@ fn s07(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
     let ox = lerp(-0.5, 2.2, wk);
     let oz = lerp(-1.76, -2.3, wk);
     let mut onoda = fs();
-    let ph = walk_phase(wk * 2.0, 0.6);
-    onoda.phase = ph as f32;
-    onoda.bob = walk_bob(ph, 4.0) as f32;
+    let (ph, bob, g) = gait_eval(0.6, 4.0,
+        ((12.0, 6.0), (16.0, -6.0)), wk * 2.0);
+    onoda.phase = ph;
+    onoda.bob = bob;
     onoda.legs = if wk >= 1.0 { Legs::Stand } else { Legs::Walk };
     onoda.mood = if lt < 1.2 { Mood::Tired } else { Mood::Neutral };
     if lt < 1.2 {
@@ -1766,6 +1824,9 @@ fn s07(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
     }
     onoda.arm_r = (pose_track(&[key(0.0, 12.0), keym(w_coco - st0 - 0.1, 136.0, 0.3), keym(w_coco - st0 + 0.85, 34.0, 0.5)], lt) as f32, -10.0);
     onoda.arm_l = (12.0, 6.0);
+    if wk > 0.0 && wk < 1.0 {
+        onoda.arm_l = g.arm_l; // L only — arm_r is the coconut beat
+    }
     onoda.look = [0.2, -0.1];
     onoda.cam_pitch = cam_pitch_of([ox as f32, 0.0, oz as f32], f.eye);
     onoda.blink = crate::charanim::blink_amount(3, t);
@@ -1791,12 +1852,16 @@ fn s08(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
     shoot(&mut f, [1.0, 2.0, 6.2], [0.8, 1.8, 5.0], [0.35, 1.1, -1.2], None, k, 62.0);
     let wk_s = seg(lt, 0.1, 3.3);
     let mut suz = fs();
-    let ph = walk_phase(wk_s * 3.28, 0.6);
-    suz.phase = ph as f32;
-    suz.bob = walk_bob(ph, 5.0) as f32;
+    let (ph, bob, g_suz) = gait_eval(0.6, 5.0,
+        ((10.0, 6.0), (12.0, 8.0)), wk_s * 3.28);
+    suz.phase = ph;
+    suz.bob = bob;
     suz.legs = if wk_s >= 1.0 { Legs::Stand } else { Legs::Walk };
     suz.arm_l = (38.0, -52.0);
     suz.arm_r = (12.0, 8.0);
+    if wk_s > 0.0 && wk_s < 1.0 {
+        suz.arm_r = g_suz.arm_r; // R only — arm_l holds the paper-map
+    }
     if t >= w_found {
         suz.mood = Mood::Shock;
     }
@@ -1808,13 +1873,18 @@ fn s08(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
     f.chars[sidx].hold_l = Some("paper-map");
     let wk_o = seg(lt, 0.35, 1.95);
     let mut onoda = fs();
-    let ph2 = walk_phase(wk_o * 2.25, 0.6);
-    onoda.phase = ph2 as f32;
-    onoda.bob = walk_bob(ph2, 4.0) as f32;
+    let (ph2, bob2, g_ono) = gait_eval(0.6, 4.0,
+        ((10.0, 6.0), (16.0, -6.0)), wk_o * 2.25);
+    onoda.phase = ph2;
+    onoda.bob = bob2;
     onoda.legs = if wk_o >= 1.0 { Legs::Stand } else { Legs::Walk };
     onoda.mood = Mood::Determined;
     onoda.arm_r = (16.0, -6.0);
     onoda.arm_l = (10.0, 6.0);
+    if wk_o > 0.0 && wk_o < 1.0 {
+        onoda.arm_l = g_ono.arm_l;
+        onoda.arm_r = g_ono.arm_r;
+    }
     onoda.blink = crate::charanim::blink_amount(3, t);
     char(&mut f, ONODA, [lerp(-2.9, -1.1, wk_o) as f32, 0.0, lerp(-3.1, -1.5, wk_o) as f32], onoda, TINT_NOON, true);
     { let (e, tg) = (f.eye, f.target); add_clouds(&mut f, &[([-28.0, 23.0, -85.0], 13.0), ([26.0, 29.0, -95.0], 16.0), ([58.0, 19.0, -75.0], 10.0)], e, tg); }
@@ -1896,12 +1966,16 @@ fn s10(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
     shoot(&mut f, [0.7, 1.95, 1.6], [0.35, 1.85, 0.4], [-1.5, 1.45, -5.3], None, k, 46.0);
     let wk = seg(t, w_flew + 0.5, w_flew + 1.7);
     let mut tani = fs();
-    let ph = walk_phase(wk * 0.55, 0.58);
-    tani.phase = ph as f32;
-    tani.bob = walk_bob(ph, 3.0) as f32;
+    let (ph, bob, g) = gait_eval(0.58, 3.0,
+        ((14.0, 8.0), (16.0, -6.0)), wk * 0.55);
+    tani.phase = ph;
+    tani.bob = bob;
     tani.legs = if wk > 0.0 && wk < 1.0 { Legs::Walk } else { Legs::Stand }; // D12: source stands until wk > 0 (shots.ts S10)
     tani.arm_r = (pose_track(&[key(0.0, 42.0), keym(w_flew - st0, 17.0, 0.5)], lt) as f32, -28.0);
     tani.arm_l = (14.0, 8.0);
+    if wk > 0.0 && wk < 1.0 {
+        tani.arm_l = g.arm_l; // L only — arm_r is the book beat/hold
+    }
     if t >= w_flew {
         tani.mood = Mood::Determined;
     } else if t >= w_books {
@@ -1962,9 +2036,12 @@ fn s11(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
     if t < drop_t {
         let wk = seg(lt, 0.1, (w_order - st0 - 0.25).max(0.4));
         let mut onoda = fs();
-        let ph = walk_phase(wk * 2.5, 0.6);
-        onoda.phase = ph as f32;
-        onoda.bob = walk_bob(ph, 4.0) as f32;
+        // D4: phase/bob only — the D15 walk-in arms below stay
+        // authored; gait swing is NOT written at this site.
+        let (ph, bob, _) = gait_eval(0.6, 4.0,
+            ((10.0, 6.0), (16.0, -6.0)), wk * 2.5);
+        onoda.phase = ph;
+        onoda.bob = bob;
         onoda.legs = if wk >= 1.0 { Legs::Stand } else { Legs::Walk };
         onoda.mood = if t >= w_order { Mood::Awe } else { Mood::Determined };
         onoda.arm_r = (16.0, -6.0); // D15: source S11 walk-in arms
