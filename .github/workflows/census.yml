@@ -1,0 +1,74 @@
+name: Census (dispatch)
+
+# Full-film frame-hash census on the CI lavapipe (ubuntu-22.04,
+# Mesa 23.2 — the same environment as probe.yml / render.yml).
+#
+# Purpose: enumerate EXACTLY which frames of the Onoda film
+# (1,811 frames) change across a renderer landing — the
+# byte-probe protocol at whole-film scale. Used for the
+# state_key sweat/tears fix (2026-11-15), whose proof requires
+# a pre/post full-film hash census, not just the 40 standing
+# probe frames.
+#
+# ⚠ NO ARTIFACTS, BY DESIGN (same law as probe.yml, from the
+# 2026-11-15 artifact-storage quota incident): evidence is
+# TEXT IN THE JOB LOG — sha256 of every frame, the telemetry
+# verdict line, and the renderer/gpu-mem/completion lines.
+# Frames are rendered in chunks and deleted after hashing, so
+# disk use stays at one chunk (~250 frames).
+
+on:
+  workflow_dispatch:
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+  RUSTFLAGS: "-C link-arg=-fuse-ld=mold"
+
+jobs:
+  census:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+      - name: Install mold + lavapipe
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mold mesa-vulkan-drivers vulkan-tools
+          ICD=$(ls /usr/share/vulkan/icd.d/lvp_icd*.json | head -n 1)
+          echo "VK_ICD_FILENAMES=$ICD" >> "$GITHUB_ENV"
+          echo "lavapipe ICD: $ICD"
+      - name: Build
+        run: |
+          cargo build --release
+          sha256sum ./target/release/talerender
+          ./target/release/talerender --version
+      - name: Film telemetry (verdict line is the contract)
+        run: |
+          set +e
+          TALERENDER_PAINT_CACHE=24 ./target/release/talerender --film-telemetry film > telemetry.log 2>&1
+          rc=$?
+          set -e
+          grep -E "^(FILM TELEMETRY|paint-cache)" telemetry.log || true
+          echo "telemetry exit: $rc (0 = CHECK OK, 1 = CHECK FAILED, 3 = could not run)"
+          exit $rc
+      - name: Full-film census (chunked renders, hashes to log, frames deleted)
+        run: |
+          total=0
+          for range in "0 250" "250 500" "500 750" "750 1000" "1000 1250" "1250 1500" "1500 1750" "1750 1811"; do
+            set -- $range
+            out="census-$1-$2"
+            ./target/release/talerender --film film --out "$out" --from "$1" --to "$2" > "$out.log" 2>&1
+            grep -E "^(renderer:|gpu-mem:|film render complete)" "$out.log" || true
+            echo "== sha256 $out =="
+            sha256sum "$out"/frame_*.png
+            n=$(ls "$out"/frame_*.png | wc -l)
+            total=$((total + n))
+            rm -rf "$out" "$out.log"
+          done
+          echo "CENSUS TOTAL FRAMES: $total (expected 1811)"
+          test "$total" -eq 1811
