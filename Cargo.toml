@@ -6,9 +6,9 @@ description = "TaleRender — native Rust + wgpu renderer for Tall Tale Shorts (
 license = "MIT"
 
 [dependencies]
-wgpu = "0.20"
-pollster = "0.3"
-image = "0.25"
+wgpu = "30.0.2"
+pollster = "1.0.1"
+image = "0.25.10"
 
 [profile.release]
 debug = false
