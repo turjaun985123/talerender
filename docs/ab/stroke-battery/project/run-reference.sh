@@ -1,3 +1,4 @@
+# RETIRED (Chrome-replacement wave, 2026-11-15): Chrome-era A/B evidence harness. Do not run — the native pipeline has no browser path. Kept with the docs/ab evidence it produced.
 #!/usr/bin/env bash
 # Reproduce the Chrome/Skia reference cards for the M4 stroke battery.
 # Copies the shipped skill template to a scratch dir, drops in

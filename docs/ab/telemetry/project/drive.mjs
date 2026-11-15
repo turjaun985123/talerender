@@ -1,3 +1,4 @@
+// RETIRED (Chrome-replacement wave, 2026-11-15): Chrome-era A/B evidence harness. Do not run — the native pipeline has no browser path. Kept with the docs/ab evidence it produced.
 // CDP driver for the REAL Onoda project page (M6 agreement proof).
 // Serves a project root, boots headless Chrome (SwiftShader — the
 // renderer is labelled in the output), and evaluates the page's own
