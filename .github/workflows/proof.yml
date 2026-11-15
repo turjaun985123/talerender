@@ -1,0 +1,262 @@
+name: Proof (Chrome-free native render)
+
+# CR-B3-02 — CI render-proof harness (Chrome-replacement wave, Batch 3).
+#
+# Proves, on a clean GitHub-hosted runner, that a bridged Tall Tale
+# project renders END-TO-END through the SHIPPED SKILL's native adapter
+# (proof/adapter/, copied byte-identical from the skill tree — see
+# proof/adapter/PROVENANCE.md) with Chrome made UNREACHABLE:
+#
+#   * any google-chrome / chromium packages are removed from the runner,
+#   * CHROME is unset,
+#   * a PATH-first shim directory shadows every chrome*/chromium* name
+#     and logs any invocation to $CHROME_EXEC_LOG — the job prints
+#     "CHROME-EXEC-LOG: EMPTY" only if nothing ever called one.
+#
+# The adapter then runs, in pipeline order:
+#   check -> frames (manifest-derived times) -> sheet (adapter defaults)
+#   -> castsheet (kind=look, the 5-item catalog kind with no held-plate
+#   dependency) -> video (FULL range, --draft profile).
+#
+# Everything is printed to the job log — adapter exit codes, CHECK OK,
+# produced-file sizes + sha256 (hashes only; rendered frames are NEVER
+# uploaded or committed), an ffprobe summary of the video, and the
+# chrome-exec verdict. There are deliberately NO upload-artifact steps:
+# artifact storage is quota-blocked on this repo, and rendered frames
+# do not belong in artifacts or git anyway.
+#
+# Renderer note: the runner's Vulkan is Mesa lavapipe (software).
+# Lavapipe proves CORRECTNESS only — no speed claim is made or implied.
+# The dev VM has no Vulkan ICD at all, which is why this proof rides CI.
+#
+# Fixture: proof/fixture/project (see proof/README.md for provenance
+# and for how to swap in the Batch-3 B3-01 proof project when it lands:
+# replace that directory's contents, keep proof/adapter/ as-is — every
+# fixture-specific value below is derived from the fixture's own
+# native/film.json at run time).
+
+on:
+  workflow_dispatch:
+    inputs:
+      fixture:
+        description: "Fixture project dir (repo-relative)"
+        type: string
+        default: "proof/fixture/project"
+
+# A re-dispatch supersedes a stale proof run on the same ref.
+concurrency:
+  group: proof-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  # Same build fingerprint discipline as ci.yml: incremental off, mold
+  # via RUSTFLAGS so build and cache share one fingerprint.
+  CARGO_INCREMENTAL: 0
+  RUSTFLAGS: "-C link-arg=-fuse-ld=mold"
+
+jobs:
+  proof:
+    # Pinned to 22.04 like every workflow in this repo (glibc 2.35), so
+    # the binary built here is the same era as the shipped artifacts.
+    runs-on: ubuntu-22.04
+    # Full-film draft on lavapipe is ~1811 frames of software rendering
+    # plus four telemetry passes; 240 min is headroom, not an estimate.
+    timeout-minutes: 240
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+          key: ubuntu2204
+
+      - name: Node 22 (adapter runtime — Node builtins only, no npm install)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install mold + software Vulkan (lavapipe) + ffmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mold mesa-vulkan-drivers vulkan-tools ffmpeg
+          # The lavapipe ICD filename varies by distro version; resolve
+          # it instead of hardcoding (same trap as ci.yml).
+          ICD=$(ls /usr/share/vulkan/icd.d/lvp_icd*.json | head -n 1)
+          echo "VK_ICD_FILENAMES=$ICD" >> "$GITHUB_ENV"
+          echo "lavapipe ICD: $ICD"
+          vulkaninfo --summary || true
+          ffmpeg -version | head -n 1
+          node --version
+          python3 --version
+
+      - name: Build talerender (the binary under proof is built from THIS checkout)
+        run: |
+          cargo build --release
+          ls -la target/release/talerender
+          echo "TALERENDER_BIN=$GITHUB_WORKSPACE/target/release/talerender" >> "$GITHUB_ENV"
+
+      - name: Scrub Chrome + install exec-logging shim
+        run: |
+          # 1) Remove any real browser the hosted image ships.
+          sudo apt-get remove -y google-chrome-stable google-chrome chromium chromium-browser 2>/dev/null || true
+          sudo rm -f /usr/bin/google-chrome /usr/bin/google-chrome-stable /usr/bin/chromium /usr/bin/chromium-browser /usr/bin/chrome || true
+          # 2) No browser env may point anywhere.
+          echo "CHROME=" >> "$GITHUB_ENV"
+          echo "PUPPETEER_EXECUTABLE_PATH=" >> "$GITHUB_ENV"
+          # 3) Exec-logging shim: PATH-first wrappers for every
+          #    chrome*/chromium* name. Any invocation appends a line to
+          #    the log and exits 127 — so a hidden browser dependency
+          #    both FAILS LOUDLY and leaves evidence.
+          LOG="$RUNNER_TEMP/chrome-exec.log"
+          : > "$LOG"
+          echo "CHROME_EXEC_LOG=$LOG" >> "$GITHUB_ENV"
+          SHIM="$RUNNER_TEMP/chrome-shim"
+          mkdir -p "$SHIM"
+          for name in google-chrome google-chrome-stable chromium chromium-browser chrome headless_shell chrome-headless-shell; do
+            cat > "$SHIM/$name" <<EOF
+          #!/bin/sh
+          echo "\$(date -u +%FT%TZ) INVOKED: $name \$*" >> "$LOG"
+          exit 127
+          EOF
+            chmod +x "$SHIM/$name"
+          done
+          echo "$SHIM" >> "$GITHUB_PATH"
+          echo "shim dir: $SHIM"
+          ls -la "$SHIM"
+
+      - name: Verify the scrub (shim shadows every browser name)
+        run: |
+          echo "PATH=$PATH"
+          for name in google-chrome chromium chromium-browser chrome; do
+            resolved=$(command -v "$name" || true)
+            echo "$name -> ${resolved:-NOT FOUND}"
+            case "$resolved" in
+              "$RUNNER_TEMP/chrome-shim/"*) echo "  OK: resolves to the logging shim" ;;
+              "") echo "  OK: not present at all" ;;
+              *) echo "  FAIL: a real browser binary is still reachable at $resolved"; exit 1 ;;
+            esac
+          done
+          if ls /usr/bin 2>/dev/null | grep -i -E 'chrom|chrome'; then
+            echo "FAIL: chrome-named binaries remain in /usr/bin"
+            exit 1
+          fi
+          echo "scrub verified: no real chrome/chromium reachable; CHROME='${CHROME:-<unset>}'"
+
+      - name: Assemble proof project (fixture + shipped-skill adapter bundle)
+        run: |
+          PROJ="$RUNNER_TEMP/proof-project"
+          mkdir -p "$PROJ"
+          cp -r "${{ inputs.fixture }}/." "$PROJ/"
+          mkdir -p "$PROJ/tools"
+          cp -r proof/adapter/tools/. "$PROJ/tools/"
+          echo "PROOF_PROJECT=$PROJ" >> "$GITHUB_ENV"
+          # The fixture stores the audio master losslessly as FLAC
+          # (12 MB WAV -> 2.1 MB FLAC) to keep git lean; restore the
+          # exact WAV the adapter expects and prove PCM identity
+          # against the hash recorded beside it at staging time.
+          ffmpeg -v error -y -i "$PROJ/data/mix.flac" "$PROJ/data/mix.wav"
+          EXPECTED=$(tr -d ' \n' < "$PROJ/data/mix.pcm-md5")
+          ACTUAL=$(ffmpeg -v error -i "$PROJ/data/mix.wav" -map 0:a -f hash -hash md5 - | sed 's/^MD5=//')
+          echo "mix.wav PCM md5 — expected: $EXPECTED"
+          echo "mix.wav PCM md5 — actual:   $ACTUAL"
+          if [ "$EXPECTED" != "$ACTUAL" ]; then
+            echo "FAIL: restored mix.wav PCM differs from the staged master"
+            exit 1
+          fi
+          echo "mix.wav restored losslessly (PCM md5 match)"
+          echo "--- proof project tree ---"
+          find "$PROJ" -type f | sort | sed "s|$PROJ/||"
+          du -sh "$PROJ"
+          node --check "$PROJ/tools/capture_native.mjs" && echo "adapter syntax: node --check OK"
+
+      - name: "Adapter: check (film telemetry QA gate)"
+        run: |
+          set +e
+          cd "$PROOF_PROJECT"
+          RENDERER=native node tools/capture_native.mjs check 2>&1 | tee "$RUNNER_TEMP/check.log"
+          code=${PIPESTATUS[0]}
+          echo "ADAPTER check exit: $code"
+          if grep -q "^CHECK OK" "$RUNNER_TEMP/check.log"; then
+            echo "CHECK OK: present in adapter output"
+          else
+            echo "CHECK OK: MISSING from adapter output"
+            exit 1
+          fi
+          exit $code
+
+      - name: "Adapter: frames (manifest-derived times)"
+        run: |
+          set +e
+          cd "$PROOF_PROJECT"
+          # Times at 5/35/65/95% of THIS fixture's duration, read from
+          # its own manifest — the harness carries no fixture-specific
+          # constants, so swapping the fixture needs no workflow edit.
+          TIMES=$(python3 -c "import json; d=json.load(open('native/film.json'))['durationS']; print(','.join(f'{d*f:.2f}' for f in (0.05, 0.35, 0.65, 0.95)))")
+          echo "frames times (s): $TIMES"
+          RENDERER=native node tools/capture_native.mjs frames review/frames "$TIMES" 2>&1 | tee "$RUNNER_TEMP/frames.log"
+          code=${PIPESTATUS[0]}
+          echo "ADAPTER frames exit: $code"
+          ls -la review/frames
+          # Hashes + sizes only — the frames themselves never leave the runner.
+          sha256sum review/frames/*.png
+          exit $code
+
+      - name: "Adapter: sheet (adapter defaults: step 0.5, cols 9)"
+        run: |
+          set +e
+          cd "$PROOF_PROJECT"
+          RENDERER=native node tools/capture_native.mjs sheet review/all.jpg 2>&1 | tee "$RUNNER_TEMP/sheet.log"
+          code=${PIPESTATUS[0]}
+          echo "ADAPTER sheet exit: $code"
+          ls -la review/all.jpg
+          sha256sum review/all.jpg
+          exit $code
+
+      - name: "Adapter: castsheet (kind=look)"
+        run: |
+          set +e
+          cd "$PROOF_PROJECT"
+          RENDERER=native node tools/capture_native.mjs castsheet review/cast look 2>&1 | tee "$RUNNER_TEMP/castsheet.log"
+          code=${PIPESTATUS[0]}
+          echo "ADAPTER castsheet exit: $code"
+          ls -la review/cast
+          ls -la review/cast/*.jpg
+          sha256sum review/cast/castsheet.jpg
+          exit $code
+
+      - name: "Adapter: video (full range, --draft profile)"
+        run: |
+          set +e
+          cd "$PROOF_PROJECT"
+          RENDERER=native node tools/capture_native.mjs video renders/proof-draft.mp4 --draft 2>&1 | tee "$RUNNER_TEMP/video.log"
+          code=${PIPESTATUS[0]}
+          echo "ADAPTER video exit: $code"
+          if [ $code -ne 0 ]; then exit $code; fi
+          ls -la renders/proof-draft.mp4
+          sha256sum renders/proof-draft.mp4
+          echo "--- render provenance sidecar ---"
+          cat renders/proof-draft.mp4.render.json
+          echo "--- ffprobe summary ---"
+          ffprobe -v error \
+            -show_entries stream=codec_type,codec_name,width,height \
+            -show_entries format=duration,size \
+            -of default=noprint_wrappers=1 \
+            renders/proof-draft.mp4
+
+      - name: "Verdict: chrome exec log must be EMPTY"
+        if: always()
+        run: |
+          echo "=== PROOF SUMMARY ==="
+          echo "renderer: lavapipe (software Vulkan) — correctness only, no speed claim"
+          if [ -s "$CHROME_EXEC_LOG" ]; then
+            echo "CHROME-EXEC-LOG: NON-EMPTY — a chrome/chromium name was invoked:"
+            cat "$CHROME_EXEC_LOG"
+            exit 1
+          fi
+          echo "CHROME-EXEC-LOG: EMPTY"

@@ -1,0 +1,6 @@
+# CR-B3-02: the fixture PNGs under proof/fixture/ are FUNCTIONAL film-data
+# inputs (caption strips, plates, calendar/sign plates) — the binary reads
+# them at render time. Re-include them against the repo-root *.png rule.
+# Rendered outputs are never written under proof/ (the workflow renders
+# into RUNNER_TEMP), so this cannot re-admit rendered evidence.
+!**/*.png

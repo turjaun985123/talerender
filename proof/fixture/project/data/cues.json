@@ -1,0 +1,54 @@
+{
+ "duration": 60.357,
+ "cues": [
+  {
+   "t": 0.5,
+   "type": "chirp",
+   "gain": 0.2,
+   "dur": 1.6
+  },
+  {
+   "t": 21.884,
+   "type": "whoosh",
+   "gain": 0.5,
+   "dur": 1.6
+  },
+  {
+   "t": 31.17,
+   "type": "tock",
+   "gain": 0.32
+  },
+  {
+   "t": 32.21,
+   "type": "tock",
+   "gain": 0.32
+  },
+  {
+   "t": 33.25,
+   "type": "tock",
+   "gain": 0.32
+  },
+  {
+   "t": 49.64,
+   "type": "plop",
+   "gain": 0.3
+  },
+  {
+   "t": 51.43,
+   "type": "inhale",
+   "gain": 0.28,
+   "dur": 0.7
+  },
+  {
+   "t": 53.84,
+   "type": "thud",
+   "gain": 0.5
+  },
+  {
+   "t": 55.92,
+   "type": "chirp",
+   "gain": 0.16,
+   "dur": 1.8
+  }
+ ]
+}

@@ -1,0 +1,7699 @@
+{
+ "format": "talerender-scene",
+ "version": 2,
+ "name": "S03 - shore, noon: Taniguchi explains (Onoda line 2, film 13.061-15.950 s)",
+ "time": 2.0,
+ "shot": {
+  "id": "S03",
+  "at": 13.061,
+  "end": 15.95,
+  "duration": 2.889,
+  "line": 2,
+  "atmosphere": "noon",
+  "grade": "shore",
+  "cameraTrack": {
+   "kind": "camK",
+   "hold": 0.1
+  },
+  "cues": [],
+  "events": []
+ },
+ "duration": 2.889,
+ "atmosphere": "noon",
+ "camera": {
+  "eye": [
+   0.2,
+   2.0,
+   8.4
+  ],
+  "target": [
+   0.0,
+   1.22,
+   0.6
+  ],
+  "fovY": 54,
+  "keys": [
+   {
+    "t": 0.0,
+    "eye": [
+     0.2,
+     2.0,
+     8.4
+    ],
+    "target": [
+     0.0,
+     1.22,
+     0.6
+    ],
+    "fovY": 54.0
+   },
+   {
+    "t": 0.2888999879360199,
+    "eye": [
+     0.2,
+     2.0,
+     8.4
+    ],
+    "target": [
+     0.0,
+     1.22,
+     0.6
+    ],
+    "fovY": 54.0
+   },
+   {
+    "t": 2.600100040435791,
+    "eye": [
+     0.05,
+     1.85,
+     7.2
+    ],
+    "target": [
+     0.0,
+     1.22,
+     0.6
+    ],
+    "fovY": 54.0
+   },
+   {
+    "t": 2.8889999389648438,
+    "eye": [
+     0.05,
+     1.85,
+     7.2
+    ],
+    "target": [
+     0.0,
+     1.22,
+     0.6
+    ],
+    "fovY": 54.0
+   }
+  ]
+ },
+ "clear": "#E4EEDC",
+ "lights": {
+  "key": {
+   "color": "#FFF0D6",
+   "intensity": 2.6,
+   "position": [
+    -8.0,
+    11.0,
+    7.0
+   ],
+   "target": [
+    0.0,
+    0.0,
+    -4.0
+   ],
+   "shadow": true,
+   "shadowBox": 17.0,
+   "far": 80.0,
+   "bias": -0.0006,
+   "normalBias": 0.02
+  },
+  "rim": {
+   "color": "#FFFFFF",
+   "intensity": 0.4,
+   "position": [
+    -3.0,
+    3.0,
+    -3.0
+   ]
+  },
+  "hemisphere": {
+   "sky": "#CFE6FF",
+   "ground": "#C48A5A",
+   "intensity": 1.25
+  },
+  "points": [],
+  "envIntensity": 0.25
+ },
+ "captionsNote": "chunk 18 ('in 1944.', 10.39-13.15) starts in S02 and is owned by s02 under the manifest start-time rule (scenes/film/film.json); it bleeds 0.089 s into this shot's head and is not listed here (seat W55). Captions are film-global, drawn by time.",
+ "captions": [
+  {
+   "id": "cap_019",
+   "text": "His orders",
+   "s": 13.15,
+   "e": 13.61
+  },
+  {
+   "id": "cap_020",
+   "text": "were simple:",
+   "s": 13.61,
+   "e": 14.75
+  },
+  {
+   "id": "cap_021",
+   "text": "never surrender.",
+   "s": 14.75,
+   "e": 16.01
+  }
+ ],
+ "textures": [
+  {
+   "id": "sky",
+   "generator": "sky-gradient",
+   "top": "#6E9CC0",
+   "horizon": "#E4EEDC"
+  },
+  {
+   "id": "cloud",
+   "generator": "cloud"
+  },
+  {
+   "id": "grass-hills",
+   "generator": "grass",
+   "base": "#5E8F52",
+   "repeat": [
+    6.0,
+    3.0
+   ]
+  },
+  {
+   "id": "planks-crate",
+   "generator": "planks",
+   "base": "#B07A48",
+   "repeat": [
+    0.5,
+    0.5
+   ]
+  },
+  {
+   "id": "planks-barrel",
+   "generator": "planks",
+   "base": "#9A6337",
+   "repeat": [
+    1.0,
+    1.0
+   ]
+  }
+ ],
+ "nodes": [
+  {
+   "type": "mesh",
+   "geometry": {
+    "kind": "sky-sphere",
+    "radius": 380.0,
+    "widthSegments": 32,
+    "heightSegments": 16
+   },
+   "name": "sky dome",
+   "texture": "sky"
+  },
+  {
+   "type": "mesh",
+   "geometry": {
+    "kind": "disc",
+    "radius": 30.0,
+    "segments": 40
+   },
+   "name": "sand",
+   "material": {
+    "color": "#DEC795",
+    "roughness": 1.0
+   }
+  },
+  {
+   "type": "mesh",
+   "geometry": {
+    "kind": "box",
+    "size": [
+     190.0,
+     0.02,
+     70.0
+    ]
+   },
+   "name": "sea (plane stand-in)",
+   "material": {
+    "color": "#4E86AC",
+    "roughness": 0.35,
+    "metalness": 0.08
+   },
+   "transform": [
+    {
+     "translate": [
+      0.0,
+      -0.06,
+      -58.0
+     ]
+    }
+   ]
+  },
+  {
+   "type": "mesh",
+   "geometry": {
+    "kind": "box",
+    "size": [
+     190.0,
+     0.02,
+     1.6
+    ]
+   },
+   "name": "foam (plane stand-in)",
+   "material": {
+    "color": "#EDF2EA",
+    "roughness": 0.9
+   },
+   "transform": [
+    {
+     "translate": [
+      0.0,
+      -0.02,
+      -29.2
+     ]
+    }
+   ]
+  },
+  {
+   "type": "mesh",
+   "geometry": {
+    "kind": "sphere",
+    "radius": 1.0,
+    "widthSegments": 32,
+    "heightSegments": 16
+   },
+   "name": "hill 0",
+   "material": {
+    "color": {
+     "hex": "#5E8F52",
+     "shadeHash": {
+      "index": 0,
+      "base": 0.92,
+      "span": 0.16
+     }
+    },
+    "map": "grass-hills"
+   },
+   "transform": [
+    {
+     "translate": [
+      -40.0,
+      -3.0,
+      55.0
+     ]
+    },
+    {
+     "scale": [
+      34.0,
+      12.0,
+      20.399999618530273
+     ]
+    }
+   ]
+  },
+  {
+   "type": "group",
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.12,
+      "radiusBottom": 0.18,
+      "height": 1.6,
+      "segments": 12
+     },
+     "name": "trunk",
+     "material": {
+      "color": "#7A5234"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.8,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 0",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 0,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        2.3,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 1",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 1,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.6,
+        2.0,
+        0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.8,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 2",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 2,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.6,
+        2.0,
+        -0.1
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 3",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 3,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.1,
+        2.9,
+        -0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.7,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 4",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 4,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.2,
+        2.2,
+        0.6
+       ]
+      }
+     ]
+    }
+   ],
+   "name": "hill 0 tree 0",
+   "transform": [
+    {
+     "translate": [
+      -26.972082138061523,
+      4.551433086395264,
+      63.5
+     ]
+    },
+    {
+     "scale": [
+      1.8209943771362305,
+      1.8209943771362305,
+      1.8209943771362305
+     ]
+    }
+   ]
+  },
+  {
+   "type": "group",
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.12,
+      "radiusBottom": 0.18,
+      "height": 1.6,
+      "segments": 12
+     },
+     "name": "trunk",
+     "material": {
+      "color": "#7A5234"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.8,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 0",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 0,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        2.3,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 1",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 1,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.6,
+        2.0,
+        0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.8,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 2",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 2,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.6,
+        2.0,
+        -0.1
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 3",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 3,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.1,
+        2.9,
+        -0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.7,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 4",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 4,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.2,
+        2.2,
+        0.6
+       ]
+      }
+     ]
+    }
+   ],
+   "name": "hill 0 tree 1",
+   "transform": [
+    {
+     "translate": [
+      -56.12895584106445,
+      3.730570077896118,
+      63.5
+     ]
+    },
+    {
+     "scale": [
+      1.1921205520629883,
+      1.1921205520629883,
+      1.1921205520629883
+     ]
+    }
+   ]
+  },
+  {
+   "type": "group",
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.12,
+      "radiusBottom": 0.18,
+      "height": 1.6,
+      "segments": 12
+     },
+     "name": "trunk",
+     "material": {
+      "color": "#7A5234"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.8,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 0",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 0,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        2.3,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 1",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 1,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.6,
+        2.0,
+        0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.8,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 2",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 2,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.6,
+        2.0,
+        -0.1
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 3",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 3,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.1,
+        2.9,
+        -0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.7,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 4",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 4,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.2,
+        2.2,
+        0.6
+       ]
+      }
+     ]
+    }
+   ],
+   "name": "hill 0 tree 2",
+   "transform": [
+    {
+     "translate": [
+      -27.755630493164062,
+      4.758843421936035,
+      63.5
+     ]
+    },
+    {
+     "scale": [
+      1.8040941953659058,
+      1.8040941953659058,
+      1.8040941953659058
+     ]
+    }
+   ]
+  },
+  {
+   "type": "group",
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.12,
+      "radiusBottom": 0.18,
+      "height": 1.6,
+      "segments": 12
+     },
+     "name": "trunk",
+     "material": {
+      "color": "#7A5234"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.8,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 0",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 0,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        2.3,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 1",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 1,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.6,
+        2.0,
+        0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.8,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 2",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 2,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.6,
+        2.0,
+        -0.1
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 3",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 3,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.1,
+        2.9,
+        -0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.7,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 4",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 4,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.2,
+        2.2,
+        0.6
+       ]
+      }
+     ]
+    }
+   ],
+   "name": "hill 0 tree 3",
+   "transform": [
+    {
+     "translate": [
+      -34.708152770996094,
+      6.599216461181641,
+      63.5
+     ]
+    },
+    {
+     "scale": [
+      1.6541379690170288,
+      1.6541379690170288,
+      1.6541379690170288
+     ]
+    }
+   ]
+  },
+  {
+   "type": "group",
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.12,
+      "radiusBottom": 0.18,
+      "height": 1.6,
+      "segments": 12
+     },
+     "name": "trunk",
+     "material": {
+      "color": "#7A5234"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.8,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 0",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 0,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        2.3,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 1",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 1,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.6,
+        2.0,
+        0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.8,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 2",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 2,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.6,
+        2.0,
+        -0.1
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 3",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 3,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.1,
+        2.9,
+        -0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.7,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 4",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 4,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.2,
+        2.2,
+        0.6
+       ]
+      }
+     ]
+    }
+   ],
+   "name": "hill 0 tree 4",
+   "transform": [
+    {
+     "translate": [
+      -28.6370849609375,
+      4.992169380187988,
+      63.5
+     ]
+    },
+    {
+     "scale": [
+      1.785082459449768,
+      1.785082459449768,
+      1.785082459449768
+     ]
+    }
+   ]
+  },
+  {
+   "type": "group",
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.12,
+      "radiusBottom": 0.18,
+      "height": 1.6,
+      "segments": 12
+     },
+     "name": "trunk",
+     "material": {
+      "color": "#7A5234"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.8,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 0",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 0,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        2.3,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 1",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 1,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.6,
+        2.0,
+        0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.8,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 2",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 2,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.6,
+        2.0,
+        -0.1
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 3",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 3,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.1,
+        2.9,
+        -0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.7,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 4",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 4,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.2,
+        2.2,
+        0.6
+       ]
+      }
+     ]
+    }
+   ],
+   "name": "hill 0 tree 5",
+   "transform": [
+    {
+     "translate": [
+      -37.4548454284668,
+      7.326282501220703,
+      63.5
+     ]
+    },
+    {
+     "scale": [
+      1.5948954820632935,
+      1.5948954820632935,
+      1.5948954820632935
+     ]
+    }
+   ]
+  },
+  {
+   "type": "mesh",
+   "geometry": {
+    "kind": "sphere",
+    "radius": 1.0,
+    "widthSegments": 32,
+    "heightSegments": 16
+   },
+   "name": "hill 1",
+   "material": {
+    "color": {
+     "hex": "#5E8F52",
+     "shadeHash": {
+      "index": 1,
+      "base": 0.92,
+      "span": 0.16
+     }
+    },
+    "map": "grass-hills"
+   },
+   "transform": [
+    {
+     "translate": [
+      10.0,
+      -4.0,
+      45.0
+     ]
+    },
+    {
+     "scale": [
+      46.0,
+      16.0,
+      27.600000381469727
+     ]
+    }
+   ]
+  },
+  {
+   "type": "group",
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.12,
+      "radiusBottom": 0.18,
+      "height": 1.6,
+      "segments": 12
+     },
+     "name": "trunk",
+     "material": {
+      "color": "#7A5234"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.8,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 0",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 0,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        2.3,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 1",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 1,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.6,
+        2.0,
+        0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.8,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 2",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 2,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.6,
+        2.0,
+        -0.1
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 3",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 3,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.1,
+        2.9,
+        -0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.7,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 4",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 4,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.2,
+        2.2,
+        0.6
+       ]
+      }
+     ]
+    }
+   ],
+   "name": "hill 1 tree 0",
+   "transform": [
+    {
+     "translate": [
+      34.7717399597168,
+      4.537806987762451,
+      56.5
+     ]
+    },
+    {
+     "scale": [
+      1.8209943771362305,
+      1.8209943771362305,
+      1.8209943771362305
+     ]
+    }
+   ]
+  },
+  {
+   "type": "group",
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.12,
+      "radiusBottom": 0.18,
+      "height": 1.6,
+      "segments": 12
+     },
+     "name": "trunk",
+     "material": {
+      "color": "#7A5234"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.8,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 0",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 0,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        2.3,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 1",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 1,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.6,
+        2.0,
+        0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.8,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 2",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 2,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.6,
+        2.0,
+        -0.1
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 3",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 3,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.1,
+        2.9,
+        -0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.7,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 4",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 4,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.2,
+        2.2,
+        0.6
+       ]
+      }
+     ]
+    }
+   ],
+   "name": "hill 1 tree 1",
+   "transform": [
+    {
+     "translate": [
+      23.782123565673828,
+      7.404663562774658,
+      56.5
+     ]
+    },
+    {
+     "scale": [
+      1.1921205520629883,
+      1.1921205520629883,
+      1.1921205520629883
+     ]
+    }
+   ]
+  },
+  {
+   "type": "group",
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.12,
+      "radiusBottom": 0.18,
+      "height": 1.6,
+      "segments": 12
+     },
+     "name": "trunk",
+     "material": {
+      "color": "#7A5234"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.8,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 0",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 0,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        2.3,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 1",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 1,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.6,
+        2.0,
+        0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.8,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 2",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 2,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.6,
+        2.0,
+        -0.1
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 3",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 3,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.1,
+        2.9,
+        -0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.7,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 4",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 4,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.2,
+        2.2,
+        0.6
+       ]
+      }
+     ]
+    }
+   ],
+   "name": "hill 1 tree 2",
+   "transform": [
+    {
+     "translate": [
+      18.25413703918457,
+      8.846747398376465,
+      56.5
+     ]
+    },
+    {
+     "scale": [
+      1.8040941953659058,
+      1.8040941953659058,
+      1.8040941953659058
+     ]
+    }
+   ]
+  },
+  {
+   "type": "group",
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.12,
+      "radiusBottom": 0.18,
+      "height": 1.6,
+      "segments": 12
+     },
+     "name": "trunk",
+     "material": {
+      "color": "#7A5234"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.8,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 0",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 0,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        2.3,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 1",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 1,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.6,
+        2.0,
+        0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.8,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 2",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 2,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.6,
+        2.0,
+        -0.1
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 3",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 3,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.1,
+        2.9,
+        -0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.7,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 4",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 4,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.2,
+        2.2,
+        0.6
+       ]
+      }
+     ]
+    }
+   ],
+   "name": "hill 1 tree 3",
+   "transform": [
+    {
+     "translate": [
+      -6.244683742523193,
+      6.762256622314453,
+      56.5
+     ]
+    },
+    {
+     "scale": [
+      1.6541379690170288,
+      1.6541379690170288,
+      1.6541379690170288
+     ]
+    }
+   ]
+  },
+  {
+   "type": "group",
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.12,
+      "radiusBottom": 0.18,
+      "height": 1.6,
+      "segments": 12
+     },
+     "name": "trunk",
+     "material": {
+      "color": "#7A5234"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.8,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 0",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 0,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        2.3,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 1",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 1,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.6,
+        2.0,
+        0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.8,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 2",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 2,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.6,
+        2.0,
+        -0.1
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 3",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 3,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.1,
+        2.9,
+        -0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.7,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 4",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 4,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.2,
+        2.2,
+        0.6
+       ]
+      }
+     ]
+    }
+   ],
+   "name": "hill 1 tree 4",
+   "transform": [
+    {
+     "translate": [
+      34.055694580078125,
+      4.724601745605469,
+      56.5
+     ]
+    },
+    {
+     "scale": [
+      1.785082459449768,
+      1.785082459449768,
+      1.785082459449768
+     ]
+    }
+   ]
+  },
+  {
+   "type": "group",
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.12,
+      "radiusBottom": 0.18,
+      "height": 1.6,
+      "segments": 12
+     },
+     "name": "trunk",
+     "material": {
+      "color": "#7A5234"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.8,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 0",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 0,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        2.3,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 1",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 1,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.6,
+        2.0,
+        0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.8,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 2",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 2,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.6,
+        2.0,
+        -0.1
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 3",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 3,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.1,
+        2.9,
+        -0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.7,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 4",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 4,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.2,
+        2.2,
+        0.6
+       ]
+      }
+     ]
+    }
+   ],
+   "name": "hill 1 tree 5",
+   "transform": [
+    {
+     "translate": [
+      -10.939611434936523,
+      5.537492752075195,
+      56.5
+     ]
+    },
+    {
+     "scale": [
+      1.5948954820632935,
+      1.5948954820632935,
+      1.5948954820632935
+     ]
+    }
+   ]
+  },
+  {
+   "type": "mesh",
+   "geometry": {
+    "kind": "sphere",
+    "radius": 1.0,
+    "widthSegments": 32,
+    "heightSegments": 16
+   },
+   "name": "hill 2",
+   "material": {
+    "color": {
+     "hex": "#5E8F52",
+     "shadeHash": {
+      "index": 2,
+      "base": 0.92,
+      "span": 0.16
+     }
+    },
+    "map": "grass-hills"
+   },
+   "transform": [
+    {
+     "translate": [
+      60.0,
+      -2.75,
+      59.0
+     ]
+    },
+    {
+     "scale": [
+      36.0,
+      11.0,
+      21.600000381469727
+     ]
+    }
+   ]
+  },
+  {
+   "type": "group",
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.12,
+      "radiusBottom": 0.18,
+      "height": 1.6,
+      "segments": 12
+     },
+     "name": "trunk",
+     "material": {
+      "color": "#7A5234"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.8,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 0",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 0,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        2.3,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 1",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 1,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.6,
+        2.0,
+        0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.8,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 2",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 2,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.6,
+        2.0,
+        -0.1
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 3",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 3,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.1,
+        2.9,
+        -0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.7,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 4",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 4,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.2,
+        2.2,
+        0.6
+       ]
+      }
+     ]
+    }
+   ],
+   "name": "hill 2 tree 0",
+   "transform": [
+    {
+     "translate": [
+      79.23342895507812,
+      2.8423385620117188,
+      68.0
+     ]
+    },
+    {
+     "scale": [
+      1.8209943771362305,
+      1.8209943771362305,
+      1.8209943771362305
+     ]
+    }
+   ]
+  },
+  {
+   "type": "group",
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.12,
+      "radiusBottom": 0.18,
+      "height": 1.6,
+      "segments": 12
+     },
+     "name": "trunk",
+     "material": {
+      "color": "#7A5234"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.8,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 0",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 0,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        2.3,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 1",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 1,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.6,
+        2.0,
+        0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.8,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 2",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 2,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.6,
+        2.0,
+        -0.1
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 3",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 3,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.1,
+        2.9,
+        -0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.7,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 4",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 4,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.2,
+        2.2,
+        0.6
+       ]
+      }
+     ]
+    }
+   ],
+   "name": "hill 2 tree 1",
+   "transform": [
+    {
+     "translate": [
+      47.00077438354492,
+      4.271010875701904,
+      68.0
+     ]
+    },
+    {
+     "scale": [
+      1.1921205520629883,
+      1.1921205520629883,
+      1.1921205520629883
+     ]
+    }
+   ]
+  },
+  {
+   "type": "group",
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.12,
+      "radiusBottom": 0.18,
+      "height": 1.6,
+      "segments": 12
+     },
+     "name": "trunk",
+     "material": {
+      "color": "#7A5234"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.8,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 0",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 0,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        2.3,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 1",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 1,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.6,
+        2.0,
+        0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.8,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 2",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 2,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.6,
+        2.0,
+        -0.1
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 3",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 3,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.1,
+        2.9,
+        -0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.7,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 4",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 4,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.2,
+        2.2,
+        0.6
+       ]
+      }
+     ]
+    }
+   ],
+   "name": "hill 2 tree 2",
+   "transform": [
+    {
+     "translate": [
+      69.85710906982422,
+      4.9910783767700195,
+      68.0
+     ]
+    },
+    {
+     "scale": [
+      1.8040941953659058,
+      1.8040941953659058,
+      1.8040941953659058
+     ]
+    }
+   ]
+  },
+  {
+   "type": "group",
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.12,
+      "radiusBottom": 0.18,
+      "height": 1.6,
+      "segments": 12
+     },
+     "name": "trunk",
+     "material": {
+      "color": "#7A5234"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.8,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 0",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 0,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        2.3,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 1",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 1,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.6,
+        2.0,
+        0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.8,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 2",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 2,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.6,
+        2.0,
+        -0.1
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 3",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 3,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.1,
+        2.9,
+        -0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.7,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 4",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 4,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.2,
+        2.2,
+        0.6
+       ]
+      }
+     ]
+    }
+   ],
+   "name": "hill 2 tree 3",
+   "transform": [
+    {
+     "translate": [
+      43.01555252075195,
+      3.3577306270599365,
+      68.0
+     ]
+    },
+    {
+     "scale": [
+      1.6541379690170288,
+      1.6541379690170288,
+      1.6541379690170288
+     ]
+    }
+   ]
+  },
+  {
+   "type": "group",
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.12,
+      "radiusBottom": 0.18,
+      "height": 1.6,
+      "segments": 12
+     },
+     "name": "trunk",
+     "material": {
+      "color": "#7A5234"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.8,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 0",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 0,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        2.3,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 1",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 1,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.6,
+        2.0,
+        0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.8,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 2",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 2,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.6,
+        2.0,
+        -0.1
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 3",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 3,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.1,
+        2.9,
+        -0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.7,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 4",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 4,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.2,
+        2.2,
+        0.6
+       ]
+      }
+     ]
+    }
+   ],
+   "name": "hill 2 tree 4",
+   "transform": [
+    {
+     "translate": [
+      55.398643493652344,
+      6.195521831512451,
+      68.0
+     ]
+    },
+    {
+     "scale": [
+      1.785082459449768,
+      1.785082459449768,
+      1.785082459449768
+     ]
+    }
+   ]
+  },
+  {
+   "type": "group",
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.12,
+      "radiusBottom": 0.18,
+      "height": 1.6,
+      "segments": 12
+     },
+     "name": "trunk",
+     "material": {
+      "color": "#7A5234"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.8,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 0",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 0,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        2.3,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 1",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 1,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.6,
+        2.0,
+        0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.8,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 2",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 2,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.6,
+        2.0,
+        -0.1
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 3",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 3,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.1,
+        2.9,
+        -0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.7,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 4",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 4,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.2,
+        2.2,
+        0.6
+       ]
+      }
+     ]
+    }
+   ],
+   "name": "hill 2 tree 5",
+   "transform": [
+    {
+     "translate": [
+      75.1577377319336,
+      3.7763516902923584,
+      68.0
+     ]
+    },
+    {
+     "scale": [
+      1.5948954820632935,
+      1.5948954820632935,
+      1.5948954820632935
+     ]
+    }
+   ]
+  },
+  {
+   "type": "mesh",
+   "geometry": {
+    "kind": "sphere",
+    "radius": 1.0,
+    "widthSegments": 32,
+    "heightSegments": 16
+   },
+   "name": "hill 3",
+   "material": {
+    "color": {
+     "hex": "#5E8F52",
+     "shadeHash": {
+      "index": 3,
+      "base": 0.92,
+      "span": 0.16
+     }
+    },
+    "map": "grass-hills"
+   },
+   "transform": [
+    {
+     "translate": [
+      -90.0,
+      -2.5,
+      65.0
+     ]
+    },
+    {
+     "scale": [
+      40.0,
+      10.0,
+      24.0
+     ]
+    }
+   ]
+  },
+  {
+   "type": "group",
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.12,
+      "radiusBottom": 0.18,
+      "height": 1.6,
+      "segments": 12
+     },
+     "name": "trunk",
+     "material": {
+      "color": "#7A5234"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.8,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 0",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 0,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        2.3,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 1",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 1,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.6,
+        2.0,
+        0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.8,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 2",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 2,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.6,
+        2.0,
+        -0.1
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 3",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 3,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.1,
+        2.9,
+        -0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.7,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 4",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 4,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.2,
+        2.2,
+        0.6
+       ]
+      }
+     ]
+    }
+   ],
+   "name": "hill 3 tree 0",
+   "transform": [
+    {
+     "translate": [
+      -90.48745727539062,
+      6.408602237701416,
+      75.0
+     ]
+    },
+    {
+     "scale": [
+      1.8209943771362305,
+      1.8209943771362305,
+      1.8209943771362305
+     ]
+    }
+   ]
+  },
+  {
+   "type": "group",
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.12,
+      "radiusBottom": 0.18,
+      "height": 1.6,
+      "segments": 12
+     },
+     "name": "trunk",
+     "material": {
+      "color": "#7A5234"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.8,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 0",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 0,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        2.3,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 1",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 1,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.6,
+        2.0,
+        0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.8,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 2",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 2,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.6,
+        2.0,
+        -0.1
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 3",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 3,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.1,
+        2.9,
+        -0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.7,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 4",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 4,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.2,
+        2.2,
+        0.6
+       ]
+      }
+     ]
+    }
+   ],
+   "name": "hill 3 tree 1",
+   "transform": [
+    {
+     "translate": [
+      -111.40396881103516,
+      2.48675537109375,
+      75.0
+     ]
+    },
+    {
+     "scale": [
+      1.1921205520629883,
+      1.1921205520629883,
+      1.1921205520629883
+     ]
+    }
+   ]
+  },
+  {
+   "type": "group",
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.12,
+      "radiusBottom": 0.18,
+      "height": 1.6,
+      "segments": 12
+     },
+     "name": "trunk",
+     "material": {
+      "color": "#7A5234"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.8,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 0",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 0,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        2.3,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 1",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 1,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.6,
+        2.0,
+        0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.8,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 2",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 2,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.6,
+        2.0,
+        -0.1
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 3",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 3,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.1,
+        2.9,
+        -0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.7,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 4",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 4,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.2,
+        2.2,
+        0.6
+       ]
+      }
+     ]
+    }
+   ],
+   "name": "hill 3 tree 2",
+   "transform": [
+    {
+     "translate": [
+      -111.26612091064453,
+      2.5126028060913086,
+      75.0
+     ]
+    },
+    {
+     "scale": [
+      1.8040941953659058,
+      1.8040941953659058,
+      1.8040941953659058
+     ]
+    }
+   ]
+  },
+  {
+   "type": "group",
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.12,
+      "radiusBottom": 0.18,
+      "height": 1.6,
+      "segments": 12
+     },
+     "name": "trunk",
+     "material": {
+      "color": "#7A5234"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.8,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 0",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 0,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        2.3,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 1",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 1,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.6,
+        2.0,
+        0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.8,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 2",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 2,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.6,
+        2.0,
+        -0.1
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 3",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 3,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.1,
+        2.9,
+        -0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.7,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 4",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 4,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.2,
+        2.2,
+        0.6
+       ]
+      }
+     ]
+    }
+   ],
+   "name": "hill 3 tree 3",
+   "transform": [
+    {
+     "translate": [
+      -100.0388412475586,
+      4.617717742919922,
+      75.0
+     ]
+    },
+    {
+     "scale": [
+      1.6541379690170288,
+      1.6541379690170288,
+      1.6541379690170288
+     ]
+    }
+   ]
+  },
+  {
+   "type": "group",
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.12,
+      "radiusBottom": 0.18,
+      "height": 1.6,
+      "segments": 12
+     },
+     "name": "trunk",
+     "material": {
+      "color": "#7A5234"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.8,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 0",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 0,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        2.3,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 1",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 1,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.6,
+        2.0,
+        0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.8,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 2",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 2,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.6,
+        2.0,
+        -0.1
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 3",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 3,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.1,
+        2.9,
+        -0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.7,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 4",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 4,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.2,
+        2.2,
+        0.6
+       ]
+      }
+     ]
+    }
+   ],
+   "name": "hill 3 tree 4",
+   "transform": [
+    {
+     "translate": [
+      -83.5884780883789,
+      5.297840118408203,
+      75.0
+     ]
+    },
+    {
+     "scale": [
+      1.785082459449768,
+      1.785082459449768,
+      1.785082459449768
+     ]
+    }
+   ]
+  },
+  {
+   "type": "group",
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.12,
+      "radiusBottom": 0.18,
+      "height": 1.6,
+      "segments": 12
+     },
+     "name": "trunk",
+     "material": {
+      "color": "#7A5234"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.8,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 0",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 0,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        2.3,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 1",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 1,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.6,
+        2.0,
+        0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.8,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 2",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 2,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.6,
+        2.0,
+        -0.1
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 3",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 3,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.1,
+        2.9,
+        -0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.7,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 4",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 4,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.2,
+        2.2,
+        0.6
+       ]
+      }
+     ]
+    }
+   ],
+   "name": "hill 3 tree 5",
+   "transform": [
+    {
+     "translate": [
+      -112.08588409423828,
+      2.358896255493164,
+      75.0
+     ]
+    },
+    {
+     "scale": [
+      1.5948954820632935,
+      1.5948954820632935,
+      1.5948954820632935
+     ]
+    }
+   ]
+  },
+  {
+   "type": "group",
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.12,
+      "radiusBottom": 0.18,
+      "height": 1.6,
+      "segments": 12
+     },
+     "name": "trunk",
+     "material": {
+      "color": "#7A5234"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.8,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 0",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 0,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        2.3,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 1",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 1,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.6,
+        2.0,
+        0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.8,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 2",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 2,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.6,
+        2.0,
+        -0.1
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 3",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 3,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.1,
+        2.9,
+        -0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.7,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 4",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 4,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.2,
+        2.2,
+        0.6
+       ]
+      }
+     ]
+    }
+   ],
+   "name": "shore tree 0 (round)",
+   "transform": [
+    {
+     "translate": [
+      -7.0,
+      0.0,
+      7.0
+     ]
+    },
+    {
+     "scale": [
+      1.5,
+      1.5,
+      1.5
+     ]
+    }
+   ]
+  },
+  {
+   "type": "group",
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.12,
+      "radiusBottom": 0.18,
+      "height": 1.6,
+      "segments": 12
+     },
+     "name": "trunk",
+     "material": {
+      "color": "#7A5234"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.8,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 16,
+      "heightSegments": 12
+     },
+     "name": "canopy",
+     "material": {
+      "color": "#3E7A34"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        3.2,
+        0.0
+       ]
+      },
+      {
+       "scale": [
+        0.7,
+        2.6,
+        0.7
+       ]
+      }
+     ]
+    }
+   ],
+   "name": "shore tree 1 (cypress)",
+   "transform": [
+    {
+     "translate": [
+      7.5,
+      0.0,
+      8.0
+     ]
+    },
+    {
+     "scale": [
+      1.4,
+      1.4,
+      1.4
+     ]
+    }
+   ]
+  },
+  {
+   "type": "group",
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.12,
+      "radiusBottom": 0.18,
+      "height": 1.6,
+      "segments": 12
+     },
+     "name": "trunk",
+     "material": {
+      "color": "#7A5234"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.8,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 0",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 0,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        2.3,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 1",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 1,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.6,
+        2.0,
+        0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.8,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 2",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 2,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.6,
+        2.0,
+        -0.1
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 3",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 3,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.1,
+        2.9,
+        -0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.7,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 4",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 4,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.2,
+        2.2,
+        0.6
+       ]
+      }
+     ]
+    }
+   ],
+   "name": "shore tree 2 (round)",
+   "transform": [
+    {
+     "translate": [
+      -11.0,
+      0.0,
+      10.0
+     ]
+    },
+    {
+     "scale": [
+      1.7,
+      1.7,
+      1.7
+     ]
+    }
+   ]
+  },
+  {
+   "type": "group",
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.12,
+      "radiusBottom": 0.18,
+      "height": 1.6,
+      "segments": 12
+     },
+     "name": "trunk",
+     "material": {
+      "color": "#7A5234"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.8,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 16,
+      "heightSegments": 12
+     },
+     "name": "canopy",
+     "material": {
+      "color": "#3E7A34"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        3.2,
+        0.0
+       ]
+      },
+      {
+       "scale": [
+        0.7,
+        2.6,
+        0.7
+       ]
+      }
+     ]
+    }
+   ],
+   "name": "shore tree 3 (cypress)",
+   "transform": [
+    {
+     "translate": [
+      12.0,
+      0.0,
+      11.0
+     ]
+    },
+    {
+     "scale": [
+      1.6,
+      1.6,
+      1.6
+     ]
+    }
+   ]
+  },
+  {
+   "type": "group",
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.12,
+      "radiusBottom": 0.18,
+      "height": 1.6,
+      "segments": 12
+     },
+     "name": "trunk",
+     "material": {
+      "color": "#7A5234"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.8,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 0",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 0,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        2.3,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 1",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 1,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.6,
+        2.0,
+        0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.8,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 2",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 2,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.6,
+        2.0,
+        -0.1
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 3",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 3,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.1,
+        2.9,
+        -0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.7,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 4",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 4,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.2,
+        2.2,
+        0.6
+       ]
+      }
+     ]
+    }
+   ],
+   "name": "shore tree 4 (round)",
+   "transform": [
+    {
+     "translate": [
+      0.0,
+      0.0,
+      13.0
+     ]
+    },
+    {
+     "scale": [
+      1.8,
+      1.8,
+      1.8
+     ]
+    }
+   ]
+  },
+  {
+   "type": "group",
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.12,
+      "radiusBottom": 0.18,
+      "height": 1.6,
+      "segments": 12
+     },
+     "name": "trunk",
+     "material": {
+      "color": "#7A5234"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.8,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 16,
+      "heightSegments": 12
+     },
+     "name": "canopy",
+     "material": {
+      "color": "#3E7A34"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        3.2,
+        0.0
+       ]
+      },
+      {
+       "scale": [
+        0.7,
+        2.6,
+        0.7
+       ]
+      }
+     ]
+    }
+   ],
+   "name": "shore tree 5 (cypress)",
+   "transform": [
+    {
+     "translate": [
+      -4.0,
+      0.0,
+      11.0
+     ]
+    },
+    {
+     "scale": [
+      1.3,
+      1.3,
+      1.3
+     ]
+    }
+   ]
+  },
+  {
+   "type": "group",
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.12,
+      "radiusBottom": 0.18,
+      "height": 1.6,
+      "segments": 12
+     },
+     "name": "trunk",
+     "material": {
+      "color": "#7A5234"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.8,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 0",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 0,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        2.3,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 1",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 1,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.6,
+        2.0,
+        0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.8,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 2",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 2,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.6,
+        2.0,
+        -0.1
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.75,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 3",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 3,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.1,
+        2.9,
+        -0.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.7,
+      "widthSegments": 12,
+      "heightSegments": 9
+     },
+     "name": "canopy blob 4",
+     "material": {
+      "color": {
+       "hex": "#3E7A34",
+       "shadeHash": {
+        "index": 4,
+        "base": 0.9,
+        "span": 0.2
+       }
+      }
+     },
+     "transform": [
+      {
+       "translate": [
+        0.2,
+        2.2,
+        0.6
+       ]
+      }
+     ]
+    }
+   ],
+   "name": "shore tree 6 (round)",
+   "transform": [
+    {
+     "translate": [
+      4.5,
+      0.0,
+      12.0
+     ]
+    },
+    {
+     "scale": [
+      1.35,
+      1.35,
+      1.35
+     ]
+    }
+   ]
+  },
+  {
+   "type": "group",
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.085,
+      "radiusBottom": 0.13,
+      "height": 4.4,
+      "segments": 8
+     },
+     "name": "trunk",
+     "material": {
+      "color": "#7A6248",
+      "roughness": 0.95
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        2.2,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 10,
+      "heightSegments": 6
+     },
+     "name": "frond 0",
+     "material": {
+      "color": "#4C8A3A",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        0.3894183337688446,
+        4.449999809265137,
+        0.9210609793663025
+       ]
+      },
+      {
+       "rotate_y": 0.4000000059604645
+      },
+      {
+       "scale": [
+        0.17,
+        0.05,
+        1.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 8,
+      "heightSegments": 5
+     },
+     "name": "frond tip 0",
+     "material": {
+      "color": "#3F7D33",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        0.7204239368438721,
+        4.070000171661377,
+        1.703962802886963
+       ]
+      },
+      {
+       "euler_xyz": [
+        0.46053048968315125,
+        0.4000000059604645,
+        -0.1947091668844223
+       ]
+      },
+      {
+       "scale": [
+        0.13,
+        0.04,
+        0.8
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 10,
+      "heightSegments": 6
+     },
+     "name": "frond 1",
+     "material": {
+      "color": "#3F7D33",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        0.9629128575325012,
+        4.380000114440918,
+        0.26981261372566223
+       ]
+      },
+      {
+       "rotate_y": 1.297597885131836
+      },
+      {
+       "scale": [
+        0.17,
+        0.05,
+        1.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 8,
+      "heightSegments": 5
+     },
+     "name": "frond tip 1",
+     "material": {
+      "color": "#4C8A3A",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        1.781388759613037,
+        4.010000228881836,
+        0.49915334582328796
+       ]
+      },
+      {
+       "euler_xyz": [
+        0.13490630686283112,
+        1.297597885131836,
+        -0.4814564287662506
+       ]
+      },
+      {
+       "scale": [
+        0.13,
+        0.04,
+        0.8
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 10,
+      "heightSegments": 6
+     },
+     "name": "frond 2",
+     "material": {
+      "color": "#4C8A3A",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        0.8113143444061279,
+        4.309999942779541,
+        -0.5846101641654968
+       ]
+      },
+      {
+       "rotate_y": 2.1951959133148193
+      },
+      {
+       "scale": [
+        0.17,
+        0.05,
+        1.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 8,
+      "heightSegments": 5
+     },
+     "name": "frond tip 2",
+     "material": {
+      "color": "#3F7D33",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        1.5009315013885498,
+        3.950000047683716,
+        -1.0815287828445435
+       ]
+      },
+      {
+       "euler_xyz": [
+        -0.2923050820827484,
+        2.1951959133148193,
+        -0.40565717220306396
+       ]
+      },
+      {
+       "scale": [
+        0.13,
+        0.04,
+        0.8
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 10,
+      "heightSegments": 6
+     },
+     "name": "frond 3",
+     "material": {
+      "color": "#3F7D33",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        0.04877958446741104,
+        4.449999809265137,
+        -0.9988095760345459
+       ]
+      },
+      {
+       "rotate_y": 3.0927937030792236
+      },
+      {
+       "scale": [
+        0.17,
+        0.05,
+        1.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 8,
+      "heightSegments": 5
+     },
+     "name": "frond tip 3",
+     "material": {
+      "color": "#4C8A3A",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        0.09024222940206528,
+        4.070000171661377,
+        -1.8477977514266968
+       ]
+      },
+      {
+       "euler_xyz": [
+        -0.49940478801727295,
+        3.0927937030792236,
+        -0.02438979223370552
+       ]
+      },
+      {
+       "scale": [
+        0.13,
+        0.04,
+        0.8
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 10,
+      "heightSegments": 6
+     },
+     "name": "frond 4",
+     "material": {
+      "color": "#4C8A3A",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.750487208366394,
+        4.380000114440918,
+        -0.6608849763870239
+       ]
+      },
+      {
+       "rotate_y": 3.990391492843628
+      },
+      {
+       "scale": [
+        0.17,
+        0.05,
+        1.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 8,
+      "heightSegments": 5
+     },
+     "name": "frond tip 4",
+     "material": {
+      "color": "#3F7D33",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.3884012699127197,
+        4.010000228881836,
+        -1.2226372957229614
+       ]
+      },
+      {
+       "euler_xyz": [
+        -0.33044248819351196,
+        3.990391492843628,
+        0.375243604183197
+       ]
+      },
+      {
+       "scale": [
+        0.13,
+        0.04,
+        0.8
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 10,
+      "heightSegments": 6
+     },
+     "name": "frond 5",
+     "material": {
+      "color": "#3F7D33",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.9846218228340149,
+        4.309999942779541,
+        0.17469945549964905
+       ]
+      },
+      {
+       "rotate_y": 4.887989521026611
+      },
+      {
+       "scale": [
+        0.17,
+        0.05,
+        1.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 8,
+      "heightSegments": 5
+     },
+     "name": "frond tip 5",
+     "material": {
+      "color": "#4C8A3A",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.8215503692626953,
+        3.950000047683716,
+        0.3231939971446991
+       ]
+      },
+      {
+       "euler_xyz": [
+        0.08734972774982452,
+        4.887989521026611,
+        0.49231091141700745
+       ]
+      },
+      {
+       "scale": [
+        0.13,
+        0.04,
+        0.8
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 10,
+      "heightSegments": 6
+     },
+     "name": "frond 6",
+     "material": {
+      "color": "#4C8A3A",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.47731611132621765,
+        4.449999809265137,
+        0.8787316679954529
+       ]
+      },
+      {
+       "rotate_y": 5.785587310791016
+      },
+      {
+       "scale": [
+        0.17,
+        0.05,
+        1.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 8,
+      "heightSegments": 5
+     },
+     "name": "frond tip 6",
+     "material": {
+      "color": "#3F7D33",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.8830348253250122,
+        4.070000171661377,
+        1.6256535053253174
+       ]
+      },
+      {
+       "euler_xyz": [
+        0.43936583399772644,
+        5.785587310791016,
+        0.23865805566310883
+       ]
+      },
+      {
+       "scale": [
+        0.13,
+        0.04,
+        0.8
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.13,
+      "widthSegments": 10,
+      "heightSegments": 8
+     },
+     "name": "coconut",
+     "material": {
+      "color": "#6B4A2E",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        0.14,
+        4.15,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.13,
+      "widthSegments": 10,
+      "heightSegments": 8
+     },
+     "name": "coconut",
+     "material": {
+      "color": "#6B4A2E",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.12,
+        4.15,
+        0.1
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.13,
+      "widthSegments": 10,
+      "heightSegments": 8
+     },
+     "name": "coconut",
+     "material": {
+      "color": "#6B4A2E",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        4.15,
+        -0.14
+       ]
+      }
+     ]
+    }
+   ],
+   "name": "palm 1",
+   "transform": [
+    {
+     "translate": [
+      -6.2,
+      0.0,
+      4.5
+     ]
+    },
+    {
+     "rotate_z": 0.18
+    },
+    {
+     "scale": [
+      1.0,
+      1.0,
+      1.0
+     ]
+    }
+   ]
+  },
+  {
+   "type": "group",
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.085,
+      "radiusBottom": 0.13,
+      "height": 4.4,
+      "segments": 8
+     },
+     "name": "trunk",
+     "material": {
+      "color": "#7A6248",
+      "roughness": 0.95
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        2.2,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 10,
+      "heightSegments": 6
+     },
+     "name": "frond 0",
+     "material": {
+      "color": "#4C8A3A",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        0.3894183337688446,
+        4.449999809265137,
+        0.9210609793663025
+       ]
+      },
+      {
+       "rotate_y": 0.4000000059604645
+      },
+      {
+       "scale": [
+        0.17,
+        0.05,
+        1.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 8,
+      "heightSegments": 5
+     },
+     "name": "frond tip 0",
+     "material": {
+      "color": "#3F7D33",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        0.7204239368438721,
+        4.070000171661377,
+        1.703962802886963
+       ]
+      },
+      {
+       "euler_xyz": [
+        0.46053048968315125,
+        0.4000000059604645,
+        -0.1947091668844223
+       ]
+      },
+      {
+       "scale": [
+        0.13,
+        0.04,
+        0.8
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 10,
+      "heightSegments": 6
+     },
+     "name": "frond 1",
+     "material": {
+      "color": "#3F7D33",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        0.9629128575325012,
+        4.380000114440918,
+        0.26981261372566223
+       ]
+      },
+      {
+       "rotate_y": 1.297597885131836
+      },
+      {
+       "scale": [
+        0.17,
+        0.05,
+        1.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 8,
+      "heightSegments": 5
+     },
+     "name": "frond tip 1",
+     "material": {
+      "color": "#4C8A3A",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        1.781388759613037,
+        4.010000228881836,
+        0.49915334582328796
+       ]
+      },
+      {
+       "euler_xyz": [
+        0.13490630686283112,
+        1.297597885131836,
+        -0.4814564287662506
+       ]
+      },
+      {
+       "scale": [
+        0.13,
+        0.04,
+        0.8
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 10,
+      "heightSegments": 6
+     },
+     "name": "frond 2",
+     "material": {
+      "color": "#4C8A3A",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        0.8113143444061279,
+        4.309999942779541,
+        -0.5846101641654968
+       ]
+      },
+      {
+       "rotate_y": 2.1951959133148193
+      },
+      {
+       "scale": [
+        0.17,
+        0.05,
+        1.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 8,
+      "heightSegments": 5
+     },
+     "name": "frond tip 2",
+     "material": {
+      "color": "#3F7D33",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        1.5009315013885498,
+        3.950000047683716,
+        -1.0815287828445435
+       ]
+      },
+      {
+       "euler_xyz": [
+        -0.2923050820827484,
+        2.1951959133148193,
+        -0.40565717220306396
+       ]
+      },
+      {
+       "scale": [
+        0.13,
+        0.04,
+        0.8
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 10,
+      "heightSegments": 6
+     },
+     "name": "frond 3",
+     "material": {
+      "color": "#3F7D33",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        0.04877958446741104,
+        4.449999809265137,
+        -0.9988095760345459
+       ]
+      },
+      {
+       "rotate_y": 3.0927937030792236
+      },
+      {
+       "scale": [
+        0.17,
+        0.05,
+        1.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 8,
+      "heightSegments": 5
+     },
+     "name": "frond tip 3",
+     "material": {
+      "color": "#4C8A3A",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        0.09024222940206528,
+        4.070000171661377,
+        -1.8477977514266968
+       ]
+      },
+      {
+       "euler_xyz": [
+        -0.49940478801727295,
+        3.0927937030792236,
+        -0.02438979223370552
+       ]
+      },
+      {
+       "scale": [
+        0.13,
+        0.04,
+        0.8
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 10,
+      "heightSegments": 6
+     },
+     "name": "frond 4",
+     "material": {
+      "color": "#4C8A3A",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.750487208366394,
+        4.380000114440918,
+        -0.6608849763870239
+       ]
+      },
+      {
+       "rotate_y": 3.990391492843628
+      },
+      {
+       "scale": [
+        0.17,
+        0.05,
+        1.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 8,
+      "heightSegments": 5
+     },
+     "name": "frond tip 4",
+     "material": {
+      "color": "#3F7D33",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.3884012699127197,
+        4.010000228881836,
+        -1.2226372957229614
+       ]
+      },
+      {
+       "euler_xyz": [
+        -0.33044248819351196,
+        3.990391492843628,
+        0.375243604183197
+       ]
+      },
+      {
+       "scale": [
+        0.13,
+        0.04,
+        0.8
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 10,
+      "heightSegments": 6
+     },
+     "name": "frond 5",
+     "material": {
+      "color": "#3F7D33",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.9846218228340149,
+        4.309999942779541,
+        0.17469945549964905
+       ]
+      },
+      {
+       "rotate_y": 4.887989521026611
+      },
+      {
+       "scale": [
+        0.17,
+        0.05,
+        1.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 8,
+      "heightSegments": 5
+     },
+     "name": "frond tip 5",
+     "material": {
+      "color": "#4C8A3A",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        -1.8215503692626953,
+        3.950000047683716,
+        0.3231939971446991
+       ]
+      },
+      {
+       "euler_xyz": [
+        0.08734972774982452,
+        4.887989521026611,
+        0.49231091141700745
+       ]
+      },
+      {
+       "scale": [
+        0.13,
+        0.04,
+        0.8
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 10,
+      "heightSegments": 6
+     },
+     "name": "frond 6",
+     "material": {
+      "color": "#4C8A3A",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.47731611132621765,
+        4.449999809265137,
+        0.8787316679954529
+       ]
+      },
+      {
+       "rotate_y": 5.785587310791016
+      },
+      {
+       "scale": [
+        0.17,
+        0.05,
+        1.2
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 8,
+      "heightSegments": 5
+     },
+     "name": "frond tip 6",
+     "material": {
+      "color": "#3F7D33",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.8830348253250122,
+        4.070000171661377,
+        1.6256535053253174
+       ]
+      },
+      {
+       "euler_xyz": [
+        0.43936583399772644,
+        5.785587310791016,
+        0.23865805566310883
+       ]
+      },
+      {
+       "scale": [
+        0.13,
+        0.04,
+        0.8
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.13,
+      "widthSegments": 10,
+      "heightSegments": 8
+     },
+     "name": "coconut",
+     "material": {
+      "color": "#6B4A2E",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        0.14,
+        4.15,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.13,
+      "widthSegments": 10,
+      "heightSegments": 8
+     },
+     "name": "coconut",
+     "material": {
+      "color": "#6B4A2E",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        -0.12,
+        4.15,
+        0.1
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 0.13,
+      "widthSegments": 10,
+      "heightSegments": 8
+     },
+     "name": "coconut",
+     "material": {
+      "color": "#6B4A2E",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        4.15,
+        -0.14
+       ]
+      }
+     ]
+    }
+   ],
+   "name": "palm 2",
+   "transform": [
+    {
+     "translate": [
+      6.8,
+      0.0,
+      5.5
+     ]
+    },
+    {
+     "rotate_z": -0.14
+    },
+    {
+     "scale": [
+      0.92,
+      0.92,
+      0.92
+     ]
+    }
+   ]
+  },
+  {
+   "type": "group",
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       1.5,
+       0.5,
+       4.4
+      ]
+     },
+     "name": "boat hull",
+     "material": {
+      "color": "#6E5136",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.32,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       1.1,
+       0.42,
+       0.5
+      ]
+     },
+     "name": "boat bow",
+     "material": {
+      "color": "#6E5136",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.36,
+        2.35
+       ]
+      },
+      {
+       "rotate_x": -0.5
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       1.3,
+       0.08,
+       0.5
+      ]
+     },
+     "name": "boat seat aft",
+     "material": {
+      "color": "#6E5136",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.5,
+        -0.8
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       1.3,
+       0.08,
+       0.5
+      ]
+     },
+     "name": "boat seat fore",
+     "material": {
+      "color": "#6E5136",
+      "roughness": 0.9
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.5,
+        0.9
+       ]
+      }
+     ]
+    }
+   ],
+   "name": "boat",
+   "transform": [
+    {
+     "translate": [
+      -4.6,
+      0.0,
+      -7.5
+     ]
+    },
+    {
+     "rotate_y": 1.15
+    }
+   ]
+  },
+  {
+   "type": "group",
+   "name": "crate 0.6",
+   "transform": [
+    {
+     "translate": [
+      2.7,
+      0.0,
+      -1.9
+     ]
+    }
+   ],
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.6,
+       0.6,
+       0.6
+      ]
+     },
+     "name": "crate",
+     "material": {
+      "map": "planks-crate"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.3,
+        0.0
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "type": "group",
+   "name": "crate 0.45",
+   "transform": [
+    {
+     "translate": [
+      3.3,
+      0.0,
+      -2.5
+     ]
+    },
+    {
+     "rotate_y": 0.5
+    }
+   ],
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "box",
+      "size": [
+       0.45,
+       0.45,
+       0.45
+      ]
+     },
+     "name": "crate",
+     "material": {
+      "map": "planks-crate"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.225,
+        0.0
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "type": "group",
+   "name": "barrel",
+   "transform": [
+    {
+     "translate": [
+      2.4,
+      0.0,
+      -2.95
+     ]
+    }
+   ],
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.33,
+      "radiusBottom": 0.33,
+      "height": 0.8,
+      "segments": 16
+     },
+     "name": "barrel body",
+     "material": {
+      "color": "#9A6337",
+      "map": "planks-barrel"
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.4,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.345,
+      "radiusBottom": 0.345,
+      "height": 0.05,
+      "segments": 16
+     },
+     "name": "barrel band",
+     "material": {
+      "color": "#3A3A3F",
+      "metalness": 0.4
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.12,
+        0.0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.345,
+      "radiusBottom": 0.345,
+      "height": 0.05,
+      "segments": 16
+     },
+     "name": "barrel band",
+     "material": {
+      "color": "#3A3A3F",
+      "metalness": 0.4
+     },
+     "transform": [
+      {
+       "translate": [
+        0.0,
+        0.68,
+        0.0
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "type": "mesh",
+   "geometry": {
+    "kind": "billboard",
+    "center": [
+     -24.0,
+     22.0,
+     -85.0
+    ],
+    "width": 24.0,
+    "height": 12.0
+   },
+   "name": "cloud sprite",
+   "texture": "cloud"
+  },
+  {
+   "type": "mesh",
+   "geometry": {
+    "kind": "billboard",
+    "center": [
+     30.0,
+     27.0,
+     -90.0
+    ],
+    "width": 30.0,
+    "height": 15.0
+   },
+   "name": "cloud sprite",
+   "texture": "cloud"
+  },
+  {
+   "type": "character",
+   "name": "Taniguchi (shore)",
+   "position": [
+    -1.05,
+    0.0,
+    1.0
+   ],
+   "height": 1.75,
+   "perspective": false,
+   "look": {
+    "body": "#4A4560",
+    "pattern": "vest",
+    "patCol": "#33304A",
+    "hat": "bowler",
+    "hatCol": "#2E2A3A",
+    "neck": "tie",
+    "neckCol": "#7A2E3A",
+    "extra": [
+     "glasses",
+     "mustache"
+    ],
+    "mustacheCol": "#C9C9D2"
+   },
+   "state": {
+    "mood": "determined",
+    "look": [
+     0.3,
+     0.0
+    ],
+    "blink": 0.0,
+    "talk": 0.38780462741851807,
+    "armL": [
+     28.0,
+     -24.0
+    ],
+    "armR": [
+     96.0,
+     -6.0
+    ]
+   },
+   "id": "taniguchi",
+   "channels": {
+    "armR": {
+     "kind": "poseTrack",
+     "keys": [
+      [
+       0.0,
+       68.0
+      ],
+      [
+       1.5889999866485596,
+       96.0,
+       0.3
+      ]
+     ],
+     "clock": "lt",
+     "source": "shots.ts S03 set(): armR = poseTrack([[0,68],[wNever-st-0.13,96,0.3]], lt); second component static -6"
+    },
+    "talk": {
+     "kind": "talk",
+     "formula": "on ? 0.25 + 0.75*|sin(13*t)| * (0.6 + 0.4*sin(5.3*t)) : 0",
+     "clock": "film t",
+     "on": "lt < wSurr - st + 0.35 (window lt 0..2.309)",
+     "source": "shots.ts:21 talk() + S03 set()"
+    },
+    "blink": {
+     "kind": "blinkDirector",
+     "directorSeed": 9,
+     "source": "shots.ts S03 set(): blinkDirector(9)"
+    }
+   }
+  },
+  {
+   "type": "character",
+   "name": "Onoda (shore)",
+   "position": [
+    1.0,
+    0.0,
+    0.75
+   ],
+   "height": 1.75,
+   "perspective": false,
+   "look": {
+    "body": "#5C6644",
+    "hat": "cap",
+    "hatCol": "#4C5638"
+   },
+   "state": {
+    "mood": "determined",
+    "blink": 0.0,
+    "armL": [
+     5.0,
+     3.0
+    ],
+    "armR": [
+     5.0,
+     3.0
+    ]
+   },
+   "id": "onoda",
+   "channels": {
+    "blink": {
+     "kind": "blinkOf+blinkAt",
+     "directorSeed": 3,
+     "at": [
+      {
+       "word": "never",
+       "line": 2,
+       "t": 14.779999732971191
+      }
+     ],
+     "source": "shots.ts S03 set(): max(blinkDirector(3)(t), blinkAt(t, [wNever]))"
+    }
+   }
+  },
+  {
+   "type": "character",
+   "name": "companion A (shore)",
+   "position": [
+    1.85,
+    0.0,
+    -0.85
+   ],
+   "height": 1.75,
+   "perspective": false,
+   "look": {
+    "body": "#68744E",
+    "hat": "cap",
+    "hatCol": "#525C3C"
+   },
+   "state": {
+    "mood": "neutral",
+    "blink": 0.0,
+    "armL": [
+     5.0,
+     3.0
+    ],
+    "armR": [
+     5.0,
+     3.0
+    ]
+   },
+   "id": "compA",
+   "channels": {
+    "blink": {
+     "kind": "blinkDirector",
+     "directorSeed": 7
+    }
+   }
+  },
+  {
+   "type": "character",
+   "name": "companion B (shore)",
+   "position": [
+    -1.9,
+    0.0,
+    -0.65
+   ],
+   "height": 1.75,
+   "perspective": false,
+   "look": {
+    "body": "#59613F",
+    "hat": "cap",
+    "hatCol": "#59613F",
+    "neck": "scarf",
+    "neckCol": "#8A7A52"
+   },
+   "state": {
+    "mood": "neutral",
+    "blink": 0.0,
+    "armL": [
+     5.0,
+     3.0
+    ],
+    "armR": [
+     5.0,
+     3.0
+    ]
+   },
+   "id": "compB",
+   "channels": {
+    "blink": {
+     "kind": "blinkDirector",
+     "directorSeed": 11
+    }
+   }
+  }
+ ],
+ "post": {
+  "bokeh": {
+   "focus": 6.768082141876221,
+   "aperture": 0.0012,
+   "maxblur": 0.007
+  },
+  "bloom": {
+   "strength": 0.16
+  },
+  "grade": {
+   "sat": 0.84,
+   "warm": 0.05,
+   "vignette": 0.22,
+   "grain": 0.012,
+   "time": 0
+  }
+ }
+}

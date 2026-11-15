@@ -1,0 +1,64 @@
+{
+ "gap": 0.18,
+ "lead": 0.3,
+ "lines": [
+  {
+   "caps": "This | soldier | kept | fighting | World | War | II | for | 29 | years | after | it | ended.",
+   "text": "This soldier kept fighting World War II for 29 years after it ended."
+  },
+  {
+   "caps": "Hiroo Onoda | was a Japanese | soldier | sent to | a Philippine island | in 1944.",
+   "text": "Hiroo Onoda was a Japanese soldier sent to a Philippine island in 1944."
+  },
+  {
+   "caps": "His orders | were simple: | never surrender.",
+   "text": "His orders were simple: never surrender."
+  },
+  {
+   "caps": "In 1945, | the war ended. | But Onoda | never got | the message.",
+   "text": "In 1945, the war ended. But Onoda never got the message."
+  },
+  {
+   "caps": "Planes dropped | leaflets | saying the war | was over. | He thought it | was an enemy | trick.",
+   "text": "Planes dropped leaflets saying the war was over. He thought it was an enemy trick."
+  },
+  {
+   "caps": "His friends | gave up | or died, | until he | was alone.",
+   "text": "His friends gave up or died, until he was alone."
+  },
+  {
+   "caps": "He lived | in the jungle | for decades, | surviving | on coconuts | and bananas.",
+   "text": "He lived in the jungle for decades, surviving on coconuts and bananas."
+  },
+  {
+   "caps": "In 1974, | a young traveler | named Norio | Suzuki | found him. | Onoda still refused | to leave.",
+   "text": "In 1974, a young traveler named Norio Suzuki found him. Onoda still refused to leave."
+  },
+  {
+   "caps": "He said | he would only stop | if his own | commander | ordered it.",
+   "text": "He said he would only stop if his own commander ordered it."
+  },
+  {
+   "caps": "So Japan found | his old | commander, | now a bookseller, | and flew him | to the island.",
+   "text": "So Japan found his old commander, now a bookseller, and flew him to the island."
+  },
+  {
+   "caps": "He finally | gave the order, | and Onoda | surrendered | after 29 years.",
+   "text": "He finally gave the order, and Onoda surrendered after 29 years."
+  },
+  {
+   "caps": "He wasn't hiding | from the war. | He was just | still loyal | to it.",
+   "text": "He wasn't hiding from the war. He was just still loyal to it."
+  }
+ ],
+ "music": "bed",
+ "outro": 1.2,
+ "sources": [
+  "Wikipedia, 'Hiroo Onoda': Japanese intelligence officer ordered to Lubang Island, Philippines, in December 1944 with orders never to surrender; leaflets announcing the war's end were dismissed by him as Allied propaganda; his companions surrendered or died over the years (last, Kozuka, in 1972); found by Japanese traveler Norio Suzuki on 20 February 1974; his former commander Major Yoshimi Taniguchi, by then a bookseller, was flown to Lubang and formally relieved him of duty on 9 March 1974 — 29 years after the war ended.",
+  "Encyclopaedia Britannica, 'Onoda Hiroo': held out on Lubang Island until 1974, subsisting on coconuts, bananas and rice in the jungle; surrendered only on the direct order of his former commanding officer.",
+  "The New York Times, obituary of Hiroo Onoda (17 Jan 2014): the last Japanese holdout, who refused to believe the war had ended and emerged from the Philippine jungle in 1974 after his ex-commander ordered him to lay down his arms."
+ ],
+ "speed": 1.05,
+ "title": "The Soldier Who Didn't Know The War Was Over",
+ "voice": "bm_george"
+}

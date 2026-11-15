@@ -1,0 +1,46 @@
+{
+ "format": "talerender-plates",
+ "version": 1,
+ "plates": [
+  {
+   "name": "book-closed",
+   "file": "book-closed.png",
+   "origin": [
+    -170.0,
+    -180.0
+   ]
+  },
+  {
+   "name": "book-open",
+   "file": "book-open.png",
+   "origin": [
+    -170.0,
+    -180.0
+   ]
+  },
+  {
+   "name": "coconut",
+   "file": "coconut.png",
+   "origin": [
+    -100.0,
+    -108.0
+   ]
+  },
+  {
+   "name": "leaflet",
+   "file": "leaflet.png",
+   "origin": [
+    -200.0,
+    -258.0
+   ]
+  },
+  {
+   "name": "paper-map",
+   "file": "paper-map.png",
+   "origin": [
+    -200.0,
+    -270.0
+   ]
+  }
+ ]
+}

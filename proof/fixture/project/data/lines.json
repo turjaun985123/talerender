@@ -1,0 +1,79 @@
+{
+ "duration": 60.357,
+ "voice": "bm_george",
+ "speed": 1.05,
+ "lines": [
+  {
+   "i": 0,
+   "text": "This soldier kept fighting World War II for 29 years after it ended.",
+   "start": 0.3,
+   "end": 5.787
+  },
+  {
+   "i": 1,
+   "text": "Hiroo Onoda was a Japanese soldier sent to a Philippine island in 1944.",
+   "start": 5.967,
+   "end": 12.941
+  },
+  {
+   "i": 2,
+   "text": "His orders were simple: never surrender.",
+   "start": 13.121,
+   "end": 15.83
+  },
+  {
+   "i": 3,
+   "text": "In 1945, the war ended. But Onoda never got the message.",
+   "start": 16.01,
+   "end": 21.264
+  },
+  {
+   "i": 4,
+   "text": "Planes dropped leaflets saying the war was over. He thought it was an enemy trick.",
+   "start": 21.444,
+   "end": 26.009
+  },
+  {
+   "i": 5,
+   "text": "His friends gave up or died, until he was alone.",
+   "start": 26.189,
+   "end": 29.201
+  },
+  {
+   "i": 6,
+   "text": "He lived in the jungle for decades, surviving on coconuts and bananas.",
+   "start": 29.381,
+   "end": 34.089
+  },
+  {
+   "i": 7,
+   "text": "In 1974, a young traveler named Norio Suzuki found him. Onoda still refused to leave.",
+   "start": 34.269,
+   "end": 41.612
+  },
+  {
+   "i": 8,
+   "text": "He said he would only stop if his own commander ordered it.",
+   "start": 41.792,
+   "end": 45.245
+  },
+  {
+   "i": 9,
+   "text": "So Japan found his old commander, now a bookseller, and flew him to the island.",
+   "start": 45.425,
+   "end": 50.528
+  },
+  {
+   "i": 10,
+   "text": "He finally gave the order, and Onoda surrendered after 29 years.",
+   "start": 50.708,
+   "end": 55.4
+  },
+  {
+   "i": 11,
+   "text": "He wasn't hiding from the war. He was just still loyal to it.",
+   "start": 55.58,
+   "end": 58.977
+  }
+ ]
+}
