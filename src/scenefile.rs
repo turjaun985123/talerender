@@ -406,15 +406,21 @@ fn scatter_geo(base: Geo, spec: &Value, ctx: &str) -> Result<Geo, String> {
     Ok(merged)
 }
 
-fn resolve_texture(spec: &Value, scene_dir: &Path, ctx: &str) -> Result<(Vec<u8>, u32, u32), String> {
-    if let Some(path) = spec.get("file") {
-        let path = path.as_str().ok_or_else(|| err(ctx, "'file' must be a string"))?;
-        let full = scene_dir.join(path);
-        let img = image::open(&full)
-            .map_err(|e| err(ctx, &format!("cannot load texture file {}: {e}", full.display())))?
-            .to_rgba8();
-        let (w, h) = img.dimensions();
-        return Ok((img.into_raw(), w, h));
+fn resolve_texture(spec: &Value, scene_dir: &Path, ctx: &str, wire: &mut crate::assetwire::AssetWire) -> Result<(Vec<u8>, u32, u32), String> {
+    // WP8 caller (CR-B1-09): the wire owns the file branch —
+    // same point, same order, same error strings; a repeated
+    // file is decoded once per load (path+size revalidated at
+    // request time). Generator specs fall through untouched.
+    if let Some(r) = wire.resolve_file(spec, scene_dir, ctx, |full| {
+        image::open(full)
+            .map_err(|e| crate::assetwire::AssetWire::load_error(ctx, full, &e))
+            .and_then(|img| {
+                let img = img.to_rgba8();
+                let (w, h) = img.dimensions();
+                Ok((img.into_raw(), w, h))
+            })
+    }) {
+        return r;
     }
     let gen = str_field(spec, "generator", ctx)?;
     Ok(match gen {
@@ -997,6 +1003,7 @@ fn load(path: &str) -> Result<Loaded, String> {
     };
 
     let scene_dir = Path::new(path).parent().unwrap_or_else(|| Path::new(".")).to_path_buf();
+    let mut wire = crate::assetwire::AssetWire::new();
     let mut textures = Vec::new();
     let mut tex_index: HashMap<String, usize> = HashMap::new();
     if let Some(list) = root.get("textures") {
@@ -1008,7 +1015,7 @@ fn load(path: &str) -> Result<Loaded, String> {
                 return Err(err(&tctx, &format!("duplicate texture id '{id}'")));
             }
             tex_index.insert(id.to_string(), textures.len());
-            textures.push(resolve_texture(spec, &scene_dir, &tctx)?);
+            textures.push(resolve_texture(spec, &scene_dir, &tctx, &mut wire)?);
         }
     }
 

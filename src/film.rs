@@ -3671,7 +3671,7 @@ pub(crate) async fn run_film(width: u32, height: u32, film_dir: &str, out_dir: &
     let assets = load_assets(dir, &data).map_err(|e| crate::errors::TaleError::data_load(dir, e))?;
     let looks = look_registry();
     let frames_total = (data.duration * 30.0).ceil() as u32;
-    let to = if to == 0 { frames_total } else { to.min(frames_total) };
+    let (from, to) = crate::schedwire::resolve_range(from, to, frames_total);
     let mut renderer = Renderer::new(width, height, &assets.sign, knobs, adapter_policy).await?;
     // WP4 streaming session (CR-B1-02): in stream mode the
     // frames flow straight into the encoder and NO PNGs are
@@ -3691,7 +3691,6 @@ pub(crate) async fn run_film(width: u32, height: u32, film_dir: &str, out_dir: &
         "THE SOLDIER WHO DIDN'T KNOW THE WAR WAS OVER", frames_total, from, to, width, height
     );
     let mut cache = PaintCache::new();
-    let (mut done, mut skipped) = (0u32, 0u32);
     let clock = crate::runlog::RunClock::new();
     // WP6: per-frame timing lines, env-gated OFF by default
     // (runlog::frame_timing_enabled). The line shape is the
@@ -3699,12 +3698,19 @@ pub(crate) async fn run_film(width: u32, height: u32, film_dir: &str, out_dir: &
     // "frame-time: frame=<n> ms=<x>". Default-off runs print
     // nothing extra — stdout stays byte-identical.
     let timing = crate::runlog::frame_timing_enabled();
-    for n in from..to {
-        let path = format!("{out_dir}/frame_{n:05}.png");
-        if Path::new(&path).exists() {
-            skipped += 1;
+    // WP7/WP11 callers (CR-B1-09): the schedwire iterator owns
+    // the range walk — its exists test runs lazily at each
+    // frame's turn, exactly as the hand-rolled loop's did, so
+    // resume semantics are unchanged; outwire::frame_path
+    // keeps the format! path spelling byte-identical (the
+    // Path::join rewrite is NOT byte-identical — CR-B1-09 §3.3).
+    let mut frames = crate::schedwire::fs_frame_iter(from, to, out_dir);
+    while let Some(step) = frames.next() {
+        let n = step.index();
+        if let crate::schedwire::Step::Skip(_) = step {
             continue;
         }
+        let path = crate::outwire::frame_path(out_dir, n);
         let frame_start = std::time::Instant::now();
         let t = n as f64 / 30.0;
         let mut spec = eval_frame(&data, &looks, t);
@@ -3721,22 +3727,26 @@ pub(crate) async fn run_film(width: u32, height: u32, film_dir: &str, out_dir: &
         }
         let img = image::RgbaImage::from_raw(width, height, px).expect("pixel buffer size mismatch");
         img.save(&path).map_err(|e| crate::errors::TaleError::image_io(&path, e))?;
-        done += 1;
+        let progress_due = frames.note_rendered();
         if timing {
             println!(
                 "frame-time: frame={n} ms={:.2}",
                 frame_start.elapsed().as_secs_f64() * 1000.0
             );
         }
-        if done % 25 == 0 {
+        if progress_due {
             println!(
-                "  frame {n} (t = {t:.2}s) — {done} rendered, {skipped} skipped · {}{tag}",
-                clock.timing_suffix((done + skipped) as u64, (to - from) as u64)
+                "  frame {n} (t = {t:.2}s) — {} rendered, {} skipped · {}{tag}",
+                frames.done(),
+                frames.skipped(),
+                clock.timing_suffix(frames.progress_numerator(), frames.total() as u64)
             );
         }
     }
     println!(
-        "film render complete: {done} rendered, {skipped} skipped (resume), range {from}..{to} · {} · {}{tag}",
+        "film render complete: {} rendered, {} skipped (resume), range {from}..{to} · {} · {}{tag}",
+        frames.done(),
+        frames.skipped(),
         clock.summary_suffix(),
         cache.stats_line()
     );
