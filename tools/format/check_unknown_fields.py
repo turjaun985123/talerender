@@ -115,16 +115,23 @@ def load_json_input(path, what):
 # textures, post, fog), walk_nodes() (nodes), colour_geo /
 # tex_geo / scatter_geo (geometry + placement), material_colour,
 # resolve_texture, eval_camera_keys, compose_transform.
+# §15 extensions (scene-format §15.6/§15.10 step 2, landed
+# 2026-11-15): src/eval15.rs, consumed from scenefile::load —
+# the loader reads the root "prefabs"/"clips" blocks, the
+# node "prefab"/"clip"/"clipTime" fields, and "clip"/
+# "clipTime" on the camera/lights/post/fog blocks.
 # ---------------------------------------------------------------------
 
 SCENE_ROOT = {"format", "version", "time", "name", "camera",
               "clear", "lighting", "lights", "textures", "nodes",
-              "post", "fog"}
-CAMERA = {"eye", "target", "fovY", "near", "far", "up", "keys"}
+              "post", "fog", "prefabs", "clips"}
+CAMERA = {"eye", "target", "fovY", "near", "far", "up", "keys",
+          "clip", "clipTime"}
 CAMERA_KEY = {"t", "eye", "target", "fovY", "ease"}
 LIGHTING = {"directional"}
 LIGHTING_DIR = {"direction", "ambient"}
-LIGHTS = {"key", "rim", "hemisphere", "points", "envIntensity"}
+LIGHTS = {"key", "rim", "hemisphere", "points", "envIntensity",
+          "clip", "clipTime"}
 LIGHT_KEY = {"color", "intensity", "position", "target", "shadow",
              "shadowBox", "far", "near", "bias", "normalBias"}
 LIGHT_RIM = {"color", "intensity", "position"}
@@ -133,7 +140,8 @@ LIGHT_POINT = {"color", "intensity", "position", "distance",
                "decay"}
 NODE = {"type", "transform", "children", "geometry", "material",
         "texture", "id", "position", "height", "perspective",
-        "look", "state", "attachments", "count", "placement"}
+        "look", "state", "attachments", "count", "placement",
+        "prefab", "clip", "clipTime"}
 TRANSFORM_OPS = {"translate", "rotate_x", "rotate_y", "rotate_z",
                  "euler_xyz", "scale"}
 GEOMETRY_BY_KIND = {
@@ -196,11 +204,11 @@ TEXTURE_TOLERATED_BY_GENERATOR = {
                 "`label`",
     },
 }
-POST = {"bokeh", "bloom", "grade"}
+POST = {"bokeh", "bloom", "grade", "clip", "clipTime"}
 BOKEH = {"focus", "aperture", "maxblur"}
 BLOOM = {"threshold", "strength", "radius"}
 GRADE = {"vignette", "grain", "warm", "sat", "exposure", "time"}
-FOG = {"color", "near", "far"}
+FOG = {"color", "near", "far", "clip", "clipTime"}
 
 # src/film.rs load_film_data: the --film driver's data file.
 FILM_ROOT = {"anchors", "lines", "captions", "duration",
