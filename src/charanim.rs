@@ -362,7 +362,7 @@ pub fn gaze_delta(current_turn: f32, current_tilt: f32, current_look: [f32; 2], 
 // (d) EXPRESSION TRANSITIONS
 // ---------------------------------------------------------------------
 
-/// The expression vocabulary: the 17 moods the full painter
+/// The expression vocabulary: the 19 moods the full painter
 /// implements (`toonfull::Mood`, src/toonfull.rs:38-56), mirrored
 /// 1:1 — same names, same strings (`Mood::from_str`,
 /// toonfull.rs:59-79), same brow table and heavy-lid set
@@ -389,11 +389,13 @@ pub enum Expr {
     Awe,
     Suspicious,
     Relieved,
+    Puzzled,
+    Deadpan,
 }
 
 impl Expr {
-    /// All 17 expressions, in the painter's declaration order.
-    pub const ALL: [Expr; 17] = [
+    /// All 19 expressions, in the painter's declaration order.
+    pub const ALL: [Expr; 19] = [
         Expr::Neutral,
         Expr::Smug,
         Expr::Happy,
@@ -411,6 +413,8 @@ impl Expr {
         Expr::Awe,
         Expr::Suspicious,
         Expr::Relieved,
+        Expr::Puzzled,
+        Expr::Deadpan,
     ];
 
     /// Same strings as `Mood::from_str`; unknown → Neutral,
@@ -433,6 +437,8 @@ impl Expr {
             "awe" => Expr::Awe,
             "suspicious" => Expr::Suspicious,
             "relieved" => Expr::Relieved,
+            "puzzled" => Expr::Puzzled,
+            "deadpan" => Expr::Deadpan,
             _ => Expr::Neutral,
         }
     }
@@ -456,6 +462,8 @@ impl Expr {
             Expr::Awe => "awe",
             Expr::Suspicious => "suspicious",
             Expr::Relieved => "relieved",
+            Expr::Puzzled => "puzzled",
+            Expr::Deadpan => "deadpan",
         }
     }
 
@@ -482,13 +490,15 @@ impl Expr {
             Expr::Awe => (26.0, 0.0),
             Expr::Suspicious => (-2.0, 6.0),
             Expr::Relieved => (14.0, -4.0),
+            Expr::Puzzled => (6.0, 4.0),
+            Expr::Deadpan => (2.0, 0.0),
         }
     }
 
     /// `Mood::heavy_lid` (toonfull.rs:100-102): these moods draw
     /// the lid line over the eye.
     pub fn heavy_lid(self) -> bool {
-        matches!(self, Expr::Smug | Expr::Tired | Expr::Sly | Expr::Proud | Expr::Determined)
+        matches!(self, Expr::Smug | Expr::Tired | Expr::Sly | Expr::Proud | Expr::Determined | Expr::Deadpan)
     }
 }
 
@@ -834,14 +844,14 @@ mod tests {
 
     #[test]
     fn expression_vocabulary_matches_the_painter() {
-        // The 17 names, in order, round-tripping through strings —
+        // The 19 names, in order, round-tripping through strings —
         // the same strings Mood::from_str accepts (toonfull.rs:59-79).
         let names = [
             "neutral", "smug", "happy", "laugh", "shock", "worried", "angry", "sad", "sly",
             "proud", "tired", "dizzy", "determined", "embarrassed", "awe", "suspicious",
-            "relieved",
+            "relieved", "puzzled", "deadpan",
         ];
-        assert_eq!(Expr::ALL.len(), 17);
+        assert_eq!(Expr::ALL.len(), 19);
         for (i, e) in Expr::ALL.iter().enumerate() {
             assert_eq!(e.as_str(), names[i]);
             assert_eq!(Expr::from_str(names[i]), *e);
@@ -852,6 +862,10 @@ mod tests {
         assert_eq!(Expr::Angry.brow(), (-10.0, 22.0));
         assert_eq!(Expr::Awe.brow(), (26.0, 0.0));
         assert_eq!(Expr::Relieved.brow(), (14.0, -4.0));
+        assert_eq!(Expr::Puzzled.brow(), (6.0, 4.0));
+        assert_eq!(Expr::Deadpan.brow(), (2.0, 0.0));
+        assert!(Expr::Deadpan.heavy_lid());
+        assert!(!Expr::Puzzled.heavy_lid());
         assert!(Expr::Determined.heavy_lid());
         assert!(!Expr::Happy.heavy_lid());
     }

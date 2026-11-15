@@ -253,7 +253,7 @@ pub(crate) const BYTES_PER_PIXEL: u64 = 4;
 pub(crate) const CANVAS_BYTES: u64 =
     CANVAS_W as u64 * CANVAS_H as u64 * BYTES_PER_PIXEL;
 
-/// Mirror of `toonfull::Mood` (17 variants, same declaration
+/// Mirror of `toonfull::Mood` (19 variants, same declaration
 /// order, so the discriminant matches the source enum's).
 /// Mirrored rather than imported so this module stays a
 /// standalone pure-logic unit (the charanim.rs precedent);
@@ -277,6 +277,8 @@ pub(crate) enum MoodKey {
     Awe,
     Suspicious,
     Relieved,
+    Puzzled,
+    Deadpan,
 }
 
 /// Mirror of `toonfull::Legs` (same variants, same order);

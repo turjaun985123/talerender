@@ -3955,6 +3955,8 @@ fn mood_name(m: Mood) -> &'static str {
         Mood::Awe => "awe",
         Mood::Suspicious => "suspicious",
         Mood::Relieved => "relieved",
+        Mood::Puzzled => "puzzled",
+        Mood::Deadpan => "deadpan",
     }
 }
 

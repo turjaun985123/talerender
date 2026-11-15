@@ -1,5 +1,5 @@
 //! Full drawToon port (production integration): the complete
-//! character painter from the source engine's toon.ts — all 17
+//! character painter from the source engine's toon.ts — all 19
 //! moods, walk/run/sit/jump legs, patterns (vest), neckwear (tie,
 //! scarf), hats (cap, bowler), extras (glasses, mustache), blink /
 //! talk / look / sweat / tears, headTilt / headTurn / camPitch /
@@ -49,6 +49,8 @@ pub(crate) enum Mood {
     Awe,
     Suspicious,
     Relieved,
+    Puzzled,
+    Deadpan,
 }
 
 impl Mood {
@@ -70,6 +72,8 @@ impl Mood {
             "awe" => Mood::Awe,
             "suspicious" => Mood::Suspicious,
             "relieved" => Mood::Relieved,
+            "puzzled" => Mood::Puzzled,
+            "deadpan" => Mood::Deadpan,
             _ => Mood::Neutral,
         }
     }
@@ -93,10 +97,22 @@ impl Mood {
             Mood::Awe => (26.0, 0.0),
             Mood::Suspicious => (-2.0, 6.0),
             Mood::Relieved => (14.0, -4.0),
+            Mood::Puzzled => (6.0, 4.0),
+            Mood::Deadpan => (2.0, 0.0),
         }
     }
     fn heavy_lid(self) -> bool {
-        matches!(self, Mood::Smug | Mood::Tired | Mood::Sly | Mood::Proud | Mood::Determined)
+        matches!(self, Mood::Smug | Mood::Tired | Mood::Sly | Mood::Proud | Mood::Determined | Mood::Deadpan)
+    }
+    /// drawFace eye() lid offset: the lid rect's bottom edge and
+    /// the lid line sit at ey - 2 + lid (lid = 6 tired, 8 deadpan,
+    /// 0 for the other heavy-lid moods).
+    fn lid_offset(self) -> f32 {
+        match self {
+            Mood::Tired => 6.0,
+            Mood::Deadpan => 8.0,
+            _ => 0.0,
+        }
     }
 }
 
@@ -554,6 +570,16 @@ pub(crate) fn paint_toon_full(
             lift = 18.0;
             tilt = -6.0;
         }
+        if m == Mood::Puzzled {
+            // drawFace: one brow up, one brow down — the whole read.
+            if s < 0.0 {
+                lift = 16.0;
+                tilt = -2.0;
+            } else {
+                lift = -2.0;
+                tilt = 8.0;
+            }
+        }
         let y = ey - 44.0 - lift;
         p.stroke_quad(
             hpt(fx + s * (ex - 26.0), y + tilt * 0.5),
@@ -602,11 +628,12 @@ pub(crate) fn paint_toon_full(
         }
         let (ppx, ppy) = hpt(x + lx * 9.0, ey + ly * 8.0);
         let slit = if m == Mood::Suspicious && s < 0.0 { 0.55 } else { 1.0 };
+        let deadpan = if m == Mood::Deadpan { 0.8 } else { 1.0 };
         p.fill_ellipse(
             ppx,
             ppy,
             13.0 * RES,
-            17.0 * (1.0 - st.blink * 0.6) * slit * RES,
+            17.0 * (1.0 - st.blink * 0.6) * slit * deadpan * RES,
             head_rot,
             ink,
         );
@@ -615,14 +642,14 @@ pub(crate) fn paint_toon_full(
             let rect_pts = [
                 hpt(x - 24.0, ey - 28.0),
                 hpt(x + 24.0, ey - 28.0),
-                hpt(x + 24.0, ey - 2.0 + if m == Mood::Tired { 6.0 } else { 0.0 }),
-                hpt(x - 24.0, ey - 2.0 + if m == Mood::Tired { 6.0 } else { 0.0 }),
+                hpt(x + 24.0, ey - 2.0 + m.lid_offset()),
+                hpt(x - 24.0, ey - 2.0 + m.lid_offset()),
             ];
             p.fill_polygon(&rect_pts, rgba(&look.head));
             p.stroke_polyline(
                 &[
-                    hpt(x - 20.0, ey - 2.0 + if m == Mood::Tired { 6.0 } else { 0.0 }),
-                    hpt(x + 20.0, ey - 2.0 + if m == Mood::Tired { 6.0 } else { 0.0 }),
+                    hpt(x - 20.0, ey - 2.0 + m.lid_offset()),
+                    hpt(x + 20.0, ey - 2.0 + m.lid_offset()),
                 ],
                 lw(7.0),
                 ink,
@@ -725,7 +752,7 @@ pub(crate) fn paint_toon_full(
             Mood::Sad => {
                 p.stroke_quad(hpt(fx - 24.0, my + 12.0), hpt(fx, my - 4.0), hpt(fx + 24.0, my + 12.0), lw(8.0), ink);
             }
-            Mood::Tired | Mood::Dizzy => {
+            Mood::Tired | Mood::Dizzy | Mood::Deadpan => {
                 p.stroke_polyline(&[hpt(fx - 18.0, my + 6.0), hpt(fx + 18.0, my + 6.0)], lw(8.0), ink);
             }
             Mood::Determined => {
@@ -742,6 +769,9 @@ pub(crate) fn paint_toon_full(
             }
             Mood::Suspicious => {
                 p.stroke_quad(hpt(fx - 22.0, my), hpt(fx, my + 2.0), hpt(fx + 24.0, my + 9.0), lw(8.0), ink);
+            }
+            Mood::Puzzled => {
+                p.stroke_quad(hpt(fx - 16.0, my + 5.0), hpt(fx, my + 1.0), hpt(fx + 16.0, my - 1.0), lw(8.0), ink);
             }
             Mood::Relieved => {
                 p.stroke_quad(hpt(fx - 20.0, my), hpt(fx, my + 18.0), hpt(fx + 20.0, my), lw(8.0), ink);
