@@ -17,6 +17,7 @@
 
 mod ab1;
 mod anim;
+mod assetstream;
 mod atlas;
 mod battery;
 mod bufferpool;
