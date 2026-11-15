@@ -433,11 +433,31 @@ struct GpuMem {
     tex_counts: [u64; 7],
     buf_counts: [u64; 7],
     readback_max: u64,
+    // V2 C2 (WP2): per-class peak bytes + lifetime
+    // registration/free call counters for mem_snapshot().
+    // Watermarks and lifetime totals: MemScope never rolls
+    // these back, exactly like `peak`.
+    peak_bytes: [u64; 7],
+    created_tex: u64,
+    created_buf: u64,
+    destroyed_tex: u64,
+    destroyed_buf: u64,
 }
 
 impl GpuMem {
     const fn new() -> GpuMem {
-        GpuMem { bytes: [0; 7], peak: 0, tex_counts: [0; 7], buf_counts: [0; 7], readback_max: 0 }
+        GpuMem {
+            bytes: [0; 7],
+            peak: 0,
+            tex_counts: [0; 7],
+            buf_counts: [0; 7],
+            readback_max: 0,
+            peak_bytes: [0; 7],
+            created_tex: 0,
+            created_buf: 0,
+            destroyed_tex: 0,
+            destroyed_buf: 0,
+        }
     }
 
     /// Live accounted bytes: classes A–E + G. Class F is
@@ -479,6 +499,10 @@ pub(crate) fn mem_alloc_texture(class: MemClass, bytes: u64) {
         let i = class.idx();
         m.bytes[i] = m.bytes[i].saturating_add(bytes);
         m.tex_counts[i] = m.tex_counts[i].saturating_add(1);
+        m.created_tex = m.created_tex.saturating_add(1);
+        if m.bytes[i] > m.peak_bytes[i] {
+            m.peak_bytes[i] = m.bytes[i];
+        }
         m.note_peak();
     });
 }
@@ -488,6 +512,7 @@ pub(crate) fn mem_free_texture(class: MemClass, bytes: u64) {
         let i = class.idx();
         m.bytes[i] = m.bytes[i].saturating_sub(bytes);
         m.tex_counts[i] = m.tex_counts[i].saturating_sub(1);
+        m.destroyed_tex = m.destroyed_tex.saturating_add(1);
     });
 }
 
@@ -496,6 +521,10 @@ pub(crate) fn mem_alloc_buffer(class: MemClass, bytes: u64) {
         let i = class.idx();
         m.bytes[i] = m.bytes[i].saturating_add(bytes);
         m.buf_counts[i] = m.buf_counts[i].saturating_add(1);
+        m.created_buf = m.created_buf.saturating_add(1);
+        if m.bytes[i] > m.peak_bytes[i] {
+            m.peak_bytes[i] = m.bytes[i];
+        }
         m.note_peak();
     });
 }
@@ -509,6 +538,7 @@ pub(crate) fn mem_free_buffer(class: MemClass, bytes: u64) {
         let i = class.idx();
         m.bytes[i] = m.bytes[i].saturating_sub(bytes);
         m.buf_counts[i] = m.buf_counts[i].saturating_sub(1);
+        m.destroyed_buf = m.destroyed_buf.saturating_add(1);
     });
 }
 
@@ -525,6 +555,10 @@ pub(crate) fn mem_note_readback(bytes: u64) {
         }
         if bytes > m.readback_max {
             m.readback_max = bytes;
+        }
+        let fi = MemClass::F.idx();
+        if bytes > m.peak_bytes[fi] {
+            m.peak_bytes[fi] = bytes;
         }
     });
 }
@@ -649,6 +683,57 @@ pub(crate) fn mem_stats_line() -> String {
     format_mem_line(&snap, probe_sysfs())
 }
 
+/// V2 contract C2 (WP2): the machine-readable snapshot the
+/// reporting interface renders. `per_class` is (current,
+/// peak) per class A..G; class F's current is always 0
+/// (peak-side only, by the ledger's design) and its peak is
+/// the largest single readback. `created_*` / `destroyed_*`
+/// are LIFETIME call counters of the registration/free
+/// functions — MemScope rollbacks restore live counts
+/// without calling the free functions, so created −
+/// destroyed is not the live count; `textures` / `buffers`
+/// are. All figures are TRACKED allocations (the ledger's
+/// honesty class), never driver numbers; sysfs is carried
+/// separately and may be unavailable.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub(crate) struct MemSnapshot {
+    pub accounted_bytes: u64,
+    pub peak_accounted_bytes: u64,
+    pub per_class: [(u64, u64); 7],
+    pub textures: u64,
+    pub buffers: u64,
+    pub created_textures: u64,
+    pub created_buffers: u64,
+    pub destroyed_textures: u64,
+    pub destroyed_buffers: u64,
+    pub readback_bytes: u64,
+    pub sysfs_gtt_used: Option<u64>,
+    pub sysfs_vram_used: Option<u64>,
+}
+
+pub(crate) fn mem_snapshot() -> MemSnapshot {
+    let m = with_mem(|m| *m);
+    let sysfs = probe_sysfs();
+    let mut per_class = [(0u64, 0u64); 7];
+    for i in 0..7 {
+        per_class[i] = (m.bytes[i], m.peak_bytes[i]);
+    }
+    MemSnapshot {
+        accounted_bytes: m.current(),
+        peak_accounted_bytes: m.peak,
+        per_class,
+        textures: m.tex_counts.iter().sum(),
+        buffers: m.buf_counts.iter().sum(),
+        created_textures: m.created_tex,
+        created_buffers: m.created_buf,
+        destroyed_textures: m.destroyed_tex,
+        destroyed_buffers: m.destroyed_buf,
+        readback_bytes: m.readback_max,
+        sysfs_gtt_used: sysfs.gtt,
+        sysfs_vram_used: sysfs.vram,
+    }
+}
+
 #[cfg(test)]
 pub(crate) fn mem_class_bytes(class: MemClass) -> u64 {
     with_mem(|m| m.bytes[class.idx()])
@@ -763,6 +848,30 @@ mod tests {
         assert_eq!(tex_bytes(1080, 1920, F::Rgba8UnormSrgb, 1), 8_294_400);
         assert_eq!(tex_bytes(2048, 2048, F::Rgba8Unorm, 1), 16_777_216); // one shadow term
         assert_eq!(tex_bytes(768, 1024, F::Rgba16Float, 1), 6_291_456); // PMREM
+    }
+
+    #[test]
+    fn mem_snapshot_reports_classes_counters_and_peaks() {
+        let _g = LEDGER_TEST_LOCK.lock().unwrap();
+        mem_reset();
+        mem_alloc_texture(MemClass::A, 1000);
+        mem_alloc_texture(MemClass::A, 500);
+        mem_free_texture(MemClass::A, 500);
+        mem_alloc_buffer(MemClass::G, 64);
+        mem_note_readback(300);
+        let s = mem_snapshot();
+        assert_eq!(s.accounted_bytes, 1064);
+        assert_eq!(s.per_class[MemClass::A.idx()], (1000, 1500));
+        assert_eq!(s.per_class[MemClass::G.idx()], (64, 64));
+        assert_eq!(s.per_class[MemClass::F.idx()], (0, 300));
+        assert_eq!(s.textures, 1);
+        assert_eq!(s.buffers, 1);
+        assert_eq!(s.created_textures, 2);
+        assert_eq!(s.destroyed_textures, 1);
+        assert_eq!(s.created_buffers, 1);
+        assert_eq!(s.destroyed_buffers, 0);
+        assert_eq!(s.readback_bytes, 300);
+        mem_reset();
     }
 
     #[test]
