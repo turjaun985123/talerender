@@ -639,6 +639,14 @@ fn walk_nodes(
                     mustache: extra.iter().any(|e| e == "mustache"),
                     mustache_col: opt_str(&look_spec, "mustacheCol"),
                     kid: truthy(look_spec.get("kid")),
+                    // CR-B3-06: the remaining drawFace extras +
+                    // hairCol (B2-10 §1.4–§1.8) — previously
+                    // dropped by this loader (G4).
+                    blush: extra.iter().any(|e| e == "blush"),
+                    freckles: extra.iter().any(|e| e == "freckles"),
+                    pencil: extra.iter().any(|e| e == "pencil"),
+                    monocle: extra.iter().any(|e| e == "monocle"),
+                    hair_col: opt_str(&look_spec, "hairCol"),
                 };
                 let st_spec = node.get("state").cloned().unwrap_or(Value::Null);
                 let plate_of = |key: &str| -> Result<Option<Plate>, String> {

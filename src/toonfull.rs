@@ -1,7 +1,9 @@
 //! Full drawToon port (production integration): the complete
 //! character painter from the source engine's toon.ts — all 19
-//! moods, walk/run/sit/jump legs, patterns (vest), neckwear (tie,
-//! scarf), hats (cap, bowler), extras (glasses, mustache), blink /
+//! moods, walk/run/sit/jump legs, patterns (vest, stripes, apron),
+//! neckwear (tie, scarf, collar), hats (cap, bowler, boater,
+//! beanie, visor, tophat, bun, flower, bow, mailcap), extras
+//! (glasses, mustache, blush, freckles, pencil, monocle), blink /
 //! talk / look / sweat / tears, headTilt / headTurn / camPitch /
 //! squash, and held-prop plates — where scene::paint_toon (M4) is
 //! the five-mood stand subset the §28 scene needs.
@@ -140,17 +142,28 @@ pub(crate) struct FullLook {
     pub body: String,
     pub head: String,
     pub shade: Option<String>,
-    pub pattern: String, // 'plain' | 'vest' (the film's set)
+    pub pattern: String, // 'plain' | 'vest' | 'stripes' | 'apron'
     pub pat_col: Option<String>,
-    pub hat: String, // 'none' | 'cap' | 'bowler'
+    pub hat: String, // 'none' | 'cap' | 'bowler' | 'boater' | 'beanie' | 'visor' | 'tophat' | 'bun' | 'flower' | 'bow' | 'mailcap'
     pub hat_col: Option<String>,
     pub band: Option<String>,
-    pub neck: String, // 'none' | 'tie' | 'scarf'
+    pub neck: String, // 'none' | 'tie' | 'scarf' | 'collar'
     pub neck_col: Option<String>,
     pub glasses: bool,
     pub mustache: bool,
     pub mustache_col: Option<String>,
     pub kid: bool,
+    // CR-B3-06 look ports (B2-10 §1.4–§1.8): extra-list flags +
+    // hair colour. All default false / None in every pre-existing
+    // look, so paints without them are byte-identical. These are
+    // FullLook fields, not FullState: the film PaintCache keys a
+    // look by registry index (film.rs state_key), and scenefile
+    // paints uncached, so no state_key / charstate change applies.
+    pub blush: bool,    // extra 'blush' (drawFace: OR'd with the laugh/proud/embarrassed moods)
+    pub freckles: bool, // extra 'freckles'
+    pub pencil: bool,   // extra 'pencil'
+    pub monocle: bool,  // extra 'monocle'
+    pub hair_col: Option<String>, // 'hairCol' (bow hat's side locks; hair strands are a later port)
 }
 
 pub(crate) struct FullState {
@@ -231,6 +244,36 @@ fn fill_polygon_masked(p: &mut Painter, pts: &[(f32, f32)], mask: &[bool], col: 
             }
         }
     }
+}
+
+/// Rounded-rect points in stage space with per-corner radii
+/// [top-left, top-right, bottom-right, bottom-left] — the native
+/// stand-in for ctx.roundRect with a radius list (scene's
+/// rounded_rect_pts takes a single radius). Corner order and
+/// flattening follow rounded_rect_pts (seg segments per corner).
+fn rounded_rect_pts_radii(
+    x: f32,
+    y: f32,
+    w: f32,
+    h: f32,
+    radii: [f32; 4],
+    seg: usize,
+) -> Vec<(f32, f32)> {
+    let [rtl, rtr, rbr, rbl] = radii;
+    let corners = [
+        (x + w - rtr, y + rtr, rtr, -std::f32::consts::FRAC_PI_2),
+        (x + w - rbr, y + h - rbr, rbr, 0.0),
+        (x + rbl, y + h - rbl, rbl, std::f32::consts::FRAC_PI_2),
+        (x + rtl, y + rtl, rtl, std::f32::consts::PI),
+    ];
+    let mut pts: Vec<(f32, f32)> = Vec::new();
+    for (cx, cy, r, a0) in corners {
+        for i in 0..=seg {
+            let a = a0 + (i as f32 / seg as f32) * std::f32::consts::FRAC_PI_2;
+            pts.push((cx + r * a.cos(), cy + r * a.sin()));
+        }
+    }
+    pts
 }
 
 /// Composite a held-prop plate at a stage-space hand point,
@@ -410,6 +453,52 @@ pub(crate) fn paint_toon_full(
     let mask = p.polygon_mask(&bean);
     // Pattern (clipped to the bean, as drawPattern runs inside the
     // body's clip): only 'vest' occurs in this film besides plain.
+    if look.pattern == "stripes" {
+        // drawPattern 'stripes': fillRect(x, top-20, 14, bot-top+40)
+        // for x = bx-130; x < bx+130; x += 36, colour
+        // patCol || shadeOf(body, 0.7), full alpha. Masked rects
+        // reproduce the bean clip exactly.
+        let pc = match &look.pat_col {
+            Some(s) => rgba(s.as_str()),
+            None => shade_rgba(&look.body, 0.7),
+        };
+        let mut sx = bx - 130.0;
+        while sx < bx + 130.0 {
+            let rect = [
+                px(sx, top - 20.0),
+                px(sx + 14.0, top - 20.0),
+                px(sx + 14.0, bot + 20.0),
+                px(sx, bot + 20.0),
+            ];
+            fill_polygon_masked(&mut p, &rect, &mask, pc);
+            sx += 36.0;
+        }
+    }
+    if look.pattern == "apron" {
+        // drawPattern 'apron': roundRect(bx-70, top+90, 140,
+        // bot-top, 18) fill patCol || '#F4EFE4'; pocket
+        // roundRect(bx-40, top+190, 80, 60, 8) STROKE
+        // shadeOf(patCol, 0.8) lw4. The pocket stroke is unmasked:
+        // probe-verified wholly inside the bean (min distance from
+        // the pocket contour to the bean boundary 3.79 stage units
+        // over the by range, vs the stroke's 2.0 half-width — see
+        // CR-B3-06), so it is pixel-equal to TS's clipped stroke.
+        let pc_hex = look.pat_col.as_deref().unwrap_or("#F4EFE4");
+        let body_pts: Vec<(f32, f32)> =
+            rounded_rect_pts_radii(bx - 70.0, top + 90.0, 140.0, bot - top, [18.0; 4], 6)
+                .iter()
+                .map(|&(x, y)| px(x, y))
+                .collect();
+        fill_polygon_masked(&mut p, &body_pts, &mask, rgba(pc_hex));
+        let pocket: Vec<(f32, f32)> =
+            rounded_rect_pts_radii(bx - 40.0, top + 190.0, 80.0, 60.0, [8.0; 4], 6)
+                .iter()
+                .map(|&(x, y)| px(x, y))
+                .collect();
+        let mut ring = pocket.clone();
+        ring.push(pocket[0]);
+        p.stroke_polyline(&ring, lw(4.0), shade_rgba(pc_hex, 0.8));
+    }
     if look.pattern == "vest" {
         let pc = look.pat_col.as_deref().unwrap_or("#3B3346");
         for s in [-1.0f32, 1.0] {
@@ -489,6 +578,23 @@ pub(crate) fn paint_toon_full(
                 shade,
             );
         }
+        "collar" => {
+            // drawNeckwear 'collar': fill '#FFFFFF' (neckCol is
+            // IGNORED for collar, as authored), per side the
+            // triangle (bx, top+18), (bx±56, top+2), (bx±40,
+            // top+46); fill + stroke lw6.
+            for s in [-1.0f32, 1.0] {
+                let tri = [
+                    px(bx, top + 18.0),
+                    px(bx + s * 56.0, top + 2.0),
+                    px(bx + s * 40.0, top + 46.0),
+                ];
+                p.fill_polygon(&tri, rgba("#FFFFFF"));
+                let mut ring = tri.to_vec();
+                ring.push(tri[0]);
+                p.stroke_polyline(&ring, lw(6.0), ink);
+            }
+        }
         _ => {}
     }
 
@@ -523,6 +629,16 @@ pub(crate) fn paint_toon_full(
     let turn = st.head_turn;
     let rp = r * (1.0 + 0.04 * st.cam_pitch);
     let fx = hx + turn * 30.0;
+    if look.hat == "bun" {
+        // drawHeadPart: the bun is drawn BEFORE the head disc (it
+        // is not a drawHat branch): circle (hx + 10 + turn*18,
+        // hy - rp - 8) r46, fill hatCol || '#6B4A3A', INK lw LW.
+        let bc = rgba(look.hat_col.as_deref().unwrap_or("#6B4A3A"));
+        let (bcx, bcy) = hpt(hx + 10.0 + turn * 18.0, hy - rp - 8.0);
+        let (brx, bry) = (46.0 * (1.0 - 0.3 * sq) * RES, 46.0 * (1.0 + sq) * RES);
+        p.fill_ellipse(bcx, bcy, brx, bry, head_rot, bc);
+        p.stroke_ellipse(bcx, bcy, brx, bry, head_rot, lw(9.0), ink);
+    }
     // Head outline.
     let (chx, chy) = hpt(hx, hy);
     p.fill_ellipse(chx, chy, rp * (1.0 - 0.3 * sq) * RES, rp * 0.97 * (1.0 + sq) * RES, head_rot, rgba(&look.head));
@@ -667,11 +783,42 @@ pub(crate) fn paint_toon_full(
         }
         p.stroke_polyline(&[hpt(fx - 16.0, ey - 4.0), hpt(fx + 16.0, ey - 4.0)], lw(5.0), ink);
     }
-    if m == Mood::Laugh || m == Mood::Proud || m == Mood::Embarrassed {
+    if look.monocle {
+        // drawFace 'monocle': stroke '#C9A13B' lw5 — circle r30 at
+        // the figure's right eye (fx + ex, ey), then the chain
+        // quadratic from (fx+ex+22, ey+22) via (fx+ex+40, ey+90)
+        // to (fx+ex+10, ey+140).
+        let gold = rgba("#C9A13B");
+        let (mxp, myp) = hpt(fx + ex, ey);
+        p.stroke_ellipse(mxp, myp, 30.0 * RES, 30.0 * RES, head_rot, lw(5.0), gold);
+        p.stroke_quad(
+            hpt(fx + ex + 22.0, ey + 22.0),
+            hpt(fx + ex + 40.0, ey + 90.0),
+            hpt(fx + ex + 10.0, ey + 140.0),
+            lw(5.0),
+            gold,
+        );
+    }
+    if look.blush || m == Mood::Laugh || m == Mood::Proud || m == Mood::Embarrassed {
+        // drawFace: extra 'blush' OR mood in {laugh, proud,
+        // embarrassed} — fill rgba(240,120,130,0.35), ellipses
+        // (fx ± 78, ey + 40) rx22 ry12.
         let blush = (240u8, 120u8, 130u8, (0.35 * 255.0) as u8);
         for s in [-1.0f32, 1.0] {
             let (bxp, byp) = hpt(fx + s * 78.0, ey + 40.0);
             p.fill_ellipse(bxp, byp, 22.0 * RES, 12.0 * RES, head_rot, blush);
+        }
+    }
+    if look.freckles {
+        // drawFace 'freckles': fill '#C98A64', per side s three
+        // r3.5 discs at (fx + s*(74+dx), ey + 36 + dy) for
+        // (dx, dy) in {(0,0), (12,8), (-10,10)} — dx sits INSIDE
+        // the side multiplication, as authored.
+        for s in [-1.0f32, 1.0] {
+            for (dx, dy) in [(0.0f32, 0.0f32), (12.0, 8.0), (-10.0, 10.0)] {
+                let (cxp, cyp) = hpt(fx + s * (74.0 + dx), ey + 36.0 + dy);
+                p.fill_ellipse(cxp, cyp, 3.5 * RES, 3.5 * RES, head_rot, rgba("#C98A64"));
+            }
         }
     }
     // Mouth.
@@ -802,6 +949,32 @@ pub(crate) fn paint_toon_full(
         ring.push(pts[0]);
         p.stroke_polyline(&ring, lw(4.0), ink);
     }
+    if look.pencil {
+        // drawFace 'pencil' (after mustache): save / translate
+        // (fx + 132, hy - 50) / rotate(-0.5): body fillRect
+        // (-8, -60, 16, 120) '#F2C230'; eraser fillRect
+        // (-8, -70, 16, 14) '#E58A9A'; outline strokeRect
+        // (-8, -70, 16, 130) INK lw4. No group-rotation op is
+        // needed: the rect corners are rotated by -0.5 about the
+        // anchor in stage space (canvas rotate is y-down, so
+        // (x, y) -> (x cos - y sin, x sin + y cos) with the angle
+        // -0.5), then mapped through hpt, which applies squash /
+        // tilt / lean exactly as the TS transform nest does.
+        // Anchored to (fx, hy) — the head centre, not ey.
+        let (ax, ay) = (fx + 132.0, hy - 50.0);
+        let (s5, c5) = (-0.5f32).sin_cos();
+        let rot = |lx: f32, ly: f32| -> (f32, f32) {
+            hpt(ax + lx * c5 - ly * s5, ay + lx * s5 + ly * c5)
+        };
+        let rect = |x: f32, y: f32, w: f32, h: f32| -> Vec<(f32, f32)> {
+            vec![rot(x, y), rot(x + w, y), rot(x + w, y + h), rot(x, y + h)]
+        };
+        p.fill_polygon(&rect(-8.0, -60.0, 16.0, 120.0), rgba("#F2C230"));
+        p.fill_polygon(&rect(-8.0, -70.0, 16.0, 14.0), rgba("#E58A9A"));
+        let mut ring = rect(-8.0, -70.0, 16.0, 130.0);
+        ring.push(ring[0]);
+        p.stroke_polyline(&ring, lw(4.0), ink);
+    }
     if st.sweat || m == Mood::Worried {
         // Sweat drop at (fx + 104, hy - 70): two quads, fill +
         // stroke (alpha 1 in this film: S.sweat unset, worried
@@ -898,6 +1071,263 @@ pub(crate) fn paint_toon_full(
             let mut ring = rect.to_vec();
             ring.push(rect[0]);
             p.stroke_polyline(&ring, lw(9.0), ink);
+        }
+        "boater" => {
+            // drawHat 'boater': brim ellipse (hx, top+30) rx rp*1.3
+            // ry26 fill hatCol; crown roundRect(hx - rp*0.66,
+            // top-46, rp*1.32, 76, [16,16,4,4]); band(top+8,
+            // rp*0.66, band || '#3C6FB6'); straw hatch shadeOf(c,
+            // 0.82) lw3, verticals leaning +6 over the crown,
+            // unclipped as authored.
+            let c_hex = look.hat_col.as_deref().unwrap_or("#7A5236");
+            let c = rgba(c_hex);
+            let (bcx, bcy) = hpt(hatx, htop + 30.0);
+            let (brx, bry) = (rp * 1.3 * (1.0 - 0.3 * sq) * RES, 26.0 * (1.0 + sq) * RES);
+            p.fill_ellipse(bcx, bcy, brx, bry, head_rot, c);
+            p.stroke_ellipse(bcx, bcy, brx, bry, head_rot, lw(9.0), ink);
+            let crown: Vec<(f32, f32)> =
+                rounded_rect_pts_radii(hatx - rp * 0.66, htop - 46.0, rp * 1.32, 76.0, [16.0, 16.0, 4.0, 4.0], 6)
+                    .iter()
+                    .map(|&(x, y)| hpt(x, y))
+                    .collect();
+            p.fill_polygon(&crown, c);
+            let mut ring = crown.clone();
+            ring.push(crown[0]);
+            p.stroke_polyline(&ring, lw(9.0), ink);
+            let band_col = look.band.as_deref().map(|b| rgba(b)).unwrap_or_else(|| rgba("#3C6FB6"));
+            let w = rp * 0.66;
+            let rect = [
+                hpt(hatx - w, htop + 8.0 - 12.0),
+                hpt(hatx + w, htop + 8.0 - 12.0),
+                hpt(hatx + w, htop + 8.0 + 12.0),
+                hpt(hatx - w, htop + 8.0 + 12.0),
+            ];
+            p.fill_polygon(&rect, band_col);
+            let mut ring = rect.to_vec();
+            ring.push(rect[0]);
+            p.stroke_polyline(&ring, lw(9.0), ink);
+            let hatch = shade_rgba(c_hex, 0.82);
+            let mut hoff = -rp * 0.6;
+            while hoff < rp * 0.6 {
+                p.stroke_polyline(
+                    &[hpt(hatx + hoff, htop - 40.0), hpt(hatx + hoff + 6.0, htop - 6.0)],
+                    lw(3.0),
+                    hatch,
+                );
+                hoff += 16.0;
+            }
+        }
+        "beanie" => {
+            // drawHat 'beanie': dome = upper half-ellipse (hx,
+            // top+50) rx rp*0.95 ry96 closed; brim roundRect
+            // (hx - rp*0.98, top+30, rp*1.96, 40, 18) fill
+            // shadeOf(c, 0.8); pom circle (hx, top-52) r22 fill
+            // band || '#F4EFE4'.
+            let c_hex = look.hat_col.as_deref().unwrap_or("#7A5236");
+            let c = rgba(c_hex);
+            {
+                let (dcx, dcy) = hpt(hatx, htop + 50.0);
+                let (rx, ry) = (rp * 0.95 * (1.0 - 0.3 * sq) * RES, 96.0 * (1.0 + sq) * RES);
+                let (s3, c3) = head_rot.sin_cos();
+                let mut pts: Vec<(f32, f32)> = Vec::new();
+                for i in 0..=48 {
+                    let a = std::f32::consts::PI + (i as f32 / 48.0) * std::f32::consts::PI;
+                    let (lx2, ly2) = (rx * a.cos(), ry * a.sin());
+                    pts.push((dcx + lx2 * c3 - ly2 * s3, dcy + lx2 * s3 + ly2 * c3));
+                }
+                p.fill_polygon(&pts, c);
+                let mut ring = pts.clone();
+                ring.push(pts[0]);
+                p.stroke_polyline(&ring, lw(9.0), ink);
+            }
+            let brim: Vec<(f32, f32)> =
+                rounded_rect_pts_radii(hatx - rp * 0.98, htop + 30.0, rp * 1.96, 40.0, [18.0; 4], 6)
+                    .iter()
+                    .map(|&(x, y)| hpt(x, y))
+                    .collect();
+            p.fill_polygon(&brim, shade_rgba(c_hex, 0.8));
+            let mut ring = brim.clone();
+            ring.push(brim[0]);
+            p.stroke_polyline(&ring, lw(9.0), ink);
+            let pom_col = look.band.as_deref().map(|b| rgba(b)).unwrap_or_else(|| rgba("#F4EFE4"));
+            let (pcx, pcy) = hpt(hatx, htop - 52.0);
+            let (prx, pry) = (22.0 * (1.0 - 0.3 * sq) * RES, 22.0 * (1.0 + sq) * RES);
+            p.fill_ellipse(pcx, pcy, prx, pry, head_rot, pom_col);
+            p.stroke_ellipse(pcx, pcy, prx, pry, head_rot, lw(9.0), ink);
+        }
+        "visor" => {
+            // drawHat 'visor': translucent green sheet — quad
+            // (hx-rp, top+70) via (hx, top+10) to (hx+rp, top+70),
+            // line to (hx+rp*1.15, top+98), quad via (hx, top+54)
+            // back to (hx-rp*1.15, top+98), close; fill
+            // rgba(70,190,120,0.85) + stroke. Then the cap band in
+            // hatCol over its top (same construction at
+            // ±rp*0.96/0.9, top+64/80, controls top+4/top+24).
+            let c = rgba(look.hat_col.as_deref().unwrap_or("#7A5236"));
+            let sheet = (70u8, 190u8, 120u8, (0.85 * 255.0) as u8);
+            let mut pts = flatten_quad(
+                hpt(hatx - rp, htop + 70.0),
+                hpt(hatx, htop + 10.0),
+                hpt(hatx + rp, htop + 70.0),
+                24,
+            );
+            let q = flatten_quad(
+                hpt(hatx + rp * 1.15, htop + 98.0),
+                hpt(hatx, htop + 54.0),
+                hpt(hatx - rp * 1.15, htop + 98.0),
+                24,
+            );
+            pts.extend_from_slice(&q[1..]);
+            p.fill_polygon(&pts, sheet);
+            let mut ring = pts.clone();
+            ring.push(pts[0]);
+            p.stroke_polyline(&ring, lw(9.0), ink);
+            let mut pts = flatten_quad(
+                hpt(hatx - rp * 0.96, htop + 64.0),
+                hpt(hatx, htop + 4.0),
+                hpt(hatx + rp * 0.96, htop + 64.0),
+                24,
+            );
+            let q = flatten_quad(
+                hpt(hatx + rp * 0.9, htop + 80.0),
+                hpt(hatx, htop + 24.0),
+                hpt(hatx - rp * 0.9, htop + 80.0),
+                24,
+            );
+            pts.extend_from_slice(&q[1..]);
+            p.fill_polygon(&pts, c);
+            let mut ring = pts.clone();
+            ring.push(pts[0]);
+            p.stroke_polyline(&ring, lw(9.0), ink);
+        }
+        "tophat" => {
+            // drawHat 'tophat': brim ellipse (hx, top+24) rx
+            // rp*1.0 ry20; crown roundRect(hx - rp*0.6, top-140,
+            // rp*1.2, 164, 8); band(top-4, rp*0.6,
+            // band || '#B5372E').
+            let c_hex = look.hat_col.as_deref().unwrap_or("#7A5236");
+            let c = rgba(c_hex);
+            let (bcx, bcy) = hpt(hatx, htop + 24.0);
+            let (brx, bry) = (rp * (1.0 - 0.3 * sq) * RES, 20.0 * (1.0 + sq) * RES);
+            p.fill_ellipse(bcx, bcy, brx, bry, head_rot, c);
+            p.stroke_ellipse(bcx, bcy, brx, bry, head_rot, lw(9.0), ink);
+            let crown: Vec<(f32, f32)> =
+                rounded_rect_pts_radii(hatx - rp * 0.6, htop - 140.0, rp * 1.2, 164.0, [8.0; 4], 6)
+                    .iter()
+                    .map(|&(x, y)| hpt(x, y))
+                    .collect();
+            p.fill_polygon(&crown, c);
+            let mut ring = crown.clone();
+            ring.push(crown[0]);
+            p.stroke_polyline(&ring, lw(9.0), ink);
+            let band_col = look.band.as_deref().map(|b| rgba(b)).unwrap_or_else(|| rgba("#B5372E"));
+            let w = rp * 0.6;
+            let rect = [
+                hpt(hatx - w, htop - 4.0 - 12.0),
+                hpt(hatx + w, htop - 4.0 - 12.0),
+                hpt(hatx + w, htop - 4.0 + 12.0),
+                hpt(hatx - w, htop - 4.0 + 12.0),
+            ];
+            p.fill_polygon(&rect, band_col);
+            let mut ring = rect.to_vec();
+            ring.push(rect[0]);
+            p.stroke_polyline(&ring, lw(9.0), ink);
+        }
+        "bow" => {
+            // drawHat 'bow': at (hx + rp*0.5, top+26), colour
+            // hatCol || '#D8343F', lw6 — two bezier loops (per
+            // side: centre, bezier (±30,-46), (±66,-30) ->
+            // (±60,0), bezier (±66,+30), (±30,+40) -> centre),
+            // centre circle r15; PLUS side locks: ellipses
+            // (hx ± (rp+4), hy+10) rx22 ry50 rot ∓0.2 fill
+            // hairCol || '#6B4A3A'.
+            let c2 = rgba(look.hat_col.as_deref().unwrap_or("#D8343F"));
+            let (bx2, by2) = (hatx + rp * 0.5, htop + 26.0);
+            for s in [-1.0f32, 1.0] {
+                let mut pts = flatten_cubic(
+                    hpt(bx2, by2),
+                    hpt(bx2 + s * 30.0, by2 - 46.0),
+                    hpt(bx2 + s * 66.0, by2 - 30.0),
+                    hpt(bx2 + s * 60.0, by2),
+                    20,
+                );
+                let q = flatten_cubic(
+                    hpt(bx2 + s * 60.0, by2),
+                    hpt(bx2 + s * 66.0, by2 + 30.0),
+                    hpt(bx2 + s * 30.0, by2 + 40.0),
+                    hpt(bx2, by2),
+                    20,
+                );
+                pts.extend_from_slice(&q[1..]);
+                p.fill_polygon(&pts, c2);
+                let mut ring = pts.clone();
+                ring.push(pts[0]);
+                p.stroke_polyline(&ring, lw(6.0), ink);
+            }
+            let (ccx, ccy) = hpt(bx2, by2);
+            let (crx, cry) = (15.0 * (1.0 - 0.3 * sq) * RES, 15.0 * (1.0 + sq) * RES);
+            p.fill_ellipse(ccx, ccy, crx, cry, head_rot, c2);
+            p.stroke_ellipse(ccx, ccy, crx, cry, head_rot, lw(6.0), ink);
+            let lock_col = rgba(look.hair_col.as_deref().unwrap_or("#6B4A3A"));
+            for s in [-1.0f32, 1.0] {
+                let (lx2, ly2) = hpt(hatx + s * (rp + 4.0), hy + 10.0);
+                let (lrx, lry) = (22.0 * (1.0 - 0.3 * sq) * RES, 50.0 * (1.0 + sq) * RES);
+                let lrot = head_rot - s * 0.2;
+                p.fill_ellipse(lx2, ly2, lrx, lry, lrot, lock_col);
+                p.stroke_ellipse(lx2, ly2, lrx, lry, lrot, lw(6.0), ink);
+            }
+        }
+        "mailcap" => {
+            // drawHat 'mailcap': crown roundRect(hx - rp*0.72,
+            // top-40, rp*1.44, 70, [20,20,4,4]) fill hatCol; brim
+            // = INK half-ellipse (hx-10, top+34) rx rp*0.82 ry18
+            // rot 0.04, arc 0..PI, filled INK (no stroke, as
+            // authored); badge circle (hx, top-6) r13 '#E2B33C'
+            // fill + lw4 stroke.
+            let c = rgba(look.hat_col.as_deref().unwrap_or("#7A5236"));
+            let crown: Vec<(f32, f32)> =
+                rounded_rect_pts_radii(hatx - rp * 0.72, htop - 40.0, rp * 1.44, 70.0, [20.0, 20.0, 4.0, 4.0], 6)
+                    .iter()
+                    .map(|&(x, y)| hpt(x, y))
+                    .collect();
+            p.fill_polygon(&crown, c);
+            let mut ring = crown.clone();
+            ring.push(crown[0]);
+            p.stroke_polyline(&ring, lw(9.0), ink);
+            {
+                let (bcx, bcy) = hpt(hatx - 10.0, htop + 34.0);
+                let (rx, ry, rot) = (rp * 0.82 * (1.0 - 0.3 * sq) * RES, 18.0 * (1.0 + sq) * RES, 0.04 + head_rot);
+                let (s3, c3) = rot.sin_cos();
+                let mut pts: Vec<(f32, f32)> = Vec::new();
+                for i in 0..=48 {
+                    let a = (i as f32 / 48.0) * std::f32::consts::PI;
+                    let (lx2, ly2) = (rx * a.cos(), ry * a.sin());
+                    pts.push((bcx + lx2 * c3 - ly2 * s3, bcy + lx2 * s3 + ly2 * c3));
+                }
+                p.fill_polygon(&pts, ink);
+            }
+            let (bcx2, bcy2) = hpt(hatx, htop - 6.0);
+            let (brx, bry) = (13.0 * (1.0 - 0.3 * sq) * RES, 13.0 * (1.0 + sq) * RES);
+            p.fill_ellipse(bcx2, bcy2, brx, bry, head_rot, rgba("#E2B33C"));
+            p.stroke_ellipse(bcx2, bcy2, brx, bry, head_rot, lw(4.0), ink);
+        }
+        "flower" => {
+            // drawHat 'flower': at (hx + rp*0.62, top+40): 6
+            // petals r14 at radius 18, fill hatCol || '#F29BB5',
+            // INK lw4; centre r11 '#F6C945'.
+            let petal = rgba(look.hat_col.as_deref().unwrap_or("#F29BB5"));
+            let (fx2, fy2) = (hatx + rp * 0.62, htop + 40.0);
+            for i in 0..6 {
+                let a = (i as f32 / 6.0) * std::f32::consts::TAU;
+                let (pcx, pcy) = hpt(fx2 + a.cos() * 18.0, fy2 + a.sin() * 18.0);
+                let (prx, pry) = (14.0 * (1.0 - 0.3 * sq) * RES, 14.0 * (1.0 + sq) * RES);
+                p.fill_ellipse(pcx, pcy, prx, pry, head_rot, petal);
+                p.stroke_ellipse(pcx, pcy, prx, pry, head_rot, lw(4.0), ink);
+            }
+            let (ccx, ccy) = hpt(fx2, fy2);
+            let (crx, cry) = (11.0 * (1.0 - 0.3 * sq) * RES, 11.0 * (1.0 + sq) * RES);
+            p.fill_ellipse(ccx, ccy, crx, cry, head_rot, rgba("#F6C945"));
+            p.stroke_ellipse(ccx, ccy, crx, cry, head_rot, lw(4.0), ink);
         }
         _ => {}
     }

@@ -544,6 +544,13 @@ fn fl(body: &str, hat: &str, hat_col: Option<&str>) -> FullLook {
         mustache: false,
         mustache_col: None,
         kid: false,
+        // CR-B3-06 look ports: registry looks use none of the new
+        // extras / hairCol, so film paints are unchanged.
+        blush: false,
+        freckles: false,
+        pencil: false,
+        monocle: false,
+        hair_col: None,
     }
 }
 
@@ -2410,9 +2417,14 @@ fn state_key(look: usize, st: &FullState, hold_l: Option<&str>, hold_r: Option<&
     // V2-HANDOVER.md; found by the WP10 seat's charstate.rs
     // audit, whose CharStateKey includes both). The two
     // booleans are appended last; the look index prefix names
-    // the FullLook (all 14 of its fields are painter inputs,
-    // fixed per run by the look registry). Regression tests:
-    // state_key_tests below.
+    // the FullLook (all 19 of its fields are painter inputs,
+    // fixed per run by the look registry — CR-B3-06 added five
+    // FullLook fields: blush / freckles / pencil / monocle /
+    // hair_col, all defaulted in fl() above, so no registry look
+    // differs from another in them and no key change is needed;
+    // they are look fields, not FullState fields, so the
+    // sweat/tears coverage law above does not extend to them).
+    // Regression tests: state_key_tests below.
     let q = |v: f32| v.to_bits();
     format!(
         "{look}|{:?}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}",
