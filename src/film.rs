@@ -2264,7 +2264,7 @@ pub(crate) struct CharInfo {
     pub head_tilt: f32,
     pub head_turn: f32,
 }
-/// Painted-card cache with a FIFO cap. A painted canvas is
+/// Painted-card cache with an LRU cap. A painted canvas is
 /// 2560x2816 RGBA (~29 MB), so an unbounded cache grows by
 /// gigabytes over a film (and starved this VM's renderers when a
 /// telemetry run held one). Painting is a pure function of the
@@ -2299,19 +2299,33 @@ impl PaintCache {
         }
     }
     fn get_or_paint(&mut self, key: String, look: &FullLook, st: &FullState) -> std::rc::Rc<Painted> {
-        if let Some(v) = self.map.get(&key) {
+        if let Some(v) = self.map.get(&key).cloned() {
             self.budget.on_hit();
-            return v.clone();
+            // LRU touch (WP1.1, V2-WP1-LRU-SPEC §1): a hit makes
+            // `key` the most-recently-used entry — move it to the
+            // back of `order`, the end inserts use and the end
+            // opposite eviction's pop_front. `map` and `order`
+            // hold the same key set exactly once each, so the
+            // position exists; if it somehow does not, returning
+            // the hit without touching is the safe degradation —
+            // never push a duplicate key. Pixel-neutral by
+            // construction: paint is a pure function of the exact
+            // key, so residency changes only repaint frequency.
+            if let Some(pos) = self.order.iter().position(|k| k == &key) {
+                let k = self.order.remove(pos).expect("cache order");
+                self.order.push_back(k);
+            }
+            return v;
         }
         self.budget.on_miss(&key);
         let v = std::rc::Rc::new(paint_toon_full(look, st));
         self.budget.on_insert(crate::paintbudget::entry_bytes(&v.0));
         self.map.insert(key.clone(), v.clone());
         self.order.push_back(key);
-        while self.budget.should_evict() {
+        while let Some(reason) = self.budget.eviction_reason() {
             let old = self.order.pop_front().expect("cache order");
             let old_v = self.map.remove(&old).expect("cache order");
-            self.budget.on_evict(&old, crate::paintbudget::entry_bytes(&old_v.0));
+            self.budget.on_evict(&old, crate::paintbudget::entry_bytes(&old_v.0), reason);
         }
         v
     }
