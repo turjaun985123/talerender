@@ -26,6 +26,7 @@ mod dof;
 mod errors;
 mod gpucore;
 mod math;
+mod locomotion;
 mod paintbudget;
 mod rendergraph;
 mod runlog;
