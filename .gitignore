@@ -1,7 +1,8 @@
 /target
 frame.png
 *.png
-!docs/**/*.png
 !film/assets/*.png
 !scenes/fixtures/**/*.png
 !tools/**/fixtures/**/*.png
+docs/**/*.jpg
+docs/**/*.jpeg
