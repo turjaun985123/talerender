@@ -169,7 +169,7 @@
  *              .request_device(&wgpu::DeviceDescriptor { ... })
  *              .await
  *              .map_err(|e| TaleError::device_request(...))?;
- *          device.set_device_lost_closure(|reason, message| {
+ *          device.set_device_lost_callback(|reason, message| {
  *              // Destroyed is deliberate teardown
  *              // (Device::destroy); never a failure. No
  *              // site calls destroy() today, so this guard
@@ -205,7 +205,7 @@
  * DeviceType, Backend, AdapterInfo + the wgpu-core
  * DeviceLostClosure type, all fetched 2026-11-15):
  *   - Detection API EXISTS and is exactly what C7 assumes:
- *     Device::set_device_lost_closure — docs.rs 30.0.2
+ *     Device::set_device_lost_callback — docs.rs 30.0.2
  *     Device page: "Set a DeviceLostCallback on this
  *     device." The closure type (wgpu-core) is
  *         DeviceLostClosure =

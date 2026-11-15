@@ -276,7 +276,7 @@ automation — items 1–4 plus the PC leg above.
   wgpu 30.0.2 — the 0.20 framing below is superseded by the
   item-0 upgrade):** detection + diagnosed failure IS
   supported and is implemented — `Device::
-  set_device_lost_closure` installed in gpucore::
+  set_device_lost_callback` installed in gpucore::
   request_device (the single chokepoint): unexpected loss
   prints `event=device.lost reason=<...>` and exits 3;
   `Destroyed` (deliberate teardown) never fires it.

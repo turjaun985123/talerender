@@ -128,7 +128,7 @@ pub(crate) async fn request_device(
     // Recreate-and-resume is NOT implemented: wgpu offers no
     // state migration, and the tree has no device factory or
     // frame-retry seam (STAGE1-SCOPE §6 records the verdict).
-    device.set_device_lost_closure(Box::new(|reason, message| {
+    device.set_device_lost_callback(Box::new(|reason, message| {
         if matches!(reason, wgpu::DeviceLostReason::Destroyed) {
             return;
         }
