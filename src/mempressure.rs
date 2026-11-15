@@ -512,7 +512,7 @@ mod tests {
             parse_meminfo_total_bytes(text),
             Some(16_384_256 * 1024)
         );
-        assert_eq!(parse_meminfo_total_bytes(text), Some(17_179_869_184));
+        assert_eq!(parse_meminfo_total_bytes(text), Some(16_777_478_144));
         // The exact 8 GiB boundary value: 8388608 KiB.
         assert_eq!(
             parse_meminfo_total_bytes("MemTotal:        8388608 kB\n"),

@@ -391,7 +391,7 @@ mod tests {
         );
         assert_eq!(
             format_event("mem.pressure", &[("level", "crit\rical".to_string())]),
-            "event=mem.pressure level=crit_rical"
+            "event=mem.pressure level=crit_ical"
         );
     }
 
