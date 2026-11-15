@@ -237,6 +237,17 @@ Acceptance: bench dispatch SUCCESS with the record
 produced; default (timing-off) film output byte-identical
 (byte probes); artifacts stay logs/text only (quota law).
 
+**OUTCOME (V2 WP6): LANDED** — timing emission + bench
+lab legs `81cf0f4`; bench dispatch `43696086097`: all
+legs succeeded, conclusion failure SOLELY at the two
+artifact-upload steps (quota) — the record was recovered
+from the job log and committed as
+docs/runbook/BENCH-SOFTWARE-RECORD.md (lavapipe-labelled:
+100 frames, total 104.85 s, frame_ms p50 1087.97 /
+p95 1123.89 / p99 1133.97, peak RSS 1,409,432 KiB).
+Probe at `81cf0f4` SUCCESS, byte probes 40/40 (timing
+default-off proven). GPU rows PENDING-PC as required.
+
 ## §3 Evidence baseline
 
 Byte probes compare against the CI film render preserved
