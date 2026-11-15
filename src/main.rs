@@ -657,14 +657,14 @@ async fn run(width: u32, height: u32, out: &str, knobs: Knobs) -> errors::TaleRe
             mvp: math::mul(&vp, model),
             model: *model,
         };
-        device
-            .create_buffer(&wgpu::BufferDescriptor {
-                label: Some("uniforms"),
-                size: 128,
-                usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
-                mapped_at_creation: false,
-            })
-            .also_write(&queue, &u)
+        let buf = device.create_buffer(&wgpu::BufferDescriptor {
+            label: Some("uniforms"),
+            size: 128,
+            usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
+            mapped_at_creation: false,
+        });
+        crate::gpucore::mem_alloc_buffer(crate::gpucore::MemClass::G, 128); // VRAM ledger (W84 §5.2)
+        buf.also_write(&queue, &u)
     };
 
     // ---- colour pipeline ------------------------------------------------
@@ -824,6 +824,7 @@ async fn run(width: u32, height: u32, out: &str, knobs: Knobs) -> errors::TaleRe
             usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
+        crate::gpucore::mem_alloc_buffer(crate::gpucore::MemClass::G, (verts.len() * 4) as u64); // VRAM ledger (W84 §5.2)
         queue.write_buffer(&vb, 0, &pack_f32(verts));
         let ib = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("index buffer"),
@@ -831,6 +832,7 @@ async fn run(width: u32, height: u32, out: &str, knobs: Knobs) -> errors::TaleRe
             usage: wgpu::BufferUsages::INDEX | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
+        crate::gpucore::mem_alloc_buffer(crate::gpucore::MemClass::G, (idx.len() * 4) as u64); // VRAM ledger (W84 §5.2)
         queue.write_buffer(&ib, 0, &pack_u32(idx));
         (vb, ib)
     };
@@ -861,6 +863,7 @@ async fn run(width: u32, height: u32, out: &str, knobs: Knobs) -> errors::TaleRe
         usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
         view_formats: &[],
     });
+    crate::gpucore::mem_alloc_texture(crate::gpucore::MemClass::E, crate::gpucore::tex_bytes(tex_size, tex_size, wgpu::TextureFormat::Rgba8UnormSrgb, 1)); // VRAM ledger (W84 §5.2)
     queue.write_texture(
         wgpu::ImageCopyTexture {
             texture: &char_tex,
@@ -920,6 +923,7 @@ async fn run(width: u32, height: u32, out: &str, knobs: Knobs) -> errors::TaleRe
         wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
         "frame target",
     );
+    crate::gpucore::mem_alloc_texture(crate::gpucore::MemClass::A, crate::gpucore::tex_bytes(width, height, wgpu::TextureFormat::Rgba8UnormSrgb, 1)); // VRAM ledger (W84 §5.2)
     let (_depth, depth_view) = crate::gpucore::make_target_viewed(
         &device,
         width,
@@ -929,6 +933,7 @@ async fn run(width: u32, height: u32, out: &str, knobs: Knobs) -> errors::TaleRe
         wgpu::TextureUsages::RENDER_ATTACHMENT,
         "depth target",
     );
+    crate::gpucore::mem_alloc_texture(crate::gpucore::MemClass::A, crate::gpucore::tex_bytes(width, height, wgpu::TextureFormat::Depth32Float, 1)); // VRAM ledger (W84 §5.2)
 
     let mut encoder = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
         label: Some("frame encoder"),
@@ -977,6 +982,8 @@ async fn run(width: u32, height: u32, out: &str, knobs: Knobs) -> errors::TaleRe
     let img = image::RgbaImage::from_raw(width, height, pixels).expect("pixel buffer size mismatch");
     img.save(out).map_err(|e| errors::TaleError::image_io(out, e))?;
     println!("wrote {out} ({width}x{height}){tag}");
+    // VRAM ledger (W84 §5.3): its own line, after the wrote line.
+    println!("{}", crate::gpucore::mem_stats_line());
     Ok(())
 }
 

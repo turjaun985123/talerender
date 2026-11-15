@@ -173,6 +173,7 @@ pub async fn run_dof(width: u32, height: u32, out: &str, knobs: crate::Knobs) ->
         usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         mapped_at_creation: false,
     });
+    crate::gpucore::mem_alloc_buffer(crate::gpucore::MemClass::G, 128); // VRAM ledger (W84 §5.2)
     queue.write_buffer(&uniform_buf, 0, &uniform_bytes(&uniforms));
 
     // ---- chart texture (sRGB, single level, linear sampling) ----
@@ -187,6 +188,7 @@ pub async fn run_dof(width: u32, height: u32, out: &str, knobs: crate::Knobs) ->
         usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
         view_formats: &[],
     });
+    crate::gpucore::mem_alloc_texture(crate::gpucore::MemClass::E, crate::gpucore::tex_bytes(TEX_SIZE, TEX_SIZE, wgpu::TextureFormat::Rgba8UnormSrgb, 1)); // VRAM ledger (W84 §5.2)
     queue.write_texture(
         wgpu::ImageCopyTexture { texture: &chart_tex, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
         &tex_data,
@@ -223,6 +225,7 @@ pub async fn run_dof(width: u32, height: u32, out: &str, knobs: crate::Knobs) ->
         usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
         mapped_at_creation: false,
     });
+    crate::gpucore::mem_alloc_buffer(crate::gpucore::MemClass::G, (verts.len() * 4) as u64); // VRAM ledger (W84 §5.2)
     queue.write_buffer(&vb, 0, &pack_f32(&verts));
     let ib = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("dof-panels-ib"),
@@ -230,6 +233,7 @@ pub async fn run_dof(width: u32, height: u32, out: &str, knobs: crate::Knobs) ->
         usage: wgpu::BufferUsages::INDEX | wgpu::BufferUsages::COPY_DST,
         mapped_at_creation: false,
     });
+    crate::gpucore::mem_alloc_buffer(crate::gpucore::MemClass::G, (idx.len() * 4) as u64); // VRAM ledger (W84 §5.2)
     queue.write_buffer(&ib, 0, &pack_u32(&idx));
     let index_count = idx.len() as u32;
     let vlayout = wgpu::VertexBufferLayout {
@@ -244,14 +248,21 @@ pub async fn run_dof(width: u32, height: u32, out: &str, knobs: crate::Knobs) ->
     // ---- targets ----
     // Scene colour: HalfFloat + MSAA 4x (the composer's render target).
     let scene_msaa = crate::gpucore::make_target(&device, width, height, wgpu::TextureFormat::Rgba16Float, samples, wgpu::TextureUsages::RENDER_ATTACHMENT, "dof-scene-msaa");
+    crate::gpucore::mem_alloc_texture(crate::gpucore::MemClass::A, crate::gpucore::tex_bytes(width, height, wgpu::TextureFormat::Rgba16Float, samples)); // VRAM ledger (W84 §5.2)
     let scene_resolved = crate::gpucore::make_target(&device, width, height, wgpu::TextureFormat::Rgba16Float, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING, "dof-scene-resolved");
+    crate::gpucore::mem_alloc_texture(crate::gpucore::MemClass::A, crate::gpucore::tex_bytes(width, height, wgpu::TextureFormat::Rgba16Float, 1)); // VRAM ledger (W84 §5.2)
     let scene_depth = crate::gpucore::make_target(&device, width, height, wgpu::TextureFormat::Depth32Float, samples, wgpu::TextureUsages::RENDER_ATTACHMENT, "dof-scene-depth");
+    crate::gpucore::mem_alloc_texture(crate::gpucore::MemClass::A, crate::gpucore::tex_bytes(width, height, wgpu::TextureFormat::Depth32Float, samples)); // VRAM ledger (W84 §5.2)
     // Packed-depth prepass target: HalfFloat, single-sample, cleared to
     // white (BokehPass renders its depth target with a white clear).
     let packed_depth = crate::gpucore::make_target(&device, width, height, depth_format, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_SRC, "dof-packed-depth");
+    crate::gpucore::mem_alloc_texture(crate::gpucore::MemClass::A, crate::gpucore::tex_bytes(width, height, depth_format, 1)); // VRAM ledger (W84 §5.2)
     let prepass_depth = crate::gpucore::make_target(&device, width, height, wgpu::TextureFormat::Depth32Float, 1, wgpu::TextureUsages::RENDER_ATTACHMENT, "dof-prepass-depth");
+    crate::gpucore::mem_alloc_texture(crate::gpucore::MemClass::A, crate::gpucore::tex_bytes(width, height, wgpu::TextureFormat::Depth32Float, 1)); // VRAM ledger (W84 §5.2)
     let bokeh_out = crate::gpucore::make_target(&device, width, height, wgpu::TextureFormat::Rgba16Float, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING, "dof-bokeh-out");
+    crate::gpucore::mem_alloc_texture(crate::gpucore::MemClass::A, crate::gpucore::tex_bytes(width, height, wgpu::TextureFormat::Rgba16Float, 1)); // VRAM ledger (W84 §5.2)
     let final_tex = crate::gpucore::make_target(&device, width, height, wgpu::TextureFormat::Rgba8Unorm, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC, "dof-final");
+    crate::gpucore::mem_alloc_texture(crate::gpucore::MemClass::A, crate::gpucore::tex_bytes(width, height, wgpu::TextureFormat::Rgba8Unorm, 1)); // VRAM ledger (W84 §5.2)
 
     // ---- pipelines ----
     let tex_module = device.create_shader_module(wgpu::ShaderModuleDescriptor { label: Some("dof-shader-tex"), source: wgpu::ShaderSource::Wgsl(SHADER_TEX.into()) });
@@ -332,6 +343,7 @@ pub async fn run_dof(width: u32, height: u32, out: &str, knobs: crate::Knobs) ->
         usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
         mapped_at_creation: false,
     });
+    crate::gpucore::mem_alloc_buffer(crate::gpucore::MemClass::G, 32); // VRAM ledger (W84 §5.2)
     queue.write_buffer(&bokeh_uniform_buf, 0, &pack_f32(&bokeh_uniform_data));
     let bokeh_module = device.create_shader_module(wgpu::ShaderModuleDescriptor { label: Some("dof-shader-bokeh"), source: wgpu::ShaderSource::Wgsl(SHADER_BOKEH.into()) });
     let bokeh_bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -508,6 +520,8 @@ pub async fn run_dof(width: u32, height: u32, out: &str, knobs: crate::Knobs) ->
     println!(
         "wrote {out} ({width}x{height}) — scene dof-chart: panels at 2..30 m, focus {FOCUS} m, aperture {APERTURE}, maxblur {MAXBLUR}; chain: HalfFloat MSAA-4x scene -> packed-depth prepass -> transcribed r170 bokeh -> Neutral+sRGB output{tag}"
     );
+    // VRAM ledger (W84 §5.3): its own line, after the wrote line.
+    println!("{}", crate::gpucore::mem_stats_line());
     Ok(())
 }
 

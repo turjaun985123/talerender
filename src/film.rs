@@ -2594,6 +2594,9 @@ impl Renderer {
                 usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
                 view_formats: &[],
             });
+            // VRAM ledger (W84 §5.2): class E upload — every
+            // standing film texture flows through this closure.
+            crate::gpucore::mem_alloc_texture(crate::gpucore::MemClass::E, crate::gpucore::tex_bytes(w, h, format, 1));
             queue.write_texture(
                 wgpu::ImageCopyTexture { texture: &tex, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
                 px,
@@ -2692,9 +2695,11 @@ impl Renderer {
             ],
         });
         let shadow_map = crate::gpucore::make_target(&device, shadow_size, shadow_size, wgpu::TextureFormat::Rgba8Unorm, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING, "key shadow map");
+        crate::gpucore::mem_alloc_texture(crate::gpucore::MemClass::B, crate::gpucore::tex_bytes(shadow_size, shadow_size, wgpu::TextureFormat::Rgba8Unorm, 1)); // VRAM ledger (W84 §5.2)
         let shadow_map_view = shadow_map.create_view(&wgpu::TextureViewDescriptor::default());
         tex_keep.push(shadow_map);
         let shadow_depth = crate::composer::make_rt(&device, shadow_size, shadow_size, wgpu::TextureFormat::Depth32Float, "shadow depth");
+        crate::gpucore::mem_alloc_texture(crate::gpucore::MemClass::B, crate::gpucore::tex_bytes(shadow_size, shadow_size, wgpu::TextureFormat::Depth32Float, 1)); // VRAM ledger (W84 §5.2)
         let shadow_depth_view = shadow_depth.create_view(&wgpu::TextureViewDescriptor::default());
         tex_keep.push(shadow_depth);
         let depth_format = if std::env::var("TALERENDER_DOF_DEPTH_FORMAT").is_ok_and(|v| v == "halffloat") {
@@ -2703,27 +2708,35 @@ impl Renderer {
             wgpu::TextureFormat::Rgba8Unorm
         };
         let packed_depth = crate::gpucore::make_target(&device, width, height, depth_format, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING, "packed depth");
+        crate::gpucore::mem_alloc_texture(crate::gpucore::MemClass::A, crate::gpucore::tex_bytes(width, height, depth_format, 1)); // VRAM ledger (W84 §5.2)
         let packed_view = packed_depth.create_view(&wgpu::TextureViewDescriptor::default());
         tex_keep.push(packed_depth);
         let prepass_depth = crate::composer::make_rt(&device, width, height, wgpu::TextureFormat::Depth32Float, "prepass depth");
+        crate::gpucore::mem_alloc_texture(crate::gpucore::MemClass::A, crate::gpucore::tex_bytes(width, height, wgpu::TextureFormat::Depth32Float, 1)); // VRAM ledger (W84 §5.2)
         let prepass_depth_view = prepass_depth.create_view(&wgpu::TextureViewDescriptor::default());
         tex_keep.push(prepass_depth);
         let hdr_msaa = crate::gpucore::make_target(&device, width, height, wgpu::TextureFormat::Rgba16Float, samples, wgpu::TextureUsages::RENDER_ATTACHMENT, "hdr msaa");
+        crate::gpucore::mem_alloc_texture(crate::gpucore::MemClass::A, crate::gpucore::tex_bytes(width, height, wgpu::TextureFormat::Rgba16Float, samples)); // VRAM ledger (W84 §5.2)
         let hdr_msaa_view = hdr_msaa.create_view(&wgpu::TextureViewDescriptor::default());
         tex_keep.push(hdr_msaa);
         let hdr_tex = crate::composer::make_rt(&device, width, height, wgpu::TextureFormat::Rgba16Float, "hdr resolved");
+        crate::gpucore::mem_alloc_texture(crate::gpucore::MemClass::A, crate::gpucore::tex_bytes(width, height, wgpu::TextureFormat::Rgba16Float, 1)); // VRAM ledger (W84 §5.2)
         let hdr_view = hdr_tex.create_view(&wgpu::TextureViewDescriptor::default());
         tex_keep.push(hdr_tex);
         let hdr_depth = crate::gpucore::make_target(&device, width, height, wgpu::TextureFormat::Depth32Float, samples, wgpu::TextureUsages::RENDER_ATTACHMENT, "hdr depth");
+        crate::gpucore::mem_alloc_texture(crate::gpucore::MemClass::A, crate::gpucore::tex_bytes(width, height, wgpu::TextureFormat::Depth32Float, samples)); // VRAM ledger (W84 §5.2)
         let hdr_depth_view = hdr_depth.create_view(&wgpu::TextureViewDescriptor::default());
         tex_keep.push(hdr_depth);
         let bokeh_tex = crate::composer::make_rt(&device, width, height, wgpu::TextureFormat::Rgba16Float, "bokeh out");
+        crate::gpucore::mem_alloc_texture(crate::gpucore::MemClass::A, crate::gpucore::tex_bytes(width, height, wgpu::TextureFormat::Rgba16Float, 1)); // VRAM ledger (W84 §5.2)
         let bokeh_view = bokeh_tex.create_view(&wgpu::TextureViewDescriptor::default());
         tex_keep.push(bokeh_tex);
         let srgb_tex = crate::composer::make_rt(&device, width, height, wgpu::TextureFormat::Rgba8Unorm, "output srgb");
+        crate::gpucore::mem_alloc_texture(crate::gpucore::MemClass::A, crate::gpucore::tex_bytes(width, height, wgpu::TextureFormat::Rgba8Unorm, 1)); // VRAM ledger (W84 §5.2)
         let srgb_view = srgb_tex.create_view(&wgpu::TextureViewDescriptor::default());
         tex_keep.push(srgb_tex);
         let final_tex = crate::gpucore::make_target(&device, width, height, wgpu::TextureFormat::Rgba8Unorm, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC, "final");
+        crate::gpucore::mem_alloc_texture(crate::gpucore::MemClass::A, crate::gpucore::tex_bytes(width, height, wgpu::TextureFormat::Rgba8Unorm, 1)); // VRAM ledger (W84 §5.2)
         let final_view = final_tex.create_view(&wgpu::TextureViewDescriptor::default());
         let module = |label: &str, src: &str| {
             device.create_shader_module(wgpu::ShaderModuleDescriptor {
@@ -2951,6 +2964,9 @@ impl Renderer {
             usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
             view_formats: &[],
         });
+        // VRAM ledger (W84 §5.2): per-frame card upload,
+        // E-transient — render()'s MemScope rolls it back.
+        crate::gpucore::mem_alloc_texture(crate::gpucore::MemClass::E, crate::gpucore::tex_bytes(w, h, wgpu::TextureFormat::Rgba8UnormSrgb, 1));
         self.queue.write_texture(
             wgpu::ImageCopyTexture { texture: &tex, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
             px,
@@ -2961,6 +2977,12 @@ impl Renderer {
     }
 
     pub(crate) fn render(&mut self, spec: &FrameSpec, dyn_tex: &[std::rc::Rc<Painted>]) -> crate::errors::TaleResult<Vec<u8>> {
+        // VRAM ledger (W84 §5.1): everything this frame
+        // allocates transiently (card uploads, uniform/vertex
+        // buffers, PostChain pass buffers) rolls back at return;
+        // the standing set registered in Renderer::new and the
+        // peak watermark persist.
+        let _mem_scope = crate::gpucore::mem_scope();
         let (device, queue) = (&self.device, &self.queue);
         let (width, height) = (self.width, self.height);
         let aspect = width as f32 / height as f32;
@@ -3032,6 +3054,7 @@ impl Renderer {
                 usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
                 mapped_at_creation: false,
             });
+            crate::gpucore::mem_alloc_buffer(crate::gpucore::MemClass::G, bytes.len() as u64); // VRAM ledger (W84 §5.2)
             queue.write_buffer(&buf, 0, bytes);
             buf
         };
@@ -3043,6 +3066,7 @@ impl Renderer {
                 usage: wgpu::BufferUsages::VERTEX | wgpu::BufferUsages::COPY_DST,
                 mapped_at_creation: false,
             });
+            crate::gpucore::mem_alloc_buffer(crate::gpucore::MemClass::G, (verts.len() * 4) as u64); // VRAM ledger (W84 §5.2)
             queue.write_buffer(&vb, 0, &pack_f32(verts));
             let ib = device.create_buffer(&wgpu::BufferDescriptor {
                 label: Some("index buffer"),
@@ -3050,6 +3074,7 @@ impl Renderer {
                 usage: wgpu::BufferUsages::INDEX | wgpu::BufferUsages::COPY_DST,
                 mapped_at_creation: false,
             });
+            crate::gpucore::mem_alloc_buffer(crate::gpucore::MemClass::G, (idx.len() * 4) as u64); // VRAM ledger (W84 §5.2)
             queue.write_buffer(&ib, 0, &pack_u32(idx));
             (vb, ib, idx.len() as u32)
         };
@@ -3636,6 +3661,10 @@ pub(crate) async fn run_film(width: u32, height: u32, film_dir: &str, out_dir: &
         clock.summary_suffix(),
         cache.stats_line()
     );
+    // VRAM ledger (W84 §5.3): its own line, immediately after
+    // the completion block — the Renderer is still alive here,
+    // so the standing set is what the line accounts.
+    println!("{}", crate::gpucore::mem_stats_line());
     Ok(())
 }
 

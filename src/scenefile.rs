@@ -1131,6 +1131,9 @@ fn make_buffer(device: &wgpu::Device, queue: &wgpu::Queue, label: &str, bytes: &
         usage,
         mapped_at_creation: false,
     });
+    // VRAM ledger (W84 §5.2): every scenefile buffer flows
+    // through here — one insertion covers the file.
+    crate::gpucore::mem_alloc_buffer(crate::gpucore::MemClass::G, bytes.len() as u64);
     queue.write_buffer(&buf, 0, bytes);
     buf
 }
@@ -1146,6 +1149,9 @@ fn upload_texture(device: &wgpu::Device, queue: &wgpu::Queue, px: &[u8], w: u32,
         usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
         view_formats: &[],
     });
+    // VRAM ledger (W84 §5.2): class E — every scene texture
+    // upload flows through this helper.
+    crate::gpucore::mem_alloc_texture(crate::gpucore::MemClass::E, crate::gpucore::tex_bytes(w, h, wgpu::TextureFormat::Rgba8UnormSrgb, 1));
     queue.write_texture(
         wgpu::ImageCopyTexture {
             texture: &tex,
@@ -1461,6 +1467,7 @@ async fn run_direct(width: u32, height: u32, out: &str, scene: &Loaded, knobs: c
         usage: wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
         view_formats: &[],
     });
+    crate::gpucore::mem_alloc_texture(crate::gpucore::MemClass::A, crate::gpucore::tex_bytes(width, height, wgpu::TextureFormat::Rgba8UnormSrgb, 1)); // VRAM ledger (W84 §5.2)
     let view_tex = texture.create_view(&wgpu::TextureViewDescriptor::default());
     let depth = device.create_texture(&wgpu::TextureDescriptor {
         label: Some("depth target"),
@@ -1472,6 +1479,7 @@ async fn run_direct(width: u32, height: u32, out: &str, scene: &Loaded, knobs: c
         usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
         view_formats: &[],
     });
+    crate::gpucore::mem_alloc_texture(crate::gpucore::MemClass::A, crate::gpucore::tex_bytes(width, height, wgpu::TextureFormat::Depth32Float, 1)); // VRAM ledger (W84 §5.2)
     let depth_view = depth.create_view(&wgpu::TextureViewDescriptor::default());
     let clear = scene.clear.unwrap_or([0.0, 0.0, 0.0]);
 
@@ -1522,6 +1530,8 @@ async fn run_direct(width: u32, height: u32, out: &str, scene: &Loaded, knobs: c
     let img = image::RgbaImage::from_raw(width, height, pixels).expect("pixel buffer size mismatch");
     img.save(out).map_err(|e| crate::errors::TaleError::image_io(out, e))?;
     println!("wrote {out} ({width}x{height}){tag}");
+    // VRAM ledger (W84 §5.3): its own line, after the wrote line.
+    println!("{}", crate::gpucore::mem_stats_line());
     Ok(())
 }
 
@@ -1618,12 +1628,19 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded, knobs:
 
     // ---- targets ----
     let scene_msaa = crate::gpucore::make_target(&device, width, height, wgpu::TextureFormat::Rgba16Float, samples, wgpu::TextureUsages::RENDER_ATTACHMENT, "composer-scene-msaa");
+    crate::gpucore::mem_alloc_texture(crate::gpucore::MemClass::A, crate::gpucore::tex_bytes(width, height, wgpu::TextureFormat::Rgba16Float, samples)); // VRAM ledger (W84 §5.2)
     let scene_resolved = crate::gpucore::make_target(&device, width, height, wgpu::TextureFormat::Rgba16Float, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING, "composer-scene-resolved");
+    crate::gpucore::mem_alloc_texture(crate::gpucore::MemClass::A, crate::gpucore::tex_bytes(width, height, wgpu::TextureFormat::Rgba16Float, 1)); // VRAM ledger (W84 §5.2)
     let scene_depth = crate::gpucore::make_target(&device, width, height, wgpu::TextureFormat::Depth32Float, samples, wgpu::TextureUsages::RENDER_ATTACHMENT, "composer-scene-depth");
+    crate::gpucore::mem_alloc_texture(crate::gpucore::MemClass::A, crate::gpucore::tex_bytes(width, height, wgpu::TextureFormat::Depth32Float, samples)); // VRAM ledger (W84 §5.2)
     let packed_depth = crate::gpucore::make_target(&device, width, height, depth_format, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_SRC, "composer-packed-depth");
+    crate::gpucore::mem_alloc_texture(crate::gpucore::MemClass::A, crate::gpucore::tex_bytes(width, height, depth_format, 1)); // VRAM ledger (W84 §5.2)
     let prepass_depth = crate::gpucore::make_target(&device, width, height, wgpu::TextureFormat::Depth32Float, 1, wgpu::TextureUsages::RENDER_ATTACHMENT, "composer-prepass-depth");
+    crate::gpucore::mem_alloc_texture(crate::gpucore::MemClass::A, crate::gpucore::tex_bytes(width, height, wgpu::TextureFormat::Depth32Float, 1)); // VRAM ledger (W84 §5.2)
     let bokeh_out = crate::gpucore::make_target(&device, width, height, wgpu::TextureFormat::Rgba16Float, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING, "composer-bokeh-out");
+    crate::gpucore::mem_alloc_texture(crate::gpucore::MemClass::A, crate::gpucore::tex_bytes(width, height, wgpu::TextureFormat::Rgba16Float, 1)); // VRAM ledger (W84 §5.2)
     let final_tex = crate::gpucore::make_target(&device, width, height, wgpu::TextureFormat::Rgba8Unorm, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC, "composer-final");
+    crate::gpucore::mem_alloc_texture(crate::gpucore::MemClass::A, crate::gpucore::tex_bytes(width, height, wgpu::TextureFormat::Rgba8Unorm, 1)); // VRAM ledger (W84 §5.2)
     let scene_view = scene_resolved.create_view(&wgpu::TextureViewDescriptor::default());
     let packed_view = packed_depth.create_view(&wgpu::TextureViewDescriptor::default());
     // Fog (format v2 `fog` block): the resolved HDR is fogged into
@@ -1631,7 +1648,9 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded, knobs:
     // instead of the raw scene target. Built only when the file
     // declares fog — absent block, the path is bit-identical.
     let fog_tex = scene.fog.as_ref().map(|_| {
-        crate::gpucore::make_target(&device, width, height, wgpu::TextureFormat::Rgba16Float, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING, "composer-fogged")
+        let t = crate::gpucore::make_target(&device, width, height, wgpu::TextureFormat::Rgba16Float, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING, "composer-fogged");
+        crate::gpucore::mem_alloc_texture(crate::gpucore::MemClass::A, crate::gpucore::tex_bytes(width, height, wgpu::TextureFormat::Rgba16Float, 1)); // VRAM ledger (W84 §5.2)
+        t
     });
     let fog_view = fog_tex.as_ref().map(|t| t.create_view(&wgpu::TextureViewDescriptor::default()));
     let bokeh_view = bokeh_out.create_view(&wgpu::TextureViewDescriptor::default());
@@ -1999,7 +2018,9 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded, knobs:
         None
     };
     let grade_tex = scene.grade.as_ref().map(|_| {
-        crate::gpucore::make_target(&device, width, height, wgpu::TextureFormat::Rgba8Unorm, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING, "composer-grade-src")
+        let t = crate::gpucore::make_target(&device, width, height, wgpu::TextureFormat::Rgba8Unorm, 1, wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::TEXTURE_BINDING, "composer-grade-src");
+        crate::gpucore::mem_alloc_texture(crate::gpucore::MemClass::A, crate::gpucore::tex_bytes(width, height, wgpu::TextureFormat::Rgba8Unorm, 1)); // VRAM ledger (W84 §5.2)
+        t
     });
 
     // ---- passes (dof.rs's order) ----
@@ -2177,6 +2198,8 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded, knobs:
     image::save_buffer(out, &rgba, width, height, image::ColorType::Rgba8)
         .map_err(|e| crate::errors::TaleError::image_io(out, e))?;
     println!("wrote {out} ({width}x{height}){tag}");
+    // VRAM ledger (W84 §5.3): its own line, after the wrote line.
+    println!("{}", crate::gpucore::mem_stats_line());
     Ok(())
 }
 

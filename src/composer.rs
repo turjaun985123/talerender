@@ -50,6 +50,18 @@ pub(crate) fn bloom_mip_sizes(width: u32, height: u32) -> [(u32, u32); 5] {
     out
 }
 
+/// Device bytes of ONE bloom chain at frame size (width, height)
+/// — the VRAM ledger's class C (VRAM-IMPL-W84 §3.2): bright at
+/// mip 0 plus horiz and vert at every mip, all Rgba16Float
+/// (8 B/px): `8 × (px₀ + 2·Σᵢ pxᵢ)` over `bloom_mip_sizes`.
+/// At 1080×1920: 8 × (518,400 + 2×690,600) = 15,196,800.
+pub(crate) fn bloom_chain_bytes(width: u32, height: u32) -> u64 {
+    let sizes = bloom_mip_sizes(width, height);
+    let px0 = sizes[0].0 as u64 * sizes[0].1 as u64;
+    let sum: u64 = sizes.iter().map(|&(w, h)| w as u64 * h as u64).sum();
+    8 * (px0 + 2 * sum)
+}
+
 fn pack_f32(data: &[f32]) -> Vec<u8> {
     let mut out = Vec::with_capacity(data.len() * 4);
     for v in data {
@@ -65,6 +77,10 @@ fn make_buffer(device: &wgpu::Device, queue: &wgpu::Queue, label: &str, bytes: &
         usage,
         mapped_at_creation: false,
     });
+    // VRAM ledger (W84 §5.2): every PostChain pass buffer flows
+    // through here — one insertion covers them all. Lifetime is
+    // the caller's MemScope (PostChain methods open one per call).
+    crate::gpucore::mem_alloc_buffer(crate::gpucore::MemClass::G, bytes.len() as u64);
     queue.write_buffer(&buf, 0, bytes);
     buf
 }
@@ -112,6 +128,11 @@ pub(crate) fn load_room_env(device: &wgpu::Device, queue: &wgpu::Queue) -> wgpu:
         usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
         view_formats: &[],
     });
+    // VRAM ledger (W84 §5.2): class D, the PMREM environment.
+    crate::gpucore::mem_alloc_texture(
+        crate::gpucore::MemClass::D,
+        crate::gpucore::tex_bytes(ROOM_ENV_W, ROOM_ENV_H, wgpu::TextureFormat::Rgba16Float, 1),
+    );
     queue.write_texture(
         wgpu::ImageCopyTexture { texture: &tex, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
         bytes,
@@ -365,6 +386,10 @@ pub(crate) struct PostChain {
     output_bgl: wgpu::BindGroupLayout,
     grade_pipeline: wgpu::RenderPipeline,
     grade_bgl: wgpu::BindGroupLayout,
+    /// VRAM ledger (W84 ruling D2): the frame size whose bloom
+    /// chain is currently registered as standing class C, if
+    /// any. See the registration in `bloom`.
+    bloom_mem: std::cell::Cell<Option<(u32, u32)>>,
 }
 
 impl PostChain {
@@ -455,6 +480,7 @@ impl PostChain {
             output_bgl,
             grade_pipeline,
             grade_bgl,
+            bloom_mem: std::cell::Cell::new(None),
         }
     }
 
@@ -489,6 +515,35 @@ impl PostChain {
         height: u32,
         params: &BloomParams,
     ) {
+        // This call's uniform buffers are transients: the scope
+        // rolls their class-G registration back at return (the
+        // buffers drop with the call). The chain textures below
+        // are NOT registered per call — see the class-C note.
+        let _mem_scope = crate::gpucore::mem_scope();
+        // VRAM ledger, class C (VRAM-IMPL-W84 ruling D2 —
+        // retained registration): the chain's 11 textures are
+        // created and dropped on EVERY bloom() call, but during
+        // any frame's post pass exactly one chain is live, and
+        // one is live in every frame — so the chain is counted
+        // ONCE, as a standing working set, at this instance's
+        // first bloom for a given frame size (re-registered if
+        // the size ever changes mid-instance; in today's code
+        // it never does). A future pipelined overlap of two
+        // chains would under-count peak by one chain
+        // (15,196,800 at 1080×1920) — this comment is part of
+        // the convention, not decoration.
+        match self.bloom_mem.get() {
+            Some((w, h)) if (w, h) == (width, height) => {}
+            Some((w, h)) => {
+                crate::gpucore::mem_free_texture(crate::gpucore::MemClass::C, bloom_chain_bytes(w, h));
+                crate::gpucore::mem_alloc_texture(crate::gpucore::MemClass::C, bloom_chain_bytes(width, height));
+                self.bloom_mem.set(Some((width, height)));
+            }
+            None => {
+                crate::gpucore::mem_alloc_texture(crate::gpucore::MemClass::C, bloom_chain_bytes(width, height));
+                self.bloom_mem.set(Some((width, height)));
+            }
+        }
         let sizes = bloom_mip_sizes(width, height);
         let bright_tex = make_rt(device, sizes[0].0, sizes[0].1, wgpu::TextureFormat::Rgba16Float, "bloom bright");
         let bright_view = bright_tex.create_view(&wgpu::TextureViewDescriptor::default());
@@ -544,6 +599,9 @@ impl PostChain {
         target: &wgpu::TextureView,
         exposure: f32,
     ) {
+        // VRAM ledger: this call's uniform buffer is a
+        // transient (see bloom's scope note).
+        let _mem_scope = crate::gpucore::mem_scope();
         let ub = make_buffer(device, queue, "output uniforms", &pack_f32(&[exposure, 0.0, 0.0, 0.0]), wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST);
         // The output layout orders its bindings tex(0), sampler(1),
         // uniform(2) — matching shader_output_exp.wgsl — so this bind
@@ -571,6 +629,9 @@ impl PostChain {
         target: &wgpu::TextureView,
         params: &GradeParams,
     ) {
+        // VRAM ledger: this call's uniform buffer is a
+        // transient (see bloom's scope note).
+        let _mem_scope = crate::gpucore::mem_scope();
         let data: [f32; 8] = [params.vignette, params.grain, params.warm, params.sat, params.time, 0.0, 0.0, 0.0];
         let ub = make_buffer(device, queue, "grade uniforms", &pack_f32(&data), wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST);
         let bg = self.tex_bg(device, &self.grade_bgl, Some(&ub), &[input]);
@@ -590,6 +651,17 @@ mod tests {
             bloom_mip_sizes(1080, 1920),
             [(540, 960), (270, 480), (135, 240), (68, 120), (34, 60)]
         );
+    }
+
+    #[test]
+    fn bloom_chain_bytes_matches_w84_arithmetic() {
+        // W84 §3.2: mips sum to 690,600 px at 1080x1920;
+        // C = 8 x (518,400 + 2 x 690,600) = 15,196,800.
+        assert_eq!(bloom_chain_bytes(1080, 1920), 15_196_800);
+        // The --draft size from W84 §3.3: mips (270,480),
+        // (135,240), (68,120), (34,60), (17,30) = 172,710 px;
+        // C = 8 x (129,600 + 2 x 172,710) = 3,800,160.
+        assert_eq!(bloom_chain_bytes(540, 960), 3_800_160);
     }
 
     #[test]

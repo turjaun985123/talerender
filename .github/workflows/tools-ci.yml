@@ -137,6 +137,16 @@ jobs:
       - name: Native golden pack verify (STALE fails; CI never pins)
         run: python3 tools/golden/make_golden.py
 
+      # VRAM ledger completeness (VRAM-IMPL-W84 §6.4): every
+      # create_texture/create_buffer in src/ must be a
+      # chokepoint body or carry a mem_alloc_*/mem_note_readback
+      # registration — a silent site would make the gpu-mem
+      # line's accounted_bytes a lie of completeness.
+      - name: VRAM ledger registration completeness (silent site fails)
+        run: |
+          python3 tools/ci/check_mem_registration.py --self-test
+          python3 tools/ci/check_mem_registration.py
+
       # The packager exits 2 unless the project dir already exists
       # (hence the mkdir), 1 if its own verification fails, 0 only
       # when every check passes. Its output is captured so the

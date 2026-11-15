@@ -1,0 +1,82 @@
+name: Probe (dispatch)
+
+# Byte-probe + telemetry evidence on the CI lavapipe
+# (ubuntu-22.04, Mesa 23.2 — the same environment as render.yml).
+#
+# ⚠ NO ARTIFACTS, BY DESIGN. The 2026-11-15 artifact-storage
+# quota incident (multi-GB film-render artifacts) made frame
+# artifacts the fragile evidence path: an upload step failing
+# on quota reddens runs whose build/test/render all passed,
+# and undownloadable frames are no evidence at all. This
+# workflow's evidence is TEXT IN THE JOB LOG: sha256 of every
+# probed frame, the gpu-mem / renderer / completion lines, and
+# the telemetry verdict line. Compare probe hashes against a
+# baseline with tools/ci/byte_probes.py (local baseline dir)
+# or against a recorded hashes file.
+#
+# Probe ranges are the project's standing determinism probes
+# (DETERMINISM-CONTRACT-W04 §5): 195-204, 795-814, 1195-1204
+# (inclusive; the driver takes [from, to), so the renders run
+# 195..205, 795..815, 1195..1205).
+
+on:
+  workflow_dispatch:
+    inputs:
+      telemetry:
+        description: "run film telemetry (CPU-only mode)"
+        type: boolean
+        default: true
+      probes:
+        description: "render the three probe ranges + hash them"
+        type: boolean
+        default: true
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+  RUSTFLAGS: "-C link-arg=-fuse-ld=mold"
+
+jobs:
+  probe:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+      - name: Install mold + lavapipe
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mold mesa-vulkan-drivers vulkan-tools
+          ICD=$(ls /usr/share/vulkan/icd.d/lvp_icd*.json | head -n 1)
+          echo "VK_ICD_FILENAMES=$ICD" >> "$GITHUB_ENV"
+          echo "lavapipe ICD: $ICD"
+      - name: Build
+        run: |
+          cargo build --release
+          sha256sum ./target/release/talerender
+          ./target/release/talerender --version
+      - name: Film telemetry (verdict line is the contract)
+        if: inputs.telemetry
+        run: |
+          set +e
+          TALERENDER_PAINT_CACHE=24 ./target/release/talerender --film-telemetry film > telemetry.log 2>&1
+          rc=$?
+          set -e
+          grep -E "^(FILM TELEMETRY|paint-cache)" telemetry.log || true
+          echo "telemetry exit: $rc (0 = CHECK OK, 1 = CHECK FAILED, 3 = could not run)"
+          exit $rc
+      - name: Probe renders + frame hashes (log evidence only)
+        if: inputs.probes
+        run: |
+          for range in "195 205" "795 815" "1195 1205"; do
+            set -- $range
+            out="probe-$1-$2"
+            ./target/release/talerender --film film --out "$out" --from "$1" --to "$2" > "$out.log" 2>&1
+            grep -E "^(renderer:|gpu-mem:|film render complete)" "$out.log" || true
+            echo "== sha256 $out =="
+            sha256sum "$out"/frame_*.png
+            rm -rf "$out"
+          done

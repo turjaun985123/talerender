@@ -265,6 +265,10 @@ impl Readback {
             usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
             mapped_at_creation: false,
         });
+        // VRAM ledger (W84 §5.2): the staging buffer is freed
+        // inside collect, before any print — peak-side note
+        // only, never a standing allocation.
+        mem_note_readback((padded_row * height) as u64);
         encoder.copy_texture_to_buffer(
             wgpu::ImageCopyTexture {
                 texture,
@@ -354,6 +358,295 @@ pub(crate) fn save_png(path: &str, pixels: &[u8], width: u32, height: u32) {
 }
 
 // ---------------------------------------------------------------------
+// GPU memory ledger (VRAM telemetry, VRAM-IMPL-W84)
+// ---------------------------------------------------------------------
+//
+// A process-global accounting of the device's memory AS THE
+// BINARY ALLOCATES IT: every texture/buffer creation site in
+// src/ either flows through a chokepoint that registers here
+// (make_target callers register per-caller; composer::make_buffer
+// and Readback::record_bpp register in their bodies) or carries
+// its own registration line at the site — the tools-ci grep
+// check (tools/ci/check_mem_registration.py) enforces that no
+// site is silent. Log-only: the ledger reads descriptors and
+// returns numbers; it is never on a pixel path, so determinism
+// is untouched (W84 §5.1).
+//
+// Classes are VRAM-TELEMETRY-W56 §4's letters: A frame targets,
+// B shadow pair, C bloom chain, D PMREM, E uploads, F readback
+// (peak-side only — never enters `current`), G buffers. HOST
+// memory is never ingested: the paint cache's canvases are CPU
+// Vec<u8> and print on their own `paint-cache:` line (W84 §7.1);
+// BufferPool bytes are not registered either (the pool has no
+// production caller; if Readback ever adopts it, its retained
+// buffers register ONCE at pool retention, never per collect —
+// W84 §7.2). `accounted_bytes` is a LOWER BOUND by construction:
+// driver tiling/alignment beyond the 256-byte row rule,
+// compression metadata, pipelines, shader modules, bind groups
+// and samplers are inside the driver, invisible to wgpu 0.20,
+// and unpriced here (W84 §7.3).
+
+/// Ledger classes (W56 §4). F is note-only (see
+/// `mem_note_readback`); it never contributes to `current`.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub(crate) enum MemClass {
+    A,
+    B,
+    C,
+    D,
+    E,
+    F,
+    G,
+}
+
+impl MemClass {
+    fn idx(self) -> usize {
+        match self {
+            MemClass::A => 0,
+            MemClass::B => 1,
+            MemClass::C => 2,
+            MemClass::D => 3,
+            MemClass::E => 4,
+            MemClass::F => 5,
+            MemClass::G => 6,
+        }
+    }
+}
+
+#[derive(Clone, Copy)]
+struct GpuMem {
+    bytes: [u64; 7],
+    peak: u64,
+    tex_counts: [u64; 7],
+    buf_counts: [u64; 7],
+    readback_max: u64,
+}
+
+impl GpuMem {
+    const fn new() -> GpuMem {
+        GpuMem { bytes: [0; 7], peak: 0, tex_counts: [0; 7], buf_counts: [0; 7], readback_max: 0 }
+    }
+
+    /// Live accounted bytes: classes A–E + G. Class F is
+    /// peak-side only and is never summed in.
+    fn current(&self) -> u64 {
+        self.bytes.iter().sum::<u64>() - self.bytes[MemClass::F.idx()]
+    }
+
+    fn note_peak(&mut self) {
+        let c = self.current();
+        if c > self.peak {
+            self.peak = c;
+        }
+    }
+}
+
+static GPU_MEM: std::sync::Mutex<GpuMem> = std::sync::Mutex::new(GpuMem::new());
+
+fn with_mem<R>(f: impl FnOnce(&mut GpuMem) -> R) -> R {
+    // The critical sections are pure arithmetic (no I/O, no
+    // calls back into wgpu), so a poisoned lock can only come
+    // from a panic mid-arithmetic — recover the state rather
+    // than cascade a logging failure into a render failure.
+    let mut guard = GPU_MEM.lock().unwrap_or_else(|e| e.into_inner());
+    f(&mut guard)
+}
+
+/// Bytes of one texture allocation: `w × h × bpp(format) ×
+/// samples`, layers = 1 (no site in the tree creates a layered
+/// texture). The byte-per-pixel comes from wgpu's own block
+/// size table so a new format can never be silently mispriced.
+pub(crate) fn tex_bytes(w: u32, h: u32, format: wgpu::TextureFormat, samples: u32) -> u64 {
+    let bpp = format.block_copy_size(None).unwrap_or(4) as u64;
+    w as u64 * h as u64 * bpp * samples.max(1) as u64
+}
+
+pub(crate) fn mem_alloc_texture(class: MemClass, bytes: u64) {
+    with_mem(|m| {
+        let i = class.idx();
+        m.bytes[i] = m.bytes[i].saturating_add(bytes);
+        m.tex_counts[i] = m.tex_counts[i].saturating_add(1);
+        m.note_peak();
+    });
+}
+
+pub(crate) fn mem_free_texture(class: MemClass, bytes: u64) {
+    with_mem(|m| {
+        let i = class.idx();
+        m.bytes[i] = m.bytes[i].saturating_sub(bytes);
+        m.tex_counts[i] = m.tex_counts[i].saturating_sub(1);
+    });
+}
+
+pub(crate) fn mem_alloc_buffer(class: MemClass, bytes: u64) {
+    with_mem(|m| {
+        let i = class.idx();
+        m.bytes[i] = m.bytes[i].saturating_add(bytes);
+        m.buf_counts[i] = m.buf_counts[i].saturating_add(1);
+        m.note_peak();
+    });
+}
+
+#[allow(dead_code)] // API symmetry (W84 §5.1); MemScope restores
+                   // by snapshot, and the one live caller of the
+                   // free half today is the bloom re-registration
+                   // in composer.rs (texture side).
+pub(crate) fn mem_free_buffer(class: MemClass, bytes: u64) {
+    with_mem(|m| {
+        let i = class.idx();
+        m.bytes[i] = m.bytes[i].saturating_sub(bytes);
+        m.buf_counts[i] = m.buf_counts[i].saturating_sub(1);
+    });
+}
+
+/// Peak-side only (W84 §5.1): a readback staging buffer is
+/// created and freed inside `collect`, before any end-of-run
+/// print, so it must never enter `current` — it raises the
+/// peak watermark by `bytes` over the current standing set and
+/// records the largest single readback.
+pub(crate) fn mem_note_readback(bytes: u64) {
+    with_mem(|m| {
+        let with = m.current().saturating_add(bytes);
+        if with > m.peak {
+            m.peak = with;
+        }
+        if bytes > m.readback_max {
+            m.readback_max = bytes;
+        }
+    });
+}
+
+/// Snapshot/restore guard for per-frame transients (film
+/// `render()` scope, PostChain pass scopes). On drop it restores
+/// the TRANSIENT classes — E (uploads) and G (buffers) — to
+/// their snapshot values; standing classes (A–D) registered
+/// inside the scope survive (PostChain's first-bloom class-C
+/// registration happens inside film's render scope and must
+/// persist). Peak is NOT restored: it is a watermark.
+pub(crate) struct MemScope {
+    e_bytes: u64,
+    g_bytes: u64,
+    e_tex: u64,
+    g_buf: u64,
+}
+
+pub(crate) fn mem_scope() -> MemScope {
+    with_mem(|m| MemScope {
+        e_bytes: m.bytes[MemClass::E.idx()],
+        g_bytes: m.bytes[MemClass::G.idx()],
+        e_tex: m.tex_counts[MemClass::E.idx()],
+        g_buf: m.buf_counts[MemClass::G.idx()],
+    })
+}
+
+impl Drop for MemScope {
+    fn drop(&mut self) {
+        with_mem(|m| {
+            m.bytes[MemClass::E.idx()] = self.e_bytes;
+            m.bytes[MemClass::G.idx()] = self.g_bytes;
+            m.tex_counts[MemClass::E.idx()] = self.e_tex;
+            m.buf_counts[MemClass::G.idx()] = self.g_buf;
+        });
+    }
+}
+
+/// The sysfs side of the line: AMD device-wide counters from
+/// `/sys/class/drm/cardN/device/mem_info_{gtt,vram}_used`.
+/// Device-wide (all processes), and on the 5650G the VRAM
+/// figure is a carve-out of the same system RAM — neither is
+/// this process's share (W84 §5.4). Any failure at any step
+/// yields None for that field, printed as the literal
+/// `unavailable` — never 0 (W84 §7.6).
+#[derive(Clone, Copy)]
+struct SysfsMem {
+    gtt: Option<u64>,
+    vram: Option<u64>,
+}
+
+fn probe_sysfs() -> SysfsMem {
+    probe_sysfs_at(std::path::Path::new("/sys/class/drm"))
+}
+
+fn probe_sysfs_at(base: &std::path::Path) -> SysfsMem {
+    let none = SysfsMem { gtt: None, vram: None };
+    let mut cards: Vec<std::path::PathBuf> = match std::fs::read_dir(base) {
+        Ok(rd) => rd
+            .filter_map(|e| e.ok())
+            .map(|e| e.path())
+            .filter(|p| {
+                p.file_name()
+                    .and_then(|n| n.to_str())
+                    .map(|n| {
+                        n.strip_prefix("card")
+                            .map(|rest| !rest.is_empty() && rest.chars().all(|c| c.is_ascii_digit()))
+                            .unwrap_or(false)
+                    })
+                    .unwrap_or(false)
+            })
+            .collect(),
+        Err(_) => return none,
+    };
+    cards.sort();
+    for card in cards {
+        let dev = card.join("device");
+        let gtt_path = dev.join("mem_info_gtt_used");
+        if !gtt_path.exists() {
+            continue;
+        }
+        let read = |p: &std::path::Path| -> Option<u64> {
+            std::fs::read_to_string(p).ok()?.trim().parse().ok()
+        };
+        return SysfsMem { gtt: read(&gtt_path), vram: read(&dev.join("mem_info_vram_used")) };
+    }
+    none
+}
+
+fn fmt_sysfs(v: Option<u64>) -> String {
+    match v {
+        Some(n) => n.to_string(),
+        None => "unavailable".to_string(),
+    }
+}
+
+/// The pinned line grammar (W84 §5.3 — field order and spelling
+/// are parsed by tools/perf/vram_report.py; do not change).
+fn format_mem_line(m: &GpuMem, sysfs: SysfsMem) -> String {
+    let textures: u64 = m.tex_counts.iter().sum();
+    let buffers: u64 = m.buf_counts.iter().sum();
+    format!(
+        "gpu-mem: accounted_bytes={} peak_accounted_bytes={} textures={} buffers={} readback_bytes={} sysfs_gtt_used_bytes={} sysfs_vram_used_bytes={}",
+        m.current(),
+        m.peak,
+        textures,
+        buffers,
+        m.readback_max,
+        fmt_sysfs(sysfs.gtt),
+        fmt_sysfs(sysfs.vram)
+    )
+}
+
+/// The end-of-run `gpu-mem:` line for RENDER modes. Film
+/// telemetry prints NO line (W84 ruling D1: telemetry is a
+/// CPU-only mode — no device is ever created — so its ledger
+/// would be structurally zero, a fabricated-looking
+/// measurement; the verdict line remains telemetry's whole
+/// contract).
+pub(crate) fn mem_stats_line() -> String {
+    let snap = with_mem(|m| *m);
+    format_mem_line(&snap, probe_sysfs())
+}
+
+#[cfg(test)]
+pub(crate) fn mem_class_bytes(class: MemClass) -> u64 {
+    with_mem(|m| m.bytes[class.idx()])
+}
+
+#[cfg(test)]
+pub(crate) fn mem_reset() {
+    with_mem(|m| *m = GpuMem::new());
+}
+
+// ---------------------------------------------------------------------
 // Tests — CPU arithmetic only. GPU paths are CI-verified (header).
 // ---------------------------------------------------------------------
 
@@ -435,5 +728,174 @@ mod tests {
         let out = strip_padding(&buf, 10, 1, 8, padded);
         assert_eq!(out.len(), 80);
         assert_eq!(out, buf[..80]);
+    }
+
+    // -----------------------------------------------------------------
+    // GPU memory ledger (VRAM-IMPL-W84). The ledger is a
+    // process-global, so every test that touches it holds this
+    // lock for its whole body and resets first — cargo runs
+    // tests on parallel threads.
+    // -----------------------------------------------------------------
+
+    static LEDGER_TEST_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+    #[test]
+    fn tex_bytes_known_values() {
+        use wgpu::TextureFormat as F;
+        // The film lane's arithmetic (W84 §3.1).
+        assert_eq!(tex_bytes(1080, 1920, F::Rgba16Float, 4), 66_355_200); // hdr msaa
+        assert_eq!(tex_bytes(1080, 1920, F::Depth32Float, 4), 33_177_600); // hdr depth
+        assert_eq!(tex_bytes(1080, 1920, F::Rgba16Float, 1), 16_588_800);
+        assert_eq!(tex_bytes(1080, 1920, F::Rgba8Unorm, 1), 8_294_400);
+        assert_eq!(tex_bytes(1080, 1920, F::Rgba8UnormSrgb, 1), 8_294_400);
+        assert_eq!(tex_bytes(2048, 2048, F::Rgba8Unorm, 1), 16_777_216); // one shadow term
+        assert_eq!(tex_bytes(768, 1024, F::Rgba16Float, 1), 6_291_456); // PMREM
+    }
+
+    #[test]
+    fn ledger_alloc_free_scope_and_peak_semantics() {
+        let _g = LEDGER_TEST_LOCK.lock().unwrap();
+        mem_reset();
+        mem_alloc_texture(MemClass::A, 1000);
+        mem_alloc_texture(MemClass::E, 200);
+        mem_alloc_buffer(MemClass::G, 50);
+        assert_eq!(mem_class_bytes(MemClass::A), 1000);
+        // Peak-side readback note: raises peak, never current.
+        mem_note_readback(300);
+        let snap = with_mem(|m| *m);
+        assert_eq!(snap.current(), 1250);
+        assert_eq!(snap.peak, 1550);
+        assert_eq!(snap.readback_max, 300);
+        // A smaller later note changes nothing.
+        mem_note_readback(100);
+        let snap = with_mem(|m| *m);
+        assert_eq!(snap.peak, 1550);
+        assert_eq!(snap.readback_max, 300);
+        // Scope: E/G transients roll back on drop; A survives;
+        // the peak watermark does not roll back.
+        {
+            let _scope = mem_scope();
+            mem_alloc_texture(MemClass::E, 700);
+            mem_alloc_buffer(MemClass::G, 900);
+            mem_alloc_texture(MemClass::C, 400); // standing class inside a scope
+            let inside = with_mem(|m| *m);
+            assert_eq!(inside.current(), 1250 + 700 + 900 + 400);
+            assert_eq!(inside.peak, 1250 + 700 + 900 + 400);
+        }
+        let after = with_mem(|m| *m);
+        assert_eq!(after.current(), 1250 + 400);
+        assert_eq!(after.peak, 1250 + 700 + 900 + 400);
+        assert_eq!(mem_class_bytes(MemClass::C), 400);
+        // Free returns bytes and counts.
+        mem_free_texture(MemClass::C, 400);
+        assert_eq!(mem_class_bytes(MemClass::C), 0);
+        let after = with_mem(|m| *m);
+        assert_eq!(after.current(), 1250);
+        let textures: u64 = after.tex_counts.iter().sum();
+        assert_eq!(textures, 2); // one A + one E
+    }
+
+    #[test]
+    fn mem_line_format_is_the_pinned_grammar() {
+        // Hand-built state: no global touched, no lock needed.
+        let mut m = GpuMem::new();
+        m.bytes[MemClass::A.idx()] = 220_930_688;
+        m.peak = 229_286_528;
+        m.readback_max = 8_355_840;
+        m.tex_counts[MemClass::A.idx()] = 41;
+        m.buf_counts[MemClass::G.idx()] = 18;
+        let line = format_mem_line(&m, SysfsMem { gtt: None, vram: None });
+        assert_eq!(
+            line,
+            "gpu-mem: accounted_bytes=220930688 peak_accounted_bytes=229286528 textures=41 buffers=18 readback_bytes=8355840 sysfs_gtt_used_bytes=unavailable sysfs_vram_used_bytes=unavailable"
+        );
+        let line = format_mem_line(&m, SysfsMem { gtt: Some(123), vram: Some(456) });
+        assert!(line.ends_with("sysfs_gtt_used_bytes=123 sysfs_vram_used_bytes=456"), "got: {line}");
+    }
+
+    #[test]
+    fn sysfs_probe_unavailable_and_numeric_paths() {
+        // Empty dir -> no card -> both unavailable (the VM/CI
+        // path; W84 §5.4 verified this VM has no cardN at all).
+        let base = std::env::temp_dir().join(format!("talerender-sysfs-test-{}-empty", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        std::fs::create_dir_all(&base).unwrap();
+        let s = probe_sysfs_at(&base);
+        assert_eq!(s.gtt, None);
+        assert_eq!(s.vram, None);
+        // A fake card0 with both counters -> numeric path.
+        let dev = base.join("card0").join("device");
+        std::fs::create_dir_all(&dev).unwrap();
+        std::fs::write(dev.join("mem_info_gtt_used"), "12345\n").unwrap();
+        std::fs::write(dev.join("mem_info_vram_used"), "678\n").unwrap();
+        let s = probe_sysfs_at(&base);
+        assert_eq!(s.gtt, Some(12345));
+        assert_eq!(s.vram, Some(678));
+        // Malformed counter -> that field unavailable, the
+        // other still read.
+        std::fs::write(dev.join("mem_info_vram_used"), "plenty\n").unwrap();
+        let s = probe_sysfs_at(&base);
+        assert_eq!(s.gtt, Some(12345));
+        assert_eq!(s.vram, None);
+        let _ = std::fs::remove_dir_all(&base);
+    }
+
+    /// The exact gate (W84 §6.2): replay the film lane's
+    /// standing registrations at (1080, 1920, s = 4, S = 2048)
+    /// through the ledger API and assert the acceptance
+    /// figures — re-derived from the code's own size
+    /// expressions in W84 §3, not copied from a log.
+    #[test]
+    fn ledger_replay_film_lane_acceptance_figures() {
+        let _g = LEDGER_TEST_LOCK.lock().unwrap();
+        mem_reset();
+        use wgpu::TextureFormat as F;
+        let (w, h, s, sh) = (1080u32, 1920u32, 4u32, 2048u32);
+        // Class A (default packed depth, p = 4: Rgba8Unorm).
+        mem_alloc_texture(MemClass::A, tex_bytes(w, h, F::Rgba16Float, s)); // hdr msaa
+        mem_alloc_texture(MemClass::A, tex_bytes(w, h, F::Depth32Float, s)); // hdr depth
+        mem_alloc_texture(MemClass::A, tex_bytes(w, h, F::Rgba16Float, 1)); // hdr resolved
+        mem_alloc_texture(MemClass::A, tex_bytes(w, h, F::Rgba8Unorm, 1)); // packed depth
+        mem_alloc_texture(MemClass::A, tex_bytes(w, h, F::Depth32Float, 1)); // prepass
+        mem_alloc_texture(MemClass::A, tex_bytes(w, h, F::Rgba16Float, 1)); // bokeh out
+        mem_alloc_texture(MemClass::A, tex_bytes(w, h, F::Rgba8Unorm, 1)); // output srgb
+        mem_alloc_texture(MemClass::A, tex_bytes(w, h, F::Rgba8Unorm, 1)); // final
+        // Class B: the shadow pair.
+        mem_alloc_texture(MemClass::B, tex_bytes(sh, sh, F::Rgba8Unorm, 1));
+        mem_alloc_texture(MemClass::B, tex_bytes(sh, sh, F::Depth32Float, 1));
+        // Class C: one bloom chain (D2 retained registration).
+        mem_alloc_texture(MemClass::C, crate::composer::bloom_chain_bytes(w, h));
+        // Class D: PMREM.
+        mem_alloc_texture(MemClass::D, tex_bytes(768, 1024, F::Rgba16Float, 1));
+        assert_eq!(mem_class_bytes(MemClass::A), 165_888_000);
+        assert_eq!(mem_class_bytes(MemClass::B), 33_554_432);
+        assert_eq!(mem_class_bytes(MemClass::C), 15_196_800);
+        assert_eq!(mem_class_bytes(MemClass::D), 6_291_456);
+        let snap = with_mem(|m| *m);
+        assert_eq!(snap.current(), 220_930_688, "steady total (W84 §3.1)");
+        assert_eq!(snap.peak, 220_930_688);
+        // One frame readback: padded row 4352 x 1920.
+        mem_note_readback(8_355_840);
+        let snap = with_mem(|m| *m);
+        assert_eq!(snap.peak, 229_286_528, "peak = steady + one readback (W84 §3.1)");
+        assert_eq!(snap.readback_max, 8_355_840);
+        // Halffloat packed-depth variant (p = 8): A and steady
+        // grow by exactly the packed-depth delta (W84 §3.3).
+        mem_reset();
+        mem_alloc_texture(MemClass::A, tex_bytes(w, h, F::Rgba16Float, s));
+        mem_alloc_texture(MemClass::A, tex_bytes(w, h, F::Depth32Float, s));
+        mem_alloc_texture(MemClass::A, tex_bytes(w, h, F::Rgba16Float, 1));
+        mem_alloc_texture(MemClass::A, tex_bytes(w, h, F::Rgba16Float, 1)); // packed, halffloat
+        mem_alloc_texture(MemClass::A, tex_bytes(w, h, F::Depth32Float, 1));
+        mem_alloc_texture(MemClass::A, tex_bytes(w, h, F::Rgba16Float, 1));
+        mem_alloc_texture(MemClass::A, tex_bytes(w, h, F::Rgba8Unorm, 1));
+        mem_alloc_texture(MemClass::A, tex_bytes(w, h, F::Rgba8Unorm, 1));
+        mem_alloc_texture(MemClass::B, tex_bytes(sh, sh, F::Rgba8Unorm, 1));
+        mem_alloc_texture(MemClass::B, tex_bytes(sh, sh, F::Depth32Float, 1));
+        mem_alloc_texture(MemClass::C, crate::composer::bloom_chain_bytes(w, h));
+        mem_alloc_texture(MemClass::D, tex_bytes(768, 1024, F::Rgba16Float, 1));
+        assert_eq!(mem_class_bytes(MemClass::A), 174_182_400);
+        let snap = with_mem(|m| *m);
+        assert_eq!(snap.current(), 229_225_088, "halffloat steady (W84 §3.3)");
     }
 }
