@@ -28,6 +28,7 @@ mod composer;
 mod config;
 mod dirtyrect;
 mod dof;
+mod dyntex;
 mod errors;
 mod eval15;
 mod gpucore;
@@ -35,6 +36,7 @@ mod lifetimes;
 mod math;
 mod mempressure;
 mod memreport;
+mod memreport_print;
 mod observability;
 mod outputmgr;
 mod locomotion;
@@ -1087,7 +1089,8 @@ async fn run(width: u32, height: u32, out: &str, knobs: Knobs, adapter_policy: &
     img.save(out).map_err(|e| errors::TaleError::image_io(out, e))?;
     println!("wrote {out} ({width}x{height}){tag}");
     // VRAM ledger (W84 §5.3): its own line, after the wrote line.
-    println!("{}", crate::gpucore::mem_stats_line());
+    // WP2 (CR-B1-08): the mem-report companion block follows it.
+    crate::memreport_print::print_full_block_for_adapter(&adapter);
     Ok(())
 }
 

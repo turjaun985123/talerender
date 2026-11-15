@@ -525,7 +525,8 @@ pub async fn run_dof(width: u32, height: u32, out: &str, knobs: crate::Knobs) ->
         "wrote {out} ({width}x{height}) — scene dof-chart: panels at 2..30 m, focus {FOCUS} m, aperture {APERTURE}, maxblur {MAXBLUR}; chain: HalfFloat MSAA-4x scene -> packed-depth prepass -> transcribed r170 bokeh -> Neutral+sRGB output{tag}"
     );
     // VRAM ledger (W84 §5.3): its own line, after the wrote line.
-    println!("{}", crate::gpucore::mem_stats_line());
+    // WP2 (CR-B1-08): the mem-report companion block follows it.
+    crate::memreport_print::print_full_block_for_adapter(&adapter);
     Ok(())
 }
 

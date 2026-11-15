@@ -2573,6 +2573,13 @@ pub(crate) struct Renderer {
     sampler_clamp: wgpu::Sampler,
     sampler_repeat: wgpu::Sampler,
     sampler_nearest: wgpu::Sampler,
+    // WP2 (CR-B1-08): kept for the mem-report print at run tails.
+    adapter_report: crate::adapter::AdapterReport,
+    adapter_features: wgpu::Features,
+    // WP1.2 (CR-B1-08): persistent Dyn-texture pool + the
+    // per-slot last-uploaded pixels (the pool's caller contract).
+    dyn_pool: crate::dyntex::DynTexturePool,
+    prev_dyn: Vec<Option<std::rc::Rc<Painted>>>,
 }
 
 impl Renderer {
@@ -2583,10 +2590,14 @@ impl Renderer {
         let policy = crate::adapter::policy_from(Some(adapter_policy), None);
         let adapter = crate::gpucore::request_adapter_with_policy(&instance, &policy).await?;
         let info = adapter.get_info();
+        // WP2 (CR-B1-08): the report + features are kept on the
+        // Renderer so the run tails can print the mem-report block.
+        let adapter_report = crate::adapter::describe(&info);
+        let adapter_features = adapter.features();
         // Canonical C7 adapter line (was a `renderer:`-prefixed
         // twin of it; bench_lab accepts both prefixes, and one
         // shape everywhere is the contract's point). Log-only.
-        println!("{}", crate::adapter::report_line(&crate::adapter::describe(&info)));
+        println!("{}", crate::adapter::report_line(&adapter_report));
         let (device, queue) =
             crate::gpucore::request_device_default(&adapter, "talerender film device").await?;
         let ceil_motif = {
@@ -2970,6 +2981,10 @@ impl Renderer {
             sampler_clamp,
             sampler_repeat,
             sampler_nearest,
+            adapter_report,
+            adapter_features,
+            dyn_pool: crate::dyntex::DynTexturePool::new(),
+            prev_dyn: Vec::new(),
         })
     }
 }
@@ -2986,30 +3001,38 @@ struct Prepared {
 }
 
 impl Renderer {
-    fn upload_dyn(&self, px: &[u8], w: u32, h: u32) -> wgpu::Texture {
-        let tex = self.device.create_texture(&wgpu::TextureDescriptor {
-            label: Some("card texture"),
-            size: wgpu::Extent3d { width: w, height: h, depth_or_array_layers: 1 },
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba8UnormSrgb,
-            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-            view_formats: &[],
-        });
-        // VRAM ledger (W84 §5.2): per-frame card upload,
-        // E-transient — render()'s MemScope rolls it back.
-        crate::gpucore::mem_alloc_texture(crate::gpucore::MemClass::E, crate::gpucore::tex_bytes(w, h, wgpu::TextureFormat::Rgba8UnormSrgb, 1));
-        self.queue.write_texture(
-            wgpu::TexelCopyTextureInfo { texture: &tex, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
-            px,
-            wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(w * 4), rows_per_image: Some(h) },
-            wgpu::Extent3d { width: w, height: h, depth_or_array_layers: 1 },
-        );
-        tex
+    // WP2 (CR-B1-08): the gpu-mem line + mem-report companion
+    // block, printed by the run tails while the Renderer (and
+    // its standing set) is still alive. (The per-frame
+    // upload_dyn this replaces is gone: the WP1.2 DynTexturePool
+    // owns card textures now, driven at the top of render().)
+    fn print_mem_report(&self) {
+        crate::memreport_print::print_full_block(&self.adapter_report, self.adapter_features);
     }
 
     pub(crate) fn render(&mut self, spec: &FrameSpec, dyn_tex: &[std::rc::Rc<Painted>]) -> crate::errors::TaleResult<Vec<u8>> {
+        // WP1.2 (CR-B1-08): the persistent Dyn-texture pool is
+        // driven BEFORE the MemScope opens — the pool's class-E
+        // registration is a standing allocation, and inside the
+        // scope it would roll back at frame 1's end while the
+        // textures persist (the ledger would lie; the pixels
+        // never would). Uploads depend only on device/queue +
+        // dyn_tex. prev_dyn[slot] always holds the Rc whose
+        // bytes were last uploaded to that slot — the pool's
+        // caller contract (CR-B1-08 §3, case C1). The views are
+        // cloned handles, so no borrow of the pool is held
+        // across the passes below.
+        for (slot, p) in dyn_tex.iter().enumerate() {
+            if self.prev_dyn.len() <= slot {
+                self.prev_dyn.resize_with(slot + 1, || None);
+            }
+            let prev = self.prev_dyn[slot].as_ref().map(|rc| rc.0.as_slice());
+            self.dyn_pool.upload(&self.device, &self.queue, slot, &p.0, p.1, p.2, prev);
+            self.prev_dyn[slot] = Some(p.clone());
+        }
+        let dyn_views: Vec<wgpu::TextureView> = (0..dyn_tex.len())
+            .map(|s| self.dyn_pool.view(s).expect("dyn slot uploaded above").clone())
+            .collect();
         // VRAM ledger (W84 §5.1): everything this frame
         // allocates transiently (card uploads, uniform/vertex
         // buffers, PostChain pass buffers) rolls back at return;
@@ -3215,13 +3238,8 @@ impl Renderer {
             tex_p.push(Prepared { vb, ib, n, bg0: Some(bg0), bg: None, prepass_bg: Some(prepass_bg), shadow_bg: None, _ubs: vec![draw_ub, pre_ub] });
         }
         // ---- prepare basics ----
-        let mut dyn_keep: Vec<wgpu::Texture> = Vec::new();
-        let mut dyn_views: Vec<wgpu::TextureView> = Vec::new();
-        for p in dyn_tex {
-            let t = self.upload_dyn(&p.0, p.1, p.2);
-            dyn_views.push(t.create_view(&wgpu::TextureViewDescriptor::default()));
-            dyn_keep.push(t);
-        }
+        // (dyn card views were built at the top of render(),
+        // above the MemScope — see the WP1.2 pool drive.)
         let (fog_col, fog_near, fog_far, fog_on) = match &spec.fog {
             Some((c, n, fa)) => (*c, *n, *fa, 1.0f32),
             None => ([0.0; 3], 0.0, 0.0, 0.0),
@@ -3503,7 +3521,6 @@ impl Renderer {
         let rb = crate::gpucore::Readback::record(device, &mut encoder, &self.final_tex, width, height, "readback buffer");
         queue.submit(Some(encoder.finish()));
         let pixels = rb.collect(device)?;
-        drop(dyn_keep);
         Ok(pixels)
     }
 }
@@ -3726,7 +3743,12 @@ pub(crate) async fn run_film(width: u32, height: u32, film_dir: &str, out_dir: &
     // VRAM ledger (W84 §5.3): its own line, immediately after
     // the completion block — the Renderer is still alive here,
     // so the standing set is what the line accounts.
-    println!("{}", crate::gpucore::mem_stats_line());
+    // WP2 (CR-B1-08): print_full_block emits that same gpu-mem
+    // line first, then the mem-report companions. The WP1.2
+    // pool's standing bytes are inside the accounted total
+    // now — truthful growth (CR-B1-08 §2.3), not a regression.
+    renderer.print_mem_report();
+    println!("{}", renderer.dyn_pool.stats_line());
     Ok(())
 }
 
@@ -3817,7 +3839,7 @@ fn run_film_stream(
         report.out_final.display(), report.profile, report.audio,
         clock.summary_suffix(), cache.stats_line()
     );
-    println!("{}", crate::gpucore::mem_stats_line());
+    renderer.print_mem_report();
     Ok(())
 }
 

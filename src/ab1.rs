@@ -1576,7 +1576,8 @@ pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str, pos
     img.save(out).map_err(|e| crate::errors::TaleError::image_io(out, e))?;
     println!("wrote {out} ({width}x{height}){tag}");
     // VRAM ledger (W84 §5.3): its own line, after the wrote line.
-    println!("{}", crate::gpucore::mem_stats_line());
+    // WP2 (CR-B1-08): the mem-report companion block follows it.
+    crate::memreport_print::print_full_block_for_adapter(&adapter);
     Ok(())
 }
 

@@ -1164,14 +1164,19 @@ fn upload_texture(device: &wgpu::Device, queue: &wgpu::Queue, px: &[u8], w: u32,
 
 async fn make_device(
     label: &'static str,
-) -> crate::errors::TaleResult<(wgpu::Device, wgpu::Queue)> {
+) -> crate::errors::TaleResult<(wgpu::Device, wgpu::Queue, crate::adapter::AdapterReport, wgpu::Features)> {
     let instance = crate::gpucore::new_instance();
     let adapter = crate::gpucore::request_adapter(&instance).await?;
     let info = adapter.get_info();
-    println!("{}", crate::adapter::report_line(&crate::adapter::describe(&info)));
+    // WP2 (CR-B1-08): the report + features ride along so the
+    // run tails can print the mem-report block.
+    let report = crate::adapter::describe(&info);
+    let features = adapter.features();
+    println!("{}", crate::adapter::report_line(&report));
     // Standard limits, not downlevel: the real character canvas
     // is 2560x2816 (see ab1.rs) — request_device_default's law.
-    crate::gpucore::request_device_default(&adapter, label).await
+    let (device, queue) = crate::gpucore::request_device_default(&adapter, label).await?;
+    Ok((device, queue, report, features))
 }
 
 fn view_proj(cam: &Camera, width: u32, height: u32) -> Mat4 {
@@ -1264,7 +1269,7 @@ async fn run_direct(width: u32, height: u32, out: &str, scene: &Loaded, knobs: c
     } else {
         String::new()
     };
-    let (device, queue) = make_device("talerender scene-file device").await?;
+    let (device, queue, adapter_report, adapter_features) = make_device("talerender scene-file device").await?;
     println!(
         "scene: file — {} (format v{}, direct path, {} draws, {} textures)",
         scene.version,
@@ -1515,7 +1520,8 @@ async fn run_direct(width: u32, height: u32, out: &str, scene: &Loaded, knobs: c
     img.save(out).map_err(|e| crate::errors::TaleError::image_io(out, e))?;
     println!("wrote {out} ({width}x{height}){tag}");
     // VRAM ledger (W84 §5.3): its own line, after the wrote line.
-    println!("{}", crate::gpucore::mem_stats_line());
+    // WP2 (CR-B1-08): the mem-report companion block follows it.
+    crate::memreport_print::print_full_block(&adapter_report, adapter_features);
     Ok(())
 }
 
@@ -1559,7 +1565,7 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded, knobs:
     };
     let samples = knobs.samples();
     let bokeh = scene.bokeh.as_ref().expect("composer path requires post.bokeh");
-    let (device, queue) = make_device("talerender scene-file composer device").await?;
+    let (device, queue, adapter_report, adapter_features) = make_device("talerender scene-file composer device").await?;
     println!(
         "scene: file — {} (format v{}, composer path: HalfFloat MSAA-4x -> packed-depth prepass -> r170 bokeh -> Neutral+sRGB; focus {} m, aperture {}, maxblur {})",
         scene.name, scene.version, bokeh.focus, bokeh.aperture, bokeh.maxblur
@@ -2177,7 +2183,8 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded, knobs:
         .map_err(|e| crate::errors::TaleError::image_io(out, e))?;
     println!("wrote {out} ({width}x{height}){tag}");
     // VRAM ledger (W84 §5.3): its own line, after the wrote line.
-    println!("{}", crate::gpucore::mem_stats_line());
+    // WP2 (CR-B1-08): the mem-report companion block follows it.
+    crate::memreport_print::print_full_block(&adapter_report, adapter_features);
     Ok(())
 }
 
