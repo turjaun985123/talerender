@@ -23,6 +23,7 @@ mod battery;
 mod bufferpool;
 mod charanim;
 mod composer;
+mod config;
 mod dof;
 mod errors;
 mod gpucore;
