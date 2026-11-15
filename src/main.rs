@@ -30,6 +30,7 @@ mod locomotion;
 mod paintbudget;
 mod rendergraph;
 mod runlog;
+mod scheduler;
 mod scene;
 mod scenefile;
 mod telemetry;
