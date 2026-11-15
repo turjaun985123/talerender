@@ -1752,8 +1752,8 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded, knobs:
             entry_point: Some("vs_main"),
             buffers: &[Some(wgpu::VertexBufferLayout {
                 array_stride: 12, step_mode: wgpu::VertexStepMode::Vertex, attributes: &[wgpu::VertexAttribute {
-                    format: wgpu::VertexFormat::Float32x3), Some(offset: 0), Some(shader_location: 0 })],
-            }],
+                    format: wgpu::VertexFormat::Float32x3, offset: 0, shader_location: 0 }],
+            })],
             compilation_options: Default::default(),
         },
         fragment: Some(wgpu::FragmentState {
