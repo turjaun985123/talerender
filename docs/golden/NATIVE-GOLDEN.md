@@ -230,3 +230,43 @@ this note, and the runner (`tools/golden/run_golden.sh`)
 refuses `--pin` outright. The 14 film items carry no such
 debt — they have never been pinned, and their first pins
 will be struck from post-fix frames.
+
+## Re-pin act — locomotion adoption (2026-11-15)
+
+Deliberate, disclosed, measured — per the re-baselining law. The
+locomotion adoption (`56348ac`, user ruling 2026-11-15, DECISIONS-W94
+decision 3 with D1–D4) makes the adopted render the reference of
+record (D4). Exactly six film pins were re-struck from the adopted
+render (CI run `43665874388`, full 1,811-frame film at `56348ac`),
+each being the mid frame of a wired walk segment, each proven
+changed by the adoption A/B (baseline = step-0-head CI render, run
+`43664830922`) and unchanged in every control segment:
+
+| item | mid frame | pin before → after |
+|---|---|---|
+| `film-s02` | 285 | `9649a9b6…` → `bff7dbd4…` |
+| `film-s06` | 848 | `7eff42cd…` → `423ef649…` |
+| `film-s07` | 969 | `7f8e1555…` → `ebd809b5…` |
+| `film-s08` | 1119 | `3e8e703f…` → `c02700fd…` |
+| `film-s10` | 1440 | `59bdb4f2…` → `0fa3cda7…` |
+| `film-s11` | 1593 | `7bed0da5…` → `876305e9…` |
+
+A/B totals: 858 frames changed, ALL inside the gait footprint
+(858 of 888 footprint frames; the 30 unchanged footprint frames are
+the pre-driver rest frames of s07/s11, where the module's rest bob
+coincides with the staged bob); control ranges 0 of 923 changed;
+the standing probe ranges changed 40/40 (the expected signature —
+bob is module-staged there now). PSNR sample over 10 footprint
+frames: min 21.43 dB, mean 39.61 dB, all finite. Full evidence:
+`docs/ab/locomotion-adoption.md`; contact sheets are held locally
+(no-photos rule) with their hashes recorded there.
+
+Two disclosures. (1) `film-s02`'s old pin was ALREADY stale against
+pre-wiring renders (it predates the blink adoption `5a9383e`, which
+changed film frames after the Act-1 pins were struck); this re-pin
+absorbs that older drift as well as the gait change. (2)
+`film-s03`'s pin is likewise stale against current renders for the
+same blink-era reason, but its mid frame did NOT change under the
+adoption (control segment), so it was NOT re-pinned here — it is
+recorded as pre-existing pin debt for a future deliberate act, not
+silently absorbed into this one.
