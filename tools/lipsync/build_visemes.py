@@ -647,6 +647,16 @@ def _phone_segments(timed, raw, line, source):
     return segs
 
 
+# Variant A closed-exit threshold (LIPSYNC-BIND-W86 §1.1; user
+# ruling 2026-11-15, DECISIONS-W94 decision 4): a key whose
+# predecessor key is closed (value <= CLOSED_EXIT_MAX) is emitted
+# with ease "step", so the §15 evaluator holds the closed posture
+# across the silence/closure and jumps at the next phoneme. The
+# threshold is the painter's own open threshold.
+CLOSED_EXIT_MAX = 0.05  # the painter's open threshold,
+                        # src/toonfull.rs:694
+
+
 def _keys_from_segments(segments, dur):
     by_t = {}
 
@@ -668,10 +678,21 @@ def _keys_from_segments(segments, dur):
         v = by_t[t]
         if v == last_v:
             continue  # collapse consecutive equal values
-        keys.append({"t": t, "value": v, "ease": "linear"})
+        # Closed-exit rule (Variant A): the predecessor relation is
+        # read after the collapse, and the collapse cannot break it
+        # (a dropped key has the same value as its kept predecessor,
+        # so a collapsed-away closed key leaves an equally closed
+        # predecessor). No key times or values change — ease only.
+        keys.append({"t": t, "value": v,
+                     "ease": "step" if (last_v is not None
+                                        and last_v <= CLOSED_EXIT_MAX)
+                             else "linear"})
         last_v = v
     if keys and keys[-1]["value"] != 0.0:
-        keys.append({"t": dur, "value": 0.0, "ease": "linear"})
+        keys.append({"t": dur, "value": 0.0,
+                     "ease": "step" if keys[-1]["value"]
+                                        <= CLOSED_EXIT_MAX
+                             else "linear"})
     return keys
 
 
