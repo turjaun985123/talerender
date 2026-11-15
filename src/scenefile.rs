@@ -1292,7 +1292,7 @@ async fn run_direct(width: u32, height: u32, out: &str, scene: &Loaded, knobs: c
         source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("shader_scene3d.wgsl"))),
     });
     let bgl_colour = uniform_bgl(&device, true);
-    let pipeline_colour = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+    let pipeline_colour = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor { cache: None,
         label: Some("scene colour pipeline"),
         layout: Some(&device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("scene colour layout"),
@@ -1336,7 +1336,7 @@ async fn run_direct(width: u32, height: u32, out: &str, scene: &Loaded, knobs: c
         source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("shader_tex.wgsl"))),
     });
     let bgl_tex = tex_bgl(&device);
-    let pipeline_tex = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+    let pipeline_tex = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor { cache: None,
         label: Some("scene textured pipeline"),
         layout: Some(&device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("scene textured layout"),
@@ -1657,7 +1657,7 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded, knobs:
         label: Some("composer textured shader"),
         source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("shader_tex.wgsl"))),
     });
-    let scene_tex_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+    let scene_tex_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor { cache: None,
         label: Some("composer scene tex pipeline"),
         layout: Some(&device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("composer scene tex layout"),
@@ -1698,7 +1698,7 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded, knobs:
         label: Some("composer colour shader"),
         source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("shader_scene3d.wgsl"))),
     });
-    let scene_colour_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+    let scene_colour_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor { cache: None,
         label: Some("composer scene colour pipeline"),
         layout: Some(&device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("composer scene colour layout"),
@@ -1740,7 +1740,7 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded, knobs:
         label: Some("composer depth shader"),
         source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("shader_depth_pos.wgsl"))),
     });
-    let depth_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+    let depth_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor { cache: None,
         label: Some("composer depth pipeline"),
         layout: Some(&device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("composer depth layout"),
@@ -1810,7 +1810,7 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded, knobs:
                 wgpu::BindGroupEntry { binding: 4, resource: wgpu::BindingResource::Sampler(&nearest_sampler) },
             ],
         });
-        let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        let pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor { cache: None,
             label: Some("composer fog pipeline"),
             layout: Some(&device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("composer fog pipeline layout"),
@@ -1860,7 +1860,7 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded, knobs:
             wgpu::BindGroupEntry { binding: 4, resource: wgpu::BindingResource::Sampler(&nearest_sampler) },
         ],
     });
-    let bokeh_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+    let bokeh_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor { cache: None,
         label: Some("composer bokeh pipeline"),
         layout: Some(&device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("composer bokeh pipeline layout"),
@@ -1907,7 +1907,7 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded, knobs:
             wgpu::BindGroupEntry { binding: 2, resource: output_ub.as_entire_binding() },
         ],
     });
-    let output_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+    let output_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor { cache: None,
         label: Some("composer output pipeline"),
         layout: Some(&device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("composer output pipeline layout"),

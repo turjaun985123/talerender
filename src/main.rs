@@ -695,7 +695,7 @@ async fn run(width: u32, height: u32, out: &str, knobs: Knobs) -> errors::TaleRe
         wgpu::VertexAttribute { format: wgpu::VertexFormat::Float32x3, offset: 12, shader_location: 1 },
         wgpu::VertexAttribute { format: wgpu::VertexFormat::Float32x3, offset: 24, shader_location: 2 },
     ];
-    let pipeline3d = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+    let pipeline3d = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor { cache: None,
         label: Some("colour pipeline"),
         layout: Some(&layout3d),
         vertex: wgpu::VertexState {
@@ -775,7 +775,7 @@ async fn run(width: u32, height: u32, out: &str, knobs: Knobs) -> errors::TaleRe
         wgpu::VertexAttribute { format: wgpu::VertexFormat::Float32x3, offset: 0, shader_location: 0 },
         wgpu::VertexAttribute { format: wgpu::VertexFormat::Float32x2, offset: 12, shader_location: 1 },
     ];
-    let pipeline_tex = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+    let pipeline_tex = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor { cache: None,
         label: Some("textured pipeline"),
         layout: Some(&layout_tex),
         vertex: wgpu::VertexState {

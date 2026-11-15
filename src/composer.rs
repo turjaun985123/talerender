@@ -327,7 +327,7 @@ fn fs_pipeline(
     format: wgpu::TextureFormat,
     blend: Option<wgpu::BlendState>,
 ) -> wgpu::RenderPipeline {
-    device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+    device.create_render_pipeline(&wgpu::RenderPipelineDescriptor { cache: None,
         label: Some(label),
         layout: Some(&device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some(label),

@@ -933,7 +933,7 @@ pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str, pos
         immediate_size: 0,
     });
     let make_pbr = |entry: &str, buffers: &[Option<wgpu::VertexBufferLayout>]| {
-        device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        device.create_render_pipeline(&wgpu::RenderPipelineDescriptor { cache: None,
             label: Some("pbr pipeline"),
             layout: Some(&pbr_layout),
             vertex: wgpu::VertexState { module: &shader_pbr, entry_point: Some(entry), buffers, compilation_options: Default::default() },
@@ -967,7 +967,7 @@ pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str, pos
         immediate_size: 0,
     });
     let make_basic = |format: wgpu::TextureFormat, depth: Option<wgpu::DepthStencilState>, samples: u32| {
-        device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        device.create_render_pipeline(&wgpu::RenderPipelineDescriptor { cache: None,
             label: Some("basic pipeline"),
             layout: Some(&basic_layout),
             vertex: wgpu::VertexState {
@@ -1002,7 +1002,7 @@ pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str, pos
         immediate_size: 0,
     });
     let make_depth = |shader: &wgpu::ShaderModule, buffers: &[Option<wgpu::VertexBufferLayout>], format: wgpu::TextureFormat, layout: &wgpu::PipelineLayout| {
-        device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+        device.create_render_pipeline(&wgpu::RenderPipelineDescriptor { cache: None,
             label: Some("depth pipeline"),
             layout: Some(layout),
             vertex: wgpu::VertexState { module: shader, entry_point: Some("vs_main"), buffers, compilation_options: Default::default() },
@@ -1065,7 +1065,7 @@ pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str, pos
             wgpu::BindGroupEntry { binding: 4, resource: wgpu::BindingResource::Sampler(&sampler_nearest) },
         ],
     });
-    let bokeh_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+    let bokeh_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor { cache: None,
         label: Some("bokeh pipeline"),
         layout: Some(&device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("bokeh layout"),

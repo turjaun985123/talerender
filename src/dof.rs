@@ -283,7 +283,7 @@ pub async fn run_dof(width: u32, height: u32, out: &str, knobs: crate::Knobs) ->
             wgpu::BindGroupEntry { binding: 2, resource: wgpu::BindingResource::Sampler(&linear_sampler) },
         ],
     });
-    let scene_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+    let scene_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor { cache: None,
         label: Some("dof-scene-pipeline"),
         layout: Some(&device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("dof-scene-layout"), bind_group_layouts: &[Some(&tex_bgl)], immediate_size: 0 })),
         vertex: wgpu::VertexState { module: &tex_module, entry_point: Some("vs_main"), buffers: &[Some(vlayout.clone())], compilation_options: Default::default() },
@@ -309,7 +309,7 @@ pub async fn run_dof(width: u32, height: u32, out: &str, knobs: crate::Knobs) ->
         layout: &depth_bgl,
         entries: &[wgpu::BindGroupEntry { binding: 0, resource: uniform_buf.as_entire_binding() }],
     });
-    let depth_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+    let depth_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor { cache: None,
         label: Some("dof-depth-pipeline"),
         layout: Some(&device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("dof-depth-layout"), bind_group_layouts: &[Some(&depth_bgl)], immediate_size: 0 })),
         vertex: wgpu::VertexState { module: &depth_module, entry_point: Some("vs_main"), buffers: &[Some(vlayout)], compilation_options: Default::default() },
@@ -369,7 +369,7 @@ pub async fn run_dof(width: u32, height: u32, out: &str, knobs: crate::Knobs) ->
             wgpu::BindGroupEntry { binding: 4, resource: wgpu::BindingResource::Sampler(&nearest_sampler) },
         ],
     });
-    let bokeh_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+    let bokeh_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor { cache: None,
         label: Some("dof-bokeh-pipeline"),
         layout: Some(&device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("dof-bokeh-layout"), bind_group_layouts: &[Some(&bokeh_bgl)], immediate_size: 0 })),
         vertex: wgpu::VertexState { module: &bokeh_module, entry_point: Some("vs_main"), buffers: &[], compilation_options: Default::default() },
@@ -402,7 +402,7 @@ pub async fn run_dof(width: u32, height: u32, out: &str, knobs: crate::Knobs) ->
             wgpu::BindGroupEntry { binding: 1, resource: wgpu::BindingResource::Sampler(&linear_sampler) },
         ],
     });
-    let output_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+    let output_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor { cache: None,
         label: Some("dof-output-pipeline"),
         layout: Some(&device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("dof-output-layout"), bind_group_layouts: &[Some(&output_bgl)], immediate_size: 0 })),
         vertex: wgpu::VertexState { module: &output_module, entry_point: Some("vs_main"), buffers: &[], compilation_options: Default::default() },

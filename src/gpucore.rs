@@ -317,7 +317,13 @@ impl Readback {
         slice.map_async(wgpu::MapMode::Read, move |result| {
             let _ = tx.send(result);
         });
-        device.poll(wgpu::PollType::Wait);
+        // wgpu 30: Maintain::Wait's replacement is the
+        // struct variant Wait { None, None } — wait for all
+        // queued submissions, no timeout (0.20 semantics).
+        device.poll(wgpu::PollType::Wait {
+            submission_index: None,
+            timeout: None,
+        });
         rx.recv()
             .map_err(|_| crate::errors::TaleError::buffer_map(&ctx, "map channel closed"))?
             .map_err(|e| crate::errors::TaleError::buffer_map(&ctx, e))?;
