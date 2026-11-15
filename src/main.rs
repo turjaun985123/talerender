@@ -29,6 +29,7 @@ mod config;
 mod dirtyrect;
 mod dof;
 mod errors;
+mod eval15;
 mod gpucore;
 mod lifetimes;
 mod math;

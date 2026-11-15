@@ -849,27 +849,19 @@ fn load(path: &str) -> Result<Loaded, String> {
             ))
         }
     };
-    // §15.1 reservation guard (scene-format §15, adoption step
-    // 1): the v2 extensions' reserved keys fail LOUD with a
-    // named error — never silently ignored under §1's rule.
-    // Until the implementations land (§15.10), check_prefabs.py
-    // / check_clips.py are the only consumers of these keys.
-    if root.get("prefabs").is_some() {
-        return Err(format!("{path}: prefab extension not supported"));
-    }
-    if root.get("clips").is_some() {
-        return Err(format!("{path}: clips extension not supported"));
-    }
-    // §15.1: the instance fields "clip"/"clipTime" are reserved
-    // on the camera/lights/post/fog blocks as well as on nodes
-    // (nodes are guarded in walk_nodes).
-    for block in ["camera", "lights", "post", "fog"] {
-        if let Some(b) = root.get(block) {
-            if b.get("clip").is_some() || b.get("clipTime").is_some() {
-                return Err(format!("{path}: clips extension not supported"));
-            }
-        }
-    }
+    // §15 adoption step 2 (§15.10): the v2 extensions are
+    // consumed here — prefabs expanded, clips evaluated and
+    // folded at the file's `time` — ahead of every downstream
+    // use of `root`. A construct-free document passes through
+    // unchanged, so v1 stills are unaffected. Step 1's
+    // reservation guard stood at this spot until this landing;
+    // the walk_nodes guard remains below as a residue
+    // assertion (it can only fire on an eval15 bug), and
+    // non-consuming loaders must still fail loud per §15.1.
+    // No library-loading path exists yet, so inline `prefabs`
+    // only (the `&[]` libraries argument).
+    let root = crate::eval15::process_scene(root, &[])
+        .map_err(|e| format!("{path}: {e}"))?;
     // Format v2: the shot's evaluation time. v1 files are stills;
     // a v2 file's camera keys and character state are read at this
     // t (the state in the file is the state at t by construction).

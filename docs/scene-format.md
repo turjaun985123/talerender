@@ -605,6 +605,13 @@ implementation land together (§15.10), the two reference
 validators are the only consumers that understand these
 extensions, and no production scene or film data may use them.
 
+The reservation posture also covers `events` inside a clip
+definition (§15.6): events are not staging a renderer may
+drop — they are sound cues for the mix. A consumer that
+evaluates clips but does not implement event emission must
+hard-error on a clip carrying `events`, naming the gap,
+exactly as for the extensions themselves.
+
 ### 15.2 Prefabs: grammar
 
 A **prefab** is a named, parameterised node subtree:
@@ -991,6 +998,54 @@ silent precedence).
   static `eye`/`target` remain the required base/fallback next
   to `keys`).
 
+**Events (`events`).** A clip definition may carry an optional
+`events` array — sound cues the clip fires when a driver
+evaluates it:
+
+```jsonc
+"events": [ { "t": 0.25, "cue": "takeoff", "gain": 0.8 } ]
+```
+
+- Each entry is an object with closed keys `{t, cue, gain,
+  dur}`; `t` is clip-local, `0 ≤ t ≤ duration`; `gain` / `dur`
+  are optional numbers, passed through verbatim.
+- `cue` is a closed vocabulary: the audio event names
+  (`takeoff`, `land`, `fall-impact`, `trip`, `slip`, `recover`,
+  `lose-balance`, `roll`, `push-up`, `pop`, `inhale`) or a mix
+  FX name (an FX-named event is a literal placement in the
+  mix). Anything else is a load error naming both vocabularies.
+- Events are **not staging**: evaluation never folds them into
+  the document. They leave the evaluator only through its
+  event side channel, in the shape `{t, cue, gain?, dur?}`
+  (absent optionals omitted), feeding the mix's clip-events
+  sidecar — never the authored cues file.
+- Time law: an event at clip-local `te` under an instance's
+  `clipTime` sits at scene-local `(te − offset) / rate` (the
+  inverse of §15.8's mapping), and at absolute time
+  `segment start + scene-local` inside a film segment. Events
+  whose scene-local time is negative never fire. Drivers
+  collect events over half-open windows `[w0, w1)`, so
+  contiguous per-frame windows receive each event exactly
+  once.
+- **Looping:** an instance whose `clipTime.loop` is `loop` or
+  `ping-pong` emits no events — periodic playback has no
+  single firing time. The law is per-instance: the same clip
+  may emit under a clamped instance and stay silent under a
+  looping one.
+- A `uses`-layered clip contributes its events transitively,
+  its own first — the same rule as its tracks.
+- Gains are final values in the data. Where the TS engine
+  scales a gain by impact at runtime, the bridge bakes the
+  scaled value at authoring time; the evaluator never
+  computes one.
+
+**Cross-instance conflicts.** Two instances whose clips write
+the same target+channel are not an error (the no-duplicate
+rule binds only inside one clip's layered `uses` set): the
+document fold applies instances in document order and the
+**last instance wins**. Authors who need a different result
+layer with `uses` instead.
+
 ### 15.7 Clips: the channel vocabulary
 
 Every channel below is a field the engine animates today,
@@ -1248,6 +1303,17 @@ The extensions land in this order, and no step is skipped:
    A/B-gated per site, because the evaluator's f32-native
    evaluation can differ from the current f64 paths by ~1 ulp
    (§15.8).
+   **Status: LANDED for the scene-loader path 2026-11-15**
+   (Chrome-replacement wave, Batch 1): `src/eval15.rs`
+   implements §15.5 expansion and §15.6–15.8 evaluation,
+   including the §15.6 event side channel, and is consumed
+   from `scenefile::load`; its in-file tests mirror the
+   reference checkers' fixture checks. The loader's §15.1
+   top-level guard checks are retired into this consumption;
+   the `walk_nodes` guard remains as a residue assertion.
+   Evaluator adoption at film-driver call sites (the s12
+   retirement) remains a separate gated landing under this
+   step.
 3. **Production data last**: a production scene or film file
    may use prefabs or clips only after steps 1–2 have landed,
    and both validators run over it in tools-ci (exit 0 = pass,
