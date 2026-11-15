@@ -27,6 +27,7 @@ mod dof;
 mod errors;
 mod gpucore;
 mod math;
+mod mempressure;
 mod observability;
 mod locomotion;
 mod paintbudget;
