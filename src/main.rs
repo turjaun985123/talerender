@@ -39,6 +39,7 @@ mod projectfile;
 mod scenefile;
 mod streamq;
 mod telemetry;
+mod ffstream;
 mod film;
 mod toonfull;
 
