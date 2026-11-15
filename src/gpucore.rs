@@ -46,10 +46,11 @@ use std::sync::mpsc;
 /// The instance every render entry point builds — byte-identical
 /// at all five existing sites (Vulkan backend only, rest default).
 pub(crate) fn new_instance() -> wgpu::Instance {
-    wgpu::Instance::new(wgpu::InstanceDescriptor {
-        backends: wgpu::Backends::VULKAN,
-        ..Default::default()
-    })
+    // wgpu 30: InstanceDescriptor no longer implements Default;
+    // new_without_display_handle() is its default constructor.
+    let mut desc = wgpu::InstanceDescriptor::new_without_display_handle();
+    desc.backends = wgpu::Backends::VULKAN;
+    wgpu::Instance::new(desc)
 }
 
 /// Canonical adapter request — the verbatim semantics of the
@@ -63,11 +64,15 @@ pub(crate) fn new_instance() -> wgpu::Instance {
 pub(crate) async fn request_adapter(
     instance: &wgpu::Instance,
 ) -> crate::errors::TaleResult<wgpu::Adapter> {
-    if let Some(adapter) = instance
+    // wgpu 30: request_adapter returns Result (was Option in
+    // 0.20); apply_limit_buckets: false keeps the adapter's
+    // exact limits (0.20 behaviour).
+    if let Ok(adapter) = instance
         .request_adapter(&wgpu::RequestAdapterOptions {
             power_preference: wgpu::PowerPreference::HighPerformance,
             compatible_surface: None,
             force_fallback_adapter: false,
+            apply_limit_buckets: false,
         })
         .await
     {
@@ -78,9 +83,10 @@ pub(crate) async fn request_adapter(
             power_preference: wgpu::PowerPreference::default(),
             compatible_surface: None,
             force_fallback_adapter: true,
+            apply_limit_buckets: false,
         })
         .await
-        .ok_or_else(|| {
+        .map_err(|_| {
             crate::errors::TaleError::gpu_init(
                 "request_adapter (gpucore)",
                 "no wgpu adapter found — a Vulkan driver (hardware or lavapipe) is required",
@@ -98,15 +104,12 @@ pub(crate) async fn request_device(
     limits: wgpu::Limits,
 ) -> crate::errors::TaleResult<(wgpu::Device, wgpu::Queue)> {
     adapter
-        .request_device(
-            &wgpu::DeviceDescriptor {
-                label: Some(label),
-                required_features: wgpu::Features::empty(),
-                required_limits: limits,
-                ..Default::default()
-            },
-            None,
-        )
+        .request_device(&wgpu::DeviceDescriptor {
+            label: Some(label),
+            required_features: wgpu::Features::empty(),
+            required_limits: limits,
+            ..Default::default()
+        })
         .await
         .map_err(|e| {
             crate::errors::TaleError::device_request(
@@ -270,15 +273,15 @@ impl Readback {
         // only, never a standing allocation.
         mem_note_readback((padded_row * height) as u64);
         encoder.copy_texture_to_buffer(
-            wgpu::ImageCopyTexture {
+            wgpu::TexelCopyTextureInfo {
                 texture,
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
                 aspect: wgpu::TextureAspect::All,
             },
-            wgpu::ImageCopyBuffer {
+            wgpu::TexelCopyBufferInfo {
                 buffer: &buffer,
-                layout: wgpu::ImageDataLayout {
+                layout: wgpu::TexelCopyBufferLayout {
                     offset: 0,
                     bytes_per_row: Some(padded_row),
                     rows_per_image: Some(height),
@@ -314,11 +317,15 @@ impl Readback {
         slice.map_async(wgpu::MapMode::Read, move |result| {
             let _ = tx.send(result);
         });
-        device.poll(wgpu::Maintain::Wait);
+        device.poll(wgpu::PollType::Wait);
         rx.recv()
             .map_err(|_| crate::errors::TaleError::buffer_map(&ctx, "map channel closed"))?
             .map_err(|e| crate::errors::TaleError::buffer_map(&ctx, e))?;
-        let data = slice.get_mapped_range();
+        // wgpu 30: get_mapped_range is fallible (was infallible
+        // in 0.20).
+        let data = slice
+            .get_mapped_range()
+            .map_err(|e| crate::errors::TaleError::buffer_map(&ctx, e))?;
         let out = data.to_vec();
         drop(data);
         self.buffer.unmap();

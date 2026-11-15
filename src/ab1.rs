@@ -710,9 +710,9 @@ pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str, pos
         // scene texture flows through this closure.
         crate::gpucore::mem_alloc_texture(crate::gpucore::MemClass::E, crate::gpucore::tex_bytes(w, h, format, 1));
         queue.write_texture(
-            wgpu::ImageCopyTexture { texture: &tex, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
+            wgpu::TexelCopyTextureInfo { texture: &tex, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
             px,
-            wgpu::ImageDataLayout { offset: 0, bytes_per_row: Some(w * 4), rows_per_image: Some(h) },
+            wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(w * 4), rows_per_image: Some(h) },
             wgpu::Extent3d { width: w, height: h, depth_or_array_layers: 1 },
         );
         tex
@@ -918,8 +918,8 @@ pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str, pos
     let depth_state = |write: bool| {
         Some(wgpu::DepthStencilState {
             format: wgpu::TextureFormat::Depth32Float,
-            depth_write_enabled: write,
-            depth_compare: wgpu::CompareFunction::Less,
+            depth_write_enabled: Some(write),
+            depth_compare: Some(wgpu::CompareFunction::Less),
             stencil: wgpu::StencilState::default(),
             bias: wgpu::DepthBiasState::default(),
         })
@@ -929,42 +929,42 @@ pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str, pos
     let shader_pbr = module("pbr shader", include_str!("shader_pbr.wgsl"));
     let pbr_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: Some("pbr layout"),
-        bind_group_layouts: &[&pbr_bgl0, &pbr_bgl1],
-        push_constant_ranges: &[],
+        bind_group_layouts: &[Some(&pbr_bgl0), Some(&pbr_bgl1)],
+        immediate_size: 0,
     });
-    let make_pbr = |entry: &str, buffers: &[wgpu::VertexBufferLayout]| {
+    let make_pbr = |entry: &str, buffers: &[Option<wgpu::VertexBufferLayout>]| {
         device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("pbr pipeline"),
             layout: Some(&pbr_layout),
-            vertex: wgpu::VertexState { module: &shader_pbr, entry_point: entry, buffers, compilation_options: Default::default() },
+            vertex: wgpu::VertexState { module: &shader_pbr, entry_point: Some(entry), buffers, compilation_options: Default::default() },
             fragment: Some(wgpu::FragmentState {
                 module: &shader_pbr,
-                entry_point: "fs_main",
+                entry_point: Some("fs_main"),
                 targets: &[Some(wgpu::ColorTargetState { format: wgpu::TextureFormat::Rgba16Float, blend: Some(wgpu::BlendState::REPLACE), write_mask: wgpu::ColorWrites::ALL })],
                 compilation_options: Default::default(),
             }),
             primitive: wgpu::PrimitiveState { cull_mode: Some(wgpu::Face::Back), ..Default::default() },
             depth_stencil: depth_state(true),
             multisample: wgpu::MultisampleState { count: samples, ..Default::default() },
-            multiview: None,
+            multiview_mask: None,
         })
     };
-    let pbr_pipeline = make_pbr("vs_colour", &[wgpu::VertexBufferLayout { array_stride: 36, step_mode: wgpu::VertexStepMode::Vertex, attributes: &colour_attrs }]);
-    let pbr_tex_pipeline = make_pbr("vs_tex", &[wgpu::VertexBufferLayout { array_stride: 20, step_mode: wgpu::VertexStepMode::Vertex, attributes: &tex_attrs }]);
+    let pbr_pipeline = make_pbr("vs_colour", &[Some(wgpu::VertexBufferLayout { array_stride: 36, step_mode: wgpu::VertexStepMode::Vertex, attributes: &colour_attrs })]);
+    let pbr_tex_pipeline = make_pbr("vs_tex", &[Some(wgpu::VertexBufferLayout { array_stride: 20, step_mode: wgpu::VertexStepMode::Vertex, attributes: &tex_attrs })]);
     let map_attrs = [
         wgpu::VertexAttribute { format: wgpu::VertexFormat::Float32x3, offset: 0, shader_location: 0 },
         wgpu::VertexAttribute { format: wgpu::VertexFormat::Float32x3, offset: 12, shader_location: 1 },
         wgpu::VertexAttribute { format: wgpu::VertexFormat::Float32x3, offset: 24, shader_location: 2 },
         wgpu::VertexAttribute { format: wgpu::VertexFormat::Float32x2, offset: 36, shader_location: 3 },
     ];
-    let pbr_map_pipeline = make_pbr("vs_map", &[wgpu::VertexBufferLayout { array_stride: 44, step_mode: wgpu::VertexStepMode::Vertex, attributes: &map_attrs }]);
+    let pbr_map_pipeline = make_pbr("vs_map", &[Some(wgpu::VertexBufferLayout { array_stride: 44, step_mode: wgpu::VertexStepMode::Vertex, attributes: &map_attrs })]);
 
     // Basic (unlit) pipelines.
     let shader_basic = module("basic shader", include_str!("shader_basic.wgsl"));
     let basic_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: Some("basic layout"),
-        bind_group_layouts: &[&bgl_basic],
-        push_constant_ranges: &[],
+        bind_group_layouts: &[Some(&bgl_basic)],
+        immediate_size: 0,
     });
     let make_basic = |format: wgpu::TextureFormat, depth: Option<wgpu::DepthStencilState>, samples: u32| {
         device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -972,20 +972,20 @@ pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str, pos
             layout: Some(&basic_layout),
             vertex: wgpu::VertexState {
                 module: &shader_basic,
-                entry_point: "vs_main",
-                buffers: &[wgpu::VertexBufferLayout { array_stride: 20, step_mode: wgpu::VertexStepMode::Vertex, attributes: &tex_attrs }],
+                entry_point: Some("vs_main"),
+                buffers: &[Some(wgpu::VertexBufferLayout { array_stride: 20), Some(step_mode: wgpu::VertexStepMode::Vertex), Some(attributes: &tex_attrs })],
                 compilation_options: Default::default(),
             },
             fragment: Some(wgpu::FragmentState {
                 module: &shader_basic,
-                entry_point: "fs_main",
+                entry_point: Some("fs_main"),
                 targets: &[Some(wgpu::ColorTargetState { format, blend: Some(wgpu::BlendState::ALPHA_BLENDING), write_mask: wgpu::ColorWrites::ALL })],
                 compilation_options: Default::default(),
             }),
             primitive: wgpu::PrimitiveState { cull_mode: Some(wgpu::Face::Back), ..Default::default() },
             depth_stencil: depth,
             multisample: wgpu::MultisampleState { count: samples, ..Default::default() },
-            multiview: None,
+            multiview_mask: None,
         })
     };
     let basic_write = make_basic(wgpu::TextureFormat::Rgba16Float, depth_state(true), samples);
@@ -998,36 +998,36 @@ pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str, pos
     let shader_shadow_card = module("shadow card shader", include_str!("shader_shadow_card.wgsl"));
     let depth_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: Some("depth layout"),
-        bind_group_layouts: &[&bgl_unif],
-        push_constant_ranges: &[],
+        bind_group_layouts: &[Some(&bgl_unif)],
+        immediate_size: 0,
     });
-    let make_depth = |shader: &wgpu::ShaderModule, buffers: &[wgpu::VertexBufferLayout], format: wgpu::TextureFormat, layout: &wgpu::PipelineLayout| {
+    let make_depth = |shader: &wgpu::ShaderModule, buffers: &[Option<wgpu::VertexBufferLayout>], format: wgpu::TextureFormat, layout: &wgpu::PipelineLayout| {
         device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("depth pipeline"),
             layout: Some(layout),
-            vertex: wgpu::VertexState { module: shader, entry_point: "vs_main", buffers, compilation_options: Default::default() },
+            vertex: wgpu::VertexState { module: shader, entry_point: Some("vs_main"), buffers, compilation_options: Default::default() },
             fragment: Some(wgpu::FragmentState {
                 module: shader,
-                entry_point: "fs_main",
+                entry_point: Some("fs_main"),
                 targets: &[Some(wgpu::ColorTargetState { format, blend: Some(wgpu::BlendState::REPLACE), write_mask: wgpu::ColorWrites::ALL })],
                 compilation_options: Default::default(),
             }),
             primitive: wgpu::PrimitiveState { cull_mode: Some(wgpu::Face::Back), ..Default::default() },
             depth_stencil: depth_state(true),
             multisample: wgpu::MultisampleState::default(),
-            multiview: None,
+            multiview_mask: None,
         })
     };
-    let prepass_geo = make_depth(&shader_depth_pos, &[wgpu::VertexBufferLayout { array_stride: 36, step_mode: wgpu::VertexStepMode::Vertex, attributes: &pos36_attrs }], depth_format, &depth_layout);
-    let prepass_map = make_depth(&shader_depth_pos, &[wgpu::VertexBufferLayout { array_stride: 44, step_mode: wgpu::VertexStepMode::Vertex, attributes: &pos36_attrs }], depth_format, &depth_layout);
-    let prepass_tex = make_depth(&shader_depth, &[wgpu::VertexBufferLayout { array_stride: 20, step_mode: wgpu::VertexStepMode::Vertex, attributes: &tex_attrs }], depth_format, &depth_layout);
-    let shadow_geo = make_depth(&shader_depth_pos, &[wgpu::VertexBufferLayout { array_stride: 36, step_mode: wgpu::VertexStepMode::Vertex, attributes: &pos36_attrs }], wgpu::TextureFormat::Rgba8Unorm, &depth_layout);
+    let prepass_geo = make_depth(&shader_depth_pos, &[Some(wgpu::VertexBufferLayout { array_stride: 36, step_mode: wgpu::VertexStepMode::Vertex, attributes: &pos36_attrs })], depth_format, &depth_layout);
+    let prepass_map = make_depth(&shader_depth_pos, &[Some(wgpu::VertexBufferLayout { array_stride: 44, step_mode: wgpu::VertexStepMode::Vertex, attributes: &pos36_attrs })], depth_format, &depth_layout);
+    let prepass_tex = make_depth(&shader_depth, &[Some(wgpu::VertexBufferLayout { array_stride: 20, step_mode: wgpu::VertexStepMode::Vertex, attributes: &tex_attrs })], depth_format, &depth_layout);
+    let shadow_geo = make_depth(&shader_depth_pos, &[Some(wgpu::VertexBufferLayout { array_stride: 36, step_mode: wgpu::VertexStepMode::Vertex, attributes: &pos36_attrs })], wgpu::TextureFormat::Rgba8Unorm, &depth_layout);
     let shadow_card_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: Some("shadow card layout"),
-        bind_group_layouts: &[&bgl_shadow_card],
-        push_constant_ranges: &[],
+        bind_group_layouts: &[Some(&bgl_shadow_card)],
+        immediate_size: 0,
     });
-    let shadow_card = make_depth(&shader_shadow_card, &[wgpu::VertexBufferLayout { array_stride: 20, step_mode: wgpu::VertexStepMode::Vertex, attributes: &tex_attrs }], wgpu::TextureFormat::Rgba8Unorm, &shadow_card_layout);
+    let shadow_card = make_depth(&shader_shadow_card, &[Some(wgpu::VertexBufferLayout { array_stride: 20, step_mode: wgpu::VertexStepMode::Vertex, attributes: &tex_attrs })], wgpu::TextureFormat::Rgba8Unorm, &shadow_card_layout);
 
     // Bokeh pipeline (M3's shader + uniform layout, focus = S01's
     // racked 6.051 m, G.jungle aperture/maxblur).
@@ -1069,20 +1069,20 @@ pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str, pos
         label: Some("bokeh pipeline"),
         layout: Some(&device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("bokeh layout"),
-            bind_group_layouts: &[&bokeh_bgl],
-            push_constant_ranges: &[],
+            bind_group_layouts: &[Some(&bokeh_bgl)],
+            immediate_size: 0,
         })),
-        vertex: wgpu::VertexState { module: &shader_bokeh, entry_point: "vs_main", buffers: &[], compilation_options: Default::default() },
+        vertex: wgpu::VertexState { module: &shader_bokeh, entry_point: Some("vs_main"), buffers: &[], compilation_options: Default::default() },
         fragment: Some(wgpu::FragmentState {
             module: &shader_bokeh,
-            entry_point: "fs_main",
+            entry_point: Some("fs_main"),
             targets: &[Some(wgpu::ColorTargetState { format: wgpu::TextureFormat::Rgba16Float, blend: Some(wgpu::BlendState::REPLACE), write_mask: wgpu::ColorWrites::ALL })],
             compilation_options: Default::default(),
         }),
         primitive: wgpu::PrimitiveState::default(),
         depth_stencil: None,
         multisample: wgpu::MultisampleState::default(),
-        multiview: None,
+        multiview_mask: None,
     });
 
     let post = PostChain::new(&device);
@@ -1362,7 +1362,7 @@ pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str, pos
     {
         let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("shadow pass"),
-            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment { depth_slice: None,
                 view: &shadow_map_view,
                 resolve_target: None,
                 ops: wgpu::Operations { load: wgpu::LoadOp::Clear(wgpu::Color { r: 1.0, g: 1.0, b: 1.0, a: 1.0 }), store: wgpu::StoreOp::Store },
@@ -1374,6 +1374,7 @@ pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str, pos
             }),
             timestamp_writes: None,
             occlusion_query_set: None,
+            multiview_mask: None,
         });
         pass.set_pipeline(&shadow_geo);
         for p in std_prepared.iter().filter(|p| p.shadow_bg.is_some()) {
@@ -1394,7 +1395,7 @@ pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str, pos
     {
         let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("depth prepass"),
-            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment { depth_slice: None,
                 view: &packed_view,
                 resolve_target: None,
                 ops: wgpu::Operations { load: wgpu::LoadOp::Clear(wgpu::Color { r: 1.0, g: 1.0, b: 1.0, a: 1.0 }), store: wgpu::StoreOp::Store },
@@ -1406,6 +1407,7 @@ pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str, pos
             }),
             timestamp_writes: None,
             occlusion_query_set: None,
+            multiview_mask: None,
         });
         pass.set_pipeline(&prepass_geo);
         for p in &std_prepared {
@@ -1438,7 +1440,7 @@ pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str, pos
     {
         // Phase 2 (W54 s4 shape): view/resolve chosen together;
         // field-for-field the pre-knob attachment at samples > 1.
-        let scene_attachment = wgpu::RenderPassColorAttachment {
+        let scene_attachment = wgpu::RenderPassColorAttachment { depth_slice: None,
             view: if samples > 1 { &hdr_msaa_view } else { &hdr_view },
             resolve_target: if samples > 1 { Some(&hdr_view) } else { None },
             ops: wgpu::Operations { load: wgpu::LoadOp::Clear(wgpu::Color { r: 0.0, g: 0.0, b: 0.0, a: 1.0 }), store: wgpu::StoreOp::Store },
@@ -1453,6 +1455,7 @@ pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str, pos
             }),
             timestamp_writes: None,
             occlusion_query_set: None,
+            multiview_mask: None,
         });
         pass.set_pipeline(&basic_nowrite);
         pass.set_bind_group(0, &sky_p.bg, &[]);
@@ -1498,7 +1501,7 @@ pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str, pos
     {
         let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("bokeh pass"),
-            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment { depth_slice: None,
                 view: &bokeh_view,
                 resolve_target: None,
                 ops: wgpu::Operations { load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT), store: wgpu::StoreOp::Store },
@@ -1506,6 +1509,7 @@ pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str, pos
             depth_stencil_attachment: None,
             timestamp_writes: None,
             occlusion_query_set: None,
+            multiview_mask: None,
         });
         pass.set_pipeline(&bokeh_pipeline);
         pass.set_bind_group(0, &bokeh_bg, &[]);
@@ -1549,7 +1553,7 @@ pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str, pos
     {
         let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("caption overlay"),
-            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment { depth_slice: None,
                 view: &final_view,
                 resolve_target: None,
                 ops: wgpu::Operations { load: wgpu::LoadOp::Load, store: wgpu::StoreOp::Store },
@@ -1557,6 +1561,7 @@ pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str, pos
             depth_stencil_attachment: None,
             timestamp_writes: None,
             occlusion_query_set: None,
+            multiview_mask: None,
         });
         pass.set_pipeline(&basic_overlay);
         pass.set_bind_group(0, &caption_p.bg, &[]);

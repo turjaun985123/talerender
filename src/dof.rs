@@ -190,9 +190,9 @@ pub async fn run_dof(width: u32, height: u32, out: &str, knobs: crate::Knobs) ->
     });
     crate::gpucore::mem_alloc_texture(crate::gpucore::MemClass::E, crate::gpucore::tex_bytes(TEX_SIZE, TEX_SIZE, wgpu::TextureFormat::Rgba8UnormSrgb, 1)); // VRAM ledger (W84 §5.2)
     queue.write_texture(
-        wgpu::ImageCopyTexture { texture: &chart_tex, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
+        wgpu::TexelCopyTextureInfo { texture: &chart_tex, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
         &tex_data,
-        wgpu::ImageDataLayout { offset: 0, bytes_per_row: Some(TEX_SIZE * 4), rows_per_image: Some(TEX_SIZE) },
+        wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(TEX_SIZE * 4), rows_per_image: Some(TEX_SIZE) },
         wgpu::Extent3d { width: TEX_SIZE, height: TEX_SIZE, depth_or_array_layers: 1 },
     );
     let chart_view = chart_tex.create_view(&wgpu::TextureViewDescriptor::default());
@@ -200,7 +200,7 @@ pub async fn run_dof(width: u32, height: u32, out: &str, knobs: crate::Knobs) ->
         label: Some("dof-linear-sampler"),
         mag_filter: wgpu::FilterMode::Linear,
         min_filter: wgpu::FilterMode::Linear,
-        mipmap_filter: wgpu::FilterMode::Nearest,
+        mipmap_filter: wgpu::MipmapFilterMode::Nearest,
         address_mode_u: wgpu::AddressMode::ClampToEdge,
         address_mode_v: wgpu::AddressMode::ClampToEdge,
         address_mode_w: wgpu::AddressMode::ClampToEdge,
@@ -210,7 +210,7 @@ pub async fn run_dof(width: u32, height: u32, out: &str, knobs: crate::Knobs) ->
         label: Some("dof-nearest-sampler"),
         mag_filter: wgpu::FilterMode::Nearest,
         min_filter: wgpu::FilterMode::Nearest,
-        mipmap_filter: wgpu::FilterMode::Nearest,
+        mipmap_filter: wgpu::MipmapFilterMode::Nearest,
         address_mode_u: wgpu::AddressMode::ClampToEdge,
         address_mode_v: wgpu::AddressMode::ClampToEdge,
         address_mode_w: wgpu::AddressMode::ClampToEdge,
@@ -285,18 +285,18 @@ pub async fn run_dof(width: u32, height: u32, out: &str, knobs: crate::Knobs) ->
     });
     let scene_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
         label: Some("dof-scene-pipeline"),
-        layout: Some(&device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("dof-scene-layout"), bind_group_layouts: &[&tex_bgl], push_constant_ranges: &[] })),
-        vertex: wgpu::VertexState { module: &tex_module, entry_point: "vs_main", buffers: &[vlayout.clone()], compilation_options: Default::default() },
+        layout: Some(&device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("dof-scene-layout"), bind_group_layouts: &[Some(&tex_bgl)], immediate_size: 0 })),
+        vertex: wgpu::VertexState { module: &tex_module, entry_point: Some("vs_main"), buffers: &[Some(vlayout.clone())], compilation_options: Default::default() },
         fragment: Some(wgpu::FragmentState {
             module: &tex_module,
-            entry_point: "fs_main",
+            entry_point: Some("fs_main"),
             targets: &[Some(wgpu::ColorTargetState { format: wgpu::TextureFormat::Rgba16Float, blend: Some(wgpu::BlendState::REPLACE), write_mask: wgpu::ColorWrites::ALL })],
             compilation_options: Default::default(),
         }),
         primitive: wgpu::PrimitiveState { cull_mode: None, ..Default::default() },
-        depth_stencil: Some(wgpu::DepthStencilState { format: wgpu::TextureFormat::Depth32Float, depth_write_enabled: true, depth_compare: wgpu::CompareFunction::Less, stencil: Default::default(), bias: Default::default() }),
+        depth_stencil: Some(wgpu::DepthStencilState { format: wgpu::TextureFormat::Depth32Float, depth_write_enabled: Some(true), depth_compare: Some(wgpu::CompareFunction::Less), stencil: Default::default(), bias: Default::default() }),
         multisample: wgpu::MultisampleState { count: samples, ..Default::default() },
-        multiview: None,
+        multiview_mask: None,
     });
 
     let depth_module = device.create_shader_module(wgpu::ShaderModuleDescriptor { label: Some("dof-shader-depth"), source: wgpu::ShaderSource::Wgsl(SHADER_DEPTH.into()) });
@@ -311,18 +311,18 @@ pub async fn run_dof(width: u32, height: u32, out: &str, knobs: crate::Knobs) ->
     });
     let depth_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
         label: Some("dof-depth-pipeline"),
-        layout: Some(&device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("dof-depth-layout"), bind_group_layouts: &[&depth_bgl], push_constant_ranges: &[] })),
-        vertex: wgpu::VertexState { module: &depth_module, entry_point: "vs_main", buffers: &[vlayout], compilation_options: Default::default() },
+        layout: Some(&device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("dof-depth-layout"), bind_group_layouts: &[Some(&depth_bgl)], immediate_size: 0 })),
+        vertex: wgpu::VertexState { module: &depth_module, entry_point: Some("vs_main"), buffers: &[Some(vlayout)], compilation_options: Default::default() },
         fragment: Some(wgpu::FragmentState {
             module: &depth_module,
-            entry_point: "fs_main",
+            entry_point: Some("fs_main"),
             targets: &[Some(wgpu::ColorTargetState { format: depth_format, blend: Some(wgpu::BlendState::REPLACE), write_mask: wgpu::ColorWrites::ALL })],
             compilation_options: Default::default(),
         }),
         primitive: wgpu::PrimitiveState { cull_mode: None, ..Default::default() },
-        depth_stencil: Some(wgpu::DepthStencilState { format: wgpu::TextureFormat::Depth32Float, depth_write_enabled: true, depth_compare: wgpu::CompareFunction::Less, stencil: Default::default(), bias: Default::default() }),
+        depth_stencil: Some(wgpu::DepthStencilState { format: wgpu::TextureFormat::Depth32Float, depth_write_enabled: Some(true), depth_compare: Some(wgpu::CompareFunction::Less), stencil: Default::default(), bias: Default::default() }),
         multisample: wgpu::MultisampleState::default(),
-        multiview: None,
+        multiview_mask: None,
     });
 
     // WGSL BokehUniforms layout: six f32 fields + two padding slots.
@@ -371,18 +371,18 @@ pub async fn run_dof(width: u32, height: u32, out: &str, knobs: crate::Knobs) ->
     });
     let bokeh_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
         label: Some("dof-bokeh-pipeline"),
-        layout: Some(&device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("dof-bokeh-layout"), bind_group_layouts: &[&bokeh_bgl], push_constant_ranges: &[] })),
-        vertex: wgpu::VertexState { module: &bokeh_module, entry_point: "vs_main", buffers: &[], compilation_options: Default::default() },
+        layout: Some(&device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("dof-bokeh-layout"), bind_group_layouts: &[Some(&bokeh_bgl)], immediate_size: 0 })),
+        vertex: wgpu::VertexState { module: &bokeh_module, entry_point: Some("vs_main"), buffers: &[], compilation_options: Default::default() },
         fragment: Some(wgpu::FragmentState {
             module: &bokeh_module,
-            entry_point: "fs_main",
+            entry_point: Some("fs_main"),
             targets: &[Some(wgpu::ColorTargetState { format: wgpu::TextureFormat::Rgba16Float, blend: Some(wgpu::BlendState::REPLACE), write_mask: wgpu::ColorWrites::ALL })],
             compilation_options: Default::default(),
         }),
         primitive: wgpu::PrimitiveState::default(),
         depth_stencil: None,
         multisample: wgpu::MultisampleState::default(),
-        multiview: None,
+        multiview_mask: None,
     });
 
     let output_module = device.create_shader_module(wgpu::ShaderModuleDescriptor { label: Some("dof-shader-output"), source: wgpu::ShaderSource::Wgsl(SHADER_OUTPUT.into()) });
@@ -404,18 +404,18 @@ pub async fn run_dof(width: u32, height: u32, out: &str, knobs: crate::Knobs) ->
     });
     let output_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
         label: Some("dof-output-pipeline"),
-        layout: Some(&device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("dof-output-layout"), bind_group_layouts: &[&output_bgl], push_constant_ranges: &[] })),
-        vertex: wgpu::VertexState { module: &output_module, entry_point: "vs_main", buffers: &[], compilation_options: Default::default() },
+        layout: Some(&device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor { label: Some("dof-output-layout"), bind_group_layouts: &[Some(&output_bgl)], immediate_size: 0 })),
+        vertex: wgpu::VertexState { module: &output_module, entry_point: Some("vs_main"), buffers: &[], compilation_options: Default::default() },
         fragment: Some(wgpu::FragmentState {
             module: &output_module,
-            entry_point: "fs_main",
+            entry_point: Some("fs_main"),
             targets: &[Some(wgpu::ColorTargetState { format: wgpu::TextureFormat::Rgba8Unorm, blend: Some(wgpu::BlendState::REPLACE), write_mask: wgpu::ColorWrites::ALL })],
             compilation_options: Default::default(),
         }),
         primitive: wgpu::PrimitiveState::default(),
         depth_stencil: None,
         multisample: wgpu::MultisampleState::default(),
-        multiview: None,
+        multiview_mask: None,
     });
 
     // ---- render ----
@@ -425,7 +425,7 @@ pub async fn run_dof(width: u32, height: u32, out: &str, knobs: crate::Knobs) ->
         let sdepth_view = scene_depth.create_view(&wgpu::TextureViewDescriptor::default());
         // Phase 2 (W54 s4 shape): view/resolve chosen together;
         // field-for-field the pre-knob attachment at samples > 1.
-        let scene_attachment = wgpu::RenderPassColorAttachment {
+        let scene_attachment = wgpu::RenderPassColorAttachment { depth_slice: None,
             view: if samples > 1 { &msaa_view } else { &scene_view },
             resolve_target: if samples > 1 { Some(&scene_view) } else { None },
             ops: wgpu::Operations { load: wgpu::LoadOp::Clear(wgpu::Color { r: 0.0, g: 0.0, b: 0.0, a: 1.0 }), store: wgpu::StoreOp::Store },
@@ -440,6 +440,7 @@ pub async fn run_dof(width: u32, height: u32, out: &str, knobs: crate::Knobs) ->
             }),
             timestamp_writes: None,
             occlusion_query_set: None,
+            multiview_mask: None,
         });
         pass.set_pipeline(&scene_pipeline);
         pass.set_bind_group(0, &tex_bg, &[]);
@@ -452,7 +453,7 @@ pub async fn run_dof(width: u32, height: u32, out: &str, knobs: crate::Knobs) ->
         let pdepth_view = prepass_depth.create_view(&wgpu::TextureViewDescriptor::default());
         let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("dof-depth-prepass"),
-            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment { depth_slice: None,
                 view: &packed_v,
                 resolve_target: None,
                 // BokehPass clears its depth target to WHITE before the
@@ -466,6 +467,7 @@ pub async fn run_dof(width: u32, height: u32, out: &str, knobs: crate::Knobs) ->
             }),
             timestamp_writes: None,
             occlusion_query_set: None,
+            multiview_mask: None,
         });
         pass.set_pipeline(&depth_pipeline);
         pass.set_bind_group(0, &depth_bg, &[]);
@@ -476,7 +478,7 @@ pub async fn run_dof(width: u32, height: u32, out: &str, knobs: crate::Knobs) ->
     {
         let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("dof-bokeh-pass"),
-            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment { depth_slice: None,
                 view: &bokeh_view,
                 resolve_target: None,
                 ops: wgpu::Operations { load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT), store: wgpu::StoreOp::Store },
@@ -484,6 +486,7 @@ pub async fn run_dof(width: u32, height: u32, out: &str, knobs: crate::Knobs) ->
             depth_stencil_attachment: None,
             timestamp_writes: None,
             occlusion_query_set: None,
+            multiview_mask: None,
         });
         pass.set_pipeline(&bokeh_pipeline);
         pass.set_bind_group(0, &bokeh_bg, &[]);
@@ -493,7 +496,7 @@ pub async fn run_dof(width: u32, height: u32, out: &str, knobs: crate::Knobs) ->
         let final_view = final_tex.create_view(&wgpu::TextureViewDescriptor::default());
         let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("dof-output-pass"),
-            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment { depth_slice: None,
                 view: &final_view,
                 resolve_target: None,
                 ops: wgpu::Operations { load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT), store: wgpu::StoreOp::Store },
@@ -501,6 +504,7 @@ pub async fn run_dof(width: u32, height: u32, out: &str, knobs: crate::Knobs) ->
             depth_stencil_attachment: None,
             timestamp_writes: None,
             occlusion_query_set: None,
+            multiview_mask: None,
         });
         pass.set_pipeline(&output_pipeline);
         pass.set_bind_group(0, &output_bg, &[]);

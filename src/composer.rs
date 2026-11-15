@@ -134,9 +134,9 @@ pub(crate) fn load_room_env(device: &wgpu::Device, queue: &wgpu::Queue) -> wgpu:
         crate::gpucore::tex_bytes(ROOM_ENV_W, ROOM_ENV_H, wgpu::TextureFormat::Rgba16Float, 1),
     );
     queue.write_texture(
-        wgpu::ImageCopyTexture { texture: &tex, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
+        wgpu::TexelCopyTextureInfo { texture: &tex, mip_level: 0, origin: wgpu::Origin3d::ZERO, aspect: wgpu::TextureAspect::All },
         bytes,
-        wgpu::ImageDataLayout { offset: 0, bytes_per_row: Some(ROOM_ENV_W * 8), rows_per_image: Some(ROOM_ENV_H) },
+        wgpu::TexelCopyBufferLayout { offset: 0, bytes_per_row: Some(ROOM_ENV_W * 8), rows_per_image: Some(ROOM_ENV_H) },
         wgpu::Extent3d { width: ROOM_ENV_W, height: ROOM_ENV_H, depth_or_array_layers: 1 },
     );
     tex
@@ -331,20 +331,20 @@ fn fs_pipeline(
         label: Some(label),
         layout: Some(&device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some(label),
-            bind_group_layouts: &[bgl],
-            push_constant_ranges: &[],
+            bind_group_layouts: &[Some(bgl)],
+            immediate_size: 0,
         })),
-        vertex: wgpu::VertexState { module, entry_point: "vs_main", buffers: &[], compilation_options: Default::default() },
+        vertex: wgpu::VertexState { module, entry_point: Some("vs_main"), buffers: &[], compilation_options: Default::default() },
         fragment: Some(wgpu::FragmentState {
             module,
-            entry_point: "fs_main",
+            entry_point: Some("fs_main"),
             targets: &[Some(wgpu::ColorTargetState { format, blend, write_mask: wgpu::ColorWrites::ALL })],
             compilation_options: Default::default(),
         }),
         primitive: wgpu::PrimitiveState::default(),
         depth_stencil: None,
         multisample: wgpu::MultisampleState::default(),
-        multiview: None,
+        multiview_mask: None,
     })
 }
 
@@ -358,7 +358,7 @@ fn draw_fs(
 ) {
     let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
         label: Some(label),
-        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+        color_attachments: &[Some(wgpu::RenderPassColorAttachment { depth_slice: None,
             view: target,
             resolve_target: None,
             ops: wgpu::Operations { load, store: wgpu::StoreOp::Store },
@@ -366,6 +366,7 @@ fn draw_fs(
         depth_stencil_attachment: None,
         timestamp_writes: None,
         occlusion_query_set: None,
+        multiview_mask: None,
     });
     pass.set_pipeline(pipeline);
     pass.set_bind_group(0, bg, &[]);
@@ -398,7 +399,7 @@ impl PostChain {
             label: Some("post linear sampler"),
             mag_filter: wgpu::FilterMode::Linear,
             min_filter: wgpu::FilterMode::Linear,
-            mipmap_filter: wgpu::FilterMode::Nearest,
+            mipmap_filter: wgpu::MipmapFilterMode::Nearest,
             address_mode_u: wgpu::AddressMode::ClampToEdge,
             address_mode_v: wgpu::AddressMode::ClampToEdge,
             address_mode_w: wgpu::AddressMode::ClampToEdge,

@@ -687,8 +687,8 @@ async fn run(width: u32, height: u32, out: &str, knobs: Knobs) -> errors::TaleRe
     });
     let layout3d = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: Some("colour pipeline layout"),
-        bind_group_layouts: &[&bgl3d],
-        push_constant_ranges: &[],
+        bind_group_layouts: &[Some(&bgl3d)],
+        immediate_size: 0,
     });
     let colour_attrs = [
         wgpu::VertexAttribute { format: wgpu::VertexFormat::Float32x3, offset: 0, shader_location: 0 },
@@ -700,17 +700,14 @@ async fn run(width: u32, height: u32, out: &str, knobs: Knobs) -> errors::TaleRe
         layout: Some(&layout3d),
         vertex: wgpu::VertexState {
             module: &shader3d,
-            entry_point: "vs_main",
-            buffers: &[wgpu::VertexBufferLayout {
-                array_stride: 36,
-                step_mode: wgpu::VertexStepMode::Vertex,
-                attributes: &colour_attrs,
-            }],
+            entry_point: Some("vs_main"),
+            buffers: &[Some(wgpu::VertexBufferLayout {
+                array_stride: 36), Some(step_mode: wgpu::VertexStepMode::Vertex), Some(attributes: &colour_attrs), Some(})],
             compilation_options: Default::default(),
         },
         fragment: Some(wgpu::FragmentState {
             module: &shader3d,
-            entry_point: "fs_main",
+            entry_point: Some("fs_main"),
             targets: &[Some(wgpu::ColorTargetState {
                 format: wgpu::TextureFormat::Rgba8UnormSrgb,
                 blend: Some(wgpu::BlendState::REPLACE),
@@ -724,13 +721,13 @@ async fn run(width: u32, height: u32, out: &str, knobs: Knobs) -> errors::TaleRe
         },
         depth_stencil: Some(wgpu::DepthStencilState {
             format: wgpu::TextureFormat::Depth32Float,
-            depth_write_enabled: true,
-            depth_compare: wgpu::CompareFunction::Less,
+            depth_write_enabled: Some(true),
+            depth_compare: Some(wgpu::CompareFunction::Less),
             stencil: wgpu::StencilState::default(),
             bias: wgpu::DepthBiasState::default(),
         }),
         multisample: wgpu::MultisampleState::default(),
-        multiview: None,
+        multiview_mask: None,
     });
 
     // ---- textured pipeline ----------------------------------------------
@@ -771,8 +768,8 @@ async fn run(width: u32, height: u32, out: &str, knobs: Knobs) -> errors::TaleRe
     });
     let layout_tex = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: Some("textured pipeline layout"),
-        bind_group_layouts: &[&bgl_tex],
-        push_constant_ranges: &[],
+        bind_group_layouts: &[Some(&bgl_tex)],
+        immediate_size: 0,
     });
     let tex_attrs = [
         wgpu::VertexAttribute { format: wgpu::VertexFormat::Float32x3, offset: 0, shader_location: 0 },
@@ -783,17 +780,14 @@ async fn run(width: u32, height: u32, out: &str, knobs: Knobs) -> errors::TaleRe
         layout: Some(&layout_tex),
         vertex: wgpu::VertexState {
             module: &shader_tex,
-            entry_point: "vs_main",
-            buffers: &[wgpu::VertexBufferLayout {
-                array_stride: 20,
-                step_mode: wgpu::VertexStepMode::Vertex,
-                attributes: &tex_attrs,
-            }],
+            entry_point: Some("vs_main"),
+            buffers: &[Some(wgpu::VertexBufferLayout {
+                array_stride: 20), Some(step_mode: wgpu::VertexStepMode::Vertex), Some(attributes: &tex_attrs), Some(})],
             compilation_options: Default::default(),
         },
         fragment: Some(wgpu::FragmentState {
             module: &shader_tex,
-            entry_point: "fs_main",
+            entry_point: Some("fs_main"),
             targets: &[Some(wgpu::ColorTargetState {
                 format: wgpu::TextureFormat::Rgba8UnormSrgb,
                 blend: Some(wgpu::BlendState::REPLACE),
@@ -807,13 +801,13 @@ async fn run(width: u32, height: u32, out: &str, knobs: Knobs) -> errors::TaleRe
         },
         depth_stencil: Some(wgpu::DepthStencilState {
             format: wgpu::TextureFormat::Depth32Float,
-            depth_write_enabled: true,
-            depth_compare: wgpu::CompareFunction::Less,
+            depth_write_enabled: Some(true),
+            depth_compare: Some(wgpu::CompareFunction::Less),
             stencil: wgpu::StencilState::default(),
             bias: wgpu::DepthBiasState::default(),
         }),
         multisample: wgpu::MultisampleState::default(),
-        multiview: None,
+        multiview_mask: None,
     });
 
     // ---- geometry buffers -----------------------------------------------
@@ -865,14 +859,14 @@ async fn run(width: u32, height: u32, out: &str, knobs: Knobs) -> errors::TaleRe
     });
     crate::gpucore::mem_alloc_texture(crate::gpucore::MemClass::E, crate::gpucore::tex_bytes(tex_size, tex_size, wgpu::TextureFormat::Rgba8UnormSrgb, 1)); // VRAM ledger (W84 §5.2)
     queue.write_texture(
-        wgpu::ImageCopyTexture {
+        wgpu::TexelCopyTextureInfo {
             texture: &char_tex,
             mip_level: 0,
             origin: wgpu::Origin3d::ZERO,
             aspect: wgpu::TextureAspect::All,
         },
         &character_texture(tex_size),
-        wgpu::ImageDataLayout {
+        wgpu::TexelCopyBufferLayout {
             offset: 0,
             bytes_per_row: Some(tex_size * 4),
             rows_per_image: Some(tex_size),
@@ -941,7 +935,7 @@ async fn run(width: u32, height: u32, out: &str, knobs: Knobs) -> errors::TaleRe
     {
         let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("scene pass"),
-            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment { depth_slice: None,
                 view: &view_tex,
                 resolve_target: None,
                 ops: wgpu::Operations {
@@ -959,6 +953,7 @@ async fn run(width: u32, height: u32, out: &str, knobs: Knobs) -> errors::TaleRe
             }),
             timestamp_writes: None,
             occlusion_query_set: None,
+            multiview_mask: None,
         });
         pass.set_pipeline(&pipeline3d);
         pass.set_bind_group(0, &ground_bg, &[]);

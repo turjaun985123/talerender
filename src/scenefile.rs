@@ -1153,14 +1153,14 @@ fn upload_texture(device: &wgpu::Device, queue: &wgpu::Queue, px: &[u8], w: u32,
     // upload flows through this helper.
     crate::gpucore::mem_alloc_texture(crate::gpucore::MemClass::E, crate::gpucore::tex_bytes(w, h, wgpu::TextureFormat::Rgba8UnormSrgb, 1));
     queue.write_texture(
-        wgpu::ImageCopyTexture {
+        wgpu::TexelCopyTextureInfo {
             texture: &tex,
             mip_level: 0,
             origin: wgpu::Origin3d::ZERO,
             aspect: wgpu::TextureAspect::All,
         },
         px,
-        wgpu::ImageDataLayout {
+        wgpu::TexelCopyBufferLayout {
             offset: 0,
             bytes_per_row: Some(w * 4),
             rows_per_image: Some(h),
@@ -1296,22 +1296,19 @@ async fn run_direct(width: u32, height: u32, out: &str, scene: &Loaded, knobs: c
         label: Some("scene colour pipeline"),
         layout: Some(&device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("scene colour layout"),
-            bind_group_layouts: &[&bgl_colour],
-            push_constant_ranges: &[],
+            bind_group_layouts: &[Some(&bgl_colour)],
+            immediate_size: 0,
         })),
         vertex: wgpu::VertexState {
             module: &shader_colour,
-            entry_point: "vs_main",
-            buffers: &[wgpu::VertexBufferLayout {
-                array_stride: 36,
-                step_mode: wgpu::VertexStepMode::Vertex,
-                attributes: &COLOUR_ATTRS,
-            }],
+            entry_point: Some("vs_main"),
+            buffers: &[Some(wgpu::VertexBufferLayout {
+                array_stride: 36), Some(step_mode: wgpu::VertexStepMode::Vertex), Some(attributes: &COLOUR_ATTRS), Some(})],
             compilation_options: Default::default(),
         },
         fragment: Some(wgpu::FragmentState {
             module: &shader_colour,
-            entry_point: "fs_main",
+            entry_point: Some("fs_main"),
             targets: &[Some(wgpu::ColorTargetState {
                 format: wgpu::TextureFormat::Rgba8UnormSrgb,
                 blend: Some(wgpu::BlendState::REPLACE),
@@ -1325,13 +1322,13 @@ async fn run_direct(width: u32, height: u32, out: &str, scene: &Loaded, knobs: c
         },
         depth_stencil: Some(wgpu::DepthStencilState {
             format: wgpu::TextureFormat::Depth32Float,
-            depth_write_enabled: true,
-            depth_compare: wgpu::CompareFunction::Less,
+            depth_write_enabled: Some(true),
+            depth_compare: Some(wgpu::CompareFunction::Less),
             stencil: wgpu::StencilState::default(),
             bias: wgpu::DepthBiasState::default(),
         }),
         multisample: wgpu::MultisampleState::default(),
-        multiview: None,
+        multiview_mask: None,
     });
 
     let shader_tex = device.create_shader_module(wgpu::ShaderModuleDescriptor {
@@ -1343,22 +1340,19 @@ async fn run_direct(width: u32, height: u32, out: &str, scene: &Loaded, knobs: c
         label: Some("scene textured pipeline"),
         layout: Some(&device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("scene textured layout"),
-            bind_group_layouts: &[&bgl_tex],
-            push_constant_ranges: &[],
+            bind_group_layouts: &[Some(&bgl_tex)],
+            immediate_size: 0,
         })),
         vertex: wgpu::VertexState {
             module: &shader_tex,
-            entry_point: "vs_main",
-            buffers: &[wgpu::VertexBufferLayout {
-                array_stride: 20,
-                step_mode: wgpu::VertexStepMode::Vertex,
-                attributes: &TEX_ATTRS,
-            }],
+            entry_point: Some("vs_main"),
+            buffers: &[Some(wgpu::VertexBufferLayout {
+                array_stride: 20), Some(step_mode: wgpu::VertexStepMode::Vertex), Some(attributes: &TEX_ATTRS), Some(})],
             compilation_options: Default::default(),
         },
         fragment: Some(wgpu::FragmentState {
             module: &shader_tex,
-            entry_point: "fs_main",
+            entry_point: Some("fs_main"),
             targets: &[Some(wgpu::ColorTargetState {
                 format: wgpu::TextureFormat::Rgba8UnormSrgb,
                 blend: Some(wgpu::BlendState::ALPHA_BLENDING),
@@ -1372,13 +1366,13 @@ async fn run_direct(width: u32, height: u32, out: &str, scene: &Loaded, knobs: c
         },
         depth_stencil: Some(wgpu::DepthStencilState {
             format: wgpu::TextureFormat::Depth32Float,
-            depth_write_enabled: true,
-            depth_compare: wgpu::CompareFunction::Less,
+            depth_write_enabled: Some(true),
+            depth_compare: Some(wgpu::CompareFunction::Less),
             stencil: wgpu::StencilState::default(),
             bias: wgpu::DepthBiasState::default(),
         }),
         multisample: wgpu::MultisampleState::default(),
-        multiview: None,
+        multiview_mask: None,
     });
 
     // ---- textures + samplers (ab1's pair) ----
@@ -1489,7 +1483,7 @@ async fn run_direct(width: u32, height: u32, out: &str, scene: &Loaded, knobs: c
     {
         let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("scene-file pass"),
-            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment { depth_slice: None,
                 view: &view_tex,
                 resolve_target: None,
                 ops: wgpu::Operations {
@@ -1512,6 +1506,7 @@ async fn run_direct(width: u32, height: u32, out: &str, scene: &Loaded, knobs: c
             }),
             timestamp_writes: None,
             occlusion_query_set: None,
+            multiview_mask: None,
         });
         // Document order, switching pipelines per draw kind — the
         // hand-authored scenes interleave the same way.
@@ -1599,7 +1594,7 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded, knobs:
         label: Some("composer linear sampler"),
         mag_filter: wgpu::FilterMode::Linear,
         min_filter: wgpu::FilterMode::Linear,
-        mipmap_filter: wgpu::FilterMode::Nearest,
+        mipmap_filter: wgpu::MipmapFilterMode::Nearest,
         address_mode_u: wgpu::AddressMode::ClampToEdge,
         address_mode_v: wgpu::AddressMode::ClampToEdge,
         address_mode_w: wgpu::AddressMode::ClampToEdge,
@@ -1609,7 +1604,7 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded, knobs:
         label: Some("composer repeat sampler"),
         mag_filter: wgpu::FilterMode::Linear,
         min_filter: wgpu::FilterMode::Linear,
-        mipmap_filter: wgpu::FilterMode::Nearest,
+        mipmap_filter: wgpu::MipmapFilterMode::Nearest,
         address_mode_u: wgpu::AddressMode::Repeat,
         address_mode_v: wgpu::AddressMode::Repeat,
         address_mode_w: wgpu::AddressMode::ClampToEdge,
@@ -1619,7 +1614,7 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded, knobs:
         label: Some("composer nearest sampler"),
         mag_filter: wgpu::FilterMode::Nearest,
         min_filter: wgpu::FilterMode::Nearest,
-        mipmap_filter: wgpu::FilterMode::Nearest,
+        mipmap_filter: wgpu::MipmapFilterMode::Nearest,
         address_mode_u: wgpu::AddressMode::ClampToEdge,
         address_mode_v: wgpu::AddressMode::ClampToEdge,
         address_mode_w: wgpu::AddressMode::ClampToEdge,
@@ -1666,22 +1661,19 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded, knobs:
         label: Some("composer scene tex pipeline"),
         layout: Some(&device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("composer scene tex layout"),
-            bind_group_layouts: &[&bgl_tex],
-            push_constant_ranges: &[],
+            bind_group_layouts: &[Some(&bgl_tex)],
+            immediate_size: 0,
         })),
         vertex: wgpu::VertexState {
             module: &shader_tex,
-            entry_point: "vs_main",
-            buffers: &[wgpu::VertexBufferLayout {
-                array_stride: 20,
-                step_mode: wgpu::VertexStepMode::Vertex,
-                attributes: &TEX_ATTRS,
-            }],
+            entry_point: Some("vs_main"),
+            buffers: &[Some(wgpu::VertexBufferLayout {
+                array_stride: 20), Some(step_mode: wgpu::VertexStepMode::Vertex), Some(attributes: &TEX_ATTRS), Some(})],
             compilation_options: Default::default(),
         },
         fragment: Some(wgpu::FragmentState {
             module: &shader_tex,
-            entry_point: "fs_main",
+            entry_point: Some("fs_main"),
             targets: &[Some(wgpu::ColorTargetState {
                 format: wgpu::TextureFormat::Rgba16Float,
                 blend: Some(wgpu::BlendState::ALPHA_BLENDING),
@@ -1692,13 +1684,13 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded, knobs:
         primitive: wgpu::PrimitiveState { cull_mode: None, ..Default::default() },
         depth_stencil: Some(wgpu::DepthStencilState {
             format: wgpu::TextureFormat::Depth32Float,
-            depth_write_enabled: true,
-            depth_compare: wgpu::CompareFunction::Less,
+            depth_write_enabled: Some(true),
+            depth_compare: Some(wgpu::CompareFunction::Less),
             stencil: Default::default(),
             bias: Default::default(),
         }),
         multisample: wgpu::MultisampleState { count: samples, ..Default::default() },
-        multiview: None,
+        multiview_mask: None,
     });
 
     let bgl_colour = uniform_bgl(&device, true);
@@ -1710,22 +1702,19 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded, knobs:
         label: Some("composer scene colour pipeline"),
         layout: Some(&device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("composer scene colour layout"),
-            bind_group_layouts: &[&bgl_colour],
-            push_constant_ranges: &[],
+            bind_group_layouts: &[Some(&bgl_colour)],
+            immediate_size: 0,
         })),
         vertex: wgpu::VertexState {
             module: &shader_colour,
-            entry_point: "vs_main",
-            buffers: &[wgpu::VertexBufferLayout {
-                array_stride: 36,
-                step_mode: wgpu::VertexStepMode::Vertex,
-                attributes: &COLOUR_ATTRS,
-            }],
+            entry_point: Some("vs_main"),
+            buffers: &[Some(wgpu::VertexBufferLayout {
+                array_stride: 36), Some(step_mode: wgpu::VertexStepMode::Vertex), Some(attributes: &COLOUR_ATTRS), Some(})],
             compilation_options: Default::default(),
         },
         fragment: Some(wgpu::FragmentState {
             module: &shader_colour,
-            entry_point: "fs_main",
+            entry_point: Some("fs_main"),
             targets: &[Some(wgpu::ColorTargetState {
                 format: wgpu::TextureFormat::Rgba16Float,
                 blend: Some(wgpu::BlendState::REPLACE),
@@ -1736,13 +1725,13 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded, knobs:
         primitive: wgpu::PrimitiveState { cull_mode: None, ..Default::default() },
         depth_stencil: Some(wgpu::DepthStencilState {
             format: wgpu::TextureFormat::Depth32Float,
-            depth_write_enabled: true,
-            depth_compare: wgpu::CompareFunction::Less,
+            depth_write_enabled: Some(true),
+            depth_compare: Some(wgpu::CompareFunction::Less),
             stencil: Default::default(),
             bias: Default::default(),
         }),
         multisample: wgpu::MultisampleState { count: samples, ..Default::default() },
-        multiview: None,
+        multiview_mask: None,
     });
 
     // ---- depth prepass pipeline (position-only) ----
@@ -1755,26 +1744,21 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded, knobs:
         label: Some("composer depth pipeline"),
         layout: Some(&device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("composer depth layout"),
-            bind_group_layouts: &[&bgl_depth],
-            push_constant_ranges: &[],
+            bind_group_layouts: &[Some(&bgl_depth)],
+            immediate_size: 0,
         })),
         vertex: wgpu::VertexState {
             module: &shader_depth,
-            entry_point: "vs_main",
-            buffers: &[wgpu::VertexBufferLayout {
-                array_stride: 12,
-                step_mode: wgpu::VertexStepMode::Vertex,
-                attributes: &[wgpu::VertexAttribute {
-                    format: wgpu::VertexFormat::Float32x3,
-                    offset: 0,
-                    shader_location: 0,
-                }],
+            entry_point: Some("vs_main"),
+            buffers: &[Some(wgpu::VertexBufferLayout {
+                array_stride: 12), Some(step_mode: wgpu::VertexStepMode::Vertex), Some(attributes: &[wgpu::VertexAttribute {
+                    format: wgpu::VertexFormat::Float32x3), Some(offset: 0), Some(shader_location: 0), Some(})],
             }],
             compilation_options: Default::default(),
         },
         fragment: Some(wgpu::FragmentState {
             module: &shader_depth,
-            entry_point: "fs_main",
+            entry_point: Some("fs_main"),
             targets: &[Some(wgpu::ColorTargetState {
                 format: depth_format,
                 blend: Some(wgpu::BlendState::REPLACE),
@@ -1785,13 +1769,13 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded, knobs:
         primitive: wgpu::PrimitiveState { cull_mode: None, ..Default::default() },
         depth_stencil: Some(wgpu::DepthStencilState {
             format: wgpu::TextureFormat::Depth32Float,
-            depth_write_enabled: true,
-            depth_compare: wgpu::CompareFunction::Less,
+            depth_write_enabled: Some(true),
+            depth_compare: Some(wgpu::CompareFunction::Less),
             stencil: Default::default(),
             bias: Default::default(),
         }),
         multisample: wgpu::MultisampleState::default(),
-        multiview: None,
+        multiview_mask: None,
     });
 
     // ---- fog pass (shader_fog.wgsl): three fog_fragment over
@@ -1830,20 +1814,20 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded, knobs:
             label: Some("composer fog pipeline"),
             layout: Some(&device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("composer fog pipeline layout"),
-                bind_group_layouts: &[&bgl],
-                push_constant_ranges: &[],
+                bind_group_layouts: &[Some(&bgl)],
+                immediate_size: 0,
             })),
-            vertex: wgpu::VertexState { module: &module, entry_point: "vs_main", buffers: &[], compilation_options: Default::default() },
+            vertex: wgpu::VertexState { module: &module, entry_point: Some("vs_main"), buffers: &[], compilation_options: Default::default() },
             fragment: Some(wgpu::FragmentState {
                 module: &module,
-                entry_point: "fs_main",
+                entry_point: Some("fs_main"),
                 targets: &[Some(wgpu::ColorTargetState { format: wgpu::TextureFormat::Rgba16Float, blend: Some(wgpu::BlendState::REPLACE), write_mask: wgpu::ColorWrites::ALL })],
                 compilation_options: Default::default(),
             }),
             primitive: wgpu::PrimitiveState::default(),
             depth_stencil: None,
             multisample: wgpu::MultisampleState::default(),
-            multiview: None,
+            multiview_mask: None,
         });
         (pipeline, bg, ub)
     });
@@ -1880,20 +1864,20 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded, knobs:
         label: Some("composer bokeh pipeline"),
         layout: Some(&device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("composer bokeh pipeline layout"),
-            bind_group_layouts: &[&bokeh_bgl],
-            push_constant_ranges: &[],
+            bind_group_layouts: &[Some(&bokeh_bgl)],
+            immediate_size: 0,
         })),
-        vertex: wgpu::VertexState { module: &bokeh_module, entry_point: "vs_main", buffers: &[], compilation_options: Default::default() },
+        vertex: wgpu::VertexState { module: &bokeh_module, entry_point: Some("vs_main"), buffers: &[], compilation_options: Default::default() },
         fragment: Some(wgpu::FragmentState {
             module: &bokeh_module,
-            entry_point: "fs_main",
+            entry_point: Some("fs_main"),
             targets: &[Some(wgpu::ColorTargetState { format: wgpu::TextureFormat::Rgba16Float, blend: Some(wgpu::BlendState::REPLACE), write_mask: wgpu::ColorWrites::ALL })],
             compilation_options: Default::default(),
         }),
         primitive: wgpu::PrimitiveState::default(),
         depth_stencil: None,
         multisample: wgpu::MultisampleState::default(),
-        multiview: None,
+        multiview_mask: None,
     });
 
     let output_module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
@@ -1927,20 +1911,20 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded, knobs:
         label: Some("composer output pipeline"),
         layout: Some(&device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: Some("composer output pipeline layout"),
-            bind_group_layouts: &[&output_bgl],
-            push_constant_ranges: &[],
+            bind_group_layouts: &[Some(&output_bgl)],
+            immediate_size: 0,
         })),
-        vertex: wgpu::VertexState { module: &output_module, entry_point: "vs_main", buffers: &[], compilation_options: Default::default() },
+        vertex: wgpu::VertexState { module: &output_module, entry_point: Some("vs_main"), buffers: &[], compilation_options: Default::default() },
         fragment: Some(wgpu::FragmentState {
             module: &output_module,
-            entry_point: "fs_main",
+            entry_point: Some("fs_main"),
             targets: &[Some(wgpu::ColorTargetState { format: wgpu::TextureFormat::Rgba8Unorm, blend: Some(wgpu::BlendState::REPLACE), write_mask: wgpu::ColorWrites::ALL })],
             compilation_options: Default::default(),
         }),
         primitive: wgpu::PrimitiveState::default(),
         depth_stencil: None,
         multisample: wgpu::MultisampleState::default(),
-        multiview: None,
+        multiview_mask: None,
     });
 
     // ---- textures + prepared draws ----
@@ -2033,7 +2017,7 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded, knobs:
         let sdepth_view = scene_depth.create_view(&wgpu::TextureViewDescriptor::default());
         // Phase 2 (W54 s4 shape): view/resolve chosen together;
         // field-for-field the pre-knob attachment at samples > 1.
-        let scene_attachment = wgpu::RenderPassColorAttachment {
+        let scene_attachment = wgpu::RenderPassColorAttachment { depth_slice: None,
             view: if samples > 1 { &msaa_view } else { &scene_view },
             resolve_target: if samples > 1 { Some(&scene_view) } else { None },
             ops: wgpu::Operations {
@@ -2059,6 +2043,7 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded, knobs:
             }),
             timestamp_writes: None,
             occlusion_query_set: None,
+            multiview_mask: None,
         });
         for p in &prepared {
             pass.set_pipeline(if p.colour { &scene_colour_pipeline } else { &scene_tex_pipeline });
@@ -2073,7 +2058,7 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded, knobs:
         let pdepth_view = prepass_depth.create_view(&wgpu::TextureViewDescriptor::default());
         let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("composer depth prepass"),
-            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment { depth_slice: None,
                 view: &packed_v,
                 resolve_target: None,
                 // BokehPass clears its depth target to WHITE (dof.rs).
@@ -2092,6 +2077,7 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded, knobs:
             }),
             timestamp_writes: None,
             occlusion_query_set: None,
+            multiview_mask: None,
         });
         pass.set_pipeline(&depth_pipeline);
         for p in &prepared {
@@ -2104,7 +2090,7 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded, knobs:
     if let (Some((fog_pipeline, fog_bg, _fog_ub)), Some(fv)) = (&fog_assets, &fog_view) {
         let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("composer fog pass"),
-            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment { depth_slice: None,
                 view: fv,
                 resolve_target: None,
                 ops: wgpu::Operations {
@@ -2115,6 +2101,7 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded, knobs:
             depth_stencil_attachment: None,
             timestamp_writes: None,
             occlusion_query_set: None,
+            multiview_mask: None,
         });
         pass.set_pipeline(fog_pipeline);
         pass.set_bind_group(0, fog_bg, &[]);
@@ -2123,7 +2110,7 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded, knobs:
     {
         let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("composer bokeh pass"),
-            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment { depth_slice: None,
                 view: &bokeh_view,
                 resolve_target: None,
                 ops: wgpu::Operations {
@@ -2134,6 +2121,7 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded, knobs:
             depth_stencil_attachment: None,
             timestamp_writes: None,
             occlusion_query_set: None,
+            multiview_mask: None,
         });
         pass.set_pipeline(&bokeh_pipeline);
         pass.set_bind_group(0, &bokeh_bg, &[]);
@@ -2162,7 +2150,7 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded, knobs:
         };
         let mut pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
             label: Some("composer output pass"),
-            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+            color_attachments: &[Some(wgpu::RenderPassColorAttachment { depth_slice: None,
                 view: &out_view,
                 resolve_target: None,
                 ops: wgpu::Operations {
@@ -2173,6 +2161,7 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded, knobs:
             depth_stencil_attachment: None,
             timestamp_writes: None,
             occlusion_query_set: None,
+            multiview_mask: None,
         });
         pass.set_pipeline(&output_pipeline);
         pass.set_bind_group(0, &output_bg, &[]);
