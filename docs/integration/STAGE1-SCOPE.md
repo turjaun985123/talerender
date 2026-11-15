@@ -202,6 +202,19 @@ lines unchanged on lavapipe except dof's (identical there
 too — Cpu branch); byte probes unaffected (log-only change,
 probes still run as the guard).
 
+**OUTCOME (V2 WP3): LANDED** — module `2c11ab1`, wiring
+`ef30684` + fixes `5f0410d`/`054760d` (the wgpu 30 method
+is `set_device_lost_callback`, taking the closure
+directly; both corrections came from compiler errors,
+recorded in the fix commits). Canonical line verified
+live in CI smoke output with the `(software)` suffix;
+probe at `097583f` SUCCESS (renders exit 0 — no
+false-positive from the callback; zero device.lost
+events). One recorded deviation from this section's
+acceptance text: the canonical sites GAIN the truthful
+` (software)` suffix on lavapipe vs the old bytes — C7's
+line definition mandates it; log-only, probes 40/40.
+
 ### Item 4 — Benchmark automation (WP10, Stage-1 slice)
 
 - Wire runlog's per-frame timing switch into the film
