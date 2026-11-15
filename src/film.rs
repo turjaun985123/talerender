@@ -2345,9 +2345,26 @@ fn state_key(look: usize, st: &FullState, hold_l: Option<&str>, hold_r: Option<&
     // the cache a pure optimisation: hits only for identical
     // states (walk-cycle phases recur bit-exactly, so the cache
     // still pays).
+    //
+    // Coverage law: the key must name EVERY field the painter
+    // consumes, or two different paints share a key and the
+    // cache stops being a pure optimisation. Field audit
+    // (2026-11-15, against toonfull.rs paint_toon_full, which
+    // reads all 19 FullState fields): every field was covered
+    // EXCEPT sweat and tears — the painter reads them at
+    // toonfull.rs:775 (`st.sweat || mood == Worried` — sweat
+    // drop) and :788 (`st.tears || mood == Sad` — tear
+    // ellipses), but the key omitted both, so states differing
+    // only in sweat or tears collided (defect disclosed in
+    // V2-HANDOVER.md; found by the WP10 seat's charstate.rs
+    // audit, whose CharStateKey includes both). The two
+    // booleans are appended last; the look index prefix names
+    // the FullLook (all 14 of its fields are painter inputs,
+    // fixed per run by the look registry). Regression tests:
+    // state_key_tests below.
     let q = |v: f32| v.to_bits();
     format!(
-        "{look}|{:?}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}",
+        "{look}|{:?}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}",
         st.mood,
         q(st.look[0]), q(st.look[1]), q(st.blink), q(st.talk),
         q(st.arm_l.0), q(st.arm_l.1), q(st.arm_r.0), q(st.arm_r.1),
@@ -2357,6 +2374,7 @@ fn state_key(look: usize, st: &FullState, hold_l: Option<&str>, hold_r: Option<&
         st.sit_drop.map(q).map(|v| v as i64).unwrap_or(-1),
         hold_l.unwrap_or("-"),
         hold_r.unwrap_or("-"),
+        st.sweat, st.tears,
     )
 }
 
@@ -3922,4 +3940,54 @@ pub(crate) fn run_film_telemetry(dir: &Path, tables: bool) -> Result<bool, Strin
     // the bool only lets main agree with it in the exit code
     // (EXIT-CODES-W02). Err = telemetry could not run.
     Ok(bad == 0)
+}
+
+#[cfg(test)]
+mod state_key_tests {
+    use super::*;
+
+    /// Regression tests for the state_key sweat/tears defect
+    /// (disclosed in V2-HANDOVER.md): the painter consumes
+    /// FullState.sweat (toonfull.rs:775 — the sweat drop paints
+    /// when `st.sweat || mood == Worried`) and FullState.tears
+    /// (toonfull.rs:788 — the tear ellipses paint when
+    /// `st.tears || mood == Sad`), but the production
+    /// PaintCache key omitted both fields, so two states
+    /// differing only in sweat or only in tears produced the
+    /// SAME key and the second state reused the first state's
+    /// paint. The base state is FullState::default() (mood
+    /// Neutral), where both flags are paint-relevant.
+    /// Proven failing on the pre-fix key (CI 43703339048 on
+    /// the since-deleted proof branch: exactly these two
+    /// tests failed, 403 passed / 2 failed).
+    #[test]
+    fn state_key_distinguishes_sweat_only_difference() {
+        let a = FullState::default();
+        let mut b = FullState::default();
+        b.sweat = true;
+        assert_ne!(
+            state_key(0, &a, None, None),
+            state_key(0, &b, None, None),
+            "states differing only in sweat must not share a PaintCache key"
+        );
+    }
+
+    #[test]
+    fn state_key_distinguishes_tears_only_difference() {
+        let a = FullState::default();
+        let mut b = FullState::default();
+        b.tears = true;
+        assert_ne!(
+            state_key(0, &a, None, None),
+            state_key(0, &b, None, None),
+            "states differing only in tears must not share a PaintCache key"
+        );
+    }
+
+    #[test]
+    fn state_key_identical_states_share_a_key() {
+        let a = FullState::default();
+        let b = FullState::default();
+        assert_eq!(state_key(0, &a, None, None), state_key(0, &b, None, None));
+    }
 }
