@@ -1,5 +1,29 @@
 #!/usr/bin/env python3
 # =====================================================================
+# AMENDMENT — Chrome Replacement, Batch 2, Seat 6 (CR-B2-06).
+# This staged replacement fixes the validator's OWN drift found by
+# CR-B1-06: the original assumed the pre-F2 FLAT plates.json shape
+# ({"<name>": [x, y]}) and a hardcoded Onoda asset list, so it FAILED
+# every current-generation bridge (it demanded format.png /
+# plates.png / version.png from the manifest-shape plates.json) and
+# PASSED the stale packaged Onoda bridge the current binary refuses.
+# The source of truth is now the current bridge generation, exactly
+# as defined by tools/bridge/build_bridge.py and the data-driven
+# template/tools/native_modes/filmdata_validate.mjs:
+#   - required assets are DERIVED from the data (plates.json entries
+#     in the talerender-plates manifest shape; the film data's own
+#     calendarYears / calendarDark / sign declarations; caption
+#     strips) — no hardcoded film's names remain;
+#   - a bridge in the OLD generation (flat plates.json, or film data
+#     missing the F2 keys the binary's loader demands by name) is
+#     reported as STALE with the re-bridge remedy, never passed;
+#   - MANIFEST-SHA, when present, is verified — a bridge whose files
+#     drifted from its packaged hashes is stale by definition;
+#   - an unbridged project names the bridge step
+#     (tools/bridge/build_bridge.py) as the remedy. No diagnostic in
+#     this tool routes anyone to Chrome; there is no Chrome fallback.
+# Everything not listed above is the original validator, unchanged.
+# =====================================================================
 # DELIVERY NOTE — TaleRender V2, Batch 2, Seat 6 (WP9 production
 # integration, repo side)
 #
@@ -37,12 +61,10 @@
 # case. Run by the seat: see the companion doc for the result.
 #
 # Known limitations:
-#   - The adapter's current fixed asset list (calendar plates +
-#     sign, hardcoded in capture_native.mjs validateFilmData) is
-#     Onoda-bridge-shaped; this validator checks it because the
-#     adapter requires it today, and labels those checks as
-#     adapter-required. A generalised bridge will need both the
-#     adapter and this list revisited together.
+#   - (CR-B2-06: RESOLVED — the adapter's validator is now the
+#     data-driven filmdata_validate.mjs and this tool derives its
+#     asset list from the data the same way; the hardcoded list is
+#     gone from both.)
 #   - PNG validation is structural (signature / IHDR dimensions /
 #     closing IEND), the same integrity bar as the adapter's
 #     pngCheck; pixel content is not decoded.
@@ -81,18 +103,20 @@ import tempfile
 import wave
 import zlib
 
-# Assets capture_native.mjs validateFilmData() requires by name, on
-# top of whatever plates.json / caption strips declare. The hold
-# plates come from plates.json keys (checked generically); these
-# calendar / sign plates are the adapter's hardcoded remainder.
-ADAPTER_FIXED_ASSETS = [
-    "calendar-1945.png",
-    "calendar-1955.png",
-    "calendar-1965.png",
-    "calendar-1974.png",
-    "calendar-dark.png",
-    "sign.png",
-]
+# The remedy every bridge problem names. There is no other renderer
+# and no fallback: an unbridged or stale project is bridged (again).
+BRIDGE_REMEDY = ("bridge it with tools/bridge/build_bridge.py "
+                 "--project <project> --scenes <transcribed "
+                 "*.scene.json dir> [--film-data <prior film data>] "
+                 "(see docs/integration/CR-B1-06-BRIDGE.md)")
+
+# F2 film-data keys the current binary's loader demands BY NAME
+# (film.rs load_film_data; verified 2026-11-15: the provisioned
+# binary refuses the stale packaged Onoda data with
+# "film telemetry failed: film data: missing calendarYears").
+# A bridge whose film data lacks them is a previous generation —
+# stale, however complete its PNG files are.
+F2_KEYS = ("calendarYears", "calendarDark", "sign")
 
 PNG_SIG = b"\x89PNG\r\n\x1a\n"
 FRAME_RE = re.compile(r"^frame_(\d+)\.png$")
@@ -294,10 +318,10 @@ def validate_project(project):
     if not os.path.isfile(rel("tools", "capture_native.mjs")):
         flagged.append("tools/capture_native.mjs not present in this "
                        "project -- the native adapter lives in the "
-                       "skill template; copy the template tools (or "
-                       "re-derive the project) before invoking the "
-                       "native path from this folder. The Chrome "
-                       "adapter (tools/capture.mjs) is unaffected.")
+                       "skill template; copy the template's native "
+                       "tools into this project (the P1 retrofit) "
+                       "before invoking the native path from this "
+                       "folder.")
 
     # -- Native bridge: manifest --------------------------------------
     native_dir = rel("native")
@@ -312,7 +336,7 @@ def validate_project(project):
                         "(native/film.json or "
                         "native/scenes/film/film.json) -- project is "
                         "not bridged; the native backend refuses "
-                        "unbridged projects, capture with Chrome")
+                        "unbridged projects. Remedy: " + BRIDGE_REMEDY)
         manifest = None
     else:
         manifest = load_json(manifest_path, "film manifest", problems)
@@ -437,7 +461,8 @@ def validate_project(project):
     if film_dir is None:
         problems.append("required file missing: film data onoda.json "
                         "(looked in native/film/ and native/) -- the "
-                        "adapter never improvises film data")
+                        "adapter never improvises film data. Remedy: "
+                        + BRIDGE_REMEDY)
         data = None
     else:
         data = load_json(os.path.join(film_dir, "onoda.json"),
@@ -470,8 +495,32 @@ def validate_project(project):
         dlines = data.get("lines")
         if not isinstance(dlines, list) or not dlines:
             problems.append("onoda.json: lines[] missing/empty")
+        else:
+            # Current-generation shape (build_bridge.py): each line
+            # is {start, end} — the binary loader's shape.
+            for i, ln in enumerate(dlines):
+                if not isinstance(ln, dict) \
+                        or not (isinstance(ln.get("start"), (int, float))
+                                and isinstance(ln.get("end"), (int, float))):
+                    problems.append("onoda.json: line %d lacks numeric "
+                                    "start/end (current-generation "
+                                    "film data carries {start, end} "
+                                    "per line)" % i)
+                    break
         if not isinstance(data.get("anchors"), dict):
             problems.append("onoda.json: anchors{} missing")
+        # STALE-BRIDGE detection (generation check): the current
+        # binary's loader demands the F2 keys by name; film data
+        # without them is a previous bridge generation and the
+        # binary refuses it (verified refusal text in F2_KEYS note).
+        for key in F2_KEYS:
+            if key not in data:
+                problems.append(
+                    "STALE BRIDGE: onoda.json has no %r declaration -- "
+                    "the current binary's film loader demands this "
+                    "key by name and refuses this data (a previous "
+                    "bridge generation). Remedy: re-bridge -- %s"
+                    % (key, BRIDGE_REMEDY))
         captions = data.get("captions")
         if not isinstance(captions, list) or not captions:
             problems.append("onoda.json: captions[] missing/empty")
@@ -484,6 +533,11 @@ def validate_project(project):
                                     "no strip filename" % i)
                 else:
                     caption_strips.append(cap["strip"])
+                if isinstance(cap, dict) \
+                        and not (isinstance(cap.get("s"), (int, float))
+                                 and isinstance(cap.get("e"), (int, float))):
+                    problems.append("onoda.json: caption chunk %d "
+                                    "lacks numeric s/e" % i)
         if segments:
             n_lines = len(dlines) if isinstance(dlines, list) else 0
             for seg in segments:
@@ -510,8 +564,63 @@ def validate_project(project):
             else:
                 plates = load_json(plates_path, "assets/plates.json",
                                    problems)
-                if isinstance(plates, dict):
+                # Data-driven derivation, mirroring
+                # filmdata_validate.mjs requiredAssets() exactly:
+                # the required plate files come from plates.json's
+                # own declarations, in whichever shape it carries.
+                if isinstance(plates, dict) \
+                        and isinstance(plates.get("plates"), list):
+                    # Current generation: the talerender-plates
+                    # manifest shape the binary's load_assets reads.
+                    if plates.get("format") != "talerender-plates":
+                        problems.append(
+                            "assets/plates.json: format is %r, "
+                            "expected 'talerender-plates' (the "
+                            "current binary's load_assets contract)"
+                            % plates.get("format"))
+                    for entry in plates["plates"]:
+                        if not isinstance(entry, dict) \
+                                or not isinstance(entry.get("name"), str) \
+                                or not entry.get("name"):
+                            problems.append(
+                                "assets/plates.json: a plates[] entry "
+                                "has no name")
+                            continue
+                        fname = entry.get("file") \
+                            if isinstance(entry.get("file"), str) \
+                            and entry.get("file") \
+                            else "%s.png" % entry["name"]
+                        origin = entry.get("origin")
+                        if not (isinstance(origin, list)
+                                and len(origin) == 2
+                                and all(isinstance(v, (int, float))
+                                        and not isinstance(v, bool)
+                                        for v in origin)):
+                            problems.append(
+                                "assets/plates.json: plate %s has no "
+                                "[x, y] origin -- the binary requires "
+                                "an origin per plate" % entry["name"])
+                        if not os.path.isfile(
+                                os.path.join(assets_dir, fname)):
+                            problems.append(
+                                "film data: plate %s missing "
+                                "(declared in plates.json)" % fname)
+                elif isinstance(plates, dict):
+                    # Legacy flat shape {"<name>": [x, y]}: a
+                    # previous bridge generation. The current
+                    # binary's load_assets rejects this shape; the
+                    # bridge is STALE even if every PNG is present.
+                    problems.append(
+                        "STALE BRIDGE: assets/plates.json is the "
+                        "legacy flat shape ({\"<name>\": [x, y]}) -- "
+                        "the current binary's load_assets requires "
+                        "the talerender-plates manifest shape "
+                        "({format, version, plates: [{name, file, "
+                        "origin}]}). Remedy: re-bridge -- "
+                        + BRIDGE_REMEDY)
                     for name in sorted(plates):
+                        if name in ("format", "version"):
+                            continue
                         png = os.path.join(assets_dir, "%s.png" % name)
                         if not os.path.isfile(png):
                             problems.append(
@@ -520,18 +629,78 @@ def validate_project(project):
                 elif plates is not None:
                     problems.append("assets/plates.json: top level is "
                                     "not a JSON object")
-            for name in ADAPTER_FIXED_ASSETS:
-                if not os.path.isfile(os.path.join(assets_dir, name)):
-                    problems.append(
-                        "film data: assets/%s missing "
-                        "(adapter-required: capture_native.mjs "
-                        "validateFilmData checks this name today)"
-                        % name)
+            # Calendar / sign assets are required ONLY as the film
+            # data itself declares them (F2 fields) — the
+            # filmdata_validate.mjs derivation. No hardcoded years,
+            # no hardcoded filenames.
+            if isinstance(data, dict):
+                derived = []
+                years = data.get("calendarYears")
+                if isinstance(years, list):
+                    for y in years:
+                        derived.append("calendar-%s.png" % y)
+                elif "calendarYears" in data:
+                    problems.append("onoda.json: calendarYears is "
+                                    "not a list of years")
+                for key in ("calendarDark", "sign"):
+                    if isinstance(data.get(key), str) and data[key]:
+                        derived.append(data[key])
+                for fname in sorted(set(derived)):
+                    if not os.path.isfile(os.path.join(assets_dir,
+                                                       fname)):
+                        problems.append(
+                            "film data: assets/%s missing (declared "
+                            "by onoda.json's F2 fields)" % fname)
             for strip in sorted(set(caption_strips)):
                 if not os.path.isfile(os.path.join(assets_dir, strip)):
                     problems.append(
                         "film data: caption strip assets/%s missing "
                         "(named by onoda.json captions[])" % strip)
+
+    # -- Native bridge: MANIFEST-SHA integrity -------------------------
+    # Both bridge builders (package_bridge.py, build_bridge.py)
+    # package a MANIFEST-SHA of every bridged file. A bridge whose
+    # files no longer match it was edited or partially regenerated
+    # after packaging — stale; the remedy is a clean re-bridge.
+    sha_path = rel("native", "MANIFEST-SHA")
+    if manifest_path is not None and os.path.isfile(sha_path):
+        import hashlib as _hashlib
+        try:
+            entries = {}
+            with open(sha_path, "r", encoding="utf-8") as fh:
+                for raw in fh:
+                    raw = raw.strip()
+                    if not raw:
+                        continue
+                    digest, _, relpath = raw.partition("  ")
+                    entries[relpath.strip()] = digest.strip()
+            drift = []
+            for relpath, digest in sorted(entries.items()):
+                p = os.path.join(native_dir, relpath)
+                if not os.path.isfile(p):
+                    drift.append("%s (missing)" % relpath)
+                    continue
+                h = _hashlib.sha256()
+                with open(p, "rb") as fh:
+                    for chunk in iter(lambda: fh.read(1 << 20), b""):
+                        h.update(chunk)
+                if h.hexdigest() != digest:
+                    drift.append("%s (hash differs)" % relpath)
+            if drift:
+                problems.append(
+                    "STALE BRIDGE: native/MANIFEST-SHA does not "
+                    "match the bridge files (%s) -- the bridge was "
+                    "modified after packaging. Remedy: re-bridge "
+                    "with --force -- %s"
+                    % ("; ".join(drift[:8]), BRIDGE_REMEDY))
+        except OSError as exc:
+            flagged.append("native/MANIFEST-SHA unreadable (%s) -- "
+                           "integrity not verified" % exc)
+    elif manifest_path is not None:
+        flagged.append("native/MANIFEST-SHA absent -- bridge "
+                       "integrity not verifiable (both bridge "
+                       "builders package one; its absence suggests "
+                       "a hand-assembled bridge)")
 
     info["lines"] = len(timed_lines) if timed_lines else 0
     info["captions"] = len(caption_strips)
@@ -703,12 +872,18 @@ def _write(path, content, binary=False):
         fh.write(content)
 
 
-def build_fixture(root, omit=None, frame_indices=(0, 1, 2)):
-    """A minimal but complete bridged project + rendered frames.
+def build_fixture(root, omit=None, frame_indices=(0, 1, 2),
+                  plates_shape="manifest", f2=True, drop_asset=None):
+    """A minimal but complete CURRENT-GENERATION bridged project +
+    rendered frames (CR-B2-06: manifest-shape plates.json, F2 film
+    data, {start, end} lines — the build_bridge.py output shape).
 
     30 fps, 0.1 s, 3 frames, one segment, 64x64 (fixture-scale
     dimensions keep the temp files tiny; the manifest and the PNG
     headers agree, which is what the validator checks).
+
+    plates_shape="flat" + f2=False reproduces the PREVIOUS bridge
+    generation (the stale packaged Onoda shape) for the stale case.
     """
     proj = os.path.join(root, "proj")
     frames = os.path.join(root, "frames")
@@ -751,22 +926,35 @@ def build_fixture(root, omit=None, frame_indices=(0, 1, 2)):
     put(os.path.join("native", "scenes", "film", "s01.scene.json"),
         json.dumps({"format": "talerender-scene", "version": 2,
                     "name": "s01", "nodes": []}))
-    put(os.path.join("native", "film", "onoda.json"), json.dumps({
+    film_data = {
         "duration": 0.1, "fps": 30, "frames": 3,
-        "lines": [{"i": 0, "start": 0.0, "end": 0.09,
-                   "text": "One line."}],
+        "lines": [{"start": 0.0, "end": 0.09}],
         "anchors": {},
-        "captions": [{"line": 0, "s": 0.0, "e": 0.09, "text": "One",
-                      "strip": "cap_000.png"}]}))
+        "captions": [{"s": 0.0, "e": 0.09, "text": "One", "fit": 1.0,
+                      "strip": "cap_000.png"}]}
+    if f2:
+        film_data.update({
+            "calendarYears": ["1945", "1955", "1965", "1974"],
+            "calendarDark": "calendar-dark.png", "sign": "sign.png"})
+    put(os.path.join("native", "film", "onoda.json"),
+        json.dumps(film_data))
+    plate_names = ("paper-map", "leaflet", "book-open", "book-closed",
+                   "coconut")
+    if plates_shape == "manifest":
+        plates_doc = {"format": "talerender-plates", "version": 1,
+                      "plates": [{"name": n, "file": "%s.png" % n,
+                                  "origin": [0, 0]}
+                                 for n in plate_names]}
+    else:
+        plates_doc = {n: [0, 0] for n in plate_names}
     put(os.path.join("native", "film", "assets", "plates.json"),
-        json.dumps({"paper-map": [0, 0], "leaflet": [0, 0],
-                    "book-open": [0, 0], "book-closed": [0, 0],
-                    "coconut": [0, 0]}))
+        json.dumps(plates_doc))
     png = _png_bytes(64, 64)
-    for name in ("paper-map", "leaflet", "book-open", "book-closed",
-                 "coconut", "calendar-1945", "calendar-1955",
-                 "calendar-1965", "calendar-1974", "calendar-dark",
-                 "sign", "cap_000"):
+    for name in plate_names + ("calendar-1945", "calendar-1955",
+                               "calendar-1965", "calendar-1974",
+                               "calendar-dark", "sign", "cap_000"):
+        if drop_asset is not None and name == drop_asset:
+            continue
         put(os.path.join("native", "film", "assets", name + ".png"),
             png, binary=True)
     for n in frame_indices:
@@ -812,6 +1000,52 @@ def run_self_test():
         ok = rc == 2 and "script.json" in out
         cases.append(("missing required file (script.json)", ok,
                       "exit %d (want 2, file named)" % rc))
+        if not ok:
+            print(out)
+
+        # Case 4 (CR-B2-06): the PREVIOUS bridge generation (flat
+        # plates.json, no F2 keys — the stale packaged Onoda shape)
+        # fails as STALE with the re-bridge remedy, and no output
+        # routes to Chrome.
+        proj, frames = build_fixture(os.path.join(tmp, "stale"),
+                                     plates_shape="flat", f2=False)
+        rc, out = run_cli(proj)
+        ok = rc == 2 and "STALE BRIDGE" in out \
+            and "build_bridge.py" in out and "Chrome" not in out
+        cases.append(("stale previous-generation bridge rejected",
+                      ok, "exit %d (want 2, STALE + re-bridge remedy, "
+                      "no Chrome routing)" % rc))
+        if not ok:
+            print(out)
+
+        # Case 5 (CR-B2-06): a plate file missing is named from the
+        # DATA's declaration (manifest-shape plates.json), proving
+        # the derivation is data-driven, not a hardcoded list.
+        proj, frames = build_fixture(os.path.join(tmp, "noplate"),
+                                     drop_asset="coconut")
+        rc, out = run_cli(proj)
+        ok = rc == 2 and "coconut.png" in out
+        cases.append(("missing data-declared plate (coconut.png)",
+                      ok, "exit %d (want 2, plate named)" % rc))
+        if not ok:
+            print(out)
+
+        # Case 6 (CR-B2-06): an unbridged project fails naming the
+        # bridge step as the remedy — never a Chrome suggestion.
+        proj, frames = build_fixture(
+            os.path.join(tmp, "unbridged"),
+            omit=os.path.join("native", "film.json"))
+        # Also remove the rest of native/ so the project is truly
+        # unbridged (the fixture writes it file by file).
+        import shutil as _shutil
+        _shutil.rmtree(os.path.join(proj, "native"),
+                       ignore_errors=True)
+        rc, out = run_cli(proj)
+        ok = rc == 2 and "not bridged" in out \
+            and "build_bridge.py" in out and "Chrome" not in out
+        cases.append(("unbridged project -> bridge remedy", ok,
+                      "exit %d (want 2, build_bridge named, no "
+                      "Chrome)" % rc))
         if not ok:
             print(out)
 
