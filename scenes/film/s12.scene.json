@@ -10563,7 +10563,8 @@
      "evaluatedAt": "film t",
      "law": "blink = max(blinkDirector(3)(t), blinkAt(t, [58.12])) (shots.ts blinkOf.onoda + the 'loyal' beat); state.blink = 0 is the value at film t = 59.0 (director phase 0; beat 0.88 s past its 0.12 s window)"
     }
-   }
+   },
+   "clip": "s12-onoda-jg-onoda2"
   },
   {
    "type": "character",
@@ -10672,5 +10673,72 @@
    "fit": 1.0,
    "strip": "cap_072.png"
   }
- ]
+ ],
+ "clips": {
+  "s12-onoda-jg-onoda2": {
+   "duration": 4.836999893188477,
+   "tracks": [
+    {
+     "target": {
+      "node": "Onoda (JG onoda2)",
+      "channel": "mood"
+     },
+     "keys": [
+      {
+       "t": 0.0,
+       "value": "relieved",
+       "ease": "step"
+      },
+      {
+       "t": 2.5999999046325684,
+       "value": "neutral",
+       "ease": "step"
+      }
+     ]
+    },
+    {
+     "target": {
+      "node": "Onoda (JG onoda2)",
+      "channel": "lean"
+     },
+     "keys": [
+      {
+       "t": 0.0,
+       "value": 0
+      },
+      {
+       "t": 2.049999952316284,
+       "value": 0
+      },
+      {
+       "t": 2.5,
+       "value": 2.0999999046325684,
+       "ease": "smoother"
+      }
+     ]
+    },
+    {
+     "target": {
+      "node": "Onoda (JG onoda2)",
+      "channel": "headTilt"
+     },
+     "keys": [
+      {
+       "t": 0.0,
+       "value": 0
+      },
+      {
+       "t": 2.049999952316284,
+       "value": 0
+      },
+      {
+       "t": 2.5,
+       "value": -3.5,
+       "ease": "smoother"
+      }
+     ]
+    }
+   ]
+  }
+ }
 }

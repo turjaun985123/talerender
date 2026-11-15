@@ -51,6 +51,12 @@ pub(crate) struct FilmData {
     pub calendar_years: Vec<String>,
     pub calendar_dark: String,
     pub sign: String,
+    // §15 step-2 adoption (CR-B1-01 §4.3): s12's bow + mood
+    // step are clip data (s12.scene.json, clip
+    // s12-onoda-jg-onoda2), resolved at load by load_s12_clips.
+    // None = no scene file was found beside the film data;
+    // fn s12 fails loud if it is reached without it.
+    pub s12_clips: Option<crate::eval15::ClipSet>,
 }
 
 pub(crate) struct Caption {
@@ -144,7 +150,34 @@ pub(crate) fn load_film_data(dir: &Path) -> Result<FilmData, String> {
         calendar_years,
         calendar_dark: str_key("calendarDark")?,
         sign: str_key("sign")?,
+        s12_clips: load_s12_clips(dir)?,
     })
+}
+
+// §15 step-2 adoption (CR-B1-01 §4.3): resolve s12's scene
+// file and build its ClipSet. Two layouts: packaged beside
+// the film data (<dir>/s12.scene.json — the skill bridge
+// layout), or the repo layout (<dir>/../scenes/film/
+// s12.scene.json). A file that EXISTS but fails to parse or
+// validate is a load error — era pairing fails closed. No
+// file at all is Ok(None): fn s12 names the gap if reached.
+fn load_s12_clips(dir: &Path) -> Result<Option<crate::eval15::ClipSet>, String> {
+    let candidates = [
+        dir.join("s12.scene.json"),
+        dir.join("../scenes/film/s12.scene.json"),
+    ];
+    for cand in &candidates {
+        if cand.is_file() {
+            let text = std::fs::read_to_string(cand)
+                .map_err(|e| format!("cannot read s12 scene file {}: {e}", cand.display()))?;
+            let root = crate::scene::parse_json(&text)
+                .map_err(|e| format!("{}: {e}", cand.display()))?;
+            let clips = crate::eval15::ClipSet::from_root(&root)
+                .map_err(|e| format!("{}: {e}", cand.display()))?;
+            return Ok(Some(clips));
+        }
+    }
+    Ok(None)
 }
 
 // ---------------------------------------------------------------------
@@ -2078,7 +2111,6 @@ fn s11(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
 }
 
 fn s12(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
-    let st0 = 55.520;
     let w_loyal = data.anchors["loyal11"];
     let mut post = g_jungle();
     post.sat = 1.08;
@@ -2095,13 +2127,32 @@ fn s12(data: &FilmData, t: f64, lt: f64, d: f64) -> FrameSpec {
     f.fov = 46.0;
     f.focus = ((f.eye[0] - f.target[0]).powi(2) + (f.eye[1] - f.target[1]).powi(2) + (f.eye[2] - f.target[2]).powi(2)).sqrt();
     let mut onoda = fs();
-    let bow = pose_track(&[key(0.0, 0.0), keym(w_loyal - st0 - 0.1, 3.5, 0.45)], lt);
-    onoda.lean = (0.6 * bow) as f32;
-    onoda.head_tilt = (-bow) as f32;
+    // §15 step-2 adoption (CR-B1-01 §4.3): the bow (lean /
+    // headTilt) and the mood step are clip data now —
+    // s12.scene.json, clip s12-onoda-jg-onoda2, staged by
+    // stage_clips.py from the baked poseTrack keys (52ca55f).
+    // The 0.6 / -1 factors are baked into the data; the scene
+    // file's `law` fields carry the provenance. lt is
+    // segment-local (the segment starts at 55.52). NOT
+    // retired: the blink director below (§15.8 negative list)
+    // and the cam_k camera above.
+    let clips = data.s12_clips.as_ref().expect(
+        "s12: clip data missing — s12.scene.json was not resolved at load (see load_s12_clips)",
+    );
+    for (_, channel, value) in clips
+        .sample("s12-onoda-jg-onoda2", &crate::eval15::ClipTime::default(), lt)
+        .expect("s12: clip s12-onoda-jg-onoda2 must sample")
+    {
+        match (channel.as_str(), value) {
+            ("lean", crate::eval15::Sampled::Scalar(v)) => onoda.lean = v,
+            ("headTilt", crate::eval15::Sampled::Scalar(v)) => onoda.head_tilt = v,
+            ("mood", crate::eval15::Sampled::Step(name)) => onoda.mood = Mood::from_str(&name),
+            _ => {}
+        }
+    }
     onoda.arm_r = (9.0, 5.0);
     onoda.arm_l = (9.0, 5.0);
     onoda.look = [0.25, -0.15];
-    onoda.mood = if t >= w_loyal { Mood::Neutral } else { Mood::Relieved };
     onoda.blink = blink_of(3.0, t, &[w_loyal]);
     char(&mut f, ONODA2, [-0.15, 0.0, -0.95], onoda, tint_dusk(), false);
     let mut tani = fs();
