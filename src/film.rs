@@ -3646,12 +3646,19 @@ pub(crate) async fn run_film(width: u32, height: u32, film_dir: &str, out_dir: &
     let mut cache = PaintCache::new();
     let (mut done, mut skipped) = (0u32, 0u32);
     let clock = crate::runlog::RunClock::new();
+    // WP6: per-frame timing lines, env-gated OFF by default
+    // (runlog::frame_timing_enabled). The line shape is the
+    // one tools/perf/lab/bench_lab.py parses first:
+    // "frame-time: frame=<n> ms=<x>". Default-off runs print
+    // nothing extra — stdout stays byte-identical.
+    let timing = crate::runlog::frame_timing_enabled();
     for n in from..to {
         let path = format!("{out_dir}/frame_{n:05}.png");
         if Path::new(&path).exists() {
             skipped += 1;
             continue;
         }
+        let frame_start = std::time::Instant::now();
         let t = n as f64 / 30.0;
         let mut spec = eval_frame(&data, &looks, t);
         let (dyn_tex, _) = resolve_chars(&mut spec, &looks, &assets, &mut cache);
@@ -3668,6 +3675,12 @@ pub(crate) async fn run_film(width: u32, height: u32, film_dir: &str, out_dir: &
         let img = image::RgbaImage::from_raw(width, height, px).expect("pixel buffer size mismatch");
         img.save(&path).map_err(|e| crate::errors::TaleError::image_io(&path, e))?;
         done += 1;
+        if timing {
+            println!(
+                "frame-time: frame={n} ms={:.2}",
+                frame_start.elapsed().as_secs_f64() * 1000.0
+            );
+        }
         if done % 25 == 0 {
             println!(
                 "  frame {n} (t = {t:.2}s) — {done} rendered, {skipped} skipped · {}{tag}",

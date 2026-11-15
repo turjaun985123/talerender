@@ -90,7 +90,7 @@ jobs:
             > bench-out/bench-default.log 2>&1
           echo $? > bench-out/bench-default.exit
           set -e
-          grep -E "^(renderer:|  frame |film render complete)" bench-out/bench-default.log || true
+          grep -E "^(adapter:|  frame |film render complete)" bench-out/bench-default.log || true
           stat -c '%s %n' bench-out/frames-default/frame_*.png > bench-out/frames-default.sizes 2>/dev/null \
             || touch bench-out/frames-default.sizes
           wc -l bench-out/frames-default.sizes
@@ -103,10 +103,34 @@ jobs:
             > bench-out/bench-cache24.log 2>&1
           echo $? > bench-out/bench-cache24.exit
           set -e
-          grep -E "^(renderer:|  frame |film render complete)" bench-out/bench-cache24.log || true
+          grep -E "^(adapter:|  frame |film render complete)" bench-out/bench-cache24.log || true
           stat -c '%s %n' bench-out/frames-cache24/frame_*.png > bench-out/frames-cache24.sizes 2>/dev/null \
             || touch bench-out/frames-cache24.sizes
           wc -l bench-out/frames-cache24.sizes
+      - name: Bench lab leg — bench_lab record + comparison report (V2 WP6)
+        run: |
+          # bench_lab runs the binary itself with
+          # TALERENDER_FRAME_TIMING=1 into a fresh frames dir,
+          # hashes every frame, and writes a talerender-bench/1
+          # JSON record + Markdown. report.py renders the
+          # comparison (here: a single software record — the
+          # honesty banner and PENDING-PC line are the point).
+          python3 tools/perf/lab/bench_lab.py run \
+            --binary ./target/release/talerender \
+            --out bench-out/lab --label ci-lavapipe-cap160 \
+            --frames 0..100 --film film
+          python3 tools/perf/lab/report.py bench-out/lab/*.json \
+            --out bench-out/lab/report.md
+          cat bench-out/lab/report.md
+      - name: Upload bench lab records (TEXT ONLY — never frames)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-lab-${{ github.run_id }}
+          path: |
+            bench-out/lab/*.json
+            bench-out/lab/*.md
+            bench-out/lab/*.log
       - name: Job summary — with the honesty rule
         if: always()
         run: |
@@ -118,7 +142,7 @@ jobs:
             echo "| leg | renderer (from log) | completion line | wall (from time -v) | peak RSS (from time -v) | exit |"
             echo "|---|---|---|---|---|---|"
             for leg in bench-default bench-cache24; do
-              renderer=$(grep -m1 '^renderer:' "bench-out/$leg.log" || echo '(no renderer line found)')
+              renderer=$(grep -m1 '^adapter:' "bench-out/$leg.log" || echo '(no renderer line found)')
               complete=$(grep -m1 '^film render complete' "bench-out/$leg.log" || echo '(no completion line found)')
               wall=$(grep 'Elapsed (wall clock)' "bench-out/$leg.time" | sed 's/.*: //' || echo '?')
               rss=$(grep 'Maximum resident set size' "bench-out/$leg.time" | sed 's/.*: //' || echo '?')
