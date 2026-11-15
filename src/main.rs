@@ -16,21 +16,26 @@
 //! acceleration it cannot prove.
 
 mod ab1;
+mod adapter;
 mod anim;
 mod assetstream;
 mod atlas;
 mod battery;
 mod bufferpool;
 mod charanim;
+mod charstate;
 mod composer;
 mod config;
 mod dirtyrect;
 mod dof;
 mod errors;
 mod gpucore;
+mod lifetimes;
 mod math;
 mod mempressure;
+mod memreport;
 mod observability;
+mod outputmgr;
 mod locomotion;
 mod paintbudget;
 mod rendergraph;
@@ -40,6 +45,7 @@ mod scene;
 mod projectfile;
 mod scenefile;
 mod streamq;
+mod streammodes;
 mod telemetry;
 mod ffstream;
 mod film;
