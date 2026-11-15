@@ -2558,11 +2558,12 @@ pub(crate) struct Renderer {
 }
 
 impl Renderer {
-    pub(crate) async fn new(width: u32, height: u32, sign: &(Vec<u8>, u32, u32), knobs: crate::Knobs) -> crate::errors::TaleResult<Renderer> {
+    pub(crate) async fn new(width: u32, height: u32, sign: &(Vec<u8>, u32, u32), knobs: crate::Knobs, adapter_policy: &str) -> crate::errors::TaleResult<Renderer> {
         let samples = knobs.samples();
         let shadow_size = knobs.shadow;
         let instance = crate::gpucore::new_instance();
-        let adapter = crate::gpucore::request_adapter(&instance).await?;
+        let policy = crate::adapter::policy_from(Some(adapter_policy), None);
+        let adapter = crate::gpucore::request_adapter_with_policy(&instance, &policy).await?;
         let info = adapter.get_info();
         // Canonical C7 adapter line (was a `renderer:`-prefixed
         // twin of it; bench_lab accepts both prefixes, and one
@@ -3624,7 +3625,7 @@ fn apply_fade(px: &mut [u8], fade: f32) {
 // The film driver.
 // ---------------------------------------------------------------------
 
-pub(crate) async fn run_film(width: u32, height: u32, film_dir: &str, out_dir: &str, from: u32, to: u32, knobs: crate::Knobs) -> crate::errors::TaleResult<()> {
+pub(crate) async fn run_film(width: u32, height: u32, film_dir: &str, out_dir: &str, from: u32, to: u32, knobs: crate::Knobs, adapter_policy: &str) -> crate::errors::TaleResult<()> {
     let tag = if knobs.is_draft() {
         format!(" {}", knobs.tag())
     } else {
@@ -3636,7 +3637,7 @@ pub(crate) async fn run_film(width: u32, height: u32, film_dir: &str, out_dir: &
     let looks = look_registry();
     let frames_total = (data.duration * 30.0).ceil() as u32;
     let to = if to == 0 { frames_total } else { to.min(frames_total) };
-    let mut renderer = Renderer::new(width, height, &assets.sign, knobs).await?;
+    let mut renderer = Renderer::new(width, height, &assets.sign, knobs, adapter_policy).await?;
     std::fs::create_dir_all(out_dir).map_err(|e| crate::errors::TaleError::image_io(out_dir, e))?;
     println!(
         "film: {} — {} frames @30fps, rendering {}..{} at {}x{} (clean PNG frames; decision B){tag}",

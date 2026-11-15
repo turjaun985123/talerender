@@ -132,6 +132,29 @@ OPTIONS:
                             given after --draft overrides it.
                             Draft runs label every output line
                             DRAFT — never use for delivery.
+    --mem-profile <NAME>    Memory profile: low-memory |
+                            balanced | high-performance
+                            (default: balanced, or low-memory
+                            on machines with <= 8 GiB RAM).
+                            Profiles change budgets and queue
+                            sizes only — never quality.
+    --adapter-policy <P>    Adapter selection: auto |
+                            hardware-only | software-ok |
+                            named:<substring> (default: auto).
+    --output-mode <MODE>    Film output: png | stream | auto
+                            (default: png). The resolved mode
+                            is printed on every --film run;
+                            stream is not yet wired into the
+                            --film driver and fails loudly.
+    --perf-record-dir <DIR> Directory for performance records
+                            (bench tooling; see docs/v2/
+                            PERF-LAB.md).
+    --config <PATH>         Config file (default: ./
+                            talerender.toml when present).
+                            Precedence: CLI > TALERENDER_*
+                            env > config file > defaults;
+                            invalid values fall through with a
+                            warning, never a hard error.
 
     -h, --help              Print this help and exit.
     -V, --version           Print the version and exit.
@@ -318,6 +341,11 @@ fn main() {
     let mut tables = false;
     let mut film_from: u32 = 0;
     let mut film_to: u32 = 0;
+    // V2 C8 configuration layers: raw CLI values only —
+    // config::resolve validates them after the loop (invalid
+    // values fall through with warnings, never cli_error).
+    let mut cli_overrides = config::CliOverrides::default();
+    let mut config_path: Option<std::path::PathBuf> = None;
     let mut i = 1;
     while i < args.len() {
         match args[i].as_str() {
@@ -392,6 +420,27 @@ fn main() {
                 i += 1;
                 knobs.shadow = parse_shadow(&args, i);
             }
+            "--mem-profile" => {
+                i += 1;
+                cli_overrides.mem_profile = Some(value(&args, i, "--mem-profile"));
+            }
+            "--adapter-policy" => {
+                i += 1;
+                cli_overrides.adapter_policy = Some(value(&args, i, "--adapter-policy"));
+            }
+            "--output-mode" => {
+                i += 1;
+                cli_overrides.output_mode = Some(value(&args, i, "--output-mode"));
+            }
+            "--perf-record-dir" => {
+                i += 1;
+                cli_overrides.perf_record_dir =
+                    Some(std::path::PathBuf::from(value(&args, i, "--perf-record-dir")));
+            }
+            "--config" => {
+                i += 1;
+                config_path = Some(std::path::PathBuf::from(value(&args, i, "--config")));
+            }
             "--draft" => {
                 // A writer of all three fields; the loop is
                 // last-writer-wins in command-line order, in
@@ -406,6 +455,15 @@ fn main() {
             }
         }
         i += 1;
+    }
+    // C8 resolution (CLI > TALERENDER_* env > talerender.toml
+    // > default). Warnings for ignored invalid values go to
+    // stderr; the resolved values are reported by the modes
+    // that consume them (film branch below, run()).
+    let (cfg, cfg_warnings) =
+        config::resolve_from_process_with_report(&cli_overrides, config_path.as_deref());
+    for w in &cfg_warnings {
+        eprintln!("warning: {w}");
     }
     if let Some(mode) = &telemetry_mode {
         // M6 QA telemetry (contract §3): pure CPU — the painter
@@ -444,7 +502,46 @@ fn main() {
         // Production integration: the complete film, frame range
         // [--from, --to) into the --out frames directory (resume:
         // existing frames are skipped). --to 0 = through the end.
-        exit_on_err(pollster::block_on(film::run_film(ew, eh, dir, &out, film_from, film_to, knobs)));
+        println!(
+            "config: mem_profile={} adapter_policy={} output_mode={}",
+            cfg.mem_profile, cfg.adapter_policy, cfg.output_mode
+        );
+        // C3 mode resolution: the choice is printed, never
+        // silent. Streaming is implemented (streamq/ffstream/
+        // streammodes) but not yet wired into this driver —
+        // a resolved Stream request fails loudly here rather
+        // than silently writing PNGs.
+        let requested = streammodes::mode_from_config(&cfg.output_mode);
+        let resolved = streammodes::resolve_mode(requested, ffstream::ffmpeg_available());
+        println!("output-mode: {} — {}", resolved.mode.as_str(), resolved.reason);
+        if resolved.mode == streammodes::OutputMode::Stream {
+            cli_error(
+                "output_mode=stream resolved, but streaming output is not yet wired \
+                 into the --film driver (streamq/ffstream/streammodes are landed; \
+                 the driver wiring is a follow-up) — use --output-mode png",
+            );
+        }
+        // C1: the resolved memory profile, reported with its
+        // derived values. Consumers (paint-cache budget feed,
+        // frame-queue caps) wire incrementally; the profile
+        // itself never changes quality.
+        let mp = mempressure::MemPressure::from_env_and_arg(Some(cfg.mem_profile.as_str()));
+        println!(
+            "mem-profile: {} (profile paint budget {} bytes, frame queue cap {})",
+            mp.profile().name(),
+            mp.paint_budget_bytes(),
+            mp.frame_queue_capacity()
+        );
+        exit_on_err(pollster::block_on(film::run_film(
+            ew,
+            eh,
+            dir,
+            &out,
+            film_from,
+            film_to,
+            knobs,
+            &cfg.adapter_policy,
+        )));
         return;
     }
     if let Some(path) = &scene_file {
@@ -454,7 +551,7 @@ fn main() {
         return;
     }
     match scene.as_str() {
-        "m1" => exit_on_err(pollster::block_on(run(ew, eh, &out, knobs))),
+        "m1" => exit_on_err(pollster::block_on(run(ew, eh, &out, knobs, &cfg.adapter_policy))),
         "ab1" => {
             let stage = match post_stage.as_str() {
                 "lighting" => 1,
@@ -622,14 +719,15 @@ fn character_texture(size: u32) -> Vec<u8> {
     px
 }
 
-async fn run(width: u32, height: u32, out: &str, knobs: Knobs) -> errors::TaleResult<()> {
+async fn run(width: u32, height: u32, out: &str, knobs: Knobs, adapter_policy: &str) -> errors::TaleResult<()> {
     let tag = if knobs.is_draft() {
         format!(" {}", knobs.tag())
     } else {
         String::new()
     };
     let instance = crate::gpucore::new_instance();
-    let adapter = crate::gpucore::request_adapter(&instance).await?;
+    let policy = crate::adapter::policy_from(Some(adapter_policy), None);
+    let adapter = crate::gpucore::request_adapter_with_policy(&instance, &policy).await?;
     let info = adapter.get_info();
     println!("{}", crate::adapter::report_line(&crate::adapter::describe(&info)));
 

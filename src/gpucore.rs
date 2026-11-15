@@ -94,6 +94,34 @@ pub(crate) async fn request_adapter(
         })
 }
 
+/// Adapter selection under an explicit policy (C7 / WP3):
+/// enumerate the Vulkan adapters and let `adapter::select`
+/// choose. An empty enumeration falls back to
+/// `request_adapter`'s two-step (and its load-bearing error
+/// string); a policy matching nothing is a diagnosed
+/// gpu_init failure naming the policy — never a silent
+/// fallback to an adapter the operator excluded.
+pub(crate) async fn request_adapter_with_policy(
+    instance: &wgpu::Instance,
+    policy: &crate::adapter::AdapterPolicy,
+) -> crate::errors::TaleResult<wgpu::Adapter> {
+    let adapters = instance.enumerate_adapters(wgpu::Backends::VULKAN).await;
+    if adapters.is_empty() {
+        return request_adapter(instance).await;
+    }
+    let infos: Vec<wgpu::AdapterInfo> = adapters.iter().map(|a| a.get_info()).collect();
+    match crate::adapter::select(&infos, policy) {
+        Some(i) => Ok(adapters.into_iter().nth(i).expect("adapter select index")),
+        None => Err(crate::errors::TaleError::gpu_init(
+            "adapter policy",
+            format!(
+                "no enumerated adapter matches policy {policy:?} ({} found)",
+                infos.len()
+            ),
+        )),
+    }
+}
+
 /// Device + queue, failures as `DeviceRequest` (exit 3).
 /// `limits` is explicit because the sites legitimately differ
 /// today (standard everywhere except main.rs::run's downlevel);
