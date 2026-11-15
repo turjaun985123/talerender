@@ -98,6 +98,25 @@ the 0.20-era survey in the original item-3 text is moot.
 (4) Benchmark automation: unchanged in design; its first
 record will be a post-upgrade record.
 
+**OUTCOME — item 0 LANDED, pixel-neutral (2026-11-15).**
+Commits `c246ec8` (exact pins: wgpu 30.0.2, pollster
+1.0.1, image 0.25.10) + `5e1bd05`/`985ed04`/`b9098d2`/
+`65e4ea2` (API fallout only: Option-ification, TexelCopy
+renames, immediate_size, cache field, PollType::Wait
+struct form, request_adapter Result, fallible
+get_mapped_range; check_shaders.py patterns updated for
+the new shapes — 21/21 PASS). CI at `65e4ea2`: build +
+**195/195 tests** + smoke render green (run conclusion
+reads failure on the artifact-quota upload step only);
+Tools CI SUCCESS. Probe run `43688575920`: telemetry
+**CHECK OK**, **byte probes 40/40 identical** vs the
+pre-upgrade render, gpu-mem line figure-identical
+(accounted 229,488,776). Local golden verify **17 OK**.
+Toolchain rustc 1.100.0; 213 packages resolved. This
+closed V2's Phase A gate; items 1–4 continue inside V2
+per V2-CONTRACTS.md (item 1 landed pre-directive at
+`f9429a8`, probe `43684139968`).
+
 **Edition 2024: DEFERRED, deliberately.** The directive
 targets crate versions. An edition migration is orthogonal,
 tree-wide churn (reserved keywords, lifetime-capture
