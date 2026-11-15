@@ -142,10 +142,10 @@ pub async fn run_dof(width: u32, height: u32, out: &str, knobs: crate::Knobs) ->
     let instance = crate::gpucore::new_instance();
     let adapter = crate::gpucore::request_adapter(&instance).await?;
     let info = adapter.get_info();
-    println!(
-        "adapter: {} ({:?}, driver {}) — software rasteriser, no performance claim",
-        info.name, info.backend, info.driver
-    );
+    // Canonical C7 report (the hardcoded "software rasteriser"
+    // claim this replaced was only ever true on lavapipe; the
+    // canonical line appends (software) iff the adapter is Cpu).
+    println!("{}", crate::adapter::report_line(&crate::adapter::describe(&info)));
     let (device, queue) =
         crate::gpucore::request_device_default(&adapter, "talerender-dof-device").await?;
 

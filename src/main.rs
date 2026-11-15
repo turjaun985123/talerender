@@ -631,10 +631,7 @@ async fn run(width: u32, height: u32, out: &str, knobs: Knobs) -> errors::TaleRe
     let instance = crate::gpucore::new_instance();
     let adapter = crate::gpucore::request_adapter(&instance).await?;
     let info = adapter.get_info();
-    println!(
-        "adapter: {} | backend: {:?} | device type: {:?} | driver: {} {}",
-        info.name, info.backend, info.device_type, info.driver, info.driver_info
-    );
+    println!("{}", crate::adapter::report_line(&crate::adapter::describe(&info)));
 
     // Downlevel limits are this site's deliberate divergence
     // (GPU-CORE-W07 s1/s4): the M1 smoke scene's textures are

@@ -2564,10 +2564,10 @@ impl Renderer {
         let instance = crate::gpucore::new_instance();
         let adapter = crate::gpucore::request_adapter(&instance).await?;
         let info = adapter.get_info();
-        println!(
-            "renderer: {} | backend: {:?} | device type: {:?} | driver: {} {}",
-            info.name, info.backend, info.device_type, info.driver, info.driver_info
-        );
+        // Canonical C7 adapter line (was a `renderer:`-prefixed
+        // twin of it; bench_lab accepts both prefixes, and one
+        // shape everywhere is the contract's point). Log-only.
+        println!("{}", crate::adapter::report_line(&crate::adapter::describe(&info)));
         let (device, queue) =
             crate::gpucore::request_device_default(&adapter, "talerender film device").await?;
         let ceil_motif = {

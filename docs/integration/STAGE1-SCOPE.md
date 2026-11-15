@@ -169,6 +169,16 @@ such — pin images are local by the no-photos rule). If any
 probed frame differs, the item stops and reports; the
 painter's output is sacred.
 
+**OUTCOME (V2 WP1.1): LANDED `468b573`**, applied by the
+lead exactly per V2-WP1-LRU-SPEC (recency-on-hit;
+EvictReason taxonomy with cap precedence; stats fields
+appended). Gate: CI Test SUCCESS (conclusion quota-only
+upload step), Tools CI SUCCESS, probe `43693686155`
+SUCCESS — telemetry CHECK OK, **byte probes 40/40
+identical**, golden verify 17 OK, vram_report.py
+--self-test PASS unedited, hits+misses invariant
+482 = 482.
+
 ### Item 3 — Adapter reporting + device loss (WP2 remainder)
 
 - dof's adapter line stops claiming "software rasteriser"
@@ -262,6 +272,22 @@ automation — items 1–4 plus the PC leg above.
 
 ## §6 Follow-ups and open limitations (to be completed as items land)
 
-- (Item 3 lands here: the device-loss verdict — what the
-  wgpu 0.20 surface supports, what was implemented, what
-  remains impossible without an API change.)
+- **Item 3 device-loss verdict (V2 WP3, surveyed against
+  wgpu 30.0.2 — the 0.20 framing below is superseded by the
+  item-0 upgrade):** detection + diagnosed failure IS
+  supported and is implemented — `Device::
+  set_device_lost_closure` installed in gpucore::
+  request_device (the single chokepoint): unexpected loss
+  prints `event=device.lost reason=<...>` and exits 3;
+  `Destroyed` (deliberate teardown) never fires it.
+  Delivery is poll-driven, and gpucore's readback polls
+  every frame, so a mid-render loss surfaces by the next
+  frame boundary. **Recreate-and-resume is NOT honestly
+  supportable and is not implemented:** wgpu has no
+  state-migration API (every object from the lost device
+  is invalid with it), and the tree has no device factory,
+  frame-retry loop, or replayable resource inventory — the
+  honest recovery unit would be "restart the current
+  frame on a new device", which needs seams this wave
+  does not build. Recorded as a validation-wave /
+  future-architecture item, not a silent gap.

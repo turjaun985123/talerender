@@ -103,7 +103,7 @@ pub(crate) async fn request_device(
     label: &'static str,
     limits: wgpu::Limits,
 ) -> crate::errors::TaleResult<(wgpu::Device, wgpu::Queue)> {
-    adapter
+    let (device, queue) = adapter
         .request_device(&wgpu::DeviceDescriptor {
             label: Some(label),
             required_features: wgpu::Features::empty(),
@@ -116,7 +116,31 @@ pub(crate) async fn request_device(
                 format!("request_device ({label})"),
                 e,
             )
-        })
+        })?;
+    // Device-loss detection (C7 / WP3, per src/adapter.rs's
+    // survey of the wgpu 30 surface): an unexpected loss is a
+    // diagnosed failure — event line + exit 3 (the GpuInit
+    // class) — never a silent hang or corrupt output. The
+    // closure fires from inside Device::poll, where no caller
+    // can receive a TaleError, hence process::exit; the event
+    // line is newline-terminated and flushes first. Destroyed
+    // is deliberate teardown, never a failure.
+    // Recreate-and-resume is NOT implemented: wgpu offers no
+    // state migration, and the tree has no device factory or
+    // frame-retry seam (STAGE1-SCOPE §6 records the verdict).
+    device.set_device_lost_closure(Box::new(|reason, message| {
+        if matches!(reason, wgpu::DeviceLostReason::Destroyed) {
+            return;
+        }
+        let detail = if message.is_empty() {
+            format!("{reason:?}")
+        } else {
+            format!("{reason:?}: {message}")
+        };
+        crate::observability::event("device.lost", &[("reason", detail)]);
+        std::process::exit(3);
+    }));
+    Ok((device, queue))
 }
 
 /// The common case: standard limits (NOT downlevel — those cap

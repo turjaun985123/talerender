@@ -593,10 +593,7 @@ pub async fn run_ab1(width: u32, height: u32, out: &str, caption_path: &str, pos
     let instance = crate::gpucore::new_instance();
     let adapter = crate::gpucore::request_adapter(&instance).await?;
     let info = adapter.get_info();
-    println!(
-        "adapter: {} | backend: {:?} | device type: {:?} | driver: {} {}",
-        info.name, info.backend, info.device_type, info.driver, info.driver_info
-    );
+    println!("{}", crate::adapter::report_line(&crate::adapter::describe(&info)));
     let stage_name = match post_stage {
         1 => "lighting+shadows (+bokeh/output)",
         2 => "+ bloom",

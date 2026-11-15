@@ -1176,10 +1176,7 @@ async fn make_device(
     let instance = crate::gpucore::new_instance();
     let adapter = crate::gpucore::request_adapter(&instance).await?;
     let info = adapter.get_info();
-    println!(
-        "adapter: {} | backend: {:?} | device type: {:?} | driver: {} {}",
-        info.name, info.backend, info.device_type, info.driver, info.driver_info
-    );
+    println!("{}", crate::adapter::report_line(&crate::adapter::describe(&info)));
     // Standard limits, not downlevel: the real character canvas
     // is 2560x2816 (see ab1.rs) — request_device_default's law.
     crate::gpucore::request_device_default(&adapter, label).await
