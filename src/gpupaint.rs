@@ -1161,14 +1161,27 @@ mod exec_tests {
             sha256_hex(b""),
             "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
         );
+        // The expected value here was previously corrupted past
+        // the "...5dae" prefix; the implementation's output was
+        // verified byte-for-byte against system sha256sum /
+        // hashlib across empty, padding-boundary (55/56/57),
+        // block-boundary (64/65) and multi-block inputs
+        // (incl. the NIST 1,000,000 x 'a' vector) — the
+        // implementation was correct, this constant was not.
         assert_eq!(
             sha256_hex(b"abc"),
-            "ba7816bf8f01cfea414140de5dae3039dae2007cb0ac9239ac9fb8f95d5cd60a"
+            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad"
         );
         // 56-byte message: exercises the two-block padding path.
         assert_eq!(
             sha256_hex(b"abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq"),
             "248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1"
+        );
+        // Multi-block: 1,000 x 'a' (16 blocks), cross-checked
+        // against system sha256sum on the same bytes.
+        assert_eq!(
+            sha256_hex(&vec![b'a'; 1000]),
+            "41edece42d63e8d9bf515a9ba6932e1c20cbc9f5a5d134645adb5db1b9737ea3"
         );
     }
 
