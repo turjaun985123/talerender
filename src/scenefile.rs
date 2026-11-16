@@ -119,7 +119,7 @@ pub(crate) struct LightsCfg {
     pub env_intensity: f32,
 }
 
-struct Loaded {
+pub(crate) struct Loaded {
     name: String,
     version: u32,
     time: f32,
@@ -849,6 +849,18 @@ fn load(path: &str) -> Result<Loaded, String> {
     let text = std::fs::read_to_string(path)
         .map_err(|e| format!("cannot read scene file {path}: {e}"))?;
     let root = scene::parse_json(&text).map_err(|e| format!("{path}: {e}"))?;
+    load_root(root, path)
+}
+
+/// The body of `load` below the file read/parse: format and
+/// version checks, §15 folding at the root's `time`, camera /
+/// lights / nodes / post → a renderable scene. The filmseq
+/// driver (REMEDIATION-CONTRACTS §2) calls this per frame with
+/// a cloned segment root whose `time` is set to the frame's
+/// local time; `label` is used in error messages exactly where
+/// `load` used the file path.
+pub(crate) fn load_root(root: Value, label: &str) -> Result<Loaded, String> {
+    let path = label;
     if let Some(f) = root.get("format") {
         if f.as_str() != Some("talerender-scene") {
             return Err(format!("{path}: 'format' must be \"talerender-scene\""));
@@ -1268,17 +1280,41 @@ fn tex_bgl(device: &wgpu::Device) -> wgpu::BindGroupLayout {
 pub async fn run_scene_file(width: u32, height: u32, out: &str, path: &str, knobs: crate::Knobs) -> crate::errors::TaleResult<()> {
     let loaded = load(path).map_err(|e| crate::errors::TaleError::data_load(path, e))?;
     if loaded.bokeh.is_some() {
-        run_composer(width, height, out, &loaded, knobs).await
+        run_composer(width, height, SceneOut::File(out), &loaded, knobs).await
     } else {
-        run_direct(width, height, out, &loaded, knobs).await
+        run_direct(width, height, SceneOut::File(out), &loaded, knobs).await
     }
+}
+
+/// Output sink for the two scene render paths: a PNG file
+/// (the --scene-file CLI behaviour, unchanged — save, "wrote"
+/// line, mem-report block) or caller-owned pixels in memory
+/// (the filmseq driver, REMEDIATION-CONTRACTS §2 — no file,
+/// no per-frame prints).
+pub(crate) enum SceneOut<'a> {
+    File(&'a str),
+    Pixels(&'a mut Option<Vec<u8>>),
+}
+
+/// Render an already-loaded scene to RGBA pixels in memory.
+/// Device/pipelines are built per call (today's one-shot
+/// structure); a persistent SceneRenderer is a named
+/// follow-up (REMEDIATION-CONTRACTS §2), not a gate input.
+pub(crate) async fn render_loaded_pixels(width: u32, height: u32, scene: &Loaded, knobs: crate::Knobs) -> crate::errors::TaleResult<Vec<u8>> {
+    let mut slot: Option<Vec<u8>> = None;
+    if scene.bokeh.is_some() {
+        run_composer(width, height, SceneOut::Pixels(&mut slot), scene, knobs).await?;
+    } else {
+        run_direct(width, height, SceneOut::Pixels(&mut slot), scene, knobs).await?;
+    }
+    slot.ok_or_else(|| crate::errors::TaleError::data_load_msg("scene render returned no pixels"))
 }
 
 // ---------------------------------------------------------------------
 // Direct path (the ab1 pass structure)
 // ---------------------------------------------------------------------
 
-async fn run_direct(width: u32, height: u32, out: &str, scene: &Loaded, knobs: crate::Knobs) -> crate::errors::TaleResult<()> {
+async fn run_direct(width: u32, height: u32, out: SceneOut<'_>, scene: &Loaded, knobs: crate::Knobs) -> crate::errors::TaleResult<()> {
     let tag = if knobs.is_draft() {
         format!(" {}", knobs.tag())
     } else {
@@ -1531,12 +1567,17 @@ async fn run_direct(width: u32, height: u32, out: &str, scene: &Loaded, knobs: c
     queue.submit(Some(encoder.finish()));
     let pixels = rb.collect(&device)?;
 
-    let img = image::RgbaImage::from_raw(width, height, pixels).expect("pixel buffer size mismatch");
-    img.save(out).map_err(|e| crate::errors::TaleError::image_io(out, e))?;
-    println!("wrote {out} ({width}x{height}){tag}");
-    // VRAM ledger (W84 §5.3): its own line, after the wrote line.
-    // WP2 (CR-B1-08): the mem-report companion block follows it.
-    crate::memreport_print::print_full_block(&adapter_report, adapter_features);
+    match out {
+        SceneOut::File(out) => {
+            let img = image::RgbaImage::from_raw(width, height, pixels).expect("pixel buffer size mismatch");
+            img.save(out).map_err(|e| crate::errors::TaleError::image_io(out, e))?;
+            println!("wrote {out} ({width}x{height}){tag}");
+            // VRAM ledger (W84 §5.3): its own line, after the wrote line.
+            // WP2 (CR-B1-08): the mem-report companion block follows it.
+            crate::memreport_print::print_full_block(&adapter_report, adapter_features);
+        }
+        SceneOut::Pixels(slot) => *slot = Some(pixels),
+    }
     Ok(())
 }
 
@@ -1572,7 +1613,7 @@ fn draw_model(draw: &Draw) -> &Mat4 {
     }
 }
 
-async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded, knobs: crate::Knobs) -> crate::errors::TaleResult<()> {
+async fn run_composer(width: u32, height: u32, out: SceneOut<'_>, scene: &Loaded, knobs: crate::Knobs) -> crate::errors::TaleResult<()> {
     let tag = if knobs.is_draft() {
         format!(" {}", knobs.tag())
     } else {
@@ -2194,12 +2235,17 @@ async fn run_composer(width: u32, height: u32, out: &str, scene: &Loaded, knobs:
     let rb = crate::gpucore::Readback::record(&device, &mut encoder, &final_tex, width, height, "composer readback");
     queue.submit(Some(encoder.finish()));
     let rgba = rb.collect(&device)?;
-    image::save_buffer(out, &rgba, width, height, image::ColorType::Rgba8)
-        .map_err(|e| crate::errors::TaleError::image_io(out, e))?;
-    println!("wrote {out} ({width}x{height}){tag}");
-    // VRAM ledger (W84 §5.3): its own line, after the wrote line.
-    // WP2 (CR-B1-08): the mem-report companion block follows it.
-    crate::memreport_print::print_full_block(&adapter_report, adapter_features);
+    match out {
+        SceneOut::File(out) => {
+            image::save_buffer(out, &rgba, width, height, image::ColorType::Rgba8)
+                .map_err(|e| crate::errors::TaleError::image_io(out, e))?;
+            println!("wrote {out} ({width}x{height}){tag}");
+            // VRAM ledger (W84 §5.3): its own line, after the wrote line.
+            // WP2 (CR-B1-08): the mem-report companion block follows it.
+            crate::memreport_print::print_full_block(&adapter_report, adapter_features);
+        }
+        SceneOut::Pixels(slot) => *slot = Some(rgba),
+    }
     Ok(())
 }
 

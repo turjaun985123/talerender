@@ -106,13 +106,14 @@ decided BEFORE any film data is loaded:
   - `scenefile::load_root(root: Value, label: &str) -> Result<Loaded, String>`
     (the body of today's `load`, minus file read/parse;
     `load(path)` keeps its exact behaviour via load_root).
-  - `scenefile::SceneRenderer` — owns the wgpu device/queue
-    and BOTH pipeline sets (direct + composer) for a fixed
-    (width, height, knobs); `render(&self, scene: &Loaded)
-    -> TaleResult<Vec<u8>>` returns RGBA pixels. Today's
-    `run_scene_file` becomes a one-shot wrapper with identical
-    output and prints. Per-scene texture uploads and targets
-    stay per-render (VRAM ledger behaviour unchanged).
+  - `scenefile::render_loaded_pixels(w, h, scene, knobs)
+    -> TaleResult<Vec<u8>>` (L0 as built: the two render
+    paths gained a `SceneOut` sink — File keeps today's
+    exact behaviour/prints; Pixels returns RGBA in memory).
+    Device/pipelines are built per call in v1; a persistent
+    SceneRenderer (device + pipeline reuse across frames)
+    is a NAMED FOLLOW-UP, not a gate input — it changes no
+    pixel, and the proof budget (§5) fits without it.
 - Driver behaviour: for frame n in [from, to): t = n/fps;
   find the segment owning n (manifest frame ranges tile
   [0, totalFrames)); lt = t - segment.startS; clone the
