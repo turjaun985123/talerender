@@ -1,0 +1,474 @@
+{
+ "format": "talerender-scene",
+ "version": 2,
+ "name": "S11 — dawn: first framing again, Biscuit asleep",
+ "time": 34.117,
+ "duration": 4.932,
+ "shot": {
+  "id": "S11",
+  "at": 34.117,
+  "duration": 4.932,
+  "line": 10,
+  "atmosphere": "dawn",
+  "grade": "shore",
+  "cues": [
+   {
+    "t": 35.7,
+    "type": "chirp",
+    "gain": 0.5
+   }
+  ],
+  "events": []
+ },
+ "camera": {
+  "eye": [
+   -4.5,
+   2.2,
+   4.5
+  ],
+  "target": [
+   -7,
+   1.2,
+   -1.6
+  ],
+  "fovY": 44,
+  "keys": [
+   {
+    "t": 0.0,
+    "eye": [
+     -4.5,
+     2.2,
+     4.5
+    ],
+    "target": [
+     -7,
+     1.2,
+     -1.6
+    ],
+    "fovY": 44
+   },
+   {
+    "t": 4.932,
+    "eye": [
+     6,
+     7,
+     12
+    ],
+    "target": [
+     -7,
+     4,
+     -3
+    ],
+    "fovY": 44
+   }
+  ]
+ },
+ "lights": {
+  "key": {
+   "color": "#FFE3C0",
+   "intensity": 2.2,
+   "position": [
+    6.0,
+    11.0,
+    5.0
+   ],
+   "target": [
+    0.0,
+    0.0,
+    -2.0
+   ],
+   "shadow": true,
+   "shadowBox": 16.0,
+   "far": 80.0,
+   "bias": -0.0006,
+   "normalBias": 0.02
+  },
+  "rim": {
+   "color": "#FFFFFF",
+   "intensity": 0.35,
+   "position": [
+    -3.0,
+    3.0,
+    -3.0
+   ]
+  },
+  "hemisphere": {
+   "sky": "#8FA8C8",
+   "ground": "#5A4632",
+   "intensity": 1.1
+  },
+  "points": [],
+  "envIntensity": 0.25
+ },
+ "post": {
+  "bokeh": {
+   "aperture": 0.001,
+   "focus": 6.0,
+   "maxblur": 0.008
+  },
+  "bloom": {
+   "threshold": 0.85,
+   "strength": 0.2,
+   "radius": 0.6
+  },
+  "grade": {
+   "vignette": 0.24,
+   "grain": 0.012,
+   "warm": 0.05,
+   "sat": 0.85,
+   "exposure": 1.0,
+   "time": 0.0
+  }
+ },
+ "resolution": {
+  "width": 1080,
+  "height": 1920
+ },
+ "textures": [
+  {
+   "id": "sky",
+   "generator": "sky-gradient",
+   "top": "#4A5F8A",
+   "horizon": "#E8A878"
+  },
+  {
+   "id": "sand",
+   "generator": "solid",
+   "color": "#C9A86A"
+  }
+ ],
+ "nodes": [
+  {
+   "type": "mesh",
+   "geometry": {
+    "kind": "sky-sphere",
+    "radius": 380.0,
+    "widthSegments": 32,
+    "heightSegments": 16
+   },
+   "name": "sky dome",
+   "texture": "sky"
+  },
+  {
+   "type": "mesh",
+   "geometry": {
+    "kind": "flat-quad",
+    "width": 240,
+    "depth": 64
+   },
+   "name": "sand shore",
+   "texture": "sand",
+   "transform": [
+    {
+     "translate": [
+      0,
+      0,
+      26
+     ]
+    }
+   ]
+  },
+  {
+   "type": "mesh",
+   "geometry": {
+    "kind": "flat-quad",
+    "width": 240,
+    "depth": 170
+   },
+   "name": "sea",
+   "material": {
+    "color": "#274B66",
+    "roughness": 0.3
+   },
+   "transform": [
+    {
+     "translate": [
+      0,
+      -0.25,
+      -89
+     ]
+    }
+   ]
+  },
+  {
+   "type": "group",
+   "name": "lighthouse tower",
+   "transform": [
+    {
+     "translate": [
+      -7,
+      0,
+      -3
+     ]
+    }
+   ],
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 1.15,
+      "radiusBottom": 1.5,
+      "height": 2.2,
+      "segments": 20
+     },
+     "name": "tower band 1",
+     "material": {
+      "color": "#F4EFE4"
+     },
+     "transform": [
+      {
+       "translate": [
+        0,
+        1.1,
+        0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 1.02,
+      "radiusBottom": 1.15,
+      "height": 2.0,
+      "segments": 20
+     },
+     "name": "tower band 2",
+     "material": {
+      "color": "#C23B2E"
+     },
+     "transform": [
+      {
+       "translate": [
+        0,
+        3.2,
+        0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.9,
+      "radiusBottom": 1.02,
+      "height": 2.0,
+      "segments": 20
+     },
+     "name": "tower band 3",
+     "material": {
+      "color": "#F4EFE4"
+     },
+     "transform": [
+      {
+       "translate": [
+        0,
+        5.2,
+        0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.8,
+      "radiusBottom": 0.9,
+      "height": 1.6,
+      "segments": 20
+     },
+     "name": "tower band 4",
+     "material": {
+      "color": "#C23B2E"
+     },
+     "transform": [
+      {
+       "translate": [
+        0,
+        7.0,
+        0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 1.25,
+      "radiusBottom": 1.25,
+      "height": 0.18,
+      "segments": 20
+     },
+     "name": "gallery",
+     "material": {
+      "color": "#2A2638"
+     },
+     "transform": [
+      {
+       "translate": [
+        0,
+        7.9,
+        0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.72,
+      "radiusBottom": 0.72,
+      "height": 1.1,
+      "segments": 12
+     },
+     "name": "lamp room",
+     "material": {
+      "color": "#FFE9A8"
+     },
+     "transform": [
+      {
+       "translate": [
+        0,
+        8.55,
+        0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cone",
+      "radius": 1.0,
+      "height": 0.8,
+      "segments": 16
+     },
+     "name": "roof",
+     "material": {
+      "color": "#2A2638"
+     },
+     "transform": [
+      {
+       "translate": [
+        0,
+        9.5,
+        0
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "type": "character",
+   "name": "Biscuit",
+   "position": [
+    -7,
+    0,
+    -1.2
+   ],
+   "height": 1.15,
+   "perspective": true,
+   "look": {
+    "body": "#E8913A",
+    "ears": "fox",
+    "hat": "none",
+    "kid": true,
+    "neck": "collar",
+    "neckCol": "#B5372E"
+   },
+   "state": {
+    "mood": "neutral",
+    "legs": "sit",
+    "armL": [
+     15,
+     20
+    ],
+    "armR": [
+     15,
+     20
+    ],
+    "blink": 1,
+    "headTilt": 0.2
+   }
+  }
+ ],
+ "captions": [
+  {
+   "id": "cap_000",
+   "line": 10,
+   "s": 34.17,
+   "e": 34.27,
+   "text": "And"
+  },
+  {
+   "id": "cap_001",
+   "line": 10,
+   "s": 34.27,
+   "e": 34.39,
+   "text": "at"
+  },
+  {
+   "id": "cap_002",
+   "line": 10,
+   "s": 34.39,
+   "e": 34.91,
+   "text": "dawn,"
+  },
+  {
+   "id": "cap_003",
+   "line": 10,
+   "s": 34.91,
+   "e": 35.19,
+   "text": "Biscuit"
+  },
+  {
+   "id": "cap_004",
+   "line": 10,
+   "s": 35.19,
+   "e": 35.67,
+   "text": "finally"
+  },
+  {
+   "id": "cap_005",
+   "line": 10,
+   "s": 35.67,
+   "e": 36.49,
+   "text": "slept,"
+  },
+  {
+   "id": "cap_006",
+   "line": 10,
+   "s": 36.49,
+   "e": 36.61,
+   "text": "the"
+  },
+  {
+   "id": "cap_007",
+   "line": 10,
+   "s": 36.61,
+   "e": 36.99,
+   "text": "lighthouse"
+  },
+  {
+   "id": "cap_008",
+   "line": 10,
+   "s": 36.99,
+   "e": 37.35,
+   "text": "still"
+  },
+  {
+   "id": "cap_009",
+   "line": 10,
+   "s": 37.35,
+   "e": 38.119,
+   "text": "burning."
+  }
+ ]
+}

@@ -1,0 +1,22 @@
+{
+ "format": "talerender-plates",
+ "version": 1,
+ "plates": [
+  {
+   "name": "lens-cloth",
+   "file": "lens-cloth.png",
+   "origin": [
+    -90.0,
+    -90.0
+   ]
+  },
+  {
+   "name": "oil-can",
+   "file": "oil-can.png",
+   "origin": [
+    -100.0,
+    -110.0
+   ]
+  }
+ ]
+}

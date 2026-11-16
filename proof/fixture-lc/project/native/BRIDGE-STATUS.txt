@@ -1,0 +1,15 @@
+BRIDGED — driver: scene-sequence (re-bridge R2-03, remediation Batch 2)
+Built with tools/bridge/build_bridge.py (post-R1-03/R1-10 interface):
+"driver": "scene-sequence" in film.json; NO calendarYears / calendarDark /
+sign declared (the film's scenes use no calendar and no sign — nothing
+invented); caption fit MEASURED for all 46 chunks (PIL/FreeType, Inter-
+Black.otf md5 c26b4e77dc103fd3a1e3b426549296ed; manifest bridge.captionFit
+.mode = "measured"); captions re-chunked at old idx 0 / 3 / 40 (43 -> 46
+chunks; max strip ink now 809 px, was 1049 px).
+Hold plates declared in scene textures[]: s03 lens-cloth, s08 oil-can
+(file: ../../film/assets/<plate>.png — the repo's own Onoda pattern);
+s06/s10 transform op respelled rotateY -> rotate_y (value unchanged).
+Validation: validate_native_project.py -> RESULT: OK (0 flagged), no STALE.
+Telemetry (binary @ talerender HEAD 67fd9ef): generic telemetry reaches
+FILM TELEMETRY: CHECK OK (exit 0) — see R2-03 NOTE.md for the one
+filmtelemetry base-directory caveat and the exact lead fix it needs.

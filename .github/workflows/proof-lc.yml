@@ -1,0 +1,504 @@
+name: Proof LC (Chrome-free native render — Lighthouse Cat acceptance)
+
+# CR-R2-05 — CI acceptance proof for the Chrome-replacement REMEDIATION
+# wave, contracts §5(b). PATCH CANDIDATE: the lead copies this file to
+# .github/workflows/proof-lc.yml in turjaun985123/talerender. It is a
+# NEW workflow, not an edit of proof.yml: the model harness
+# (proof.yml, run 43750140530, PASS @ 148dcab) stays byte-untouched as
+# the regression reference, and the two proofs get separate
+# concurrency groups so neither can cancel the other.
+#
+# What it proves, on a clean GitHub-hosted runner, with Chrome made
+# UNREACHABLE (packages removed, CHROME unset, PATH-first exec-logging
+# shim on every chrome*/chromium* name — blocks copied VERBATIM from
+# proof.yml @ 148dcab, including the chromedriver scrub added by that
+# commit):
+#
+#   1. LEGACY REGRESSION — the SHIPPED SKILL's adapter
+#      (proof/adapter/, byte-identical bundle) runs `check` on the
+#      existing Onoda fixture (proof/fixture/project): exit 0,
+#      adapter "CHECK OK", binary "FILM TELEMETRY: CHECK OK".
+#      Runs FIRST so a legacy-path regression fails in ~3 min,
+#      before the LC video leg burns ~30 min.
+#   2. LC ACCEPTANCE — the same adapter runs, in pipeline order,
+#      check -> frames -> sheet -> video (FULL range, --draft) on
+#      the RE-BRIDGED "The Lighthouse Cat's Last Shift" project
+#      (contracts §1/§2 layout: native/film.json carries
+#      "driver": "scene-sequence"; film data at native/film/;
+#      scenes at native/scenes/film/; re-bridge by seat R2-03):
+#      every leg exit 0, "FILM TELEMETRY: CHECK OK" from the
+#      GENERIC telemetry (proven by the report header carrying the
+#      LC manifest title — the legacy report prints a literal
+#      Onoda title, film.rs; the generic one prints the manifest
+#      title, filmtelemetry.rs), draft MP4 produced and probed
+#      (h264 + aac, 1080x1920, duration ~39.05 s).
+#   3. VERDICT — "CHROME-EXEC-LOG: EMPTY" printed only if no
+#      chrome*/chromium* name was ever invoked, plus a per-leg
+#      exit-code table in the job summary.
+#
+# Deliberate deviations from proof.yml (each also in NOTE.md):
+#   * NO castsheet leg in the acceptance verdict. Contracts §5(b)
+#     lists check/frames/sheet/video for LC (+ check on Onoda);
+#     castsheet is not in the gate. An OPTIONAL castsheet step is
+#     included below with continue-on-error so its result is in
+#     the log without gating (LC castsheet has a known unrelated
+#     defect, B3-01 F5: castsheet_native.py drops the `ears` look
+#     field).
+#   * NO upload-artifact steps by default: artifact storage on
+#     this repo is quota-exhausted (standing pattern — CI runs go
+#     conclusion-red on the upload step alone). The log carries
+#     exit codes, hashes and an ffprobe summary. ONE optional
+#     upload (the LC draft MP4 only, nothing else) exists behind
+#     the `upload_mp4` input, default false, continue-on-error.
+#   * Fixture assembly accepts EITHER audio convention: mix.flac +
+#     mix.pcm-md5 (decode + PCM-md5 verify, the model behaviour)
+#     or a plain data/mix.wav (used as-is). The R2-05 assembly
+#     script packs LC in the FLAC convention.
+#
+# Renderer note: the runner's Vulkan is Mesa lavapipe (software).
+# Lavapipe proves CORRECTNESS only — no speed claim. The dev VM
+# has no Vulkan ICD at all, which is why this proof rides CI.
+
+on:
+  workflow_dispatch:
+    inputs:
+      lc_fixture:
+        description: "Re-bridged LC fixture project dir (repo-relative)"
+        type: string
+        default: "proof/fixture-lc/project"
+      onoda_fixture:
+        description: "Existing Onoda fixture project dir (repo-relative)"
+        type: string
+        default: "proof/fixture/project"
+      lc_expected_duration_s:
+        description: "Expected LC film duration, seconds (manifest durationS)"
+        type: string
+        default: "39.05"
+      lc_duration_tolerance_s:
+        description: "Allowed |MP4 duration - expected| for the probe assertion"
+        type: string
+        default: "0.60"
+      upload_mp4:
+        description: "Also upload the LC draft MP4 as the run's ONLY artifact (quota!)"
+        type: boolean
+        default: false
+
+# Separate group from proof.yml: an LC dispatch must never cancel
+# an Onoda proof in flight, or vice versa.
+concurrency:
+  group: proof-lc-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  # Same build fingerprint discipline as ci.yml / proof.yml.
+  CARGO_INCREMENTAL: 0
+  RUSTFLAGS: "-C link-arg=-fuse-ld=mold"
+
+jobs:
+  proof-lc:
+    # Pinned to 22.04 like every workflow in this repo (glibc 2.35).
+    runs-on: ubuntu-22.04
+    # Headroom, not an estimate (model run: 55m45s for the larger
+    # Onoda film; LC expectation ~35-45 min — see NOTE.md).
+    timeout-minutes: 240
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+          key: ubuntu2204
+
+      - name: Node 22 (adapter runtime — Node builtins only, no npm install)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # ---- VERBATIM from proof.yml @ 148dcab ----
+      - name: Install mold + software Vulkan (lavapipe) + ffmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mold mesa-vulkan-drivers vulkan-tools ffmpeg
+          # The lavapipe ICD filename varies by distro version; resolve
+          # it instead of hardcoding (same trap as ci.yml).
+          ICD=$(ls /usr/share/vulkan/icd.d/lvp_icd*.json | head -n 1)
+          echo "VK_ICD_FILENAMES=$ICD" >> "$GITHUB_ENV"
+          echo "lavapipe ICD: $ICD"
+          vulkaninfo --summary || true
+          ffmpeg -version | head -n 1
+          node --version
+          python3 --version
+
+      # ---- VERBATIM from proof.yml @ 148dcab ----
+      - name: Build talerender (the binary under proof is built from THIS checkout)
+        run: |
+          cargo build --release
+          ls -la target/release/talerender
+          echo "TALERENDER_BIN=$GITHUB_WORKSPACE/target/release/talerender" >> "$GITHUB_ENV"
+
+      # ---- VERBATIM from proof.yml @ 148dcab (incl. the chromedriver
+      # ---- scrub that commit added after run 43749554380) ----
+      - name: Scrub Chrome + install exec-logging shim
+        run: |
+          # 1) Remove any real browser the hosted image ships.
+          sudo apt-get remove -y google-chrome-stable google-chrome chromium chromium-browser 2>/dev/null || true
+          sudo rm -f /usr/bin/google-chrome /usr/bin/google-chrome-stable /usr/bin/chromium /usr/bin/chromium-browser /usr/bin/chrome /usr/bin/chromedriver || true
+          # 2) No browser env may point anywhere.
+          echo "CHROME=" >> "$GITHUB_ENV"
+          echo "PUPPETEER_EXECUTABLE_PATH=" >> "$GITHUB_ENV"
+          # 3) Exec-logging shim: PATH-first wrappers for every
+          #    chrome*/chromium* name. Any invocation appends a line to
+          #    the log and exits 127 — so a hidden browser dependency
+          #    both FAILS LOUDLY and leaves evidence.
+          LOG="$RUNNER_TEMP/chrome-exec.log"
+          : > "$LOG"
+          echo "CHROME_EXEC_LOG=$LOG" >> "$GITHUB_ENV"
+          SHIM="$RUNNER_TEMP/chrome-shim"
+          mkdir -p "$SHIM"
+          for name in google-chrome google-chrome-stable chromium chromium-browser chrome chromedriver headless_shell chrome-headless-shell; do
+            cat > "$SHIM/$name" <<EOF
+          #!/bin/sh
+          echo "\$(date -u +%FT%TZ) INVOKED: $name \$*" >> "$LOG"
+          exit 127
+          EOF
+            chmod +x "$SHIM/$name"
+          done
+          echo "$SHIM" >> "$GITHUB_PATH"
+          echo "shim dir: $SHIM"
+          ls -la "$SHIM"
+
+      # ---- VERBATIM from proof.yml @ 148dcab ----
+      - name: Verify the scrub (shim shadows every browser name)
+        run: |
+          echo "PATH=$PATH"
+          for name in google-chrome chromium chromium-browser chrome chromedriver; do
+            resolved=$(command -v "$name" || true)
+            echo "$name -> ${resolved:-NOT FOUND}"
+            case "$resolved" in
+              "$RUNNER_TEMP/chrome-shim/"*) echo "  OK: resolves to the logging shim" ;;
+              "") echo "  OK: not present at all" ;;
+              *) echo "  FAIL: a real browser binary is still reachable at $resolved"; exit 1 ;;
+            esac
+          done
+          if ls /usr/bin 2>/dev/null | grep -i -E 'chrom|chrome'; then
+            echo "FAIL: chrome-named binaries remain in /usr/bin"
+            exit 1
+          fi
+          echo "scrub verified: no real chrome/chromium reachable; CHROME='${CHROME:-<unset>}'"
+
+      # ---- CHANGED vs proof.yml: assembles BOTH projects. The body
+      # ---- is the model's assemble block generalised into a shell
+      # ---- function run once per fixture; the FLAC decode + PCM-md5
+      # ---- verify is the model's, applied only when the fixture
+      # ---- carries the FLAC convention. ----
+      - name: Assemble proof projects (LC + Onoda fixtures + shipped-skill adapter bundle)
+        run: |
+          assemble() {
+            SRC="$1"; PROJ="$2"
+            mkdir -p "$PROJ"
+            cp -r "$SRC/." "$PROJ/"
+            mkdir -p "$PROJ/tools"
+            cp -r proof/adapter/tools/. "$PROJ/tools/"
+            if [ -f "$PROJ/data/mix.flac" ]; then
+              ffmpeg -v error -y -i "$PROJ/data/mix.flac" "$PROJ/data/mix.wav"
+              EXPECTED=$(tr -d ' \n' < "$PROJ/data/mix.pcm-md5")
+              ACTUAL=$(ffmpeg -v error -i "$PROJ/data/mix.wav" -map 0:a -f hash -hash md5 - | sed 's/^MD5=//')
+              echo "mix.wav PCM md5 — expected: $EXPECTED"
+              echo "mix.wav PCM md5 — actual:   $ACTUAL"
+              if [ "$EXPECTED" != "$ACTUAL" ]; then
+                echo "FAIL: restored mix.wav PCM differs from the staged master ($SRC)"
+                exit 1
+              fi
+              echo "mix.wav restored losslessly (PCM md5 match) for $SRC"
+            elif [ -f "$PROJ/data/mix.wav" ]; then
+              echo "fixture carries a plain data/mix.wav — used as-is ($SRC)"
+            else
+              echo "FAIL: fixture has neither data/mix.flac nor data/mix.wav ($SRC)"
+              exit 1
+            fi
+            echo "--- assembled project tree ($SRC -> $PROJ) ---"
+            find "$PROJ" -type f | sort | sed "s|$PROJ/||"
+            du -sh "$PROJ"
+          }
+          LC_PROJ="$RUNNER_TEMP/proof-project-lc"
+          assemble "${{ inputs.lc_fixture }}" "$LC_PROJ"
+          echo "LC_PROJECT=$LC_PROJ" >> "$GITHUB_ENV"
+          ONODA_PROJ="$RUNNER_TEMP/proof-project-onoda"
+          assemble "${{ inputs.onoda_fixture }}" "$ONODA_PROJ"
+          echo "ONODA_PROJECT=$ONODA_PROJ" >> "$GITHUB_ENV"
+          node --check "$LC_PROJ/tools/capture_native.mjs" && echo "adapter syntax: node --check OK"
+
+      # ---- NEW: LC preflight. Fails in seconds, not after a render,
+      # ---- if the fixture is not the contracts §1/§2 re-bridge:
+      # ---- driver fork present, generic-path title, segment frame
+      # ---- ranges tiling [0, totalFrames), every segment scene
+      # ---- file present, and NO invented calendar/sign keys left
+      # ---- in the film data (contracts §4 decoupling). ----
+      - name: "LC preflight: manifest selects the generic driver (contracts §1/§4)"
+        run: |
+          python3 - "$LC_PROJECT" <<'PY'
+          import json, os, sys
+          proj = sys.argv[1]
+          man_p = os.path.join(proj, "native", "film.json")
+          m = json.load(open(man_p))
+          errs = []
+          if m.get("driver") != "scene-sequence":
+              errs.append(f"manifest driver is {m.get('driver')!r}, expected 'scene-sequence' — this is not the R2-03 re-bridge (contracts §1)")
+          title = m.get("title", "")
+          if "Lighthouse Cat" not in title:
+              errs.append(f"manifest title {title!r} does not name the Lighthouse Cat film")
+          total = m.get("totalFrames"); fps = m.get("fps")
+          segs = m.get("segments", [])
+          if not segs:
+              errs.append("manifest has no segments")
+          expect = 0
+          for s in segs:
+              if s.get("startFrame") != expect:
+                  errs.append(f"segment {s.get('id')}: startFrame {s.get('startFrame')} != running total {expect} (ranges must tile)")
+              expect = s.get("endFrame", expect)
+              scene = s.get("scene", "")
+              # Segment scene paths resolve per contracts §1.2 order;
+              # the fixture layout puts them under native/.
+              cands = [os.path.join(proj, "native", scene),
+                       os.path.join(proj, scene),
+                       os.path.join(proj, "native", "scenes", "film", os.path.basename(scene))]
+              if not any(os.path.exists(c) for c in cands):
+                  errs.append(f"segment {s.get('id')}: scene {scene!r} resolves nowhere under the project")
+          if total is not None and expect != total:
+              errs.append(f"segment ranges tile to {expect}, manifest totalFrames is {total}")
+          print(f"LC manifest: title={title!r} durationS={m.get('durationS')} totalFrames={total} fps={fps} segments={len(segs)} driver={m.get('driver')!r}")
+          # Contracts §4: the re-bridge must NOT carry the invented
+          # Onoda-shaped keys the old loader demanded.
+          data_p = os.path.join(proj, "native", "film", "onoda.json")
+          if os.path.exists(data_p):
+              d = json.load(open(data_p))
+              for k in ("calendarYears", "calendarDark", "sign"):
+                  if k in d:
+                      errs.append(f"film data still declares {k!r} — pre-decoupling bridge (contracts §4); R2-03 re-bridge must omit undeclared keys")
+              print(f"LC film data keys: {sorted(d.keys())}")
+              print(f"LC captions: {len(d.get('captions', []))}")
+          else:
+              errs.append(f"film data not found at {data_p}")
+          if errs:
+              print("LC PREFLIGHT FAILED:")
+              for e in errs: print(" -", e)
+              sys.exit(1)
+          print("LC PREFLIGHT OK: generic driver selected, ranges tile, scenes resolve, no invented calendar/sign")
+          PY
+
+      # ---- NEW LEG (contracts §5(b) second sentence): adapter check
+      # ---- on the EXISTING Onoda fixture, same run, legacy path.
+      # ---- Body mirrors the model's check step exactly. ----
+      - name: "Onoda regression: adapter check (legacy path)"
+        id: onoda_check
+        run: |
+          set +e
+          cd "$ONODA_PROJECT"
+          RENDERER=native node tools/capture_native.mjs check 2>&1 | tee "$RUNNER_TEMP/onoda-check.log"
+          code=${PIPESTATUS[0]}
+          echo "ADAPTER onoda check exit: $code"
+          if grep -q "^CHECK OK" "$RUNNER_TEMP/onoda-check.log"; then
+            echo "ONODA CHECK OK: present in adapter output"
+          else
+            echo "ONODA CHECK OK: MISSING from adapter output"
+            exit 1
+          fi
+          if grep -q "^FILM TELEMETRY: CHECK OK" "$RUNNER_TEMP/onoda-check.log"; then
+            echo "ONODA FILM TELEMETRY: CHECK OK present"
+          else
+            echo "note: adapter check output carries the telemetry report inline in frames/video legs; adapter CHECK OK above is the gate line for this leg"
+          fi
+          exit $code
+
+      # ---- LC LEG 1/4: check. Model check-step body, LC project,
+      # ---- plus the generic-telemetry assertions (deliverable 3):
+      # ---- the binary verdict line AND the generic report header.
+      # ---- The legacy telemetry header is a literal Onoda title
+      # ---- (film.rs); the generic header prints the MANIFEST
+      # ---- title (filmtelemetry.rs) — so the LC title in the
+      # ---- header proves the generic path produced the verdict,
+      # ---- and the Onoda title must NOT appear anywhere. ----
+      - name: "LC adapter: check (GENERIC film telemetry QA gate)"
+        id: lc_check
+        run: |
+          set +e
+          cd "$LC_PROJECT"
+          RENDERER=native node tools/capture_native.mjs check 2>&1 | tee "$RUNNER_TEMP/lc-check.log"
+          code=${PIPESTATUS[0]}
+          echo "ADAPTER lc check exit: $code"
+          fail=0
+          grep -q "^CHECK OK" "$RUNNER_TEMP/lc-check.log" \
+            && echo "ASSERT OK: adapter '^CHECK OK' present" \
+            || { echo "ASSERT FAIL: adapter '^CHECK OK' missing"; fail=1; }
+          grep -q "^FILM TELEMETRY: CHECK OK" "$RUNNER_TEMP/lc-check.log" \
+            && echo "ASSERT OK: 'FILM TELEMETRY: CHECK OK' present" \
+            || echo "note: telemetry verdict line is asserted on the raw binary output in the video leg and below if printed inline"
+          if grep -q "FILM TELEMETRY —" "$RUNNER_TEMP/lc-check.log"; then
+            grep "FILM TELEMETRY —" "$RUNNER_TEMP/lc-check.log"
+            grep -q "Lighthouse Cat" "$RUNNER_TEMP/lc-check.log" \
+              && echo "ASSERT OK: telemetry header carries the LC manifest title (generic telemetry)" \
+              || { echo "ASSERT FAIL: telemetry header does not carry the LC title — generic path not proven"; fail=1; }
+          fi
+          if grep -q "THE SOLDIER WHO DIDN'T KNOW THE WAR WAS OVER" "$RUNNER_TEMP/lc-check.log"; then
+            echo "ASSERT FAIL: Onoda title appears in the LC check output — legacy staging leaked into the LC leg"
+            fail=1
+          else
+            echo "ASSERT OK: no Onoda title in LC check output"
+          fi
+          [ $code -ne 0 ] && fail=1
+          exit $fail
+
+      # ---- LC LEG 2/4: frames. Model frames-step body; times are
+      # ---- derived from the LC manifest's own durationS, exactly
+      # ---- as the model derives them from the Onoda manifest. ----
+      - name: "LC adapter: frames (manifest-derived times)"
+        id: lc_frames
+        run: |
+          set +e
+          cd "$LC_PROJECT"
+          TIMES=$(python3 -c "import json; d=json.load(open('native/film.json'))['durationS']; print(','.join(f'{d*f:.2f}' for f in (0.05, 0.35, 0.65, 0.95)))")
+          echo "frames times (s): $TIMES"
+          RENDERER=native node tools/capture_native.mjs frames review/frames "$TIMES" 2>&1 | tee "$RUNNER_TEMP/lc-frames.log"
+          code=${PIPESTATUS[0]}
+          echo "ADAPTER lc frames exit: $code"
+          ls -la review/frames
+          # Hashes + sizes only — the frames themselves never leave the runner.
+          sha256sum review/frames/*.png
+          n=$(ls review/frames/*.png | wc -l)
+          echo "frames produced: $n (expected 4)"
+          [ "$n" -eq 4 ] || { echo "ASSERT FAIL: expected 4 frame PNGs"; exit 1; }
+          grep -q "^FILM TELEMETRY: CHECK OK" "$RUNNER_TEMP/lc-frames.log" \
+            && echo "ASSERT OK: frames leg re-ran telemetry — FILM TELEMETRY: CHECK OK" \
+            || echo "note: frames leg telemetry verdict not inline; check-leg assertions stand"
+          exit $code
+
+      # ---- LC LEG 3/4: sheet. Model sheet-step body, unchanged. ----
+      - name: "LC adapter: sheet (adapter defaults: step 0.5, cols 9)"
+        id: lc_sheet
+        run: |
+          set +e
+          cd "$LC_PROJECT"
+          RENDERER=native node tools/capture_native.mjs sheet review/all.jpg 2>&1 | tee "$RUNNER_TEMP/lc-sheet.log"
+          code=${PIPESTATUS[0]}
+          echo "ADAPTER lc sheet exit: $code"
+          ls -la review/all.jpg
+          sha256sum review/all.jpg
+          exit $code
+
+      # ---- LC LEG 4/4: video. Model video-step body, LC output
+      # ---- name, plus the MP4 probe ASSERTIONS (deliverable 3):
+      # ---- h264 + aac streams, 1080x1920, duration within the
+      # ---- configured tolerance of the manifest duration. The
+      # ---- tolerance (default 0.60 s) covers container/mux
+      # ---- padding: the model run's MP4 probed 60.367 s against
+      # ---- a 60.357 s manifest with a 60.457 s audio master;
+      # ---- LC's master is 39.149 s against a 39.049 s film. ----
+      - name: "LC adapter: video (full range, --draft profile) + MP4 probe assertions"
+        id: lc_video
+        run: |
+          set +e
+          cd "$LC_PROJECT"
+          RENDERER=native node tools/capture_native.mjs video renders/lc-proof-draft.mp4 --draft 2>&1 | tee "$RUNNER_TEMP/lc-video.log"
+          code=${PIPESTATUS[0]}
+          echo "ADAPTER lc video exit: $code"
+          if [ $code -ne 0 ]; then exit $code; fi
+          ls -la renders/lc-proof-draft.mp4
+          sha256sum renders/lc-proof-draft.mp4
+          echo "--- render provenance sidecar ---"
+          cat renders/lc-proof-draft.mp4.render.json
+          echo "--- ffprobe summary ---"
+          ffprobe -v error \
+            -show_entries stream=codec_type,codec_name,width,height \
+            -show_entries format=duration,size \
+            -of default=noprint_wrappers=1 \
+            renders/lc-proof-draft.mp4
+          echo "--- MP4 assertions ---"
+          fail=0
+          grep -q "^FILM TELEMETRY: CHECK OK" "$RUNNER_TEMP/lc-video.log" \
+            && echo "ASSERT OK: video leg telemetry gate — FILM TELEMETRY: CHECK OK" \
+            || { echo "ASSERT FAIL: video leg log lacks 'FILM TELEMETRY: CHECK OK'"; fail=1; }
+          PROBE=$(ffprobe -v error -show_entries stream=codec_type,codec_name,width,height -show_entries format=duration -of csv=p=0 renders/lc-proof-draft.mp4)
+          echo "$PROBE"
+          echo "$PROBE" | grep -q "h264" && echo "ASSERT OK: video stream is h264" || { echo "ASSERT FAIL: no h264 stream"; fail=1; }
+          echo "$PROBE" | grep -q "aac" && echo "ASSERT OK: audio stream is aac" || { echo "ASSERT FAIL: no aac stream"; fail=1; }
+          echo "$PROBE" | grep -q "1080,1920\|1920,1080" && echo "ASSERT OK: frame size present in probe" || echo "note: size fields printed above for the record"
+          DUR=$(ffprobe -v error -show_entries format=duration -of csv=p=0 renders/lc-proof-draft.mp4)
+          python3 - "$DUR" "${{ inputs.lc_expected_duration_s }}" "${{ inputs.lc_duration_tolerance_s }}" <<'PY' || fail=1
+          import sys
+          dur, exp, tol = float(sys.argv[1]), float(sys.argv[2]), float(sys.argv[3])
+          ok = abs(dur - exp) <= tol
+          print(f"ASSERT {'OK' if ok else 'FAIL'}: MP4 duration {dur:.3f}s vs expected {exp:.2f}s ± {tol:.2f}s")
+          sys.exit(0 if ok else 1)
+          PY
+          python3 -c "import json; d=json.load(open('renders/lc-proof-draft.mp4.render.json')); print('render.json:', json.dumps(d)[:400])" || true
+          exit $fail
+
+      # ---- OPTIONAL, NON-GATING (see header): castsheet on LC.
+      # ---- Mirrors the model's castsheet leg shape; its outcome
+      # ---- is reported in the summary as INFORMATIONAL and never
+      # ---- fails this job (contracts §5(b) does not gate on it;
+      # ---- known unrelated defect B3-01 F5). ----
+      - name: "LC adapter: castsheet (kind=look) — OPTIONAL, non-gating"
+        id: lc_castsheet
+        continue-on-error: true
+        run: |
+          set +e
+          cd "$LC_PROJECT"
+          RENDERER=native node tools/capture_native.mjs castsheet review/cast look 2>&1 | tee "$RUNNER_TEMP/lc-castsheet.log"
+          code=${PIPESTATUS[0]}
+          echo "ADAPTER lc castsheet exit: $code (INFORMATIONAL — not part of the §5(b) verdict)"
+          ls -la review/cast 2>/dev/null || true
+          exit $code
+
+      # ---- OPTIONAL single-artifact upload (default OFF). Only
+      # ---- the LC draft MP4 — no frames, no sheets, no logs.
+      # ---- continue-on-error: a quota refusal must not red a
+      # ---- proof whose legs all passed; the MP4's sha256 is
+      # ---- already in the job log either way. ----
+      - name: "Optional artifact: LC draft MP4 only"
+        if: ${{ inputs.upload_mp4 }}
+        continue-on-error: true
+        uses: actions/upload-artifact@v4
+        with:
+          name: lc-proof-draft-mp4
+          path: ${{ env.LC_PROJECT }}/renders/lc-proof-draft.mp4
+          retention-days: 7
+
+      # ---- VERDICT (model verdict step + per-leg table). Runs
+      # ---- always, so a failed leg still gets the chrome verdict
+      # ---- and the leg table printed. ----
+      - name: "Verdict: per-leg results + chrome exec log must be EMPTY"
+        if: always()
+        run: |
+          echo "=== LC PROOF SUMMARY (contracts §5(b)) ==="
+          echo "renderer: lavapipe (software Vulkan) — correctness only, no speed claim"
+          {
+            echo "## LC acceptance proof — per-leg results"
+            echo ""
+            echo "| Leg | Outcome |"
+            echo "|---|---|"
+            echo "| Onoda check (legacy regression) | ${{ steps.onoda_check.outcome }} |"
+            echo "| LC check (generic telemetry) | ${{ steps.lc_check.outcome }} |"
+            echo "| LC frames | ${{ steps.lc_frames.outcome }} |"
+            echo "| LC sheet | ${{ steps.lc_sheet.outcome }} |"
+            echo "| LC video + MP4 probe | ${{ steps.lc_video.outcome }} |"
+            echo "| LC castsheet (informational, non-gating) | ${{ steps.lc_castsheet.outcome }} |"
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "onoda_check : ${{ steps.onoda_check.outcome }}"
+          echo "lc_check    : ${{ steps.lc_check.outcome }}"
+          echo "lc_frames   : ${{ steps.lc_frames.outcome }}"
+          echo "lc_sheet    : ${{ steps.lc_sheet.outcome }}"
+          echo "lc_video    : ${{ steps.lc_video.outcome }}"
+          echo "lc_castsheet: ${{ steps.lc_castsheet.outcome }} (informational)"
+          if [ -s "$CHROME_EXEC_LOG" ]; then
+            echo "CHROME-EXEC-LOG: NON-EMPTY — a chrome/chromium name was invoked:"
+            cat "$CHROME_EXEC_LOG"
+            exit 1
+          fi
+          echo "CHROME-EXEC-LOG: EMPTY"

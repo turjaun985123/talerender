@@ -1,0 +1,328 @@
+{
+ "format": "talerender-scene",
+ "version": 2,
+ "name": "S07 — lamp room: the one thing no keeper taught her",
+ "time": 24.299000000000003,
+ "duration": 3.459,
+ "shot": {
+  "id": "S07",
+  "at": 24.299000000000003,
+  "duration": 3.459,
+  "line": 6,
+  "atmosphere": "noon",
+  "grade": "lamp-room",
+  "cues": [
+   {
+    "t": 25.54,
+    "type": "pop",
+    "gain": 0.5
+   }
+  ],
+  "events": []
+ },
+ "camera": {
+  "eye": [
+   0,
+   1.7,
+   1.4
+  ],
+  "target": [
+   0,
+   1.25,
+   -2.0
+  ],
+  "fovY": 36,
+  "keys": [
+   {
+    "t": 0.0,
+    "eye": [
+     0,
+     1.7,
+     1.4
+    ],
+    "target": [
+     0,
+     1.25,
+     -2.0
+    ],
+    "fovY": 36
+   },
+   {
+    "t": 3.459,
+    "eye": [
+     0,
+     1.65,
+     0.6
+    ],
+    "target": [
+     0,
+     1.25,
+     -2.0
+    ],
+    "fovY": 36
+   }
+  ]
+ },
+ "lights": {
+  "key": {
+   "color": "#FFD9A0",
+   "intensity": 1.6,
+   "position": [
+    6.0,
+    11.0,
+    5.0
+   ],
+   "target": [
+    0.0,
+    0.0,
+    -2.0
+   ],
+   "shadow": true,
+   "shadowBox": 16.0,
+   "far": 80.0,
+   "bias": -0.0006,
+   "normalBias": 0.02
+  },
+  "rim": {
+   "color": "#FFFFFF",
+   "intensity": 0.35,
+   "position": [
+    -3.0,
+    3.0,
+    -3.0
+   ]
+  },
+  "hemisphere": {
+   "sky": "#4A4038",
+   "ground": "#3A2E22",
+   "intensity": 1.1
+  },
+  "points": [
+   {
+    "color": "#FFB84D",
+    "intensity": 5.0,
+    "position": [
+     -7.0,
+     8.55,
+     -3.0
+    ],
+    "distance": 9.0,
+    "decay": 1.6
+   }
+  ],
+  "envIntensity": 0.25
+ },
+ "post": {
+  "bokeh": {
+   "aperture": 0.001,
+   "focus": 6.0,
+   "maxblur": 0.008
+  },
+  "bloom": {
+   "threshold": 0.85,
+   "strength": 0.2,
+   "radius": 0.6
+  },
+  "grade": {
+   "vignette": 0.24,
+   "grain": 0.012,
+   "warm": 0.05,
+   "sat": 0.85,
+   "exposure": 1.0,
+   "time": 0.0
+  }
+ },
+ "resolution": {
+  "width": 1080,
+  "height": 1920
+ },
+ "textures": [
+  {
+   "id": "wall",
+   "generator": "solid",
+   "color": "#3A3040"
+  },
+  {
+   "id": "floor",
+   "generator": "solid",
+   "color": "#6A5138"
+  }
+ ],
+ "nodes": [
+  {
+   "type": "mesh",
+   "geometry": {
+    "kind": "quad",
+    "width": 16,
+    "height": 10,
+    "y0": -3
+   },
+   "name": "lamp room wall",
+   "texture": "wall",
+   "transform": [
+    {
+     "translate": [
+      0,
+      0,
+      -3.5
+     ]
+    }
+   ]
+  },
+  {
+   "type": "mesh",
+   "geometry": {
+    "kind": "flat-quad",
+    "width": 16,
+    "depth": 12
+   },
+   "name": "lamp room floor",
+   "texture": "floor",
+   "transform": [
+    {
+     "translate": [
+      0,
+      0,
+      0.5
+     ]
+    }
+   ]
+  },
+  {
+   "type": "mesh",
+   "geometry": {
+    "kind": "cylinder",
+    "radiusTop": 0.55,
+    "radiusBottom": 0.7,
+    "height": 1.5,
+    "segments": 12
+   },
+   "name": "the great lens",
+   "material": {
+    "color": "#FFE9A8"
+   },
+   "transform": [
+    {
+     "translate": [
+      0.4,
+      1.5,
+      -2.6
+     ]
+    }
+   ]
+  },
+  {
+   "type": "character",
+   "name": "Biscuit",
+   "position": [
+    0,
+    0,
+    -2.0
+   ],
+   "height": 1.15,
+   "perspective": true,
+   "look": {
+    "body": "#E8913A",
+    "ears": "fox",
+    "hat": "none",
+    "kid": true,
+    "neck": "collar",
+    "neckCol": "#B5372E"
+   },
+   "state": {
+    "mood": "determined",
+    "armR": [
+     80,
+     -70
+    ],
+    "blink": 0
+   }
+  }
+ ],
+ "captions": [
+  {
+   "id": "cap_000",
+   "line": 6,
+   "s": 24.35,
+   "e": 24.55,
+   "text": "So"
+  },
+  {
+   "id": "cap_001",
+   "line": 6,
+   "s": 24.55,
+   "e": 24.95,
+   "text": "Biscuit"
+  },
+  {
+   "id": "cap_002",
+   "line": 6,
+   "s": 24.95,
+   "e": 25.15,
+   "text": "did"
+  },
+  {
+   "id": "cap_003",
+   "line": 6,
+   "s": 25.15,
+   "e": 25.31,
+   "text": "the"
+  },
+  {
+   "id": "cap_004",
+   "line": 6,
+   "s": 25.31,
+   "e": 25.51,
+   "text": "one"
+  },
+  {
+   "id": "cap_005",
+   "line": 6,
+   "s": 25.51,
+   "e": 25.85,
+   "text": "thing"
+  },
+  {
+   "id": "cap_006",
+   "line": 6,
+   "s": 25.85,
+   "e": 26.33,
+   "text": "no"
+  },
+  {
+   "id": "cap_007",
+   "line": 6,
+   "s": 26.33,
+   "e": 26.67,
+   "text": "keeper"
+  },
+  {
+   "id": "cap_008",
+   "line": 6,
+   "s": 26.67,
+   "e": 26.89,
+   "text": "had"
+  },
+  {
+   "id": "cap_009",
+   "line": 6,
+   "s": 26.89,
+   "e": 27.11,
+   "text": "ever"
+  },
+  {
+   "id": "cap_010",
+   "line": 6,
+   "s": 27.11,
+   "e": 27.37,
+   "text": "taught"
+  },
+  {
+   "id": "cap_011",
+   "line": 6,
+   "s": 27.37,
+   "e": 27.888,
+   "text": "her."
+  }
+ ]
+}

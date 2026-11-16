@@ -1,0 +1,76 @@
+{
+ "title": "The Lighthouse Cat's Last Shift",
+ "voice": "am_michael",
+ "speed": 1.05,
+ "lead": 0.3,
+ "outro": 1.0,
+ "gap": 0.18,
+ "music": "tension",
+ "tone": "amazing",
+ "mode": "standard",
+ "fiction": true,
+ "sources": [
+  "Original fiction written for this episode (marked \"fiction\": true). Inspired by the documented tradition of lighthouse-keeping cats, e.g. Tibs, the Post Office cat, and the lighthouse cats recorded by the National Lighthouse Museum — no specific real cat's story is retold."
+ ],
+ "lines": [
+  {
+   "who": "narrator",
+   "text": "For thirty-one years, a cat named Biscuit kept the lighthouse burning.",
+   "caps": "For thirty-one | years, | a cat named | Biscuit kept | the lighthouse | burning."
+  },
+  {
+   "who": "narrator",
+   "text": "Every night at dusk, she climbed the ninety-nine iron steps alone,",
+   "beat": "open",
+   "caps": "Every night | at dusk, she | climbed the | ninety-nine iron | steps alone,"
+  },
+  {
+   "who": "narrator",
+   "text": "she trimmed the wick, she polished the great glass lens,",
+   "caps": "she trimmed | the wick, she | polished the great | glass lens,"
+  },
+  {
+   "who": "narrator",
+   "text": "and she watched the fog roll in like a slow grey sea.",
+   "caps": "and she watched | the fog roll | in like a | slow grey sea."
+  },
+  {
+   "who": "narrator",
+   "text": "Then one October night, the supply boat never came.",
+   "beat": "open",
+   "caps": "Then one | October night, | the supply boat | never came."
+  },
+  {
+   "who": "narrator",
+   "text": "The oil ran low, the wind rose, and a fishing boat was lost in the dark.",
+   "beat": "open",
+   "caps": "The oil | ran low, the | wind rose, and | a fishing boat | was lost in | the dark."
+  },
+  {
+   "who": "narrator",
+   "text": "So Biscuit did the one thing no keeper had ever taught her.",
+   "beat": "open",
+   "caps": "So Biscuit did | the one thing | no keeper had | ever taught her."
+  },
+  {
+   "who": "narrator",
+   "text": "She dragged the spare oil up, one small can at a time,",
+   "caps": "She dragged the | spare oil up, | one small can | at a time,"
+  },
+  {
+   "who": "narrator",
+   "text": "The light never went out.",
+   "caps": "The light | never went out."
+  },
+  {
+   "who": "narrator",
+   "text": "The boat found the harbour.",
+   "caps": "The boat found | the harbour."
+  },
+  {
+   "who": "narrator",
+   "text": "And at dawn, Biscuit finally slept, the lighthouse still burning.",
+   "caps": "And at dawn, | Biscuit finally | slept, | the lighthouse | still burning."
+  }
+ ]
+}

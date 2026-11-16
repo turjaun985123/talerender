@@ -1,0 +1,327 @@
+{
+ "format": "talerender-scene",
+ "version": 2,
+ "name": "S03 — lamp room: polishing the great lens",
+ "time": 9.157,
+ "duration": 3.72,
+ "shot": {
+  "id": "S03",
+  "at": 9.157,
+  "duration": 3.72,
+  "line": 2,
+  "atmosphere": "noon",
+  "grade": "lamp-room",
+  "cues": [
+   {
+    "t": 10.6,
+    "type": "sparkle",
+    "gain": 0.5
+   }
+  ],
+  "events": []
+ },
+ "camera": {
+  "eye": [
+   -1.6,
+   1.8,
+   1.8
+  ],
+  "target": [
+   0.4,
+   1.3,
+   -2.2
+  ],
+  "fovY": 36,
+  "keys": [
+   {
+    "t": 0.0,
+    "eye": [
+     -1.6,
+     1.8,
+     1.8
+    ],
+    "target": [
+     0.4,
+     1.3,
+     -2.2
+    ],
+    "fovY": 36
+   },
+   {
+    "t": 3.72,
+    "eye": [
+     -0.9,
+     1.7,
+     1.2
+    ],
+    "target": [
+     0.4,
+     1.3,
+     -2.2
+    ],
+    "fovY": 36
+   }
+  ]
+ },
+ "lights": {
+  "key": {
+   "color": "#FFD9A0",
+   "intensity": 1.6,
+   "position": [
+    6.0,
+    11.0,
+    5.0
+   ],
+   "target": [
+    0.0,
+    0.0,
+    -2.0
+   ],
+   "shadow": true,
+   "shadowBox": 16.0,
+   "far": 80.0,
+   "bias": -0.0006,
+   "normalBias": 0.02
+  },
+  "rim": {
+   "color": "#FFFFFF",
+   "intensity": 0.35,
+   "position": [
+    -3.0,
+    3.0,
+    -3.0
+   ]
+  },
+  "hemisphere": {
+   "sky": "#4A4038",
+   "ground": "#3A2E22",
+   "intensity": 1.1
+  },
+  "points": [
+   {
+    "color": "#FFB84D",
+    "intensity": 5.0,
+    "position": [
+     -7.0,
+     8.55,
+     -3.0
+    ],
+    "distance": 9.0,
+    "decay": 1.6
+   }
+  ],
+  "envIntensity": 0.25
+ },
+ "post": {
+  "bokeh": {
+   "aperture": 0.001,
+   "focus": 6.0,
+   "maxblur": 0.008
+  },
+  "bloom": {
+   "threshold": 0.85,
+   "strength": 0.2,
+   "radius": 0.6
+  },
+  "grade": {
+   "vignette": 0.24,
+   "grain": 0.012,
+   "warm": 0.05,
+   "sat": 0.85,
+   "exposure": 1.0,
+   "time": 0.0
+  }
+ },
+ "resolution": {
+  "width": 1080,
+  "height": 1920
+ },
+ "textures": [
+  {
+   "id": "wall",
+   "generator": "solid",
+   "color": "#3A3040"
+  },
+  {
+   "id": "floor",
+   "generator": "solid",
+   "color": "#6A5138"
+  },
+  {
+   "id": "lens-cloth",
+   "file": "../../film/assets/lens-cloth.png"
+  }
+ ],
+ "nodes": [
+  {
+   "type": "mesh",
+   "geometry": {
+    "kind": "quad",
+    "width": 16,
+    "height": 10,
+    "y0": -3
+   },
+   "name": "lamp room wall",
+   "texture": "wall",
+   "transform": [
+    {
+     "translate": [
+      0,
+      0,
+      -3.5
+     ]
+    }
+   ]
+  },
+  {
+   "type": "mesh",
+   "geometry": {
+    "kind": "flat-quad",
+    "width": 16,
+    "depth": 12
+   },
+   "name": "lamp room floor",
+   "texture": "floor",
+   "transform": [
+    {
+     "translate": [
+      0,
+      0,
+      0.5
+     ]
+    }
+   ]
+  },
+  {
+   "type": "mesh",
+   "geometry": {
+    "kind": "cylinder",
+    "radiusTop": 0.55,
+    "radiusBottom": 0.7,
+    "height": 1.5,
+    "segments": 12
+   },
+   "name": "the great lens",
+   "material": {
+    "color": "#FFE9A8"
+   },
+   "transform": [
+    {
+     "translate": [
+      0.4,
+      1.5,
+      -2.6
+     ]
+    }
+   ]
+  },
+  {
+   "type": "character",
+   "name": "Biscuit",
+   "position": [
+    0.4,
+    0,
+    -2.2
+   ],
+   "height": 1.15,
+   "perspective": true,
+   "look": {
+    "body": "#E8913A",
+    "ears": "fox",
+    "hat": "none",
+    "kid": true,
+    "neck": "collar",
+    "neckCol": "#B5372E"
+   },
+   "state": {
+    "mood": "happy",
+    "armR": [
+     70,
+     -50
+    ],
+    "armL": [
+     30,
+     10
+    ],
+    "blink": 0,
+    "holdR": {
+     "plate": "lens-cloth",
+     "x0": -90.0,
+     "y0": -90.0
+    }
+   }
+  }
+ ],
+ "captions": [
+  {
+   "id": "cap_000",
+   "line": 2,
+   "s": 9.187,
+   "e": 9.37,
+   "text": "she"
+  },
+  {
+   "id": "cap_001",
+   "line": 2,
+   "s": 9.37,
+   "e": 9.65,
+   "text": "trimmed"
+  },
+  {
+   "id": "cap_002",
+   "line": 2,
+   "s": 9.65,
+   "e": 9.87,
+   "text": "the"
+  },
+  {
+   "id": "cap_003",
+   "line": 2,
+   "s": 9.87,
+   "e": 10.63,
+   "text": "wick,"
+  },
+  {
+   "id": "cap_004",
+   "line": 2,
+   "s": 10.63,
+   "e": 10.77,
+   "text": "she"
+  },
+  {
+   "id": "cap_005",
+   "line": 2,
+   "s": 10.77,
+   "e": 11.19,
+   "text": "polished"
+  },
+  {
+   "id": "cap_006",
+   "line": 2,
+   "s": 11.19,
+   "e": 11.43,
+   "text": "the"
+  },
+  {
+   "id": "cap_007",
+   "line": 2,
+   "s": 11.43,
+   "e": 11.69,
+   "text": "great"
+  },
+  {
+   "id": "cap_008",
+   "line": 2,
+   "s": 11.69,
+   "e": 12.03,
+   "text": "glass"
+  },
+  {
+   "id": "cap_009",
+   "line": 2,
+   "s": 12.03,
+   "e": 12.877,
+   "text": "lens,"
+  }
+ ]
+}

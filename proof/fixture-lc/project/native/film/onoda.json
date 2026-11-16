@@ -1,0 +1,385 @@
+{
+ "duration": 39.049,
+ "fps": 30,
+ "frames": 1172,
+ "lines": [
+  {
+   "start": 0.3,
+   "end": 4.467
+  },
+  {
+   "start": 4.647,
+   "end": 8.657
+  },
+  {
+   "start": 9.217,
+   "end": 12.627
+  },
+  {
+   "start": 12.937,
+   "end": 16.247
+  },
+  {
+   "start": 16.427,
+   "end": 19.541
+  },
+  {
+   "start": 19.721,
+   "end": 24.179
+  },
+  {
+   "start": 24.359,
+   "end": 27.638
+  },
+  {
+   "start": 27.818,
+   "end": 31.137
+  },
+  {
+   "start": 31.137,
+   "end": 32.557
+  },
+  {
+   "start": 32.737,
+   "end": 33.997
+  },
+  {
+   "start": 34.177,
+   "end": 37.869
+  }
+ ],
+ "anchors": {
+  "Biscuit0": 2.62,
+  "polished2": 10.8,
+  "never4": 18.82,
+  "dark5": 23.8,
+  "thing6": 25.54,
+  "time7": 30.96,
+  "harbour9": 33.52,
+  "slept10": 35.7
+ },
+ "captions": [
+  {
+   "s": 0.27,
+   "e": 0.9099999999999999,
+   "text": "For thirty-one",
+   "fit": 1.0,
+   "strip": "cap_000.png"
+  },
+  {
+   "s": 0.9099999999999999,
+   "e": 1.89,
+   "text": "years,",
+   "fit": 1.0,
+   "strip": "cap_001.png"
+  },
+  {
+   "s": 1.89,
+   "e": 2.5900000000000003,
+   "text": "a cat named",
+   "fit": 1.0,
+   "strip": "cap_002.png"
+  },
+  {
+   "s": 2.5900000000000003,
+   "e": 3.25,
+   "text": "Biscuit kept",
+   "fit": 1.0,
+   "strip": "cap_003.png"
+  },
+  {
+   "s": 3.25,
+   "e": 3.85,
+   "text": "the lighthouse",
+   "fit": 1.0,
+   "strip": "cap_004.png"
+  },
+  {
+   "s": 3.85,
+   "e": 4.67,
+   "text": "burning.",
+   "fit": 1.0,
+   "strip": "cap_005.png"
+  },
+  {
+   "s": 4.67,
+   "e": 5.09,
+   "text": "Every night",
+   "fit": 1.0,
+   "strip": "cap_006.png"
+  },
+  {
+   "s": 5.09,
+   "e": 6.1899999999999995,
+   "text": "at dusk, she",
+   "fit": 1.0,
+   "strip": "cap_007.png"
+  },
+  {
+   "s": 6.1899999999999995,
+   "e": 6.71,
+   "text": "climbed the",
+   "fit": 1.0,
+   "strip": "cap_008.png"
+  },
+  {
+   "s": 6.71,
+   "e": 7.87,
+   "text": "ninety-nine iron",
+   "fit": 1.0,
+   "strip": "cap_009.png"
+  },
+  {
+   "s": 7.87,
+   "e": 9.187000000000001,
+   "text": "steps alone,",
+   "fit": 1.0,
+   "strip": "cap_010.png"
+  },
+  {
+   "s": 9.187000000000001,
+   "e": 9.65,
+   "text": "she trimmed",
+   "fit": 1.0,
+   "strip": "cap_011.png"
+  },
+  {
+   "s": 9.65,
+   "e": 10.770000000000001,
+   "text": "the wick, she",
+   "fit": 1.0,
+   "strip": "cap_012.png"
+  },
+  {
+   "s": 10.770000000000001,
+   "e": 11.690000000000001,
+   "text": "polished the great",
+   "fit": 1.0,
+   "strip": "cap_013.png"
+  },
+  {
+   "s": 11.690000000000001,
+   "e": 12.907,
+   "text": "glass lens,",
+   "fit": 1.0,
+   "strip": "cap_014.png"
+  },
+  {
+   "s": 12.907,
+   "e": 13.47,
+   "text": "and she watched",
+   "fit": 1.0,
+   "strip": "cap_015.png"
+  },
+  {
+   "s": 13.47,
+   "e": 14.33,
+   "text": "the fog roll",
+   "fit": 1.0,
+   "strip": "cap_016.png"
+  },
+  {
+   "s": 14.33,
+   "e": 14.99,
+   "text": "in like a",
+   "fit": 1.0,
+   "strip": "cap_017.png"
+  },
+  {
+   "s": 14.99,
+   "e": 16.45,
+   "text": "slow grey sea.",
+   "fit": 1.0,
+   "strip": "cap_018.png"
+  },
+  {
+   "s": 16.45,
+   "e": 16.83,
+   "text": "Then one",
+   "fit": 1.0,
+   "strip": "cap_019.png"
+  },
+  {
+   "s": 16.83,
+   "e": 17.99,
+   "text": "October night,",
+   "fit": 1.0,
+   "strip": "cap_020.png"
+  },
+  {
+   "s": 17.99,
+   "e": 18.79,
+   "text": "the supply boat",
+   "fit": 1.0,
+   "strip": "cap_021.png"
+  },
+  {
+   "s": 18.79,
+   "e": 19.73,
+   "text": "never came.",
+   "fit": 1.0,
+   "strip": "cap_022.png"
+  },
+  {
+   "s": 19.73,
+   "e": 20.11,
+   "text": "The oil",
+   "fit": 1.0,
+   "strip": "cap_023.png"
+  },
+  {
+   "s": 20.11,
+   "e": 21.209999999999997,
+   "text": "ran low, the",
+   "fit": 1.0,
+   "strip": "cap_024.png"
+  },
+  {
+   "s": 21.209999999999997,
+   "e": 22.23,
+   "text": "wind rose, and",
+   "fit": 1.0,
+   "strip": "cap_025.png"
+  },
+  {
+   "s": 22.23,
+   "e": 22.89,
+   "text": "a fishing boat",
+   "fit": 1.0,
+   "strip": "cap_026.png"
+  },
+  {
+   "s": 22.89,
+   "e": 23.65,
+   "text": "was lost in",
+   "fit": 1.0,
+   "strip": "cap_027.png"
+  },
+  {
+   "s": 23.65,
+   "e": 24.349999999999998,
+   "text": "the dark.",
+   "fit": 1.0,
+   "strip": "cap_028.png"
+  },
+  {
+   "s": 24.349999999999998,
+   "e": 25.15,
+   "text": "So Biscuit did",
+   "fit": 1.0,
+   "strip": "cap_029.png"
+  },
+  {
+   "s": 25.15,
+   "e": 25.849999999999998,
+   "text": "the one thing",
+   "fit": 1.0,
+   "strip": "cap_030.png"
+  },
+  {
+   "s": 25.849999999999998,
+   "e": 26.89,
+   "text": "no keeper had",
+   "fit": 1.0,
+   "strip": "cap_031.png"
+  },
+  {
+   "s": 26.89,
+   "e": 27.788,
+   "text": "ever taught her.",
+   "fit": 1.0,
+   "strip": "cap_032.png"
+  },
+  {
+   "s": 27.788,
+   "e": 28.509999999999998,
+   "text": "She dragged the",
+   "fit": 1.0,
+   "strip": "cap_033.png"
+  },
+  {
+   "s": 28.509999999999998,
+   "e": 29.81,
+   "text": "spare oil up,",
+   "fit": 1.0,
+   "strip": "cap_034.png"
+  },
+  {
+   "s": 29.81,
+   "e": 30.63,
+   "text": "one small can",
+   "fit": 1.0,
+   "strip": "cap_035.png"
+  },
+  {
+   "s": 30.63,
+   "e": 31.41,
+   "text": "at a time,",
+   "fit": 1.0,
+   "strip": "cap_036.png"
+  },
+  {
+   "s": 31.41,
+   "e": 31.75,
+   "text": "The light",
+   "fit": 1.0,
+   "strip": "cap_037.png"
+  },
+  {
+   "s": 31.75,
+   "e": 32.75,
+   "text": "never went out.",
+   "fit": 1.0,
+   "strip": "cap_038.png"
+  },
+  {
+   "s": 32.75,
+   "e": 33.35,
+   "text": "The boat found",
+   "fit": 1.0,
+   "strip": "cap_039.png"
+  },
+  {
+   "s": 33.35,
+   "e": 34.17,
+   "text": "the harbour.",
+   "fit": 1.0,
+   "strip": "cap_040.png"
+  },
+  {
+   "s": 34.17,
+   "e": 34.91,
+   "text": "And at dawn,",
+   "fit": 1.0,
+   "strip": "cap_041.png"
+  },
+  {
+   "s": 34.91,
+   "e": 35.67,
+   "text": "Biscuit finally",
+   "fit": 1.0,
+   "strip": "cap_042.png"
+  },
+  {
+   "s": 35.67,
+   "e": 36.49,
+   "text": "slept,",
+   "fit": 1.0,
+   "strip": "cap_043.png"
+  },
+  {
+   "s": 36.49,
+   "e": 36.99,
+   "text": "the lighthouse",
+   "fit": 1.0,
+   "strip": "cap_044.png"
+  },
+  {
+   "s": 36.99,
+   "e": 39.049,
+   "text": "still burning.",
+   "fit": 1.0,
+   "strip": "cap_045.png"
+  }
+ ]
+}

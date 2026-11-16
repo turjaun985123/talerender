@@ -1,0 +1,598 @@
+{
+ "format": "talerender-scene",
+ "version": 2,
+ "name": "S06 — storm: a fishing boat lost in the dark",
+ "time": 19.661,
+ "duration": 4.638,
+ "shot": {
+  "id": "S06",
+  "at": 19.661,
+  "duration": 4.638,
+  "line": 5,
+  "atmosphere": "storm",
+  "grade": "shore",
+  "cues": [
+   {
+    "t": 19.661,
+    "type": "alarm",
+    "gain": 0.35,
+    "dur": 1.2
+   },
+   {
+    "t": 23.9,
+    "type": "thud",
+    "gain": 0.5
+   }
+  ],
+  "events": []
+ },
+ "camera": {
+  "eye": [
+   3,
+   3.5,
+   6
+  ],
+  "target": [
+   3,
+   0.5,
+   -8
+  ],
+  "fovY": 44,
+  "keys": [
+   {
+    "t": 0.0,
+    "eye": [
+     3,
+     3.5,
+     6
+    ],
+    "target": [
+     3,
+     0.5,
+     -8
+    ],
+    "fovY": 44
+   },
+   {
+    "t": 4.638,
+    "eye": [
+     -2,
+     5.5,
+     2
+    ],
+    "target": [
+     -7,
+     8.2,
+     -3
+    ],
+    "fovY": 44
+   }
+  ]
+ },
+ "lights": {
+  "key": {
+   "color": "#B8C8E8",
+   "intensity": 1.1,
+   "position": [
+    6.0,
+    11.0,
+    5.0
+   ],
+   "target": [
+    0.0,
+    0.0,
+    -2.0
+   ],
+   "shadow": true,
+   "shadowBox": 16.0,
+   "far": 80.0,
+   "bias": -0.0006,
+   "normalBias": 0.02
+  },
+  "rim": {
+   "color": "#FFFFFF",
+   "intensity": 0.35,
+   "position": [
+    -3.0,
+    3.0,
+    -3.0
+   ]
+  },
+  "hemisphere": {
+   "sky": "#2A3450",
+   "ground": "#2E2A33",
+   "intensity": 1.1
+  },
+  "points": [
+   {
+    "color": "#FFB84D",
+    "intensity": 5.0,
+    "position": [
+     -7.0,
+     8.55,
+     -3.0
+    ],
+    "distance": 9.0,
+    "decay": 1.6
+   }
+  ],
+  "envIntensity": 0.25
+ },
+ "post": {
+  "bokeh": {
+   "aperture": 0.001,
+   "focus": 6.0,
+   "maxblur": 0.008
+  },
+  "bloom": {
+   "threshold": 0.85,
+   "strength": 0.2,
+   "radius": 0.6
+  },
+  "grade": {
+   "vignette": 0.24,
+   "grain": 0.012,
+   "warm": 0.05,
+   "sat": 0.85,
+   "exposure": 1.0,
+   "time": 0.0
+  }
+ },
+ "resolution": {
+  "width": 1080,
+  "height": 1920
+ },
+ "textures": [
+  {
+   "id": "sky",
+   "generator": "sky-gradient",
+   "top": "#4A5F8A",
+   "horizon": "#E8A878"
+  },
+  {
+   "id": "sand",
+   "generator": "solid",
+   "color": "#C9A86A"
+  }
+ ],
+ "nodes": [
+  {
+   "type": "mesh",
+   "geometry": {
+    "kind": "sky-sphere",
+    "radius": 380.0,
+    "widthSegments": 32,
+    "heightSegments": 16
+   },
+   "name": "sky dome",
+   "texture": "sky"
+  },
+  {
+   "type": "mesh",
+   "geometry": {
+    "kind": "flat-quad",
+    "width": 240,
+    "depth": 64
+   },
+   "name": "sand shore",
+   "texture": "sand",
+   "transform": [
+    {
+     "translate": [
+      0,
+      0,
+      26
+     ]
+    }
+   ]
+  },
+  {
+   "type": "mesh",
+   "geometry": {
+    "kind": "flat-quad",
+    "width": 240,
+    "depth": 170
+   },
+   "name": "sea",
+   "material": {
+    "color": "#274B66",
+    "roughness": 0.3
+   },
+   "transform": [
+    {
+     "translate": [
+      0,
+      -0.25,
+      -89
+     ]
+    }
+   ]
+  },
+  {
+   "type": "group",
+   "name": "lighthouse tower",
+   "transform": [
+    {
+     "translate": [
+      -7,
+      0,
+      -3
+     ]
+    }
+   ],
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 1.15,
+      "radiusBottom": 1.5,
+      "height": 2.2,
+      "segments": 20
+     },
+     "name": "tower band 1",
+     "material": {
+      "color": "#F4EFE4"
+     },
+     "transform": [
+      {
+       "translate": [
+        0,
+        1.1,
+        0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 1.02,
+      "radiusBottom": 1.15,
+      "height": 2.0,
+      "segments": 20
+     },
+     "name": "tower band 2",
+     "material": {
+      "color": "#C23B2E"
+     },
+     "transform": [
+      {
+       "translate": [
+        0,
+        3.2,
+        0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.9,
+      "radiusBottom": 1.02,
+      "height": 2.0,
+      "segments": 20
+     },
+     "name": "tower band 3",
+     "material": {
+      "color": "#F4EFE4"
+     },
+     "transform": [
+      {
+       "translate": [
+        0,
+        5.2,
+        0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.8,
+      "radiusBottom": 0.9,
+      "height": 1.6,
+      "segments": 20
+     },
+     "name": "tower band 4",
+     "material": {
+      "color": "#C23B2E"
+     },
+     "transform": [
+      {
+       "translate": [
+        0,
+        7.0,
+        0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 1.25,
+      "radiusBottom": 1.25,
+      "height": 0.18,
+      "segments": 20
+     },
+     "name": "gallery",
+     "material": {
+      "color": "#2A2638"
+     },
+     "transform": [
+      {
+       "translate": [
+        0,
+        7.9,
+        0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.72,
+      "radiusBottom": 0.72,
+      "height": 1.1,
+      "segments": 12
+     },
+     "name": "lamp room",
+     "material": {
+      "color": "#FFE9A8"
+     },
+     "transform": [
+      {
+       "translate": [
+        0,
+        8.55,
+        0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cone",
+      "radius": 1.0,
+      "height": 0.8,
+      "segments": 16
+     },
+     "name": "roof",
+     "material": {
+      "color": "#2A2638"
+     },
+     "transform": [
+      {
+       "translate": [
+        0,
+        9.5,
+        0
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "type": "group",
+   "name": "fishing boat",
+   "transform": [
+    {
+     "translate": [
+      4.5,
+      -0.25,
+      -8
+     ]
+    },
+    {
+     "rotate_y": 0.4
+    }
+   ],
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 16,
+      "heightSegments": 8
+     },
+     "name": "hull",
+     "material": {
+      "color": "#7A4A2E"
+     },
+     "transform": [
+      {
+       "translate": [
+        0,
+        0.1,
+        0
+       ]
+      },
+      {
+       "scale": [
+        1.8,
+        0.5,
+        0.7
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.05,
+      "radiusBottom": 0.05,
+      "height": 1.6,
+      "segments": 8
+     },
+     "name": "mast",
+     "material": {
+      "color": "#5A3A22"
+     },
+     "transform": [
+      {
+       "translate": [
+        0,
+        1.0,
+        0
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "type": "character",
+   "name": "Biscuit",
+   "position": [
+    -7,
+    7.95,
+    -2.2
+   ],
+   "height": 1.15,
+   "perspective": true,
+   "look": {
+    "body": "#E8913A",
+    "ears": "fox",
+    "hat": "none",
+    "kid": true,
+    "neck": "collar",
+    "neckCol": "#B5372E"
+   },
+   "state": {
+    "mood": "worried",
+    "armR": [
+     60,
+     -30
+    ],
+    "blink": 0
+   }
+  }
+ ],
+ "captions": [
+  {
+   "id": "cap_000",
+   "line": 5,
+   "s": 19.73,
+   "e": 19.83,
+   "text": "The"
+  },
+  {
+   "id": "cap_001",
+   "line": 5,
+   "s": 19.83,
+   "e": 20.11,
+   "text": "oil"
+  },
+  {
+   "id": "cap_002",
+   "line": 5,
+   "s": 20.11,
+   "e": 20.39,
+   "text": "ran"
+  },
+  {
+   "id": "cap_003",
+   "line": 5,
+   "s": 20.39,
+   "e": 21.09,
+   "text": "low,"
+  },
+  {
+   "id": "cap_004",
+   "line": 5,
+   "s": 21.09,
+   "e": 21.21,
+   "text": "the"
+  },
+  {
+   "id": "cap_005",
+   "line": 5,
+   "s": 21.21,
+   "e": 21.45,
+   "text": "wind"
+  },
+  {
+   "id": "cap_006",
+   "line": 5,
+   "s": 21.45,
+   "e": 22.09,
+   "text": "rose,"
+  },
+  {
+   "id": "cap_007",
+   "line": 5,
+   "s": 22.09,
+   "e": 22.23,
+   "text": "and"
+  },
+  {
+   "id": "cap_008",
+   "line": 5,
+   "s": 22.23,
+   "e": 22.35,
+   "text": "a"
+  },
+  {
+   "id": "cap_009",
+   "line": 5,
+   "s": 22.35,
+   "e": 22.61,
+   "text": "fishing"
+  },
+  {
+   "id": "cap_010",
+   "line": 5,
+   "s": 22.61,
+   "e": 22.89,
+   "text": "boat"
+  },
+  {
+   "id": "cap_011",
+   "line": 5,
+   "s": 22.89,
+   "e": 23.09,
+   "text": "was"
+  },
+  {
+   "id": "cap_012",
+   "line": 5,
+   "s": 23.09,
+   "e": 23.41,
+   "text": "lost"
+  },
+  {
+   "id": "cap_013",
+   "line": 5,
+   "s": 23.41,
+   "e": 23.65,
+   "text": "in"
+  },
+  {
+   "id": "cap_014",
+   "line": 5,
+   "s": 23.65,
+   "e": 23.77,
+   "text": "the"
+  },
+  {
+   "id": "cap_015",
+   "line": 5,
+   "s": 23.77,
+   "e": 24.429,
+   "text": "dark."
+  }
+ ]
+}

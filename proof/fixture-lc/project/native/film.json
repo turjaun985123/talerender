@@ -1,0 +1,262 @@
+{
+ "format": "talerender-film",
+ "version": 1,
+ "driver": "scene-sequence",
+ "title": "The Lighthouse Cat's Last Shift",
+ "project": "/home/hatch/workspace/chrome-replacement/remediation/batch2/R2-03/work/project",
+ "sourceData": "film/onoda.json",
+ "fps": 30,
+ "durationS": 39.049,
+ "totalFrames": 1172,
+ "resolution": {
+  "width": 1080,
+  "height": 1920
+ },
+ "audio": {
+  "file": "data/mix.wav",
+  "projectPath": "/home/hatch/workspace/chrome-replacement/remediation/batch2/R2-03/work/project/data/mix.wav",
+  "treatment": "muxed unchanged (project master)",
+  "durationS": 39.149
+ },
+ "frameRule": "frame n is staged at t = n/fps; a segment owns frames n with startS <= n/fps < endS, so startFrame = ceil(startS*fps) and the segment ranges tile [0, totalFrames) exactly",
+ "segments": [
+  {
+   "id": "s01",
+   "scene": "scenes/film/s01.scene.json",
+   "lines": [
+    0
+   ],
+   "startS": 0.0,
+   "endS": 4.587,
+   "durationS": 4.587,
+   "startFrame": 0,
+   "endFrame": 138,
+   "frames": 138,
+   "atmosphere": "dusk",
+   "captionChunks": {
+    "first": 0,
+    "last": 5,
+    "count": 6
+   },
+   "set": "BCH"
+  },
+  {
+   "id": "s02",
+   "scene": "scenes/film/s02.scene.json",
+   "lines": [
+    1
+   ],
+   "startS": 4.587,
+   "endS": 9.157,
+   "durationS": 4.57,
+   "startFrame": 138,
+   "endFrame": 275,
+   "frames": 137,
+   "atmosphere": "dusk",
+   "captionChunks": {
+    "first": 6,
+    "last": 10,
+    "count": 5
+   },
+   "set": "BCH"
+  },
+  {
+   "id": "s03",
+   "scene": "scenes/film/s03.scene.json",
+   "lines": [
+    2
+   ],
+   "startS": 9.157,
+   "endS": 12.877,
+   "durationS": 3.72,
+   "startFrame": 275,
+   "endFrame": 387,
+   "frames": 112,
+   "atmosphere": "noon",
+   "captionChunks": {
+    "first": 11,
+    "last": 14,
+    "count": 4
+   },
+   "set": "RM"
+  },
+  {
+   "id": "s04",
+   "scene": "scenes/film/s04.scene.json",
+   "lines": [
+    3
+   ],
+   "startS": 12.877,
+   "endS": 16.367,
+   "durationS": 3.49,
+   "startFrame": 387,
+   "endFrame": 492,
+   "frames": 105,
+   "atmosphere": "fog",
+   "captionChunks": {
+    "first": 15,
+    "last": 18,
+    "count": 4
+   },
+   "set": "BCH"
+  },
+  {
+   "id": "s05",
+   "scene": "scenes/film/s05.scene.json",
+   "lines": [
+    4
+   ],
+   "startS": 16.367,
+   "endS": 19.661,
+   "durationS": 3.294,
+   "startFrame": 492,
+   "endFrame": 590,
+   "frames": 98,
+   "atmosphere": "night",
+   "captionChunks": {
+    "first": 19,
+    "last": 22,
+    "count": 4
+   },
+   "set": "BCH"
+  },
+  {
+   "id": "s06",
+   "scene": "scenes/film/s06.scene.json",
+   "lines": [
+    5
+   ],
+   "startS": 19.661,
+   "endS": 24.299,
+   "durationS": 4.638,
+   "startFrame": 590,
+   "endFrame": 729,
+   "frames": 139,
+   "atmosphere": "storm",
+   "captionChunks": {
+    "first": 23,
+    "last": 28,
+    "count": 6
+   },
+   "set": "BCH"
+  },
+  {
+   "id": "s07",
+   "scene": "scenes/film/s07.scene.json",
+   "lines": [
+    6
+   ],
+   "startS": 24.299,
+   "endS": 27.758,
+   "durationS": 3.459,
+   "startFrame": 729,
+   "endFrame": 833,
+   "frames": 104,
+   "atmosphere": "noon",
+   "captionChunks": {
+    "first": 29,
+    "last": 32,
+    "count": 4
+   },
+   "set": "RM"
+  },
+  {
+   "id": "s08",
+   "scene": "scenes/film/s08.scene.json",
+   "lines": [
+    7
+   ],
+   "startS": 27.758,
+   "endS": 31.077,
+   "durationS": 3.319,
+   "startFrame": 833,
+   "endFrame": 933,
+   "frames": 100,
+   "atmosphere": "night",
+   "captionChunks": {
+    "first": 33,
+    "last": 36,
+    "count": 4
+   },
+   "set": "BCH"
+  },
+  {
+   "id": "s09",
+   "scene": "scenes/film/s09.scene.json",
+   "lines": [
+    7,
+    8
+   ],
+   "startS": 31.077,
+   "endS": 32.677,
+   "durationS": 1.6,
+   "startFrame": 933,
+   "endFrame": 981,
+   "frames": 48,
+   "atmosphere": "night",
+   "captionChunks": {
+    "first": 37,
+    "last": 38,
+    "count": 2
+   },
+   "set": "BCH"
+  },
+  {
+   "id": "s10",
+   "scene": "scenes/film/s10.scene.json",
+   "lines": [
+    9
+   ],
+   "startS": 32.677,
+   "endS": 34.117,
+   "durationS": 1.44,
+   "startFrame": 981,
+   "endFrame": 1024,
+   "frames": 43,
+   "atmosphere": "dusk",
+   "captionChunks": {
+    "first": 39,
+    "last": 40,
+    "count": 2
+   },
+   "set": "BCH"
+  },
+  {
+   "id": "s11",
+   "scene": "scenes/film/s11.scene.json",
+   "lines": [
+    10
+   ],
+   "startS": 34.117,
+   "endS": 39.049,
+   "durationS": 4.932,
+   "startFrame": 1024,
+   "endFrame": 1172,
+   "frames": 148,
+   "atmosphere": "dawn",
+   "captionChunks": {
+    "first": 41,
+    "last": 45,
+    "count": 5
+   },
+   "set": "BCH"
+  }
+ ],
+ "bridge": {
+  "builtBy": "tools/bridge/build_bridge.py",
+  "sourceProject": "/home/hatch/workspace/chrome-replacement/remediation/batch2/R2-03/work/project",
+  "sourceScenes": "/home/hatch/workspace/chrome-replacement/remediation/batch2/R2-03/work/scenes-fixed",
+  "note": "Assembled from the project's timing data + the transcribed segment scenes; verified against the adapter contract (P4 data-driven), the repo validator, and the binary's film telemetry.",
+  "captionFit": {
+   "mode": "measured",
+   "measurer": "PIL/FreeType getlength, 900 88px Inter",
+   "font": "/home/hatch/workspace/chrome-replacement/remediation/batch2/R2-03/work/project/fonts/Inter-Black.otf",
+   "fontMd5": "c26b4e77dc103fd3a1e3b426549296ed",
+   "capMaxW": 960.0,
+   "chunksRevisedVsFilmData": 0
+  },
+  "cuesProvenance": [],
+  "skeletonOwes": [],
+  "eventsGap": "shot.events[] emitted empty for segments s01, s02, s03, s04, s05, s06, s07, s08, s09, s10, s11 — clip-event computation needs clip-instance data the transcription does not carry (CR-B1-05 R5)."
+ }
+}

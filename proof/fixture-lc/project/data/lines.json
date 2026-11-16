@@ -1,0 +1,73 @@
+{
+ "duration": 39.049,
+ "voice": "am_michael",
+ "speed": 1.05,
+ "lines": [
+  {
+   "i": 0,
+   "text": "For thirty-one years, a cat named Biscuit kept the lighthouse burning.",
+   "start": 0.3,
+   "end": 4.467
+  },
+  {
+   "i": 1,
+   "text": "Every night at dusk, she climbed the ninety-nine iron steps alone,",
+   "start": 4.647,
+   "end": 8.657
+  },
+  {
+   "i": 2,
+   "text": "she trimmed the wick, she polished the great glass lens,",
+   "start": 9.217,
+   "end": 12.627
+  },
+  {
+   "i": 3,
+   "text": "and she watched the fog roll in like a slow grey sea.",
+   "start": 12.937,
+   "end": 16.247
+  },
+  {
+   "i": 4,
+   "text": "Then one October night, the supply boat never came.",
+   "start": 16.427,
+   "end": 19.541
+  },
+  {
+   "i": 5,
+   "text": "The oil ran low, the wind rose, and a fishing boat was lost in the dark.",
+   "start": 19.721,
+   "end": 24.179
+  },
+  {
+   "i": 6,
+   "text": "So Biscuit did the one thing no keeper had ever taught her.",
+   "start": 24.359,
+   "end": 27.638
+  },
+  {
+   "i": 7,
+   "text": "She dragged the spare oil up, one small can at a time,",
+   "start": 27.818,
+   "end": 31.137
+  },
+  {
+   "i": 8,
+   "text": "The light never went out.",
+   "start": 31.137,
+   "end": 32.557
+  },
+  {
+   "i": 9,
+   "text": "The boat found the harbour.",
+   "start": 32.737,
+   "end": 33.997
+  },
+  {
+   "i": 10,
+   "text": "And at dawn, Biscuit finally slept, the lighthouse still burning.",
+   "start": 34.177,
+   "end": 37.869
+  }
+ ]
+}

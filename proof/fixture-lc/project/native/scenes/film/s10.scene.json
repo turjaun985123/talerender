@@ -1,0 +1,532 @@
+{
+ "format": "talerender-scene",
+ "version": 2,
+ "name": "S10 — the boat finds the harbour; the fisher waves",
+ "time": 32.677,
+ "duration": 1.44,
+ "shot": {
+  "id": "S10",
+  "at": 32.677,
+  "duration": 1.44,
+  "line": 9,
+  "atmosphere": "dusk",
+  "grade": "shore",
+  "cues": [
+   {
+    "t": 33.6,
+    "type": "ding",
+    "gain": 0.6
+   }
+  ],
+  "events": []
+ },
+ "camera": {
+  "eye": [
+   4,
+   3,
+   8
+  ],
+  "target": [
+   -2,
+   2.5,
+   -4
+  ],
+  "fovY": 44,
+  "keys": [
+   {
+    "t": 0.0,
+    "eye": [
+     4,
+     3,
+     8
+    ],
+    "target": [
+     -2,
+     2.5,
+     -4
+    ],
+    "fovY": 44
+   },
+   {
+    "t": 1.44,
+    "eye": [
+     2,
+     2.6,
+     6.5
+    ],
+    "target": [
+     -2,
+     2.5,
+     -4
+    ],
+    "fovY": 44
+   }
+  ]
+ },
+ "lights": {
+  "key": {
+   "color": "#FFE3C0",
+   "intensity": 2.2,
+   "position": [
+    6.0,
+    11.0,
+    5.0
+   ],
+   "target": [
+    0.0,
+    0.0,
+    -2.0
+   ],
+   "shadow": true,
+   "shadowBox": 16.0,
+   "far": 80.0,
+   "bias": -0.0006,
+   "normalBias": 0.02
+  },
+  "rim": {
+   "color": "#FFFFFF",
+   "intensity": 0.35,
+   "position": [
+    -3.0,
+    3.0,
+    -3.0
+   ]
+  },
+  "hemisphere": {
+   "sky": "#8FA8C8",
+   "ground": "#5A4632",
+   "intensity": 1.1
+  },
+  "points": [],
+  "envIntensity": 0.25
+ },
+ "post": {
+  "bokeh": {
+   "aperture": 0.001,
+   "focus": 6.0,
+   "maxblur": 0.008
+  },
+  "bloom": {
+   "threshold": 0.85,
+   "strength": 0.2,
+   "radius": 0.6
+  },
+  "grade": {
+   "vignette": 0.24,
+   "grain": 0.012,
+   "warm": 0.05,
+   "sat": 0.85,
+   "exposure": 1.0,
+   "time": 0.0
+  }
+ },
+ "resolution": {
+  "width": 1080,
+  "height": 1920
+ },
+ "textures": [
+  {
+   "id": "sky",
+   "generator": "sky-gradient",
+   "top": "#4A5F8A",
+   "horizon": "#E8A878"
+  },
+  {
+   "id": "sand",
+   "generator": "solid",
+   "color": "#C9A86A"
+  }
+ ],
+ "nodes": [
+  {
+   "type": "mesh",
+   "geometry": {
+    "kind": "sky-sphere",
+    "radius": 380.0,
+    "widthSegments": 32,
+    "heightSegments": 16
+   },
+   "name": "sky dome",
+   "texture": "sky"
+  },
+  {
+   "type": "mesh",
+   "geometry": {
+    "kind": "flat-quad",
+    "width": 240,
+    "depth": 64
+   },
+   "name": "sand shore",
+   "texture": "sand",
+   "transform": [
+    {
+     "translate": [
+      0,
+      0,
+      26
+     ]
+    }
+   ]
+  },
+  {
+   "type": "mesh",
+   "geometry": {
+    "kind": "flat-quad",
+    "width": 240,
+    "depth": 170
+   },
+   "name": "sea",
+   "material": {
+    "color": "#274B66",
+    "roughness": 0.3
+   },
+   "transform": [
+    {
+     "translate": [
+      0,
+      -0.25,
+      -89
+     ]
+    }
+   ]
+  },
+  {
+   "type": "group",
+   "name": "lighthouse tower",
+   "transform": [
+    {
+     "translate": [
+      -7,
+      0,
+      -3
+     ]
+    }
+   ],
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 1.15,
+      "radiusBottom": 1.5,
+      "height": 2.2,
+      "segments": 20
+     },
+     "name": "tower band 1",
+     "material": {
+      "color": "#F4EFE4"
+     },
+     "transform": [
+      {
+       "translate": [
+        0,
+        1.1,
+        0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 1.02,
+      "radiusBottom": 1.15,
+      "height": 2.0,
+      "segments": 20
+     },
+     "name": "tower band 2",
+     "material": {
+      "color": "#C23B2E"
+     },
+     "transform": [
+      {
+       "translate": [
+        0,
+        3.2,
+        0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.9,
+      "radiusBottom": 1.02,
+      "height": 2.0,
+      "segments": 20
+     },
+     "name": "tower band 3",
+     "material": {
+      "color": "#F4EFE4"
+     },
+     "transform": [
+      {
+       "translate": [
+        0,
+        5.2,
+        0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.8,
+      "radiusBottom": 0.9,
+      "height": 1.6,
+      "segments": 20
+     },
+     "name": "tower band 4",
+     "material": {
+      "color": "#C23B2E"
+     },
+     "transform": [
+      {
+       "translate": [
+        0,
+        7.0,
+        0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 1.25,
+      "radiusBottom": 1.25,
+      "height": 0.18,
+      "segments": 20
+     },
+     "name": "gallery",
+     "material": {
+      "color": "#2A2638"
+     },
+     "transform": [
+      {
+       "translate": [
+        0,
+        7.9,
+        0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.72,
+      "radiusBottom": 0.72,
+      "height": 1.1,
+      "segments": 12
+     },
+     "name": "lamp room",
+     "material": {
+      "color": "#FFE9A8"
+     },
+     "transform": [
+      {
+       "translate": [
+        0,
+        8.55,
+        0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cone",
+      "radius": 1.0,
+      "height": 0.8,
+      "segments": 16
+     },
+     "name": "roof",
+     "material": {
+      "color": "#2A2638"
+     },
+     "transform": [
+      {
+       "translate": [
+        0,
+        9.5,
+        0
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "type": "group",
+   "name": "fishing boat",
+   "transform": [
+    {
+     "translate": [
+      3.2,
+      -0.25,
+      -8
+     ]
+    },
+    {
+     "rotate_y": 0.4
+    }
+   ],
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "sphere",
+      "radius": 1.0,
+      "widthSegments": 16,
+      "heightSegments": 8
+     },
+     "name": "hull",
+     "material": {
+      "color": "#7A4A2E"
+     },
+     "transform": [
+      {
+       "translate": [
+        0,
+        0.1,
+        0
+       ]
+      },
+      {
+       "scale": [
+        1.8,
+        0.5,
+        0.7
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.05,
+      "radiusBottom": 0.05,
+      "height": 1.6,
+      "segments": 8
+     },
+     "name": "mast",
+     "material": {
+      "color": "#5A3A22"
+     },
+     "transform": [
+      {
+       "translate": [
+        0,
+        1.0,
+        0
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "type": "character",
+   "name": "Biscuit",
+   "position": [
+    -7,
+    7.95,
+    -2.2
+   ],
+   "height": 1.15,
+   "perspective": true,
+   "look": {
+    "body": "#E8913A",
+    "ears": "fox",
+    "hat": "none",
+    "kid": true,
+    "neck": "collar",
+    "neckCol": "#B5372E"
+   },
+   "state": {
+    "mood": "happy",
+    "armR": [
+     120,
+     -20
+    ],
+    "blink": 0
+   }
+  },
+  {
+   "type": "character",
+   "name": "Fisher",
+   "position": [
+    3.2,
+    0,
+    -5.5
+   ],
+   "height": 1.75,
+   "perspective": true,
+   "look": {
+    "body": "#3E5FA8",
+    "hat": "beanie",
+    "hatCol": "#2E4E8A",
+    "pattern": "vest",
+    "patCol": "#2B5E73",
+    "extra": [
+     "beard"
+    ]
+   },
+   "state": {
+    "mood": "relieved",
+    "armR": [
+     130,
+     -30
+    ],
+    "blink": 0
+   }
+  }
+ ],
+ "captions": [
+  {
+   "id": "cap_000",
+   "line": 9,
+   "s": 32.75,
+   "e": 32.85,
+   "text": "The"
+  },
+  {
+   "id": "cap_001",
+   "line": 9,
+   "s": 32.85,
+   "e": 33.05,
+   "text": "boat"
+  },
+  {
+   "id": "cap_002",
+   "line": 9,
+   "s": 33.05,
+   "e": 33.35,
+   "text": "found"
+  },
+  {
+   "id": "cap_003",
+   "line": 9,
+   "s": 33.35,
+   "e": 33.49,
+   "text": "the"
+  },
+  {
+   "id": "cap_004",
+   "line": 9,
+   "s": 33.49,
+   "e": 34.247,
+   "text": "harbour."
+  }
+ ]
+}

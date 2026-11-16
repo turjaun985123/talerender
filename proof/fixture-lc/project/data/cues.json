@@ -1,0 +1,78 @@
+{
+ "duration": 39.049,
+ "cues": [
+  {
+   "t": 0.35,
+   "type": "whoosh",
+   "gain": 0.5
+  },
+  {
+   "t": 2.62,
+   "type": "ding",
+   "gain": 0.6
+  },
+  {
+   "t": 4.587,
+   "type": "whoosh",
+   "gain": 0.4
+  },
+  {
+   "t": 10.6,
+   "type": "sparkle",
+   "gain": 0.5
+  },
+  {
+   "t": 13.077,
+   "type": "whoosh",
+   "gain": 0.3,
+   "dur": 1.8
+  },
+  {
+   "t": 18.6,
+   "type": "sting",
+   "gain": 0.5
+  },
+  {
+   "t": 19.661,
+   "type": "alarm",
+   "gain": 0.35,
+   "dur": 1.2
+  },
+  {
+   "t": 23.9,
+   "type": "thud",
+   "gain": 0.5
+  },
+  {
+   "t": 25.54,
+   "type": "pop",
+   "gain": 0.5
+  },
+  {
+   "t": 27.758,
+   "type": "thud",
+   "gain": 0.4
+  },
+  {
+   "t": 30.9,
+   "type": "tock",
+   "gain": 0.5
+  },
+  {
+   "t": 31.077,
+   "type": "sparkle",
+   "gain": 0.6,
+   "dur": 1.4
+  },
+  {
+   "t": 33.6,
+   "type": "ding",
+   "gain": 0.6
+  },
+  {
+   "t": 35.7,
+   "type": "chirp",
+   "gain": 0.5
+  }
+ ]
+}

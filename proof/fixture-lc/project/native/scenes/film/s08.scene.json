@@ -1,0 +1,511 @@
+{
+ "format": "talerender-scene",
+ "version": 2,
+ "name": "S08 — dragging the spare oil up, one can at a time",
+ "time": 27.758000000000003,
+ "duration": 3.319,
+ "shot": {
+  "id": "S08",
+  "at": 27.758000000000003,
+  "duration": 3.319,
+  "line": 7,
+  "atmosphere": "night",
+  "grade": "shore",
+  "cues": [
+   {
+    "t": 27.758,
+    "type": "thud",
+    "gain": 0.4
+   },
+   {
+    "t": 30.9,
+    "type": "tock",
+    "gain": 0.5
+   }
+  ],
+  "events": []
+ },
+ "camera": {
+  "eye": [
+   -1.2,
+   1.7,
+   4.4
+  ],
+  "target": [
+   -6.2,
+   1.2,
+   -2.8
+  ],
+  "fovY": 36,
+  "keys": [
+   {
+    "t": 0.0,
+    "eye": [
+     -1.2,
+     1.7,
+     4.4
+    ],
+    "target": [
+     -6.2,
+     1.2,
+     -2.8
+    ],
+    "fovY": 36
+   },
+   {
+    "t": 3.319,
+    "eye": [
+     -1.2,
+     6.9,
+     4.4
+    ],
+    "target": [
+     -6.2,
+     6.4,
+     -2.8
+    ],
+    "fovY": 36
+   }
+  ]
+ },
+ "lights": {
+  "key": {
+   "color": "#B8C8E8",
+   "intensity": 1.1,
+   "position": [
+    6.0,
+    11.0,
+    5.0
+   ],
+   "target": [
+    0.0,
+    0.0,
+    -2.0
+   ],
+   "shadow": true,
+   "shadowBox": 16.0,
+   "far": 80.0,
+   "bias": -0.0006,
+   "normalBias": 0.02
+  },
+  "rim": {
+   "color": "#FFFFFF",
+   "intensity": 0.35,
+   "position": [
+    -3.0,
+    3.0,
+    -3.0
+   ]
+  },
+  "hemisphere": {
+   "sky": "#2A3450",
+   "ground": "#2E2A33",
+   "intensity": 1.1
+  },
+  "points": [
+   {
+    "color": "#FFB84D",
+    "intensity": 5.0,
+    "position": [
+     -7.0,
+     8.55,
+     -3.0
+    ],
+    "distance": 9.0,
+    "decay": 1.6
+   }
+  ],
+  "envIntensity": 0.25
+ },
+ "post": {
+  "bokeh": {
+   "aperture": 0.001,
+   "focus": 6.0,
+   "maxblur": 0.008
+  },
+  "bloom": {
+   "threshold": 0.85,
+   "strength": 0.2,
+   "radius": 0.6
+  },
+  "grade": {
+   "vignette": 0.24,
+   "grain": 0.012,
+   "warm": 0.05,
+   "sat": 0.85,
+   "exposure": 1.0,
+   "time": 0.0
+  }
+ },
+ "resolution": {
+  "width": 1080,
+  "height": 1920
+ },
+ "textures": [
+  {
+   "id": "sky",
+   "generator": "sky-gradient",
+   "top": "#4A5F8A",
+   "horizon": "#E8A878"
+  },
+  {
+   "id": "sand",
+   "generator": "solid",
+   "color": "#C9A86A"
+  },
+  {
+   "id": "oil-can",
+   "file": "../../film/assets/oil-can.png"
+  }
+ ],
+ "nodes": [
+  {
+   "type": "mesh",
+   "geometry": {
+    "kind": "sky-sphere",
+    "radius": 380.0,
+    "widthSegments": 32,
+    "heightSegments": 16
+   },
+   "name": "sky dome",
+   "texture": "sky"
+  },
+  {
+   "type": "mesh",
+   "geometry": {
+    "kind": "flat-quad",
+    "width": 240,
+    "depth": 64
+   },
+   "name": "sand shore",
+   "texture": "sand",
+   "transform": [
+    {
+     "translate": [
+      0,
+      0,
+      26
+     ]
+    }
+   ]
+  },
+  {
+   "type": "mesh",
+   "geometry": {
+    "kind": "flat-quad",
+    "width": 240,
+    "depth": 170
+   },
+   "name": "sea",
+   "material": {
+    "color": "#274B66",
+    "roughness": 0.3
+   },
+   "transform": [
+    {
+     "translate": [
+      0,
+      -0.25,
+      -89
+     ]
+    }
+   ]
+  },
+  {
+   "type": "group",
+   "name": "lighthouse tower",
+   "transform": [
+    {
+     "translate": [
+      -7,
+      0,
+      -3
+     ]
+    }
+   ],
+   "children": [
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 1.15,
+      "radiusBottom": 1.5,
+      "height": 2.2,
+      "segments": 20
+     },
+     "name": "tower band 1",
+     "material": {
+      "color": "#F4EFE4"
+     },
+     "transform": [
+      {
+       "translate": [
+        0,
+        1.1,
+        0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 1.02,
+      "radiusBottom": 1.15,
+      "height": 2.0,
+      "segments": 20
+     },
+     "name": "tower band 2",
+     "material": {
+      "color": "#C23B2E"
+     },
+     "transform": [
+      {
+       "translate": [
+        0,
+        3.2,
+        0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.9,
+      "radiusBottom": 1.02,
+      "height": 2.0,
+      "segments": 20
+     },
+     "name": "tower band 3",
+     "material": {
+      "color": "#F4EFE4"
+     },
+     "transform": [
+      {
+       "translate": [
+        0,
+        5.2,
+        0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.8,
+      "radiusBottom": 0.9,
+      "height": 1.6,
+      "segments": 20
+     },
+     "name": "tower band 4",
+     "material": {
+      "color": "#C23B2E"
+     },
+     "transform": [
+      {
+       "translate": [
+        0,
+        7.0,
+        0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 1.25,
+      "radiusBottom": 1.25,
+      "height": 0.18,
+      "segments": 20
+     },
+     "name": "gallery",
+     "material": {
+      "color": "#2A2638"
+     },
+     "transform": [
+      {
+       "translate": [
+        0,
+        7.9,
+        0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cylinder",
+      "radiusTop": 0.72,
+      "radiusBottom": 0.72,
+      "height": 1.1,
+      "segments": 12
+     },
+     "name": "lamp room",
+     "material": {
+      "color": "#FFE9A8"
+     },
+     "transform": [
+      {
+       "translate": [
+        0,
+        8.55,
+        0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "mesh",
+     "geometry": {
+      "kind": "cone",
+      "radius": 1.0,
+      "height": 0.8,
+      "segments": 16
+     },
+     "name": "roof",
+     "material": {
+      "color": "#2A2638"
+     },
+     "transform": [
+      {
+       "translate": [
+        0,
+        9.5,
+        0
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "type": "character",
+   "name": "Biscuit",
+   "position": [
+    -5.6,
+    3.0,
+    -2.6
+   ],
+   "height": 1.15,
+   "perspective": true,
+   "look": {
+    "body": "#E8913A",
+    "ears": "fox",
+    "hat": "none",
+    "kid": true,
+    "neck": "collar",
+    "neckCol": "#B5372E"
+   },
+   "state": {
+    "mood": "determined",
+    "legs": "walk",
+    "phase": 0,
+    "lean": 2,
+    "blink": 0,
+    "holdR": {
+     "plate": "oil-can",
+     "x0": -100.0,
+     "y0": -110.0
+    },
+    "armR": [
+     55,
+     15
+    ]
+   }
+  }
+ ],
+ "captions": [
+  {
+   "id": "cap_000",
+   "line": 7,
+   "s": 27.788,
+   "e": 27.97,
+   "text": "She"
+  },
+  {
+   "id": "cap_001",
+   "line": 7,
+   "s": 27.97,
+   "e": 28.29,
+   "text": "dragged"
+  },
+  {
+   "id": "cap_002",
+   "line": 7,
+   "s": 28.29,
+   "e": 28.51,
+   "text": "the"
+  },
+  {
+   "id": "cap_003",
+   "line": 7,
+   "s": 28.51,
+   "e": 28.73,
+   "text": "spare"
+  },
+  {
+   "id": "cap_004",
+   "line": 7,
+   "s": 28.73,
+   "e": 29.11,
+   "text": "oil"
+  },
+  {
+   "id": "cap_005",
+   "line": 7,
+   "s": 29.11,
+   "e": 29.81,
+   "text": "up,"
+  },
+  {
+   "id": "cap_006",
+   "line": 7,
+   "s": 29.81,
+   "e": 29.99,
+   "text": "one"
+  },
+  {
+   "id": "cap_007",
+   "line": 7,
+   "s": 29.99,
+   "e": 30.33,
+   "text": "small"
+  },
+  {
+   "id": "cap_008",
+   "line": 7,
+   "s": 30.33,
+   "e": 30.63,
+   "text": "can"
+  },
+  {
+   "id": "cap_009",
+   "line": 7,
+   "s": 30.63,
+   "e": 30.81,
+   "text": "at"
+  },
+  {
+   "id": "cap_010",
+   "line": 7,
+   "s": 30.81,
+   "e": 30.93,
+   "text": "a"
+  },
+  {
+   "id": "cap_011",
+   "line": 7,
+   "s": 30.93,
+   "e": 31.387,
+   "text": "time,"
+  }
+ ]
+}
