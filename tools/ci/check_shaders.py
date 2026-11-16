@@ -19,7 +19,10 @@ WHAT THIS IS
       4. Shader <-> Rust layout agreement. The shader->site map is
          built from source evidence (include_str! sites, const
          indirection, module() closure calls) — never from
-         filename similarity. For each pipeline creation site the
+         filename similarity. For each pipeline creation site
+         (render pipelines, and compute pipelines since
+         FIX-SHADER-GATE, whose single entry point is compared
+         against the shader's @compute entries) the
          checker resolves the pipeline layout's bind-group layouts
          (literal entry lists, plus anchor-verified interpreters
          for the helper shapes this codebase actually uses:
@@ -810,7 +813,7 @@ class RustFile:
 
     def _parse_pipelines(self):
         v, t = self.sview, self.tview
-        for m in re.finditer(r"create_render_pipeline\s*\(", v):
+        for m in re.finditer(r"create_(render|compute)_pipeline\s*\(", v):
             open_paren = v.find("(", m.start())
             close = brace_match(v, open_paren)
             if close < 0:
@@ -825,6 +828,7 @@ class RustFile:
                 else:
                     entry_seq.append(("expr", em.group(2)))
             pipe = {
+                "kind": m.group(1),
                 "file": self.rel, "line": line_of(v, m.start()),
                 "owner": owner[0] if owner else "<top level>",
                 "module_exprs": re.findall(r"module:\s*&?\s*(\w+)", block_s),
@@ -871,7 +875,7 @@ def resolve_sites(rf):
     sites = []
     unresolved = []
 
-    def finish(pipe, module_var, groups_spec, vent, fent, via, ref_pos):
+    def finish(pipe, module_var, groups_spec, vent, fent, via, ref_pos, cent=None):
         sid, _line = rf.module_vars.get(module_var, (None, None))
         where = f"{rf.rel}:{pipe['line']} ({pipe['owner']}{via})"
         if sid is None:
@@ -887,7 +891,7 @@ def resolve_sites(rf):
             groups.append((ent, ev))
         sites.append({
             "shader": sid, "where": where, "line": pipe["line"],
-            "groups": groups, "vent": vent, "fent": fent,
+            "groups": groups, "vent": vent, "fent": fent, "cent": cent,
         })
 
     def groups_for_layout(pipe, mapping, ref_pos):
@@ -937,9 +941,13 @@ def resolve_sites(rf):
             if names is None:
                 unresolved.append((f"{rf.rel}:{pipe['line']} ({pipe['owner']})", ev))
                 continue
-            vent = entry_seq[0][1] if len(entry_seq) > 0 else None
-            fent = entry_seq[1][1] if len(entry_seq) > 1 else None
-            finish(pipe, module_var, names, vent, fent, "", pipe["pos"])
+            vent = fent = cent = None
+            if pipe.get("kind") == "compute":
+                cent = entry_seq[0][1] if len(entry_seq) > 0 else None
+            else:
+                vent = entry_seq[0][1] if len(entry_seq) > 0 else None
+                fent = entry_seq[1][1] if len(entry_seq) > 1 else None
+            finish(pipe, module_var, names, vent, fent, "", pipe["pos"], cent)
             continue
         # template pipeline: resolve per call site of the owner
         if owner is None:
@@ -981,11 +989,15 @@ def resolve_sites(rf):
                     seq.append(mapping[val].strip().strip('"'))
                 else:
                     seq.append(None)
-            vent = seq[0] if len(seq) > 0 else None
-            fent = seq[1] if len(seq) > 1 else None
+            vent = fent = cent = None
+            if pipe.get("kind") == "compute":
+                cent = seq[0] if len(seq) > 0 else None
+            else:
+                vent = seq[0] if len(seq) > 0 else None
+                fent = seq[1] if len(seq) > 1 else None
             finish(pipe, module_var, names, vent, fent,
                    f" via {owner[0]} call at line {line_of(rf.tview, cpos)}",
-                   cpos)
+                   cpos, cent)
     return sites, unresolved
 
 
@@ -1046,6 +1058,12 @@ def compare_site(shader, site):
                 f"pipeline fragment entry '{site['fent']}' is not a "
                 f"@fragment entry point of the shader (declared: "
                 f"{[n for s, n, _ in shader.entries if s == 'fragment']})")
+    if site.get("cent") is not None:
+        if site["cent"] not in [n for s, n, _ in shader.entries if s == "compute"]:
+            fails.append(
+                f"pipeline compute entry '{site['cent']}' is not a "
+                f"@compute entry point of the shader (declared: "
+                f"{[n for s, n, _ in shader.entries if s == 'compute']})")
     return ("FAIL" if fails else "PASS"), fails, notes
 
 
@@ -1119,12 +1137,19 @@ PAIRS = [
      [("src/scenefile.rs", "pack_array", '"fog uniforms"', None)]),
     ("embedded:blur_wgsl", "U",
      [("src/composer.rs", "pack_array", '"bloom blur uniforms"', None)]),
+    ("src/gpupaint.wgsl", "Params",
+     [("src/gpupaint.rs", "rust_struct", "Params", None)]),
 ]
 
 RUST_TYPE_MAP = {
     "Mat4": "mat4x4f", "math::Mat4": "mat4x4f",
     "[f32; 4]": "vec4f", "[f32; 3]": "vec3f", "[f32; 2]": "vec2f",
     "f32": "f32",
+    # gpupaint Params (FIX-SHADER-GATE): scalar WGSL types map to
+    # themselves; the align(16) vec4 wrapper structs in
+    # src/gpupaint.rs map to their WGSL vec4 spellings.
+    "u32": "u32", "i32": "i32",
+    "Vec4u": "vec4<u32>", "Vec4f": "vec4<f32>", "Vec4i": "vec4<i32>",
 }
 
 

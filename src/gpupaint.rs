@@ -198,54 +198,120 @@ const WGSZ: u32 = 8;
 /// to that module; composite_plate's math is written in it).
 const PLATE_RES: f32 = 2.0;
 
-/// The 144-byte uniform block; byte layout mirrors the WGSL
-/// `Params` struct field-for-field (WGSL alignment: the vec4
-/// members land on 16-byte boundaries at 32/48/64/80/96/112/128).
-struct PBuf {
-    b: [u8; 144],
+/// WGSL `vec4<u32>` with the WGSL uniform alignment (16 bytes).
+/// The align(16) wrapper is what makes the repr(C) `Params`
+/// layout below land every vec4 member on a 16-byte boundary,
+/// exactly as the WGSL uniform layout rules place them.
+#[repr(C, align(16))]
+#[derive(Clone, Copy, Default)]
+struct Vec4u([u32; 4]);
+
+/// WGSL `vec4<f32>` with the WGSL uniform alignment (16 bytes).
+#[repr(C, align(16))]
+#[derive(Clone, Copy, Default)]
+struct Vec4f([f32; 4]);
+
+/// WGSL `vec4<i32>` with the WGSL uniform alignment (16 bytes).
+#[repr(C, align(16))]
+#[derive(Clone, Copy, Default)]
+struct Vec4i([i32; 4]);
+
+/// The 144-byte uniform block: a #[repr(C)] Rust mirror of the
+/// WGSL `Params` struct in src/gpupaint.wgsl, field-for-field
+/// and in field order (statically verified by
+/// tools/ci/check_shaders.py, pair src/gpupaint.wgsl:Params,
+/// rust_struct dialect). Layout: six scalars (24 B), implicit
+/// padding to 32 (the first vec4's align(16)), then six vec4
+/// members at 32/48/64/80/96/112/128; total size 144 B — the
+/// offsets and size are asserted in exec_tests, and the golden
+/// params bytes there pin the produced bytes per prim kind.
+#[repr(C)]
+#[derive(Clone, Copy, Default)]
+struct Params {
+    canvas_w: u32,
+    canvas_h: u32,
+    bx0: i32,
+    by0: i32,
+    bx1: i32,
+    by1: i32,
+    col: Vec4u,
+    p0: Vec4f,
+    p1: Vec4f,
+    p2: Vec4f,
+    p3: Vec4f,
+    u0: Vec4u,
+    mk: Vec4i,
 }
 
-impl PBuf {
+impl Params {
     fn new(canvas_w: u32, canvas_h: u32, bbox: (i32, i32, i32, i32)) -> Self {
-        let mut p = PBuf { b: [0u8; 144] };
-        p.u32at(0, canvas_w);
-        p.u32at(4, canvas_h);
-        p.i32at(8, bbox.0);
-        p.i32at(12, bbox.1);
-        p.i32at(16, bbox.2);
-        p.i32at(20, bbox.3);
-        p
-    }
-    fn u32at(&mut self, off: usize, v: u32) {
-        self.b[off..off + 4].copy_from_slice(&v.to_ne_bytes());
-    }
-    fn i32at(&mut self, off: usize, v: i32) {
-        self.b[off..off + 4].copy_from_slice(&v.to_ne_bytes());
-    }
-    fn f32at(&mut self, off: usize, v: f32) {
-        self.b[off..off + 4].copy_from_slice(&v.to_ne_bytes());
+        Params {
+            canvas_w,
+            canvas_h,
+            bx0: bbox.0,
+            by0: bbox.1,
+            bx1: bbox.2,
+            by1: bbox.3,
+            ..Default::default()
+        }
     }
     fn col(&mut self, c: crate::scene::Rgba) {
-        self.u32at(32, c.0 as u32);
-        self.u32at(36, c.1 as u32);
-        self.u32at(40, c.2 as u32);
-        self.u32at(44, c.3 as u32);
+        self.col = Vec4u([c.0 as u32, c.1 as u32, c.2 as u32, c.3 as u32]);
     }
-    /// p0..p3 at offsets 48/64/80/96.
+    /// p0..p3, selected by index (the prep code's slot number).
     fn p(&mut self, idx: usize, v: [f32; 4]) {
-        for (i, x) in v.iter().enumerate() {
-            self.f32at(48 + idx * 16 + i * 4, *x);
+        match idx {
+            0 => self.p0 = Vec4f(v),
+            1 => self.p1 = Vec4f(v),
+            2 => self.p2 = Vec4f(v),
+            _ => self.p3 = Vec4f(v),
         }
     }
     fn u0(&mut self, v: [u32; 4]) {
-        for (i, x) in v.iter().enumerate() {
-            self.u32at(112 + i * 4, *x);
-        }
+        self.u0 = Vec4u(v);
     }
     fn mk(&mut self, v: [i32; 4]) {
-        for (i, x) in v.iter().enumerate() {
-            self.i32at(128 + i * 4, *x);
+        self.mk = Vec4i(v);
+    }
+    /// The uniform bytes: each field serialised at its own
+    /// repr(C) offset (std::mem::offset_of!, asserted against
+    /// the WGSL offsets in exec_tests) into a zeroed block, so
+    /// the padding bytes (24..32) are zero by construction and
+    /// the struct definition is the single layout source.
+    fn bytes(&self) -> [u8; 144] {
+        fn w32(b: &mut [u8; 144], off: usize, v: u32) {
+            b[off..off + 4].copy_from_slice(&v.to_ne_bytes());
         }
+        fn w32s(b: &mut [u8; 144], off: usize, vs: &[u32; 4]) {
+            for (i, x) in vs.iter().enumerate() {
+                w32(b, off + i * 4, *x);
+            }
+        }
+        fn wi32s(b: &mut [u8; 144], off: usize, vs: &[i32; 4]) {
+            for (i, x) in vs.iter().enumerate() {
+                b[off + i * 4..off + i * 4 + 4].copy_from_slice(&x.to_ne_bytes());
+            }
+        }
+        fn wf32s(b: &mut [u8; 144], off: usize, vs: &[f32; 4]) {
+            for (i, x) in vs.iter().enumerate() {
+                b[off + i * 4..off + i * 4 + 4].copy_from_slice(&x.to_ne_bytes());
+            }
+        }
+        let mut b = [0u8; 144];
+        w32(&mut b, std::mem::offset_of!(Params, canvas_w), self.canvas_w);
+        w32(&mut b, std::mem::offset_of!(Params, canvas_h), self.canvas_h);
+        w32(&mut b, std::mem::offset_of!(Params, bx0), self.bx0 as u32);
+        w32(&mut b, std::mem::offset_of!(Params, by0), self.by0 as u32);
+        w32(&mut b, std::mem::offset_of!(Params, bx1), self.bx1 as u32);
+        w32(&mut b, std::mem::offset_of!(Params, by1), self.by1 as u32);
+        w32s(&mut b, std::mem::offset_of!(Params, col), &self.col.0);
+        wf32s(&mut b, std::mem::offset_of!(Params, p0), &self.p0.0);
+        wf32s(&mut b, std::mem::offset_of!(Params, p1), &self.p1.0);
+        wf32s(&mut b, std::mem::offset_of!(Params, p2), &self.p2.0);
+        wf32s(&mut b, std::mem::offset_of!(Params, p3), &self.p3.0);
+        w32s(&mut b, std::mem::offset_of!(Params, u0), &self.u0.0);
+        wi32s(&mut b, std::mem::offset_of!(Params, mk), &self.mk.0);
+        b
     }
 }
 
@@ -375,7 +441,7 @@ fn prep_stroke(
     ch: u32,
 ) -> PrepPrim {
     let base = |bbox| {
-        let mut p = PBuf::new(cw, ch, bbox);
+        let mut p = Params::new(cw, ch, bbox);
         p.col(col);
         p
     };
@@ -386,7 +452,7 @@ fn prep_stroke(
         return PrepPrim {
             kind,
             entry: "main_stroke",
-            params: base(bbox).b,
+            params: base(bbox).bytes(),
             pts: Vec::new(),
             plate: None,
             mask_prim: None,
@@ -404,15 +470,17 @@ fn prep_stroke(
     let mut p = base(bbox);
     p.p(0, [hw, 0.0, 0.0, 0.0]);
     let mut flags = 0u32;
+    // p2 = (fan_start.r, fan_start.cos_half, fan_end.c) per the
+    // WGSL stroke layout; the two fans each own half of the slot.
     if let Some(f) = &fan_start {
         p.p(1, [f.c.0, f.c.1, f.axis.0, f.axis.1]);
-        p.f32at(80, f.r);
-        p.f32at(84, f.cos_half);
+        p.p2.0[0] = f.r;
+        p.p2.0[1] = f.cos_half;
         flags |= 1;
     }
     if let Some(f) = &fan_end {
-        p.f32at(88, f.c.0);
-        p.f32at(92, f.c.1);
+        p.p2.0[2] = f.c.0;
+        p.p2.0[3] = f.c.1;
         p.p(3, [f.axis.0, f.axis.1, f.r, f.cos_half]);
         flags |= 2;
     }
@@ -425,7 +493,7 @@ fn prep_stroke(
     PrepPrim {
         kind,
         entry: "main_stroke",
-        params: p.b,
+        params: p.bytes(),
         pts: pts_flat(pts),
         plate: None,
         mask_prim: None,
@@ -461,17 +529,17 @@ fn prepare(list: &gputrace::DisplayList) -> Result<(Vec<PrepPrim>, HashMap<u32, 
         let prep = match prim {
             Prim::FillRect { x, y, w, h, col } => {
                 let bbox = cpu_bbox(cw, ch, x - 1.0, y - 1.0, x + w + 1.0, y + h + 1.0);
-                let mut p = PBuf::new(cw, ch, bbox);
+                let mut p = Params::new(cw, ch, bbox);
                 p.col(*col);
                 p.p(0, [x + w / 2.0, y + h / 2.0, w / 2.0, h / 2.0]);
-                PrepPrim { kind: "fill_rect", entry: "main_rect", params: p.b, pts: Vec::new(), plate: None, mask_prim: None, bbox, groups: groups_of(bbox) }
+                PrepPrim { kind: "fill_rect", entry: "main_rect", params: p.bytes(), pts: Vec::new(), plate: None, mask_prim: None, bbox, groups: groups_of(bbox) }
             }
             Prim::FillEllipse { cx, cy, rx, ry, rot, col }
             | Prim::FillEllipseMasked { cx, cy, rx, ry, rot, col, .. } => {
                 let masked = matches!(prim, Prim::FillEllipseMasked { .. });
                 let (ex, ey) = ellipse_extents(*rx, *ry, *rot);
                 let bbox = cpu_bbox(cw, ch, cx - ex - 1.0, cy - ey - 1.0, cx + ex + 1.0, cy + ey + 1.0);
-                let mut p = PBuf::new(cw, ch, bbox);
+                let mut p = Params::new(cw, ch, bbox);
                 p.col(*col);
                 p.p(0, [*cx, *cy, *rx, *ry]);
                 let (s, c) = rot.sin_cos();
@@ -485,7 +553,7 @@ fn prepare(list: &gputrace::DisplayList) -> Result<(Vec<PrepPrim>, HashMap<u32, 
                 } else {
                     (None, "fill_ellipse")
                 };
-                PrepPrim { kind, entry: "main_ellipse", params: p.b, pts: Vec::new(), plate: None, mask_prim, bbox, groups: groups_of(bbox) }
+                PrepPrim { kind, entry: "main_ellipse", params: p.bytes(), pts: Vec::new(), plate: None, mask_prim, bbox, groups: groups_of(bbox) }
             }
             Prim::StrokePolyline { pts, width, col } => {
                 prep_stroke("stroke_polyline", pts, *width, *col, cw, ch)
@@ -513,10 +581,10 @@ fn prepare(list: &gputrace::DisplayList) -> Result<(Vec<PrepPrim>, HashMap<u32, 
             Prim::FillPolygon { pts, col } => {
                 let (mnx, mny, mxx, mxy) = aabb(pts);
                 let bbox = cpu_bbox(cw, ch, mnx - 1.0, mny - 1.0, mxx + 1.0, mxy + 1.0);
-                let mut p = PBuf::new(cw, ch, bbox);
+                let mut p = Params::new(cw, ch, bbox);
                 p.col(*col);
                 p.u0([pts.len() as u32, 0, 0, 0]);
-                PrepPrim { kind: "fill_polygon", entry: "main_fillpoly", params: p.b, pts: pts_flat(pts), plate: None, mask_prim: None, bbox, groups: groups_of(bbox) }
+                PrepPrim { kind: "fill_polygon", entry: "main_fillpoly", params: p.bytes(), pts: pts_flat(pts), plate: None, mask_prim: None, bbox, groups: groups_of(bbox) }
             }
             Prim::PolygonMask { pts } => {
                 let (mnx, mny, mxx, mxy) = aabb(pts);
@@ -528,10 +596,10 @@ fn prepare(list: &gputrace::DisplayList) -> Result<(Vec<PrepPrim>, HashMap<u32, 
                     h: (bbox.3 - bbox.1 + 1).max(0) as u32,
                 };
                 allocs.insert(i as u32, alloc);
-                let mut p = PBuf::new(cw, ch, bbox);
+                let mut p = Params::new(cw, ch, bbox);
                 p.u0([pts.len() as u32, 0, 0, 0]);
                 p.mk([alloc.ox, alloc.oy, alloc.w as i32, alloc.h as i32]);
-                PrepPrim { kind: "polygon_mask", entry: "main_mask_poly", params: p.b, pts: pts_flat(pts), plate: None, mask_prim: Some(i as u32), bbox, groups: groups_of(bbox) }
+                PrepPrim { kind: "polygon_mask", entry: "main_mask_poly", params: p.bytes(), pts: pts_flat(pts), plate: None, mask_prim: Some(i as u32), bbox, groups: groups_of(bbox) }
             }
             Prim::EllipseMask { cx, cy, rx, ry, rot } => {
                 let (ex, ey) = ellipse_extents(*rx, *ry, *rot);
@@ -543,22 +611,22 @@ fn prepare(list: &gputrace::DisplayList) -> Result<(Vec<PrepPrim>, HashMap<u32, 
                     h: (bbox.3 - bbox.1 + 1).max(0) as u32,
                 };
                 allocs.insert(i as u32, alloc);
-                let mut p = PBuf::new(cw, ch, bbox);
+                let mut p = Params::new(cw, ch, bbox);
                 p.p(0, [*cx, *cy, *rx, *ry]);
                 let (s, c) = rot.sin_cos();
                 p.p(1, [s, c, 0.0, 0.0]);
                 p.mk([alloc.ox, alloc.oy, alloc.w as i32, alloc.h as i32]);
-                PrepPrim { kind: "ellipse_mask", entry: "main_mask_ellipse", params: p.b, pts: Vec::new(), plate: None, mask_prim: Some(i as u32), bbox, groups: groups_of(bbox) }
+                PrepPrim { kind: "ellipse_mask", entry: "main_mask_ellipse", params: p.bytes(), pts: Vec::new(), plate: None, mask_prim: Some(i as u32), bbox, groups: groups_of(bbox) }
             }
             Prim::FillPolygonMasked { pts, col, mask } => {
                 let a = mask_scope(&allocs, *mask, i)?;
                 let (mnx, mny, mxx, mxy) = aabb(pts);
                 let bbox = cpu_bbox(cw, ch, mnx, mny, mxx, mxy);
-                let mut p = PBuf::new(cw, ch, bbox);
+                let mut p = Params::new(cw, ch, bbox);
                 p.col(*col);
                 p.u0([pts.len() as u32, 0, 0, 0]);
                 p.mk([a.ox, a.oy, a.w as i32, a.h as i32]);
-                PrepPrim { kind: "fill_polygon_masked", entry: "main_fillpoly_masked", params: p.b, pts: pts_flat(pts), plate: None, mask_prim: Some(*mask), bbox, groups: groups_of(bbox) }
+                PrepPrim { kind: "fill_polygon_masked", entry: "main_fillpoly_masked", params: p.bytes(), pts: pts_flat(pts), plate: None, mask_prim: Some(*mask), bbox, groups: groups_of(bbox) }
             }
             Prim::MaskedBlend { rect, mask, col } => {
                 let a = mask_scope(&allocs, *mask, i)?;
@@ -571,21 +639,21 @@ fn prepare(list: &gputrace::DisplayList) -> Result<(Vec<PrepPrim>, HashMap<u32, 
                     rect.2.min(cw as i32 - 1),
                     rect.3.min(ch as i32 - 1),
                 );
-                let mut p = PBuf::new(cw, ch, bbox);
+                let mut p = Params::new(cw, ch, bbox);
                 p.col(*col);
                 p.mk([a.ox, a.oy, a.w as i32, a.h as i32]);
-                PrepPrim { kind: "masked_blend", entry: "main_masked_blend", params: p.b, pts: Vec::new(), plate: None, mask_prim: Some(*mask), bbox, groups: groups_of(bbox) }
+                PrepPrim { kind: "masked_blend", entry: "main_masked_blend", params: p.bytes(), pts: Vec::new(), plate: None, mask_prim: Some(*mask), bbox, groups: groups_of(bbox) }
             }
             Prim::HeadShade { form, head_c, head_r, circ_c, circ_r, rot, rad, col } => {
                 let bbox = cpu_bbox(cw, ch, head_c.0 - rad, head_c.1 - rad, head_c.0 + rad, head_c.1 + rad);
-                let mut p = PBuf::new(cw, ch, bbox);
+                let mut p = Params::new(cw, ch, bbox);
                 p.col(*col);
                 p.p(0, [head_c.0, head_c.1, head_r.0, head_r.1]);
                 let (s, c) = rot.sin_cos();
                 p.p(1, [s, c, 0.0, 0.0]);
                 p.p(2, [circ_c.0, circ_c.1, circ_r.0, circ_r.1]);
                 p.u0([*form as u32, 0, 0, 0]);
-                PrepPrim { kind: "head_shade", entry: "main_headshade", params: p.b, pts: Vec::new(), plate: None, mask_prim: None, bbox, groups: groups_of(bbox) }
+                PrepPrim { kind: "head_shade", entry: "main_headshade", params: p.bytes(), pts: Vec::new(), plate: None, mask_prim: None, bbox, groups: groups_of(bbox) }
             }
             Prim::CompositePlate { plate, hand, lean_rad, anchor } => {
                 let pd = list
@@ -617,7 +685,7 @@ fn prepare(list: &gputrace::DisplayList) -> Result<(Vec<PrepPrim>, HashMap<u32, 
                     mxy = mxy.max(y);
                 }
                 let bbox = cpu_bbox(cw, ch, mnx, mny, mxx, mxy);
-                let mut p = PBuf::new(cw, ch, bbox);
+                let mut p = Params::new(cw, ch, bbox);
                 p.p(0, [hand.0, hand.1, pd.x0, pd.y0]);
                 p.p(1, [s, c, ax, ay]);
                 p.p(2, [pd.w as f32, pd.h as f32, PLATE_RES, 0.0]);
@@ -627,7 +695,7 @@ fn prepare(list: &gputrace::DisplayList) -> Result<(Vec<PrepPrim>, HashMap<u32, 
                     .chunks_exact(4)
                     .map(|q| u32::from_le_bytes([q[0], q[1], q[2], q[3]]))
                     .collect();
-                PrepPrim { kind: "composite_plate", entry: "main_plate", params: p.b, pts: Vec::new(), plate: Some(packed), mask_prim: None, bbox, groups: groups_of(bbox) }
+                PrepPrim { kind: "composite_plate", entry: "main_plate", params: p.bytes(), pts: Vec::new(), plate: Some(packed), mask_prim: None, bbox, groups: groups_of(bbox) }
             }
         };
         out.push(prep);
@@ -730,34 +798,65 @@ async fn replay_gpu(
         label: Some("gpupaint"),
         source: wgpu::ShaderSource::Wgsl(WGSL_SRC.into()),
     });
-    let storage = |read_only: bool| wgpu::BindGroupLayoutEntry {
-        binding: 0,
-        visibility: wgpu::ShaderStages::COMPUTE,
-        ty: wgpu::BindingType::Buffer {
-            ty: wgpu::BufferBindingType::Storage { read_only },
-            has_dynamic_offset: false,
-            min_binding_size: None,
-        },
-        count: None,
-    };
-    let mut e0 = storage(false);
-    e0.binding = 0;
-    let mut e1 = storage(false);
-    e1.binding = 1;
-    e1.ty = wgpu::BindingType::Buffer {
-        ty: wgpu::BufferBindingType::Uniform,
-        has_dynamic_offset: false,
-        min_binding_size: None,
-    };
-    let mut e2 = storage(true);
-    e2.binding = 2;
-    let mut e3 = storage(false);
-    e3.binding = 3;
-    let mut e4 = storage(true);
-    e4.binding = 4;
+    // Literal entry list (the shape tools/ci/check_shaders.py
+    // models): binding 0 canvas storage rw, 1 Params uniform,
+    // 2 pts storage ro, 3 mask storage rw, 4 plate storage ro —
+    // the same five entries the previous closure+mutation code
+    // assembled, in the same order with the same flags.
     let bgl = device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
         label: Some("gpupaint-bgl"),
-        entries: &[e0, e1, e2, e3, e4],
+        entries: &[
+            wgpu::BindGroupLayoutEntry {
+                binding: 0,
+                visibility: wgpu::ShaderStages::COMPUTE,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Storage { read_only: false },
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            },
+            wgpu::BindGroupLayoutEntry {
+                binding: 1,
+                visibility: wgpu::ShaderStages::COMPUTE,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Uniform,
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            },
+            wgpu::BindGroupLayoutEntry {
+                binding: 2,
+                visibility: wgpu::ShaderStages::COMPUTE,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Storage { read_only: true },
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            },
+            wgpu::BindGroupLayoutEntry {
+                binding: 3,
+                visibility: wgpu::ShaderStages::COMPUTE,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Storage { read_only: false },
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            },
+            wgpu::BindGroupLayoutEntry {
+                binding: 4,
+                visibility: wgpu::ShaderStages::COMPUTE,
+                ty: wgpu::BindingType::Buffer {
+                    ty: wgpu::BufferBindingType::Storage { read_only: true },
+                    has_dynamic_offset: false,
+                    min_binding_size: None,
+                },
+                count: None,
+            },
+        ],
     });
     let layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: Some("gpupaint-layout"),
@@ -765,19 +864,6 @@ async fn replay_gpu(
         immediate_size: 0,
     });
     let mut pipelines: HashMap<&'static str, wgpu::ComputePipeline> = HashMap::new();
-    let pipeline_for = |pipelines: &mut HashMap<&'static str, wgpu::ComputePipeline>, entry: &'static str| {
-        if !pipelines.contains_key(entry) {
-            let p = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
-                label: Some(entry),
-                layout: Some(&layout),
-                module: &module,
-                entry_point: Some(entry),
-                compilation_options: Default::default(),
-                cache: None,
-            });
-            pipelines.insert(entry, p);
-        }
-    };
 
     let canvas = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("gpupaint canvas"),
@@ -830,7 +916,7 @@ async fn replay_gpu(
         if prep.groups == (0, 0) {
             continue;
         }
-        pipeline_for(&mut pipelines, prep.entry);
+        pipeline_for(&mut pipelines, &device, &layout, &module, prep.entry);
         let params_buf = device.create_buffer(&wgpu::BufferDescriptor {
             label: Some("gpupaint params"),
             size: prep.params.len() as u64,
@@ -941,6 +1027,63 @@ async fn replay_gpu(
     Ok(ReplayOutcome { px, gpu_ms, adapter_line, dispatches })
 }
 
+/// One compute pipeline for `entry`, a @compute entry point of
+/// gpupaint.wgsl. Kept as a plain fn template whose call sites
+/// all pass a literal entry name (see pipeline_for below), so
+/// tools/ci/check_shaders.py resolves one binding-checked site
+/// per entry point.
+fn compute_pipeline(
+    device: &wgpu::Device,
+    layout: &wgpu::PipelineLayout,
+    module: &wgpu::ShaderModule,
+    entry: &'static str,
+) -> wgpu::ComputePipeline {
+    device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
+        label: Some(entry),
+        layout: Some(layout),
+        module: module,
+        entry_point: Some(entry),
+        compilation_options: Default::default(),
+        cache: None,
+    })
+}
+
+/// Lazily create (once per entry) the pipeline for `entry` in
+/// `pipelines` — the same lazy HashMap cache the previous
+/// closure in replay_gpu maintained. The match arms are the
+/// ONLY call sites of compute_pipeline and each one passes its
+/// entry name literally; `prepare` only ever emits these ten
+/// entry names, so the panic arm is unreachable from a prepared
+/// list (it replaces wgpu's own validation error for a bogus
+/// entry with a louder, earlier one).
+fn pipeline_for(
+    pipelines: &mut HashMap<&'static str, wgpu::ComputePipeline>,
+    device: &wgpu::Device,
+    layout: &wgpu::PipelineLayout,
+    module: &wgpu::ShaderModule,
+    entry: &'static str,
+) {
+    if pipelines.contains_key(entry) {
+        return;
+    }
+    let p = match entry {
+        "main_rect" => compute_pipeline(device, layout, module, "main_rect"),
+        "main_ellipse" => compute_pipeline(device, layout, module, "main_ellipse"),
+        "main_stroke" => compute_pipeline(device, layout, module, "main_stroke"),
+        "main_fillpoly" => compute_pipeline(device, layout, module, "main_fillpoly"),
+        "main_mask_poly" => compute_pipeline(device, layout, module, "main_mask_poly"),
+        "main_mask_ellipse" => compute_pipeline(device, layout, module, "main_mask_ellipse"),
+        "main_fillpoly_masked" => {
+            compute_pipeline(device, layout, module, "main_fillpoly_masked")
+        }
+        "main_masked_blend" => compute_pipeline(device, layout, module, "main_masked_blend"),
+        "main_headshade" => compute_pipeline(device, layout, module, "main_headshade"),
+        "main_plate" => compute_pipeline(device, layout, module, "main_plate"),
+        _ => panic!("gpupaint: unknown entry point {entry}"),
+    };
+    pipelines.insert(entry, p);
+}
+
 fn replay(list_path: &str, out_path: &str) -> i32 {
     let text = match std::fs::read_to_string(list_path) {
         Ok(t) => t,
@@ -1027,6 +1170,87 @@ mod exec_tests {
             sha256_hex(b"abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq"),
             "248d6a61d20638b8e5c026930c3e6039a33ce45964ff2167f6ecedd419db06c1"
         );
+    }
+
+    /// Golden params bytes (seat FIX-SHADER-GATE): the hex
+    /// table below was captured from the PRE-refactor custom
+    /// byte-builder (the `p.b` offset writer this seat replaced)
+    /// for exactly the lists constructed here; the #[repr(C)]
+    /// Params-struct packing must reproduce every byte, for
+    /// every prim kind. Also pins the struct layout against the
+    /// WGSL offsets (144 B; vec4 slots at 32/48/.../128).
+    #[test]
+    fn params_bytes_golden() {
+        assert_eq!(std::mem::size_of::<Params>(), 144);
+        assert_eq!(std::mem::align_of::<Params>(), 16);
+        assert_eq!(std::mem::offset_of!(Params, canvas_w), 0);
+        assert_eq!(std::mem::offset_of!(Params, bx0), 8);
+        assert_eq!(std::mem::offset_of!(Params, col), 32);
+        assert_eq!(std::mem::offset_of!(Params, p0), 48);
+        assert_eq!(std::mem::offset_of!(Params, p1), 64);
+        assert_eq!(std::mem::offset_of!(Params, p2), 80);
+        assert_eq!(std::mem::offset_of!(Params, p3), 96);
+        assert_eq!(std::mem::offset_of!(Params, u0), 112);
+        assert_eq!(std::mem::offset_of!(Params, mk), 128);
+        let hex = |b: &[u8]| b.iter().map(|x| format!("{x:02x}")).collect::<String>();
+        let one = |prims: Vec<Prim>, plates: Vec<gputrace::PlateData>| {
+            let list = gputrace::DisplayList { canvas_w: 64, canvas_h: 64, plates, prims };
+            prepare(&list).expect("prepare").0
+        };
+        let cases: Vec<(&str, Vec<PrepPrim>)> = vec![
+            ("fill_rect", one(vec![Prim::FillRect { x: 10.5, y: 12.25, w: 30.0, h: 20.0, col: (200, 30, 40, 255) }], vec![])),
+            ("fill_ellipse", one(vec![Prim::FillEllipse { cx: 32.0, cy: 30.0, rx: 12.5, ry: 8.25, rot: 0.7, col: (1, 2, 3, 200) }], vec![])),
+            ("ellipse_mask", one(vec![Prim::EllipseMask { cx: 28.0, cy: 26.0, rx: 10.0, ry: 14.0, rot: -0.3 }], vec![])),
+            ("masked_blend", one(vec![
+                Prim::EllipseMask { cx: 28.0, cy: 26.0, rx: 10.0, ry: 14.0, rot: -0.3 },
+                Prim::MaskedBlend { rect: (5, 6, 40, 44), mask: 0, col: (9, 8, 7, 255) },
+            ], vec![])),
+            ("head_shade0", one(vec![Prim::HeadShade { form: 0, head_c: (32.0, 32.0), head_r: (18.0, 20.0), circ_c: (40.0, 24.0), circ_r: (12.0, 9.0), rot: 0.2, rad: 22.5, col: (50, 60, 70, 128) }], vec![])),
+            ("head_shade1", one(vec![Prim::HeadShade { form: 1, head_c: (32.0, 32.0), head_r: (18.0, 20.0), circ_c: (40.0, 24.0), circ_r: (15.0, 15.0), rot: 0.2, rad: 22.5, col: (50, 60, 70, 128) }], vec![])),
+            ("composite_plate", one(vec![Prim::CompositePlate { plate: 0, hand: (100.0, 200.0), lean_rad: 0.35, anchor: (12.0, -8.0) }],
+                vec![gputrace::PlateData { px: (0..48u8).collect(), w: 4, h: 3, x0: 1.5, y0: -2.0 }])),
+            ("stroke_polyline", one(vec![Prim::StrokePolyline { pts: vec![(5.0, 5.0), (20.0, 15.0), (35.0, 10.0), (50.0, 30.0)], width: 6.5, col: (255, 128, 0, 255) }], vec![])),
+            ("fill_ellipse_masked", one(vec![
+                Prim::PolygonMask { pts: vec![(10.0, 10.0), (50.0, 12.0), (44.0, 50.0)] },
+                Prim::FillEllipseMasked { cx: 30.0, cy: 28.0, rx: 11.0, ry: 9.0, rot: 0.4, col: (77, 88, 99, 210), mask: 0 },
+            ], vec![])),
+            ("fill_polygon", one(vec![Prim::FillPolygon { pts: vec![(8.0, 9.0), (40.0, 7.0), (30.0, 45.0), (12.0, 38.0)], col: (3, 4, 5, 6) }], vec![])),
+            ("stroke_quad", one(vec![Prim::StrokeQuad { p0: (4.0, 50.0), p1: (30.0, 4.0), p2: (58.0, 44.0), width: 4.25, col: (11, 22, 33, 44) }], vec![])),
+            ("stroke_ellipse", one(vec![Prim::StrokeEllipse { cx: 32.0, cy: 32.0, rx: 20.0, ry: 13.0, rot: 0.9, col: (90, 80, 70, 60), width: 3.5 }], vec![])),
+            ("stroke_short", one(vec![Prim::StrokePolyline { pts: vec![(7.0, 7.0)], width: 5.0, col: (1, 1, 1, 1) }], vec![])),
+        ];
+        let golden: &[(&str, usize, &str, &str)] = &[
+            ("fill_rect", 0, "fill_rect", "4000000040000000090000000b0000002a000000220000000000000000000000c80000001e00000028000000ff0000000000cc410000b24100007041000020410000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"),
+            ("fill_ellipse", 0, "fill_ellipse", "4000000040000000100000000e000000300000002e0000000000000000000000010000000200000003000000c8000000000000420000f041000048410000044173eb243fb3cc433f000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"),
+            ("ellipse_mask", 0, "ellipse_mask", "40000000400000000e000000090000002a0000002b0000000000000000000000000000000000000000000000000000000000e0410000d04100002041000060416d4e97beef90743f00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e000000090000001d00000023000000"),
+            ("masked_blend", 0, "ellipse_mask", "40000000400000000e000000090000002a0000002b0000000000000000000000000000000000000000000000000000000000e0410000d04100002041000060416d4e97beef90743f00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e000000090000001d00000023000000"),
+            ("masked_blend", 1, "masked_blend", "40000000400000000500000006000000280000002c0000000000000000000000090000000800000007000000ff00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e000000090000001d00000023000000"),
+            ("head_shade0", 0, "head_shade", "4000000040000000090000000900000037000000370000000000000000000000320000003c00000046000000800000000000004200000042000090410000a041f96f4b3ea5e57a3f0000000000000000000020420000c0410000404100001041000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"),
+            ("head_shade1", 0, "head_shade", "4000000040000000090000000900000037000000370000000000000000000000320000003c00000046000000800000000000004200000042000090410000a041f96f4b3ea5e57a3f0000000000000000000020420000c0410000704100007041000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000"),
+            ("composite_plate", 0, "composite_plate", "40000000400000001a060000730300003f0000003f0000000000000000000000000000000000000000000000000000000000c842000048430000c03f000000c04d90af3ebb7a703f00004041000000c100008040000040400000004000000000000000000000000000000000000000000400000003000000000000000000000000000000000000000000000000000000"),
+            ("stroke_polyline", 0, "stroke_polyline", "4000000040000000000000000000000037000000230000000000000000000000ff0000008000000000000000ff000000000050400000000000000000000000000000a0400000a040400155bfd5000ebf000050405e836c3f000048420000f0419a99193fcdcc4c3f000050405e836c3f0400000004000000040000000300000000000000000000000000000000000000"),
+            ("fill_ellipse_masked", 0, "polygon_mask", "40000000400000000a0000000a000000320000003200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000a0000000a0000002900000029000000"),
+            ("fill_ellipse_masked", 1, "fill_ellipse_masked", "40000000400000000f0000000e0000002d0000002a00000000000000000000004d0000005800000063000000d20000000000f0410000e0410000304100001041d761c73ea7ca6b3f00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000a0000000a0000002900000029000000"),
+            ("fill_polygon", 0, "fill_polygon", "40000000400000000700000006000000290000002e000000000000000000000003000000040000000500000006000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000"),
+            ("stroke_quad", 0, "stroke_quad", "400000004000000000000000160000003e0000003600000000000000000000000b00000016000000210000002c000000000008400000000000000000000000000000804000004842ebee01bf34935c3f000008405e836c3f00006842000030429c2c173fd9984e3f000008405e836c3f1900000004000000040000000300000000000000000000000000000000000000"),
+            ("stroke_ellipse", 0, "stroke_ellipse", "40000000400000000d0000000b000000330000003500000000000000000000005a00000050000000460000003c0000000000e03f0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000009100000000000000000000000000000000000000000000000000000000000000"),
+            ("stroke_short", 0, "stroke_polyline", "40000000400000000000000000000000ffffffffffffffff000000000000000001000000010000000100000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"),
+        ];
+        let mut gi = 0;
+        for (name, preps) in &cases {
+            for (i, p) in preps.iter().enumerate() {
+                let (gname, gidx, gkind, ghex) = golden[gi];
+                gi += 1;
+                assert_eq!((*name, i, p.kind), (gname, gidx, gkind));
+                assert_eq!(
+                    hex(&p.params),
+                    ghex,
+                    "params bytes drifted for {name} prim {i} ({})",
+                    p.kind
+                );
+            }
+        }
+        assert_eq!(gi, golden.len());
     }
 
     #[test]
