@@ -1,0 +1,66 @@
+name: GPUFIRST Perf (dispatch)
+
+# GPUFIRST Phase 0 — PERF seat timing run. Manual dispatch only:
+# builds the PERF harness (--gpupaint-time, plus the gpupaint
+# feature so the TRACE display-list composition is recorded) and
+# runs it on the CI lavapipe adapter. SOFTWARE RENDERING: every
+# number from this workflow is a lavapipe number — it bounds the
+# algorithm's work and proves the pipeline shape; it does NOT
+# predict RADV timings on the user's PC.
+on:
+  workflow_dispatch:
+
+concurrency:
+  group: gpufirst-perf-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+  RUSTFLAGS: "-C link-arg=-fuse-ld=mold"
+
+jobs:
+  perf:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+          key: ubuntu2204-gpufirst
+
+      - name: Install mold + software Vulkan (lavapipe)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mold mesa-vulkan-drivers vulkan-tools
+          vulkaninfo --summary || true
+
+      - name: Build (default features — production regression check)
+        run: cargo build --release
+
+      - name: Test (default features)
+        run: cargo test --release
+
+      - name: Build PERF harness (feature gpupaint)
+        run: cargo build --release --features gpupaint
+
+      - name: Run PERF harness on lavapipe
+        run: |
+          ICD=$(ls /usr/share/vulkan/icd.d/lvp_icd*.json | head -n 1)
+          echo "lavapipe ICD: $ICD"
+          VK_ICD_FILENAMES="$ICD" ./target/release/talerender --gpupaint-time 2>&1 | tee gpufirst-perf.log
+          grep -c "GPUFIRST-TIME" gpufirst-perf.log
+          grep "GPUFIRST-TIME SUMMARY" gpufirst-perf.log
+          grep "GPUFIRST-TIME F-GPU" gpufirst-perf.log
+
+      - name: Upload perf log artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gpufirst-perf-log
+          path: gpufirst-perf.log

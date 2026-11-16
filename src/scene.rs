@@ -567,6 +567,8 @@ impl Painter {
     }
     /// Filled ellipse (centre, radii, rotation rad), coverage-AA.
     pub(crate) fn fill_ellipse(&mut self, cx: f32, cy: f32, rx: f32, ry: f32, rot: f32, col: Rgba) {
+        #[cfg(feature = "gpupaint")]
+        crate::gputrace::trace_fill_ellipse(cx, cy, rx, ry, rot, col);
         let ex = (rx * rot.cos()).abs() + (ry * rot.sin()).abs();
         let ey = (rx * rot.sin()).abs() + (ry * rot.cos()).abs();
         let (x0, y0, x1, y1) = self.bbox(cx - ex - 1.0, cy - ey - 1.0, cx + ex + 1.0, cy + ey + 1.0);
@@ -599,6 +601,8 @@ impl Painter {
     /// polyline (min over segments), so joins are the union shape —
     /// one canvas stroke is one shape, never a double blend.
     pub(crate) fn stroke_polyline(&mut self, pts: &[(f32, f32)], width: f32, col: Rgba) {
+        #[cfg(feature = "gpupaint")]
+        crate::gputrace::trace_stroke_polyline(pts, width, col);
         if pts.len() < 2 {
             return;
         }
@@ -702,6 +706,8 @@ impl Painter {
     /// caller), coverage-AA from the signed distance to the outline
     /// (sign from the centre-sample inside test).
     pub(crate) fn fill_polygon(&mut self, pts: &[(f32, f32)], col: Rgba) {
+        #[cfg(feature = "gpupaint")]
+        crate::gputrace::trace_fill_polygon(pts, col);
         let (mut mnx, mut mny, mut mxx, mut mxy) = (f32::MAX, f32::MAX, f32::MIN, f32::MIN);
         for &(x, y) in pts {
             mnx = mnx.min(x);
@@ -740,6 +746,8 @@ impl Painter {
     }
     /// Boolean mask of a polygon (for canvas clip()).
     pub(crate) fn polygon_mask(&self, pts: &[(f32, f32)]) -> Vec<bool> {
+        #[cfg(feature = "gpupaint")]
+        crate::gputrace::trace_polygon_mask(pts);
         let mut m = vec![false; self.w * self.h];
         let (mut mnx, mut mny, mut mxx, mut mxy) = (f32::MAX, f32::MAX, f32::MIN, f32::MIN);
         for &(x, y) in pts {
@@ -761,6 +769,8 @@ impl Painter {
     /// Boolean mask of an ellipse (for canvas clip() regions that are
     /// elliptical — the open-mouth clip in drawFace).
     pub(crate) fn ellipse_mask(&self, cx: f32, cy: f32, rx: f32, ry: f32, rot: f32) -> Vec<bool> {
+        #[cfg(feature = "gpupaint")]
+        crate::gputrace::trace_ellipse_mask(cx, cy, rx, ry, rot);
         let mut m = vec![false; self.w * self.h];
         let ex = (rx * rot.cos()).abs() + (ry * rot.sin()).abs();
         let ey = (rx * rot.sin()).abs() + (ry * rot.cos()).abs();
@@ -778,6 +788,8 @@ impl Painter {
         m
     }
     pub(crate) fn fill_ellipse_masked(&mut self, cx: f32, cy: f32, rx: f32, ry: f32, rot: f32, col: Rgba, mask: &[bool]) {
+        #[cfg(feature = "gpupaint")]
+        crate::gputrace::trace_fill_ellipse_masked(cx, cy, rx, ry, rot, col, mask);
         let ex = (rx * rot.cos()).abs() + (ry * rot.sin()).abs();
         let ey = (rx * rot.sin()).abs() + (ry * rot.cos()).abs();
         let (x0, y0, x1, y1) = self.bbox(cx - ex - 1.0, cy - ey - 1.0, cx + ex + 1.0, cy + ey + 1.0);
@@ -796,6 +808,8 @@ impl Painter {
     }
     /// Axis-aligned rect fill, coverage-AA via the box SDF.
     pub(crate) fn fill_rect(&mut self, x: f32, y: f32, w: f32, h: f32, col: Rgba) {
+        #[cfg(feature = "gpupaint")]
+        crate::gputrace::trace_fill_rect(x, y, w, h, col);
         let (x0, y0, x1, y1) = self.bbox(x - 1.0, y - 1.0, x + w + 1.0, y + h + 1.0);
         let (cx, cy) = (x + w / 2.0, y + h / 2.0);
         let (hw, hh) = (w / 2.0, h / 2.0);
@@ -1123,6 +1137,8 @@ pub(crate) fn paint_toon(spec: &ToonSpec) -> (Vec<u8>, u32, u32) {
         let shade = shade_rgb(spec.head, 0.9);
         let col = (shade.0, shade.1, shade.2, 255u8);
         let (x0, y0, x1, y1) = p.bbox(hxp - rp * res - 1.0, hyp - rp * res - 1.0, hxp + rp * res + 1.0, hyp + rp * res + 1.0);
+        #[cfg(feature = "gpupaint")]
+        crate::gputrace::trace_head_shade(1, (hxp, hyp), (rp * res, rp * 0.97 * res), (ccxp, ccyp), (rp * res, rp * res), th, rp * res + 1.0, col);
         for y in y0..=y1 {
             for x in x0..=x1 {
                 let (pxx, pyy) = (x as f32 + 0.5, y as f32 + 0.5);
@@ -1254,6 +1270,8 @@ pub(crate) fn paint_toon(spec: &ToonSpec) -> (Vec<u8>, u32, u32) {
             let (ax, ay) = px(fx - 40.0, my - 10.0);
             let (bxp, byp) = px(fx + 40.0, my + 2.0);
             let (x0, y0, x1, y1) = p.bbox(ax.min(bxp), ay.min(byp), ax.max(bxp), ay.max(byp));
+            #[cfg(feature = "gpupaint")]
+            crate::gputrace::trace_masked_blend((x0, y0, x1, y1), &m, rgba_of("#FFFFFF"));
             for yy in y0..=y1 {
                 for xx in x0..=x1 {
                     if m[yy as usize * p.w + xx as usize] {

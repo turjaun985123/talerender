@@ -227,6 +227,13 @@ fn shade_rgba(s: &str, k: f32) -> Rgba {
 /// Fill a polygon through a mask (the bean clip for patterns):
 /// per-pixel centre test against both masks over the bbox.
 fn fill_polygon_masked(p: &mut Painter, pts: &[(f32, f32)], mask: &[bool], col: Rgba) {
+    // GPU trace hook: MUST stay above the internal polygon_mask
+    // call below — that call records the panel's own mask and
+    // moves the recorder's last-mask id; resolving this fill's
+    // mask (the caller's bean mask) has to happen first. See
+    // docs/integration/GPUFIRST-TRACE.md §3.
+    #[cfg(feature = "gpupaint")]
+    crate::gputrace::trace_fill_polygon_masked(pts, col, mask);
     let own = p.polygon_mask(pts);
     let (mut x0, mut y0, mut x1, mut y1) = (f32::MAX, f32::MAX, f32::MIN, f32::MIN);
     for &(x, y) in pts {
@@ -282,6 +289,8 @@ fn rounded_rect_pts_radii(
 /// re-anchor, then +(384, 256), then x res). Bilinear sampling
 /// of the plate.
 fn composite_plate(p: &mut Painter, plate: &Plate, hand: (f32, f32), lean_rad: f32, anchor: (f32, f32)) {
+    #[cfg(feature = "gpupaint")]
+    crate::gputrace::trace_composite_plate(plate, hand, lean_rad, anchor);
     let (s, c) = lean_rad.sin_cos();
     let (ax, ay) = anchor;
     // Canvas-space corners of the plate rect (forward map).
@@ -1000,6 +1009,8 @@ pub(crate) fn paint_toon_full(
         let (rx_c, ry_c) = (rp * (1.0 - 0.3 * sq) * RES, rp * (1.0 + sq) * RES);
         let rad = rp * RES * 1.05;
         let (x0, y0, x1, y1) = p.bbox(chx - rad, chy - rad, chx + rad, chy + rad);
+        #[cfg(feature = "gpupaint")]
+        crate::gputrace::trace_head_shade(0, (chx, chy), (rx_h, ry_h), (ccx, ccy), (rx_c, ry_c), head_rot, rad, col);
         for y in y0..=y1 {
             for x in x0..=x1 {
                 let (pxx, pyy) = (x as f32 + 0.5, y as f32 + 0.5);
@@ -1205,6 +1216,8 @@ pub(crate) fn paint_toon_full(
         let (ax, ay) = hpt(fx - 40.0, my - 10.0);
         let (bxp, byp) = hpt(fx + 40.0, my + 2.0);
         let (x0, y0, x1, y1) = p.bbox(ax.min(bxp), ay.min(byp), ax.max(bxp), ay.max(byp));
+        #[cfg(feature = "gpupaint")]
+        crate::gputrace::trace_masked_blend((x0, y0, x1, y1), &msk, rgba("#FFFFFF"));
         for yy in y0..=y1 {
             for xx in x0..=x1 {
                 if msk[yy as usize * p.w + xx as usize] {

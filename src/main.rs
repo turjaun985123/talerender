@@ -33,6 +33,9 @@ mod dyntex;
 mod errors;
 mod eval15;
 mod gpucore;
+#[cfg(feature = "gpupaint")]
+mod gpupaint_states;
+mod gpupaint_time;
 mod lifetimes;
 mod math;
 mod mempressure;
@@ -59,6 +62,10 @@ mod film;
 mod filmseq;
 mod filmtelemetry;
 mod toonfull;
+#[cfg(feature = "gpupaint")]
+pub(crate) mod gpupaint;
+#[cfg(feature = "gpupaint")]
+pub(crate) mod gputrace;
 
 use math::Mat4;
 use std::borrow::Cow;
@@ -328,7 +335,17 @@ fn main() {
     // Help and version win anywhere on the command line.
     if args.iter().any(|a| a == "-h" || a == "--help") {
         print!("{HELP}");
+        #[cfg(feature = "gpupaint")]
+        println!("\n    --gpu-paint <SUB>       GPU-first Phase 0 trace harness (feature gpupaint): record-battery | record-states | replay | compare | time. Run '--gpu-paint' with no subcommand for its usage.");
         return;
+    }
+    // GPU-first Phase 0 harness (feature gpupaint only): handled
+    // before the production argument loop; with the feature off
+    // the flag falls through to the loop's unknown-argument error,
+    // exactly as before.
+    #[cfg(feature = "gpupaint")]
+    if let Some(pos) = args.iter().position(|a| a == "--gpu-paint") {
+        std::process::exit(crate::gpupaint::run(&args[pos + 1..]));
     }
     if args.iter().any(|a| a == "-V" || a == "--version") {
         println!("talerender {}", env!("CARGO_PKG_VERSION"));
@@ -351,6 +368,8 @@ fn main() {
     let mut film_dir: Option<String> = None;
     let mut film_telemetry_dir: Option<String> = None;
     let mut tables = false;
+    let mut gpupaint_time_flag = false;
+    let mut gpupaint_no_gpu = false;
     let mut film_from: u32 = 0;
     let mut film_to: u32 = 0;
     // V2 C8 configuration layers: raw CLI values only —
@@ -400,6 +419,15 @@ fn main() {
             "--cutouts-out" => {
                 i += 1;
                 cutouts_out = Some(value(&args, i, "--cutouts-out"));
+            }
+            "--gpupaint-time" => {
+                gpupaint_time_flag = true;
+            }
+            "--gpupaint-no-gpu" => {
+                gpupaint_no_gpu = true;
+            }
+            "--gpupaint-gpu-only" => {
+                // Modifier for --gpupaint-time; consumed at dispatch.
             }
             "--film-telemetry" => {
                 i += 1;
@@ -476,6 +504,14 @@ fn main() {
         config::resolve_from_process_with_report(&cli_overrides, config_path.as_deref());
     for w in &cfg_warnings {
         eprintln!("warning: {w}");
+    }
+    if gpupaint_time_flag {
+        // GPUFIRST Phase 0 PERF harness: CPU paint timings for the
+        // states spread + battery cards, then (unless
+        // --gpupaint-no-gpu) the GPU texture-replay proxy on the
+        // selected adapter. Measurement only; renders nothing.
+        let gpu_only = args.iter().any(|a| a == "--gpupaint-gpu-only");
+        std::process::exit(gpupaint_time::run_mode(!gpupaint_no_gpu, gpu_only));
     }
     if let Some(mode) = &telemetry_mode {
         // M6 QA telemetry (contract §3): pure CPU — the painter

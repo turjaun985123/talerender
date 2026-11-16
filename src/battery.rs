@@ -86,6 +86,8 @@ pub(crate) fn run_battery(out_dir: &str) -> crate::errors::TaleResult<()> {
     println!("renderer: TaleRender CPU painter (src/scene.rs Painter) — no GPU involved; cards are raw painter output at {}x{} (logical {}x{} @ res {})", dw, dh, lw, lh, res);
 
     // ---- prims card ----
+    #[cfg(feature = "gpupaint")]
+    crate::gputrace::begin_card(dw as u32, dh as u32);
     let mut p = Painter::new(dw, dh);
     let ink = rgba_of(spec.get("ink").and_then(|v| v.as_str()).expect("spec.ink"));
     let sc = |v: f32| v * res;
@@ -129,6 +131,8 @@ pub(crate) fn run_battery(out_dir: &str) -> crate::errors::TaleResult<()> {
             other => panic!("spec: unknown prim op {other}"),
         }
     }
+    #[cfg(feature = "gpupaint")]
+    crate::gpupaint::finish_card(out_dir, "prims");
     save(&p.px, dw as u32, dh as u32, &format!("{out_dir}/prims.png"))?;
 
     // ---- toon card ----
@@ -138,7 +142,12 @@ pub(crate) fn run_battery(out_dir: &str) -> crate::errors::TaleResult<()> {
         toon.get("state").expect("toon.state"),
         toon.get("state").unwrap().get("mood").and_then(|v| v.as_str()).expect("toon.state.mood"),
     );
+    // paint_toon's canvas is fixed at 2560x2816 (1280x1408 @ res 2).
+    #[cfg(feature = "gpupaint")]
+    crate::gputrace::begin_card(2560, 2816);
     let (px, w, h) = paint_toon(&ts);
+    #[cfg(feature = "gpupaint")]
+    crate::gpupaint::finish_card(out_dir, "toon");
     save(&px, w, h, &format!("{out_dir}/toon.png"))?;
 
     // ---- face cards ----
@@ -146,7 +155,11 @@ pub(crate) fn run_battery(out_dir: &str) -> crate::errors::TaleResult<()> {
     for m in faces.get("moods").expect("faces.moods").as_arr().expect("faces.moods array") {
         let m = m.as_str().expect("mood name");
         let ts = toon_spec(faces.get("look").expect("faces.look"), faces.get("state").expect("faces.state"), m);
+        #[cfg(feature = "gpupaint")]
+        crate::gputrace::begin_card(2560, 2816);
         let (px, w, h) = paint_toon(&ts);
+        #[cfg(feature = "gpupaint")]
+        crate::gpupaint::finish_card(out_dir, &format!("face-{m}"));
         save(&px, w, h, &format!("{out_dir}/face-{m}.png"))?;
     }
     Ok(())
