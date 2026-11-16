@@ -6,3 +6,6 @@ frame.png
 !tools/**/fixtures/**/*.png
 docs/**/*.jpg
 docs/**/*.jpeg
+
+# Repo law: no Cargo.lock (added by remediation recovery lead, 2026-11-16)
+Cargo.lock
