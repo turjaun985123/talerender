@@ -9,6 +9,16 @@ name: GPUFIRST Perf (dispatch)
 # predict RADV timings on the user's PC.
 on:
   workflow_dispatch:
+  # Branch-push trigger: workflow_dispatch requires the workflow to
+  # exist on the default branch; this programme lives on
+  # gpufirst-phase0 until Batch 3, so pushes to the branch run it too.
+  push:
+    branches: [gpufirst-phase0]
+    paths:
+      - 'src/gpupaint*.rs'
+      - 'src/gpupaint.wgsl'
+      - 'src/gputrace.rs'
+      - '.github/workflows/gpufirst-perf.yml'
 
 concurrency:
   group: gpufirst-perf-${{ github.ref }}
