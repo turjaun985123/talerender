@@ -2995,3 +2995,1242 @@ mod sign_tests {
         assert_eq!(at(&px, w, 20, 40), (58, 42, 42, 255));
     }
 }
+
+// ===== R-W5 registry painters (remediation R1-05): brick, siding, dirt, sand, facade =====
+// ===== registry painter: brick (R1-05, R-W5) =====
+// ---------------------------------------------------------------------
+// paint_brick — native port of the world.ts `T.brick` canvas painter
+// (the skill's own code, NOT three.js library code):
+//
+//   ~/workspace/custom-skills/tall-tale-shorts/template/src/core/
+//     world.ts:76-79
+//     brick: (col = '#B5553C', rep = [1, 1]) => canvasTex(
+//       'brick' + col, 512, 512, (g, w, h) => { ... }, rep)
+//   helpers it closes over:
+//     rnd   — world.ts:12 (== crate::scene::rnd)
+//     shade — world.ts:36-38 (THREE.Color multiplyScalar; brick_shade)
+//
+// INTEGRATION (drop-in for src/scene.rs, like the bookshop wave pack):
+//   * Paste the items below into src/scene.rs next to paint_grass
+//     (they use that module's Painter / Rgba / hex_rgb / rnd
+//     unqualified, exactly like the sibling painters).
+//   * Register in src/scenefile.rs resolve_texture(), beside "grass":
+//       "brick" => scene::paint_brick(str_field(spec, "base", ctx)?),
+//   * Signature, size and determinism conventions mirror paint_grass
+//     EXACTLY: `pub(crate) fn paint_*(base: &str) -> (Vec<u8>, u32,
+//     u32)`, fixed 512x512 RGBA canvas, straight alpha, row 0 = top,
+//     all randomness from the f64 sin-hash rnd() — no RNG state, so
+//     two calls with the same base are byte-identical.
+//   * `rep` (repeat) is NOT a painter input, in either engine: the
+//     source applies it to the texture CLONE (canvasTex, world.ts:
+//     28-35) while one canvas per colour is cached and shared.
+//     Repeat lives on the scene file's texture entry.
+//
+// Op-for-op transcription of the draw callback (world.ts:77-78):
+//   mortar fill  shade(col, 0.6) over the whole canvas;
+//   16 rows (bh = 32) x 9 columns (bw = 85, c from -1 while
+//   c < 512/85 + 1 = 7.02), brick at (c*85 + (r%2)*42.5 + 3,
+//   r*32 + 3), size 79x26, fill shade(col, 0.85 + rnd(r*31+c)*0.3).
+//   The c = -1 and c = 7 bricks hang off the canvas edges — that is
+//   what makes the texture tile seamlessly, and Painter's clipping
+//   reproduces it.
+// Harness: R1-05 harness/out/report.json — brick_default exact-equal
+// 99.05% vs the skill's own op stream (remainder: the 1-px AA rims
+// Painter puts around each brick where the centre-sampled reference
+// has a hard edge; every differing pixel is a blend of its
+// neighbourhood's colours), MAE (0.171, 0.088, 0.065).
+// ---------------------------------------------------------------------
+
+/// three.js r170 `shade()` (world.ts:36-38), verbatim from the
+/// registry's planks_shade (same constants, same f64 evaluation,
+/// final byte ROUNDED — the corpus witnesses shade('#3A2A2A', 0.7)
+/// = #302222 and shade('#3A2E22', 1.25) = #413427 pin it).
+fn brick_shade(hex: &str, k: f64) -> (u8, u8, u8) {
+    fn s2l(c: f64) -> f64 {
+        if c <= 0.04045 {
+            c * 0.0773993808
+        } else {
+            (c * 0.9478672986 + 0.0521327014).powf(2.4)
+        }
+    }
+    fn l2s(c: f64) -> f64 {
+        if c <= 0.0031308 {
+            c * 12.92
+        } else {
+            1.055 * c.powf(0.41666) - 0.055
+        }
+    }
+    let (r, g, b) = hex_rgb(hex);
+    let f = |v: u8| -> u8 { (l2s(s2l(v as f64 / 255.0) * k) * 255.0).round().clamp(0.0, 255.0) as u8 };
+    (f(r), f(g), f(b))
+}
+
+fn brick_shade_rgba(hex: &str, k: f64) -> Rgba {
+    let (r, g, b) = brick_shade(hex, k);
+    (r, g, b, 255)
+}
+
+/// T.brick(col): 512x512 — mortar shade(col, 0.6); 16x9 staggered
+/// bricks of 79x26 at pitch 85x32, each shade(col, 0.85 +
+/// rnd(r*31+c)*0.3). Defaults: '#B5553C' (T.brick), '#9E4A3A'
+/// (props.ts chimney), '#B5553C' with rep [1.4, 1.4] (world2.ts
+/// fireplace).
+pub(crate) fn paint_brick(base: &str) -> (Vec<u8>, u32, u32) {
+    let (w, h) = (512usize, 512usize);
+    let mut p = Painter::new(w, h);
+    p.fill_rect(0.0, 0.0, w as f32, h as f32, brick_shade_rgba(base, 0.6));
+    let (bh, bw) = (32.0f32, 85.0f32);
+    for r in 0..16i32 {
+        for c in -1..=7i32 {
+            let x = c as f32 * bw + (r % 2) as f32 * bw / 2.0;
+            let f = 0.85 + rnd((r * 31 + c) as f64) * 0.3;
+            let fill = brick_shade_rgba(base, f);
+            p.fill_rect(x + 3.0, r as f32 * bh + 3.0, bw - 6.0, bh - 6.0, fill);
+        }
+    }
+    (p.px, w as u32, h as u32)
+}
+
+#[cfg(test)]
+mod brick_tests {
+    use super::*;
+
+    fn px_at(px: &[u8], w: usize, x: usize, y: usize) -> (u8, u8, u8, u8) {
+        let k = (y * w + x) * 4;
+        (px[k], px[k + 1], px[k + 2], px[k + 3])
+    }
+
+    #[test]
+    fn output_size_and_opaque() {
+        let (px, w, h) = paint_brick("#B5553C");
+        assert_eq!((w, h), (512, 512));
+        assert_eq!(px.len(), 512 * 512 * 4);
+        assert!(px.chunks_exact(4).all(|c| c[3] == 255));
+    }
+
+    #[test]
+    fn deterministic_and_base_sensitive() {
+        assert_eq!(paint_brick("#B5553C").0, paint_brick("#B5553C").0);
+        assert_ne!(paint_brick("#B5553C").0, paint_brick("#9E4A3A").0);
+    }
+
+    #[test]
+    fn shade_truth_table() {
+        // Corpus witnesses from the real three.js pipeline.
+        assert_eq!(brick_shade("#3A2A2A", 0.7), (0x30, 0x22, 0x22));
+        assert_eq!(brick_shade("#3A2E22", 1.25), (0x41, 0x34, 0x27));
+        // This painter's own factors for the default base, computed
+        // from three r170's conversion constants in f64 (and
+        // confirmed by the R1-05 harness op stream: the mortar of
+        // brick('#B5553C') records as '#90422e').
+        assert_eq!(brick_shade("#B5553C", 0.6), (144, 66, 46));
+        assert_eq!(brick_shade("#B5553C", 0.85), (168, 79, 55));
+        assert_eq!(brick_shade("#B5553C", 1.0), (181, 85, 60));
+        assert_eq!(brick_shade("#B5553C", 1.15), (193, 91, 64));
+    }
+
+    #[test]
+    fn pinned_pixels() {
+        // Harness-verified (R1-05): the reference rasterisation of
+        // the skill's own op stream and the port agree exactly at
+        // these interior points.
+        let (px, w, _) = paint_brick("#B5553C");
+        // Mortar band (row 0's bricks start at y = 3).
+        assert_eq!(px_at(&px, w as usize, 100, 1), (144, 66, 46, 255));
+        // Brick interiors.
+        assert_eq!(px_at(&px, w as usize, 100, 16), (171, 80, 56, 255));
+        assert_eq!(px_at(&px, w as usize, 400, 200), (181, 85, 60, 255));
+        assert_eq!(px_at(&px, w as usize, 30, 300), (177, 83, 58, 255));
+    }
+}
+// ===== registry painter: siding (R1-05, R-W5) =====
+// ---------------------------------------------------------------------
+// paint_siding — native port of the world.ts `T.siding` canvas
+// painter (the skill's own code):
+//
+//   ~/workspace/custom-skills/tall-tale-shorts/template/src/core/
+//     world.ts:80-82
+//     siding: (col = '#6FA3B8', rep = [1, 1]) => canvasTex(
+//       'siding' + col, 256, 256, (g, w, h) => { ... }, rep)
+//   helpers: rnd is NOT used; shade — world.ts:36-38 (THREE.Color;
+//   see siding_shade).
+//
+// INTEGRATION (drop-in for src/scene.rs, like the bookshop wave
+// pack): paste beside paint_grass; register in
+// src/scenefile.rs::resolve_texture as:
+//     "siding" => scene::paint_siding(str_field(spec, "base", ctx)?),
+// Conventions mirror paint_grass exactly: fixed canvas (256x256
+// here), (RGBA bytes, w, h) out, deterministic (no randomness at
+// all in this recipe). `rep` is a texture-clone property, not a
+// painter input (canvasTex, world.ts:28-35).
+//
+// Op-for-op transcription (world.ts:81): 8 boards of 32 px; each
+// board is a VERTICAL LINEAR GRADIENT from shade(col, 1.06) at its
+// top to shade(col, 0.86) at its bottom, then a 2 px seam line of
+// shade(col, 0.6) at y+30. Canvas gradients interpolate between
+// stops in sRGB space at the pixel centre — siding_grad_rect below
+// reproduces exactly that, with coverage from the same box SDF
+// Painter::fill_rect uses (the rects here are integer-aligned, so
+// interior rows take coverage 1 and the gradient is per-scanline
+// exact). The seam is painted AFTER the gradient, as in the source.
+//
+// Harness: R1-05 harness/out/report.json — siding is BYTE-EXACT
+// against the reference rasterisation of the skill's own op stream
+// for both recorded callsites (100.00% of pixels, MAE 0.0, identical
+// 22/31-colour palettes): the recipe has no AA-bearing curves and
+// the gradient model matches canvas exactly.
+// ---------------------------------------------------------------------
+
+/// three.js r170 `shade()` (world.ts:36-38) — same implementation
+/// as the registry's planks_shade / brick_shade (f64, three's own
+/// conversion constants, rounded final byte; corpus witnesses
+/// shade('#3A2A2A', 0.7) = #302222, shade('#3A2E22', 1.25) =
+/// #413427).
+fn siding_shade(hex: &str, k: f64) -> (u8, u8, u8) {
+    fn s2l(c: f64) -> f64 {
+        if c <= 0.04045 {
+            c * 0.0773993808
+        } else {
+            (c * 0.9478672986 + 0.0521327014).powf(2.4)
+        }
+    }
+    fn l2s(c: f64) -> f64 {
+        if c <= 0.0031308 {
+            c * 12.92
+        } else {
+            1.055 * c.powf(0.41666) - 0.055
+        }
+    }
+    let (r, g, b) = hex_rgb(hex);
+    let f = |v: u8| -> u8 { (l2s(s2l(v as f64 / 255.0) * k) * 255.0).round().clamp(0.0, 255.0) as u8 };
+    (f(r), f(g), f(b))
+}
+
+fn siding_shade_rgba(hex: &str, k: f64) -> Rgba {
+    let (r, g, b) = siding_shade(hex, k);
+    (r, g, b, 255)
+}
+
+/// A canvas linear-gradient fillRect: colour at each pixel centre
+/// is the stop lerp (sRGB space, f64, rounded) along the gradient
+/// axis; coverage is Painter::fill_rect's box-SDF coverage, applied
+/// through blend_cov — one canvas fill is one shape, blended once.
+fn siding_grad_rect(
+    p: &mut Painter,
+    x: f32,
+    y: f32,
+    w: f32,
+    h: f32,
+    gx0: f32,
+    gy0: f32,
+    gx1: f32,
+    gy1: f32,
+    stops: &[(f64, (u8, u8, u8))],
+) {
+    let (x0, y0, x1, y1) = p.bbox(x - 1.0, y - 1.0, x + w + 1.0, y + h + 1.0);
+    let (cx, cy) = (x + w / 2.0, y + h / 2.0);
+    let (hw, hh) = (w / 2.0, h / 2.0);
+    let dist = |qx: f32, qy: f32| {
+        let (dx, dy) = ((qx - cx).abs() - hw, (qy - cy).abs() - hh);
+        dx.max(0.0).hypot(dy.max(0.0)) + dx.max(dy).min(0.0)
+    };
+    let (ax, ay) = ((gx1 - gx0) as f64, (gy1 - gy0) as f64);
+    let l2 = ax * ax + ay * ay;
+    for yy in y0..=y1 {
+        for xx in x0..=x1 {
+            let (pxx, pyy) = (xx as f32 + 0.5, yy as f32 + 0.5);
+            let cov = cov_area(&dist, pxx, pyy);
+            if cov <= 0.0 {
+                continue;
+            }
+            let t = if l2 == 0.0 {
+                0.0
+            } else {
+                (((pxx - gx0) as f64 * ax + (pyy - gy0) as f64 * ay) / l2).clamp(0.0, 1.0)
+            };
+            let mut col = stops[stops.len() - 1].1;
+            for s in stops.windows(2) {
+                let (t0, c0) = s[0];
+                let (t1, c1) = s[1];
+                if t >= t0 && t <= t1 {
+                    let f = if t1 == t0 { 0.0 } else { (t - t0) / (t1 - t0) };
+                    col = (
+                        (c0.0 as f64 + (c1.0 as f64 - c0.0 as f64) * f).round() as u8,
+                        (c0.1 as f64 + (c1.1 as f64 - c0.1 as f64) * f).round() as u8,
+                        (c0.2 as f64 + (c1.2 as f64 - c0.2 as f64) * f).round() as u8,
+                    );
+                    break;
+                }
+            }
+            p.blend_cov(xx, yy, (col.0, col.1, col.2, 255), cov);
+        }
+    }
+}
+
+/// T.siding(col): 256x256 — 8 horizontal boards, each a vertical
+/// gradient shade(col, 1.06) -> shade(col, 0.86) over 32 px, with a
+/// 2 px shade(col, 0.6) seam at the board's foot. Defaults:
+/// '#6FA3B8' (T.siding), '#F2E6CF' with rep [3, 2] (props.ts house).
+pub(crate) fn paint_siding(base: &str) -> (Vec<u8>, u32, u32) {
+    let (w, h) = (256usize, 256usize);
+    let mut p = Painter::new(w, h);
+    let top = siding_shade(base, 1.06);
+    let bot = siding_shade(base, 0.86);
+    let seam = siding_shade_rgba(base, 0.6);
+    for i in 0..8 {
+        let y = i as f32 * 32.0;
+        siding_grad_rect(
+            &mut p,
+            0.0,
+            y,
+            w as f32,
+            32.0,
+            0.0,
+            y,
+            0.0,
+            y + 32.0,
+            &[(0.0, top), (1.0, bot)],
+        );
+        p.fill_rect(0.0, y + 30.0, w as f32, 2.0, seam);
+    }
+    (p.px, w as u32, h as u32)
+}
+
+#[cfg(test)]
+mod siding_tests {
+    use super::*;
+
+    fn px_at(px: &[u8], w: usize, x: usize, y: usize) -> (u8, u8, u8, u8) {
+        let k = (y * w + x) * 4;
+        (px[k], px[k + 1], px[k + 2], px[k + 3])
+    }
+
+    #[test]
+    fn output_size_and_opaque() {
+        let (px, w, h) = paint_siding("#6FA3B8");
+        assert_eq!((w, h), (256, 256));
+        assert_eq!(px.len(), 256 * 256 * 4);
+        assert!(px.chunks_exact(4).all(|c| c[3] == 255));
+    }
+
+    #[test]
+    fn deterministic_and_base_sensitive() {
+        assert_eq!(paint_siding("#6FA3B8").0, paint_siding("#6FA3B8").0);
+        assert_ne!(paint_siding("#6FA3B8").0, paint_siding("#F2E6CF").0);
+    }
+
+    #[test]
+    fn shade_truth_table() {
+        assert_eq!(siding_shade("#3A2A2A", 0.7), (0x30, 0x22, 0x22));
+        assert_eq!(siding_shade("#3A2E22", 1.25), (0x41, 0x34, 0x27));
+        assert_eq!(siding_shade("#6FA3B8", 1.06), (114, 167, 189));
+        assert_eq!(siding_shade("#6FA3B8", 0.86), (103, 152, 172));
+        assert_eq!(siding_shade("#6FA3B8", 0.6), (87, 129, 146));
+    }
+
+    #[test]
+    fn pinned_pixels() {
+        // Harness-verified (R1-05): byte-exact against the skill's
+        // own op stream at every pixel; these are spot pins.
+        let (px, w, _) = paint_siding("#6FA3B8");
+        // First gradient row (t = 0.5/32 from the 1.06 stop).
+        assert_eq!(px_at(&px, w as usize, 10, 0), (114, 167, 189, 255));
+        // Mid-board (t = 16.5/32).
+        assert_eq!(px_at(&px, w as usize, 10, 16), (108, 159, 180, 255));
+        // Seam row: shade(base, 0.6), painted over the gradient.
+        assert_eq!(px_at(&px, w as usize, 10, 31), (87, 129, 146, 255));
+        // Fourth board, mid (same gradient, boards repeat exactly).
+        assert_eq!(px_at(&px, w as usize, 200, 100), (112, 165, 187, 255));
+    }
+}
+// ===== registry painter: dirt (R1-05, R-W5) =====
+// ---------------------------------------------------------------------
+// paint_dirt — native port of the world.ts `T.dirt` canvas painter
+// (the skill's own code):
+//
+//   ~/workspace/custom-skills/tall-tale-shorts/template/src/core/
+//     world.ts:83-89
+//     dirt: (col = '#C8763F', rep = [1, 1], tracks = true) =>
+//       canvasTex('dirt' + col + tracks, 512, 512, (g, w, h) => {
+//         ... }, rep)
+//   helpers: rnd — world.ts:12 (== crate::scene::rnd);
+//     shade — world.ts:36-38 (THREE.Color; see dirt_shade).
+//
+// INTEGRATION (drop-in for src/scene.rs, like the bookshop wave
+// pack): paste beside paint_grass; register in
+// src/scenefile.rs::resolve_texture, beside "grass":
+//     "dirt" => scene::paint_dirt(str_field(spec, "base", ctx)?,
+//                                 tracks_of(spec)),
+// where tracks_of reads the spec's optional "tracks" flag with
+// the TS default (ABSENT means true — props.ts's rail bed passes
+// false explicitly; scenefile's existing truthy() defaults absent
+// to false, so the lead spells this one as map_or(true, ...)).
+// Conventions mirror paint_grass: 512x512 RGBA, deterministic —
+// every random value is the f64 sin-hash rnd() of a loop index, so
+// two calls are byte-identical. `rep` is a texture-clone property,
+// not a painter input (canvasTex, world.ts:28-35).
+//
+// Op-for-op transcription (world.ts:84-88):
+//   1. base fill: the literal col (NO shade — a canvas byte fill).
+//   2. 2600 speckle discs: fillStyle shade(col, 0.75 + rnd(i)*0.5),
+//      globalAlpha 0.5 (alpha byte round(0.5*255) = 128 — the
+//      planks precedent for folding globalAlpha into the colour's
+//      alpha), arc(rnd(i*2.1)*512, rnd(i*3.7)*512,
+//      1 + rnd(i*5.3)*2.5, 0, 7) filled — 7 rad > 2*PI, full discs.
+//      JS argument order: the shade factor uses rnd(i) BEFORE the
+//      position hashes; evaluation order does not matter here (rnd
+//      is pure), but the argument VALUES do and are transcribed
+//      exactly.
+//   3. if tracks: globalAlpha 0.18 (byte 46), fillStyle
+//      shade(col, 0.6), four vertical ruts fillRect(x*512, 0, 14,
+//      512) at x in {0.3, 0.38, 0.62, 0.7} — painted OVER the
+//      speckles, as in the source.
+//
+// Harness: R1-05 harness/out/report.json — dirt_default: 99.999%
+// of pixels within +/-8 per channel of the reference rasterisation
+// of the skill's own op stream, MAE (0.245, 0.241, 0.108), max
+// channel diff 11 (speckle-disc AA rims: Painter's coverage model
+// vs centre sampling, plus the 128/255 vs 0.5 alpha quantisation
+// the registry's globalAlpha convention carries).
+// ---------------------------------------------------------------------
+
+/// three.js r170 `shade()` (world.ts:36-38) — same implementation
+/// as the registry's planks_shade (f64, three's own conversion
+/// constants, rounded final byte; corpus witnesses
+/// shade('#3A2A2A', 0.7) = #302222, shade('#3A2E22', 1.25) =
+/// #413427).
+fn dirt_shade(hex: &str, k: f64) -> (u8, u8, u8) {
+    fn s2l(c: f64) -> f64 {
+        if c <= 0.04045 {
+            c * 0.0773993808
+        } else {
+            (c * 0.9478672986 + 0.0521327014).powf(2.4)
+        }
+    }
+    fn l2s(c: f64) -> f64 {
+        if c <= 0.0031308 {
+            c * 12.92
+        } else {
+            1.055 * c.powf(0.41666) - 0.055
+        }
+    }
+    let (r, g, b) = hex_rgb(hex);
+    let f = |v: u8| -> u8 { (l2s(s2l(v as f64 / 255.0) * k) * 255.0).round().clamp(0.0, 255.0) as u8 };
+    (f(r), f(g), f(b))
+}
+
+/// T.dirt(col, tracks): 512x512 — literal base fill, 2600
+/// alpha-0.5 speckle discs in shade(col, 0.75..1.25), and (tracks)
+/// four alpha-0.18 ruts in shade(col, 0.6). Callers: mainStreet road
+/// '#C98A52', farmyard '#A9805A' / '#8A5A36' (no tracks), desert
+/// camp '#8A6A4A' (tracks), props.ts rail bed '#9C8A78' (no tracks).
+pub(crate) fn paint_dirt(base: &str, tracks: bool) -> (Vec<u8>, u32, u32) {
+    let (w, h) = (512usize, 512usize);
+    let mut p = Painter::new(w, h);
+    p.fill_rect(0.0, 0.0, w as f32, h as f32, rgba_of(base));
+    for i in 0..2600 {
+        let fi = i as f64;
+        let sh = dirt_shade(base, 0.75 + rnd(fi) * 0.5);
+        let cx = (rnd(fi * 2.1) * w as f64) as f32;
+        let cy = (rnd(fi * 3.7) * h as f64) as f32;
+        let r = (1.0 + rnd(fi * 5.3) * 2.5) as f32;
+        // globalAlpha 0.5 folded into the alpha byte (128).
+        p.fill_ellipse(cx, cy, r, r, 0.0, (sh.0, sh.1, sh.2, 128));
+    }
+    if tracks {
+        let sh = dirt_shade(base, 0.6);
+        // globalAlpha 0.18 folded into the alpha byte (46).
+        let rut: Rgba = (sh.0, sh.1, sh.2, 46);
+        for fx in [0.3f32, 0.38, 0.62, 0.7] {
+            p.fill_rect(fx * w as f32, 0.0, 14.0, h as f32, rut);
+        }
+    }
+    (p.px, w as u32, h as u32)
+}
+
+#[cfg(test)]
+mod dirt_tests {
+    use super::*;
+
+    fn count_colour(px: &[u8], rgb: (u8, u8, u8)) -> usize {
+        px.chunks_exact(4)
+            .filter(|p| p[0] == rgb.0 && p[1] == rgb.1 && p[2] == rgb.2)
+            .count()
+    }
+
+    #[test]
+    fn output_size_and_opaque() {
+        let (px, w, h) = paint_dirt("#C8763F", true);
+        assert_eq!((w, h), (512, 512));
+        assert_eq!(px.len(), 512 * 512 * 4);
+        assert!(px.chunks_exact(4).all(|c| c[3] == 255));
+    }
+
+    #[test]
+    fn deterministic_and_tracks_sensitive() {
+        assert_eq!(paint_dirt("#C8763F", true).0, paint_dirt("#C8763F", true).0);
+        assert_eq!(paint_dirt("#8A5A36", false).0, paint_dirt("#8A5A36", false).0);
+        assert_ne!(paint_dirt("#C8763F", true).0, paint_dirt("#C8763F", false).0);
+    }
+
+    #[test]
+    fn shade_truth_table() {
+        assert_eq!(dirt_shade("#3A2A2A", 0.7), (0x30, 0x22, 0x22));
+        assert_eq!(dirt_shade("#3A2E22", 1.25), (0x41, 0x34, 0x27));
+        assert_eq!(dirt_shade("#C8763F", 0.6), (159, 93, 48));
+        assert_eq!(dirt_shade("#C8763F", 0.75), (176, 103, 54));
+        assert_eq!(dirt_shade("#C8763F", 1.25), (221, 131, 71));
+    }
+
+    #[test]
+    fn pinned_base_survivors() {
+        // Harness-measured (R1-05 port mirror, same arithmetic):
+        // pixels keeping the untouched base colour after the 2600
+        // alpha-0.5 speckles (+ ruts). The tolerance follows the
+        // felt precedent's reasoning — re-running with every sin()
+        // argument nudged +/-1 ulp (the V8-fdlibm vs Rust-libm gap)
+        // moves speckle edges only; widen or tighten after the
+        // first CI run, as the picture painter's band was.
+        let (px, _, _) = paint_dirt("#C8763F", true);
+        let n = count_colour(&px, (0xC8, 0x76, 0x3F));
+        assert!((n as i64 - 186_734).abs() <= 64, "base survivors {n}");
+        let (px, _, _) = paint_dirt("#8A5A36", false);
+        let n = count_colour(&px, (0x8A, 0x5A, 0x36));
+        assert!((n as i64 - 213_893).abs() <= 64, "base survivors {n}");
+    }
+
+    #[test]
+    fn mean_colour_band() {
+        // Harness-measured means (port mirror): (199.13, 117.41,
+        // 62.65) with tracks; the centre-sampled reference reads
+        // (199.17, 117.54, 62.69) — the band covers both.
+        let (px, _, _) = paint_dirt("#C8763F", true);
+        let n = (512 * 512) as f64;
+        let (mut sr, mut sg, mut sb) = (0f64, 0f64, 0f64);
+        for c in px.chunks_exact(4) {
+            sr += c[0] as f64;
+            sg += c[1] as f64;
+            sb += c[2] as f64;
+        }
+        let mean = (sr / n, sg / n, sb / n);
+        assert!((mean.0 - 199.15).abs() <= 1.0, "r mean {}", mean.0);
+        assert!((mean.1 - 117.48).abs() <= 1.0, "g mean {}", mean.1);
+        assert!((mean.2 - 62.67).abs() <= 1.0, "b mean {}", mean.2);
+    }
+}
+// ===== registry painter: sand (R1-05, R-W5) =====
+// ---------------------------------------------------------------------
+// paint_sand — native port of the world.ts `T.sand` canvas painter
+// (the skill's own code):
+//
+//   ~/workspace/custom-skills/tall-tale-shorts/template/src/core/
+//     world.ts:94-100
+//     sand: (col = '#E3C078', rep = [1, 1]) => canvasTex(
+//       'sand' + col, 512, 512, (g, w, h) => { ... }, rep)
+//   helpers: rnd — world.ts:12 (== crate::scene::rnd);
+//     shade — world.ts:36-38 (THREE.Color; see sand_shade).
+//
+// INTEGRATION (drop-in for src/scene.rs, like the bookshop wave
+// pack): paste beside paint_grass; register in
+// src/scenefile.rs::resolve_texture as:
+//     "sand" => scene::paint_sand(str_field(spec, "base", ctx)?),
+// Conventions mirror paint_grass: 512x512 RGBA, deterministic —
+// every random value is the f64 sin-hash rnd() of a loop index and
+// the ripple phase is Math.sin in f64, so two calls are
+// byte-identical. `rep` is a texture-clone property, not a
+// painter input (canvasTex, world.ts:28-35).
+//
+// Op-for-op transcription (world.ts:95-99):
+//   1. base fill: the literal col.
+//   2. 3200 speckle discs: fillStyle shade(col, 0.78 + rnd(i)*0.45),
+//      globalAlpha 0.5 (alpha byte 128, the planks convention),
+//      arc(rnd(i*2.3)*512, rnd(i*3.1)*512, 1 + rnd(i*5.7)*2, 0, 7).
+//   3. ripples: globalAlpha 0.16 (byte 41), strokeStyle
+//      shade(col, 0.68), lineWidth 3; 7 wavy lines, line r sampled
+//      at x = 0, 16, ..., 512 with
+//      y = 30 + r*70 + sin(x*0.05 + r*2.2)*7 (Math.sin, f64),
+//      stroked as ONE path per line — seven stroke_polyline calls
+//      here, as the source strokes seven paths.
+//
+// Harness: R1-05 harness/out/report.json — sand_default: 99.998%
+// of pixels within +/-8 per channel of the reference rasterisation
+// of the skill's own op stream, MAE (0.247, 0.212, 0.141), max
+// channel diff 10 (speckle AA rims + the alpha quantisation, as
+// dirt; the ripple strokes end off-canvas at x = 0 / 512, so
+// Painter's CapFan end-cap model never shows).
+// ---------------------------------------------------------------------
+
+/// three.js r170 `shade()` (world.ts:36-38) — same implementation
+/// as the registry's planks_shade (f64, three's own conversion
+/// constants, rounded final byte; corpus witnesses
+/// shade('#3A2A2A', 0.7) = #302222, shade('#3A2E22', 1.25) =
+/// #413427).
+fn sand_shade(hex: &str, k: f64) -> (u8, u8, u8) {
+    fn s2l(c: f64) -> f64 {
+        if c <= 0.04045 {
+            c * 0.0773993808
+        } else {
+            (c * 0.9478672986 + 0.0521327014).powf(2.4)
+        }
+    }
+    fn l2s(c: f64) -> f64 {
+        if c <= 0.0031308 {
+            c * 12.92
+        } else {
+            1.055 * c.powf(0.41666) - 0.055
+        }
+    }
+    let (r, g, b) = hex_rgb(hex);
+    let f = |v: u8| -> u8 { (l2s(s2l(v as f64 / 255.0) * k) * 255.0).round().clamp(0.0, 255.0) as u8 };
+    (f(r), f(g), f(b))
+}
+
+/// T.sand(col): 512x512 — literal base fill, 3200 alpha-0.5
+/// speckle discs in shade(col, 0.78..1.23), 7 alpha-0.16 sine
+/// ripples in shade(col, 0.68) at lineWidth 3. Callers: desert
+/// ground '#E3C078' rep [60, 60], dunes '#E0B26A', beach
+/// '#E3C078' rep [48, 14], world2.ts pond bank (P.sand).
+pub(crate) fn paint_sand(base: &str) -> (Vec<u8>, u32, u32) {
+    let (w, h) = (512usize, 512usize);
+    let mut p = Painter::new(w, h);
+    p.fill_rect(0.0, 0.0, w as f32, h as f32, rgba_of(base));
+    for i in 0..3200 {
+        let fi = i as f64;
+        let sh = sand_shade(base, 0.78 + rnd(fi) * 0.45);
+        let cx = (rnd(fi * 2.3) * w as f64) as f32;
+        let cy = (rnd(fi * 3.1) * h as f64) as f32;
+        let r = (1.0 + rnd(fi * 5.7) * 2.0) as f32;
+        // globalAlpha 0.5 folded into the alpha byte (128).
+        p.fill_ellipse(cx, cy, r, r, 0.0, (sh.0, sh.1, sh.2, 128));
+    }
+    let sh = sand_shade(base, 0.68);
+    // globalAlpha 0.16 folded into the alpha byte (41).
+    let ripple: Rgba = (sh.0, sh.1, sh.2, 41);
+    for r in 0..7i32 {
+        let mut pts: Vec<(f32, f32)> = Vec::new();
+        let mut x = 0.0f64;
+        while x <= w as f64 {
+            let y = 30.0 + r as f64 * 70.0 + (x * 0.05 + r as f64 * 2.2).sin() * 7.0;
+            pts.push((x as f32, y as f32));
+            x += 16.0;
+        }
+        p.stroke_polyline(&pts, 3.0, ripple);
+    }
+    (p.px, w as u32, h as u32)
+}
+
+#[cfg(test)]
+mod sand_tests {
+    use super::*;
+
+    fn count_colour(px: &[u8], rgb: (u8, u8, u8)) -> usize {
+        px.chunks_exact(4)
+            .filter(|p| p[0] == rgb.0 && p[1] == rgb.1 && p[2] == rgb.2)
+            .count()
+    }
+
+    #[test]
+    fn output_size_and_opaque() {
+        let (px, w, h) = paint_sand("#E3C078");
+        assert_eq!((w, h), (512, 512));
+        assert_eq!(px.len(), 512 * 512 * 4);
+        assert!(px.chunks_exact(4).all(|c| c[3] == 255));
+    }
+
+    #[test]
+    fn deterministic_and_base_sensitive() {
+        assert_eq!(paint_sand("#E3C078").0, paint_sand("#E3C078").0);
+        assert_ne!(paint_sand("#E3C078").0, paint_sand("#E0B26A").0);
+    }
+
+    #[test]
+    fn shade_truth_table() {
+        assert_eq!(sand_shade("#3A2A2A", 0.7), (0x30, 0x22, 0x22));
+        assert_eq!(sand_shade("#3A2E22", 1.25), (0x41, 0x34, 0x27));
+        assert_eq!(sand_shade("#E3C078", 0.68), (191, 161, 100));
+        assert_eq!(sand_shade("#E3C078", 0.78), (203, 172, 107));
+        assert_eq!(sand_shade("#E3C078", 1.23), (249, 211, 132));
+    }
+
+    #[test]
+    fn pinned_base_survivors() {
+        // Harness-measured (R1-05 port mirror, same arithmetic);
+        // tolerance per the felt precedent's sin-ulp reasoning —
+        // widen or tighten after the first CI run.
+        let (px, _, _) = paint_sand("#E3C078");
+        let n = count_colour(&px, (0xE3, 0xC0, 0x78));
+        assert!((n as i64 - 201_224).abs() <= 64, "base survivors {n}");
+    }
+
+    #[test]
+    fn mean_colour_band() {
+        // Harness-measured means: port (226.70, 191.75, 119.84),
+        // centre-sampled reference (226.73, 191.78, 119.87) — the
+        // band covers both.
+        let (px, _, _) = paint_sand("#E3C078");
+        let n = (512 * 512) as f64;
+        let (mut sr, mut sg, mut sb) = (0f64, 0f64, 0f64);
+        for c in px.chunks_exact(4) {
+            sr += c[0] as f64;
+            sg += c[1] as f64;
+            sb += c[2] as f64;
+        }
+        let mean = (sr / n, sg / n, sb / n);
+        assert!((mean.0 - 226.72).abs() <= 1.0, "r mean {}", mean.0);
+        assert!((mean.1 - 191.76).abs() <= 1.0, "g mean {}", mean.1);
+        assert!((mean.2 - 119.86).abs() <= 1.0, "b mean {}", mean.2);
+    }
+}
+// ===== registry painter: facade (R1-05, R-W5) =====
+// ---------------------------------------------------------------------
+// paint_facade — native port of the world.ts `facade()` canvas
+// painter (the skill's own code):
+//
+//   ~/workspace/custom-skills/tall-tale-shorts/template/src/core/
+//     world.ts:111-149
+//     facade(name, { wall = '#C9603F', kind = 'brick',
+//       trim = '#F2E6CF', sign = '#2E4E3F', signText = '#F2D37A',
+//       awning = null, w = 5, h = 7, seed = 1 })
+//   helpers: rnd — world.ts:12 (== crate::scene::rnd);
+//     shade — world.ts:36-38 (THREE.Color; see facade_shade);
+//     T.brick / T.siding — the sibling painters in this pack
+//     (paint_brick / paint_siding), tiled by drawImage.
+//
+// INTEGRATION (drop-in for src/scene.rs, like the bookshop wave
+// pack): paste beside paint_grass (AFTER paint_brick /
+// paint_siding — this painter calls both); register in
+// src/scenefile.rs::resolve_texture as:
+//     "facade" => scene::paint_facade(
+//         str_field(spec, "wall", ctx)?,
+//         str_field(spec, "kind", ctx)?,
+//         str_field(spec, "trim", ctx)?,
+//         str_field(spec, "sign", ctx)?,
+//         str_field(spec, "signText", ctx)?,
+//         spec.get("awning").and_then(|v| v.as_str()),
+//         num_field(spec, "w", ctx)? as f32,
+//         num_field(spec, "h", ctx)? as f32,
+//         num_field(spec, "seed", ctx)?,
+//     ),
+// (field-accessor spellings are the lead's to match to scenefile's
+// helpers; awning absent/null = no awning, seed integral at every
+// callsite — mainStreet/cityBlock pass the building index.)
+// Conventions mirror the registry: (RGBA bytes, w, h) out,
+// deterministic — rnd() is the only randomness, seeded by the
+// `seed` parameter exactly as in the source. Canvas size is NOT
+// fixed: cw = round(w*110), ch = round(h*110) (facade_canvas_size).
+//
+// TEXT STRATEGY (the engine's existing approach, stated plainly —
+// the paint_sign precedent, scene.rs's sign section): this engine
+// has NO Rust text rasteriser; text enters as a PIL glyph strip
+// rendered from the project's own fonts (film/gen_assets.py).
+// paint_facade therefore paints EVERYTHING except the sign-board
+// glyphs — including the board and its signText border — and
+// facade_with_text() composites a same-size transparent strip
+// (PIL, 700 Caladea, laid out per FACADE_FONT_* /
+// facade_sign_anchor) over it. Without a strip the painter
+// returns the facade exactly as the canvas looks before fillText.
+// The shrink rule's PIL outcomes for the two canonical mainStreet
+// names at the default size are recorded as BAKERY_PIL /
+// GENERAL_STORE_PIL below (PIL metrics, Caladea-Bold.ttf from the
+// skill's template/fonts — browser Skia metrics are not provable
+// from here; both names fit at the start size with wide headroom,
+// 158.73 and 313.88 px against the 429.0 px limit).
+//
+// Op-for-op transcription (world.ts:113-148), in source order:
+//   background: T.brick(wall) tiles (512) if kind == 'brick',
+//     else T.siding(wall) tiles (256), drawImage from (0, 0);
+//   cornice: trim (0, 0, cw, 40); shade(trim, 0.7) (0, 40, cw, 10);
+//     dentils trim (x, 50, 16, 16) for x = 10; x < cw; x += 34;
+//   upper windows: nw = max(2, round(w/1.6)), ww = cw/nw; per
+//     window: trim frame inset by (10, 14); glass = diagonal
+//     linear gradient '#7FB3D8' -> '#3F6E9A' (0.5) -> '#2B4A70';
+//     gloss polygon rgba(255,255,255,0.35) (alpha byte 89);
+//     mullions trim (8 px cross); blind shade(wall, 0.8) over the
+//     top 35% iff rnd(seed*13 + i) > 0.5 — painted AFTER the
+//     mullions, as in the source;
+//   sign board: sign (0.06cw, 0.47ch, 0.88cw, 0.1ch); border
+//     strokeRect inset 8 in signText at lineWidth 5; [glyphs via
+//     strip — see TEXT STRATEGY];
+//   shopfront: base shade(trim, 0.9) from by = sy + sh + 16 to
+//     the canvas foot; door '#5A3A26' at dx = rnd(seed) > 0.5 ?
+//     0.08cw : 0.72cw, width 0.2cw, glass '#3F6E9A', knob
+//     '#E8C060' r 6; shop window: frame '#4A2E1E', glass =
+//     diagonal gradient '#9CC7E4' -> '#4C7FA8' (0.45) ->
+//     '#2A4565' whose axis starts at (wx, by) — NOT at the glass
+//     rect's own (wx, by + 22) (the source creates the gradient
+//     before offsetting the rect; transcribed as written);
+//     5 product boxes from the palette at (i + seed) % 5; gloss
+//     polygon rgba(255,255,255,0.3) (alpha byte 77);
+//   awning (iff awning != null): 40 px stripes alternating
+//     '#F4EFE4' / awning from ay = by - 4, each with a downward
+//     semicircle scallop r 20 — the arc(0..PI) fill, painted here
+//     as a 24-chord flattened half-disc polygon (the house
+//     curve-flattening precedent; sagitta at r 20 is 0.043 px,
+//     far under the AA band).
+//
+// Harness: R1-05 harness/out/report.json — facade_bakery 97.67%
+// exact-equal / facade_general 98.00% vs the reference
+// rasterisation of the skill's own op stream; 99.99%+ of the
+// differing pixels are 1-px AA lines on the fractional-coordinate
+// rect edges (windows at ww = 183.33 px pitch), where Painter's
+// coverage model sits closer to Skia's area coverage than the
+// centre-sampled reference (e.g. the blind's top edge at
+// y = 123.2: true area coverage 0.80, Painter 0.75, centre
+// sample 1.0). Interiors — cornice, board, door, products — are
+// byte-exact (see the pinned tests).
+// ---------------------------------------------------------------------
+
+/// three.js r170 `shade()` (world.ts:36-38) — same implementation
+/// as the registry's planks_shade (f64, three's own conversion
+/// constants, rounded final byte; corpus witnesses
+/// shade('#3A2A2A', 0.7) = #302222, shade('#3A2E22', 1.25) =
+/// #413427).
+fn facade_shade(hex: &str, k: f64) -> (u8, u8, u8) {
+    fn s2l(c: f64) -> f64 {
+        if c <= 0.04045 {
+            c * 0.0773993808
+        } else {
+            (c * 0.9478672986 + 0.0521327014).powf(2.4)
+        }
+    }
+    fn l2s(c: f64) -> f64 {
+        if c <= 0.0031308 {
+            c * 12.92
+        } else {
+            1.055 * c.powf(0.41666) - 0.055
+        }
+    }
+    let (r, g, b) = hex_rgb(hex);
+    let f = |v: u8| -> u8 { (l2s(s2l(v as f64 / 255.0) * k) * 255.0).round().clamp(0.0, 255.0) as u8 };
+    (f(r), f(g), f(b))
+}
+
+fn facade_shade_rgba(hex: &str, k: f64) -> Rgba {
+    let (r, g, b) = facade_shade(hex, k);
+    (r, g, b, 255)
+}
+
+/// A canvas linear-gradient fillRect (same model as siding's
+/// gradient helper): colour at each pixel centre is the stop lerp
+/// in sRGB space (f64, rounded); coverage is the box-SDF coverage
+/// Painter::fill_rect uses, applied through blend_cov.
+fn facade_grad_rect(
+    p: &mut Painter,
+    x: f32,
+    y: f32,
+    w: f32,
+    h: f32,
+    gx0: f32,
+    gy0: f32,
+    gx1: f32,
+    gy1: f32,
+    stops: &[(f64, (u8, u8, u8))],
+) {
+    let (x0, y0, x1, y1) = p.bbox(x - 1.0, y - 1.0, x + w + 1.0, y + h + 1.0);
+    let (cx, cy) = (x + w / 2.0, y + h / 2.0);
+    let (hw, hh) = (w / 2.0, h / 2.0);
+    let dist = |qx: f32, qy: f32| {
+        let (dx, dy) = ((qx - cx).abs() - hw, (qy - cy).abs() - hh);
+        dx.max(0.0).hypot(dy.max(0.0)) + dx.max(dy).min(0.0)
+    };
+    let (ax, ay) = ((gx1 - gx0) as f64, (gy1 - gy0) as f64);
+    let l2 = ax * ax + ay * ay;
+    for yy in y0..=y1 {
+        for xx in x0..=x1 {
+            let (pxx, pyy) = (xx as f32 + 0.5, yy as f32 + 0.5);
+            let cov = cov_area(&dist, pxx, pyy);
+            if cov <= 0.0 {
+                continue;
+            }
+            let t = if l2 == 0.0 {
+                0.0
+            } else {
+                (((pxx - gx0) as f64 * ax + (pyy - gy0) as f64 * ay) / l2).clamp(0.0, 1.0)
+            };
+            let mut col = stops[stops.len() - 1].1;
+            for s in stops.windows(2) {
+                let (t0, c0) = s[0];
+                let (t1, c1) = s[1];
+                if t >= t0 && t <= t1 {
+                    let f = if t1 == t0 { 0.0 } else { (t - t0) / (t1 - t0) };
+                    col = (
+                        (c0.0 as f64 + (c1.0 as f64 - c0.0 as f64) * f).round() as u8,
+                        (c0.1 as f64 + (c1.1 as f64 - c0.1 as f64) * f).round() as u8,
+                        (c0.2 as f64 + (c1.2 as f64 - c0.2 as f64) * f).round() as u8,
+                    );
+                    break;
+                }
+            }
+            p.blend_cov(xx, yy, (col.0, col.1, col.2, 255), cov);
+        }
+    }
+}
+
+/// drawImage of a fully-opaque painter canvas at an integer
+/// offset: a clipped copy (the brick/siding tiles are opaque at
+/// every pixel, so canvas source-over is a copy).
+fn facade_blit(p: &mut Painter, src: &[u8], sw: usize, sh: usize, ox: i32, oy: i32) {
+    for sy in 0..sh as i32 {
+        let dy = oy + sy;
+        if dy < 0 || dy >= p.h as i32 {
+            continue;
+        }
+        for sx in 0..sw as i32 {
+            let dx = ox + sx;
+            if dx < 0 || dx >= p.w as i32 {
+                continue;
+            }
+            let sk = ((sy as usize * sw + sx as usize) * 4) as usize;
+            let dk = ((dy as usize * p.w + dx as usize) * 4) as usize;
+            p.px[dk..dk + 4].copy_from_slice(&src[sk..sk + 4]);
+        }
+    }
+}
+
+/// The awning scallop: canvas arc(cx, cy, r, 0, PI) filled — the
+/// downward half-disc, flattened to 24 chords (sagitta 0.043 px
+/// at r 20) for Painter::fill_polygon, which closes the diameter.
+fn facade_semi_pts(cx: f32, cy: f32, r: f32) -> Vec<(f32, f32)> {
+    const SEG: usize = 24;
+    (0..=SEG)
+        .map(|i| {
+            let a = std::f32::consts::PI * i as f32 / SEG as f32;
+            (cx + r * a.cos(), cy + r * a.sin())
+        })
+        .collect()
+}
+
+/// canvasTex scale in facade(): canvas px per world unit.
+pub(crate) const FACADE_PX_PER_UNIT: f32 = 110.0;
+/// The sign-text shrink rule (world.ts:139-141): the font size
+/// starts at sh * 0.56 (sh = the sign band height, ch * 0.1) and
+/// shrinks by 2 while measureText(name) > cw * 0.78 and fs > 10.
+pub(crate) const FACADE_FONT_START_FRAC: f64 = 0.56;
+pub(crate) const FACADE_FIT_FRACTION: f64 = 0.78;
+pub(crate) const FACADE_FONT_STEP: f64 = 2.0;
+/// fillText anchor offset within the sign band: (cw/2, sy + sh/2
+/// + 2) (world.ts:141).
+pub(crate) const FACADE_TEXT_DY: f32 = 2.0;
+
+/// PIL-measured shrink-rule outcomes at the default canvas
+/// (550x770, fs start 43.12, limit 429.0): (name, final fs,
+/// measured width px at that fs). PIL metrics, the skill's
+/// Caladea-Bold.ttf, measured by the R1-05 harness (2026-11-16) —
+/// NOT browser metrics; no shrink fires for either name.
+pub(crate) const BAKERY_PIL: (&str, f64, f64) = ("BAKERY", 43.12, 158.73);
+pub(crate) const GENERAL_STORE_PIL: (&str, f64, f64) = ("GENERAL STORE", 43.12, 313.88);
+
+/// facade()'s canvas size rule: (round(w*110), round(h*110)).
+pub(crate) fn facade_canvas_size(w: f32, h: f32) -> (u32, u32) {
+    (
+        (w * FACADE_PX_PER_UNIT).round() as u32,
+        (h * FACADE_PX_PER_UNIT).round() as u32,
+    )
+}
+
+/// The fillText anchor (centre / middle baseline):
+/// (cw/2, ch*0.47 + ch*0.1/2 + 2). The PIL glyph strip must
+/// place the text here.
+pub(crate) fn facade_sign_anchor(cw: u32, ch: u32) -> (f32, f32) {
+    (
+        cw as f32 / 2.0,
+        ch as f32 * 0.47 + ch as f32 * 0.1 / 2.0 + FACADE_TEXT_DY,
+    )
+}
+
+/// facade() without the sign glyphs (see TEXT STRATEGY above).
+/// `kind` selects the background painter exactly as the source:
+/// "brick" tiles paint_brick(wall); anything else ("wood" at
+/// every callsite) tiles paint_siding(wall). `seed` is integral
+/// at every callsite.
+#[allow(clippy::too_many_arguments)]
+pub(crate) fn paint_facade(
+    wall: &str,
+    kind: &str,
+    trim: &str,
+    sign: &str,
+    sign_text: &str,
+    awning: Option<&str>,
+    w: f32,
+    h: f32,
+    seed: f64,
+) -> (Vec<u8>, u32, u32) {
+    let (cw_u, ch_u) = facade_canvas_size(w, h);
+    let (cw, ch) = (cw_u as f32, ch_u as f32);
+    let mut p = Painter::new(cw_u as usize, ch_u as usize);
+    // Background tiling (drawImage of the brick/siding canvas).
+    let (tile, tw, th) = if kind == "brick" {
+        let (px, tw, th) = paint_brick(wall);
+        (px, tw as i32, th as i32)
+    } else {
+        let (px, tw, th) = paint_siding(wall);
+        (px, tw as i32, th as i32)
+    };
+    let mut ty = 0i32;
+    while ty < ch_u as i32 {
+        let mut tx = 0i32;
+        while tx < cw_u as i32 {
+            facade_blit(&mut p, &tile, tw as usize, th as usize, tx, ty);
+            tx += tw;
+        }
+        ty += th;
+    }
+    let tr = rgba_of(trim);
+    // Cornice + dentils.
+    p.fill_rect(0.0, 0.0, cw, 40.0, tr);
+    p.fill_rect(0.0, 40.0, cw, 10.0, facade_shade_rgba(trim, 0.7));
+    let mut dx = 10.0f32;
+    while dx < cw {
+        p.fill_rect(dx, 50.0, 16.0, 16.0, tr);
+        dx += 34.0;
+    }
+    // Upper windows.
+    let nw = ((w / 1.6).round() as i32).max(2);
+    let ww = cw / nw as f32;
+    for i in 0..nw {
+        let x = i as f32 * ww + ww * 0.22;
+        let y = ch * 0.16;
+        let wd = ww * 0.56;
+        let ht = ch * 0.22;
+        p.fill_rect(x - 10.0, y - 14.0, wd + 20.0, ht + 28.0, tr);
+        facade_grad_rect(
+            &mut p,
+            x,
+            y,
+            wd,
+            ht,
+            x,
+            y,
+            x + wd,
+            y + ht,
+            &[
+                (0.0, (0x7F, 0xB3, 0xD8)),
+                (0.5, (0x3F, 0x6E, 0x9A)),
+                (1.0, (0x2B, 0x4A, 0x70)),
+            ],
+        );
+        let gloss = [
+            (x + wd * 0.1, y + ht),
+            (x + wd * 0.45, y),
+            (x + wd * 0.6, y),
+            (x + wd * 0.25, y + ht),
+        ];
+        // rgba(255,255,255,0.35): alpha byte round(0.35*255) = 89.
+        p.fill_polygon(&gloss, (255, 255, 255, 89));
+        p.fill_rect(x + wd / 2.0 - 4.0, y, 8.0, ht, tr);
+        p.fill_rect(x, y + ht / 2.0 - 4.0, wd, 8.0, tr);
+        if rnd(seed * 13.0 + i as f64) > 0.5 {
+            p.fill_rect(x, y, wd, ht * 0.35, facade_shade_rgba(wall, 0.8));
+        }
+    }
+    // Sign board + border (glyphs arrive via facade_with_text).
+    let sy = ch * 0.47;
+    let sh = ch * 0.1;
+    p.fill_rect(cw * 0.06, sy, cw * 0.88, sh, rgba_of(sign));
+    let border = [
+        (cw * 0.06 + 8.0, sy + 8.0),
+        (cw * 0.94 - 8.0, sy + 8.0),
+        (cw * 0.94 - 8.0, sy + sh - 8.0),
+        (cw * 0.06 + 8.0, sy + sh - 8.0),
+        (cw * 0.06 + 8.0, sy + 8.0),
+    ];
+    p.stroke_polyline(&border, 5.0, rgba_of(sign_text));
+    // Shopfront base.
+    let by = sy + sh + 16.0;
+    let bh = ch - by;
+    p.fill_rect(0.0, by, cw, bh, facade_shade_rgba(trim, 0.9));
+    // Door (side chosen by rnd(seed), as in the source).
+    let dw = cw * 0.2;
+    let door_x = if rnd(seed) > 0.5 { cw * 0.08 } else { cw * 0.72 };
+    p.fill_rect(door_x, by + 14.0, dw, bh - 14.0, rgba_of("#5A3A26"));
+    p.fill_rect(door_x + 12.0, by + 30.0, dw - 24.0, bh * 0.4, rgba_of("#3F6E9A"));
+    p.fill_ellipse(door_x + dw - 18.0, by + bh * 0.62, 6.0, 6.0, 0.0, rgba_of("#E8C060"));
+    // Shop window.
+    let wx = if door_x < cw / 2.0 { door_x + dw + 20.0 } else { cw * 0.06 };
+    let wwid = cw * 0.66 - 20.0;
+    p.fill_rect(wx - 8.0, by + 14.0, wwid + 16.0, bh * 0.7 + 16.0, rgba_of("#4A2E1E"));
+    facade_grad_rect(
+        &mut p,
+        wx,
+        by + 22.0,
+        wwid,
+        bh * 0.7,
+        wx,
+        by,
+        wx + wwid,
+        by + bh,
+        &[
+            (0.0, (0x9C, 0xC7, 0xE4)),
+            (0.45, (0x4C, 0x7F, 0xA8)),
+            (1.0, (0x2A, 0x45, 0x65)),
+        ],
+    );
+    let palette = ["#E7B04A", "#D8584A", "#7DB36A", "#F2E6CF", "#8A6FC0"];
+    for i in 0..5i32 {
+        let col = rgba_of(palette[((i + seed as i32) % 5) as usize]);
+        p.fill_rect(
+            wx + 16.0 + i as f32 * (wwid - 32.0) / 5.0,
+            by + bh * 0.55,
+            (wwid - 32.0) / 5.0 - 10.0,
+            bh * 0.2,
+            col,
+        );
+    }
+    let gloss = [
+        (wx + wwid * 0.15, by + 22.0 + bh * 0.7),
+        (wx + wwid * 0.4, by + 22.0),
+        (wx + wwid * 0.52, by + 22.0),
+        (wx + wwid * 0.27, by + 22.0 + bh * 0.7),
+    ];
+    // rgba(255,255,255,0.3): alpha byte round(0.3*255) = 77.
+    p.fill_polygon(&gloss, (255, 255, 255, 77));
+    // Awning stripes + scallops.
+    if let Some(aw) = awning {
+        let ay = by - 4.0;
+        let mut x = 0.0f32;
+        let mut i = 0i32;
+        while x < cw {
+            let col = if i % 2 == 1 { rgba_of("#F4EFE4") } else { rgba_of(aw) };
+            p.fill_rect(x, ay, 40.0, 46.0, col);
+            let semi = facade_semi_pts(x + 20.0, ay + 46.0, 20.0);
+            p.fill_polygon(&semi, col);
+            x += 40.0;
+            i += 1;
+        }
+    }
+    (p.px, cw_u, ch_u)
+}
+
+/// Composite a glyph strip over a painted facade (the
+/// paint_sign precedent's sign_with_text, same contract: the
+/// strip is a same-size RGBA image, transparent except for the
+/// glyphs — PIL renders ONLY the text, at facade_sign_anchor, in
+/// the signText colour, at the shrink rule's final font size).
+pub(crate) fn facade_with_text(board: (Vec<u8>, u32, u32), strip: &[u8]) -> (Vec<u8>, u32, u32) {
+    let (px, w, h) = board;
+    assert_eq!(
+        strip.len(),
+        px.len(),
+        "facade glyph strip must be the same size as the board"
+    );
+    let mut p = Painter { w: w as usize, h: h as usize, px };
+    for y in 0..h as i32 {
+        for x in 0..w as i32 {
+            let k = ((y as usize * w as usize + x as usize) * 4) as usize;
+            if strip[k + 3] > 0 {
+                p.blend(x, y, (strip[k], strip[k + 1], strip[k + 2], strip[k + 3]));
+            }
+        }
+    }
+    (p.px, w, h)
+}
+
+#[cfg(test)]
+mod facade_tests {
+    use super::*;
+
+    fn px_at(px: &[u8], w: usize, x: usize, y: usize) -> (u8, u8, u8, u8) {
+        let k = (y * w + x) * 4;
+        (px[k], px[k + 1], px[k + 2], px[k + 3])
+    }
+
+    fn bakery() -> (Vec<u8>, u32, u32) {
+        paint_facade("#C9603F", "brick", "#F2E6CF", "#2E4E3F", "#F2D37A", Some("#D8343F"), 5.0, 7.0, 1.0)
+    }
+
+    fn general() -> (Vec<u8>, u32, u32) {
+        paint_facade("#6FA3B8", "wood", "#F2E6CF", "#2E4E3F", "#F2D37A", None, 5.0, 7.0, 2.0)
+    }
+
+    #[test]
+    fn canvas_size_rule() {
+        assert_eq!(facade_canvas_size(5.0, 7.0), (550, 770));
+        // cityBlock scale: w 6, h 14.
+        assert_eq!(facade_canvas_size(6.0, 14.0), (660, 1540));
+    }
+
+    #[test]
+    fn output_size_and_opaque() {
+        let (px, w, h) = bakery();
+        assert_eq!((w, h), (550, 770));
+        assert_eq!(px.len(), 550 * 770 * 4);
+        assert!(px.chunks_exact(4).all(|c| c[3] == 255));
+    }
+
+    #[test]
+    fn deterministic() {
+        assert_eq!(bakery().0, bakery().0);
+        assert_eq!(general().0, general().0);
+        assert_ne!(bakery().0, general().0);
+    }
+
+    #[test]
+    fn shade_truth_table() {
+        assert_eq!(facade_shade("#3A2A2A", 0.7), (0x30, 0x22, 0x22));
+        assert_eq!(facade_shade("#3A2E22", 1.25), (0x41, 0x34, 0x27));
+        assert_eq!(facade_shade("#C9603F", 0.8), (182, 86, 56));
+        assert_eq!(facade_shade("#F2E6CF", 0.7), (207, 196, 176));
+        assert_eq!(facade_shade("#F2E6CF", 0.9), (231, 220, 198));
+    }
+
+    #[test]
+    fn pinned_pixels() {
+        // Harness-verified (R1-05): the reference rasterisation of
+        // the skill's own op stream and the port agree exactly at
+        // these interior points.
+        let (px, w, _) = bakery();
+        let w = w as usize;
+        // Cornice trim and its shade band.
+        assert_eq!(px_at(&px, w, 5, 20), (242, 230, 207, 255));
+        assert_eq!(px_at(&px, w, 5, 45), (207, 196, 176, 255));
+        // A dentil.
+        assert_eq!(px_at(&px, w, 18, 58), (242, 230, 207, 255));
+        // Sign board interior, and its centre: without a glyph
+        // strip the board is plain sign colour even at the text
+        // anchor (the TEXT STRATEGY contract).
+        assert_eq!(px_at(&px, w, 275, 380), (46, 78, 63, 255));
+        assert_eq!(px_at(&px, w, 275, 402), (46, 78, 63, 255));
+        // Bakery (seed 1): rnd(1) <= 0.5, door on the RIGHT, so
+        // the shop window is on the left and (100, 650) is the
+        // first product box, palette[(0 + 1) % 5] = '#D8584A'.
+        assert_eq!(px_at(&px, w, 100, 650), (216, 88, 74, 255));
+        // General store (seed 2): rnd(2) > 0.5, door on the LEFT —
+        // (100, 650) is the door body '#5A3A26'.
+        let (px, w, _) = general();
+        assert_eq!(px_at(&px, w as usize, 100, 650), (90, 58, 38, 255));
+    }
+
+    #[test]
+    fn text_anchor_and_pil_measurements() {
+        // (cw/2, ch*0.47 + ch*0.05 + 2) = (275, 402.4) — the
+        // recorded op stream's fillText anchor for the default
+        // canvas; compared with tolerance for f32 dust.
+        let (ax, ay) = facade_sign_anchor(550, 770);
+        assert!((ax - 275.0).abs() < 0.01 && (ay - 402.4).abs() < 0.01, "anchor ({ax}, {ay})");
+        // The recorded PIL measurements: at the 43.12 px start
+        // size both canonical names already fit the 78% limit, so
+        // the shrink rule keeps the start size.
+        for (name, fs, width) in [BAKERY_PIL, GENERAL_STORE_PIL] {
+            // fs is the rule's start size (770*0.1*0.56 = 43.12,
+            // up to f64 dust) and the measurement fits the limit.
+            assert!((fs - 770.0 * 0.1 * FACADE_FONT_START_FRAC).abs() < 0.01, "{name} fs {fs}");
+            assert!(width <= 550.0 * FACADE_FIT_FRACTION, "{name} width {width}");
+        }
+        assert_eq!(BAKERY_PIL.0, "BAKERY");
+        assert_eq!(GENERAL_STORE_PIL.0, "GENERAL STORE");
+    }
+
+    #[test]
+    fn with_text_composites_the_strip() {
+        let (px, w, h) = bakery();
+        let mut strip = vec![0u8; px.len()];
+        // One opaque signText pixel at the anchor.
+        let (ax, ay) = facade_sign_anchor(w, h);
+        let k = ((ay as usize * w as usize + ax as usize) * 4) as usize;
+        strip[k..k + 4].copy_from_slice(&[0xF2, 0xD3, 0x7A, 255]);
+        let (out, _, _) = facade_with_text((px.clone(), w, h), &strip);
+        assert_eq!(px_at(&out, w as usize, ax as usize, ay as usize), (0xF2, 0xD3, 0x7A, 255));
+        // Untouched pixels are unchanged.
+        assert_eq!(px_at(&out, w as usize, 5, 20), px_at(&px, w as usize, 5, 20));
+    }
+}

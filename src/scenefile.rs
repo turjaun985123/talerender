@@ -481,6 +481,42 @@ fn resolve_texture(spec: &Value, scene_dir: &Path, ctx: &str, wire: &mut crate::
         ),
         "cloud" => scene::paint_cloud(),
         "blob-shadow" => scene::paint_blob(),
+        // R-W5 painters (remediation R1-05): the world.ts texture
+        // family the B3-07 staging needs — siding, brick, dirt,
+        // sand, facade. No substitutions; ports verified against
+        // the recorded TS op streams (CR-R1-05).
+        "brick" => scene::paint_brick(str_field(spec, "base", ctx)?),
+        "siding" => scene::paint_siding(str_field(spec, "base", ctx)?),
+        "dirt" => scene::paint_dirt(
+            str_field(spec, "base", ctx)?,
+            // TS default is tracks = true; truthy() defaults
+            // absent -> false, so the absent case is spelled out.
+            match spec.get("tracks") {
+                None => true,
+                Some(v) => truthy(Some(v)),
+            },
+        ),
+        "sand" => scene::paint_sand(str_field(spec, "base", ctx)?),
+        "facade" => scene::paint_facade(
+            str_field(spec, "wall", ctx)?,
+            str_field(spec, "kind", ctx)?,
+            str_field(spec, "trim", ctx)?,
+            str_field(spec, "sign", ctx)?,
+            str_field(spec, "signText", ctx)?,
+            spec.get("awning").and_then(Value::as_str),
+            match spec.get("w") {
+                Some(v) => num(v, ctx)? as f32,
+                None => 5.0,
+            },
+            match spec.get("h") {
+                Some(v) => num(v, ctx)? as f32,
+                None => 7.0,
+            },
+            match spec.get("seed") {
+                Some(v) => num(v, ctx)?,
+                None => 1.0,
+            },
+        ),
         "onoda-card" => crate::ab1::paint_onoda(),
         "dof-chart-pattern" => {
             let size = match spec.get("size") {
@@ -2572,12 +2608,22 @@ mod tests {
             &f,
             r##"{"format": "talerender-scene", "version": 1, "name": "fq",
                 "camera": {"fovY": 44.0, "eye": [0, 2.6, 10.5], "target": [0, 1, 0]},
+                "textures": [
+                  {"id": "t-brick", "generator": "brick", "base": "#B5553C"},
+                  {"id": "t-siding", "generator": "siding", "base": "#F2E6CF"},
+                  {"id": "t-dirt", "generator": "dirt", "base": "#C8763F"},
+                  {"id": "t-sand", "generator": "sand", "base": "#E3C078"},
+                  {"id": "t-facade", "generator": "facade", "wall": "#C9603F",
+                   "kind": "brick", "trim": "#F2E6CF", "sign": "#2E4E3F",
+                   "signText": "#F2D37A", "awning": "#D8343F", "w": 5, "h": 7, "seed": 1}],
                 "nodes": [{"type": "mesh", "name": "sea",
                            "geometry": {"kind": "flat-quad", "width": 40.0, "depth": 18.0},
                            "material": {"color": "#274B66", "roughness": 0.3}}]}"##,
         )
         .unwrap();
         let loaded = load(f.to_str().unwrap()).unwrap();
+        // All five R-W5 registry arms resolve at load (R1-05).
+        assert_eq!(loaded.textures.len(), 5);
         assert_eq!(loaded.draws.len(), 1);
         match &loaded.draws[0] {
             Draw::Colour(d) => {

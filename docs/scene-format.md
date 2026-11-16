@@ -275,6 +275,11 @@ The v1 registry is exactly the painters the two scenes call:
 | `blob-shadow` | — | radial contact shadow |
 | `onoda-card` | — | the §28 character painter (M4 replaces) |
 | `dof-chart-pattern` | `size` (default 512) | the M3 chart pattern |
+| `brick` | `base` (hex) | brick courses over shaded mortar (R-W5 port of world.ts `T.brick`) |
+| `siding` | `base` (hex) | 8 board gradients + seams (R-W5 port of `T.siding`; byte-exact vs the TS op stream) |
+| `dirt` | `base` (hex), `tracks` (bool, **default true** — the TS default) | speckled dirt + optional wheel ruts (R-W5 port of `T.dirt`) |
+| `sand` | `base` (hex) | speckled sand + ripple strokes (R-W5 port of `T.sand`) |
+| `facade` | `wall`, `kind`, `trim`, `sign`, `signText` (hex/str), optional `awning` (hex), `w` (default 5), `h` (default 7), `seed` (default 1) | shopfront composite over brick/siding tiling (R-W5 port of world.ts `facade()`); the sign-board glyphs are a PIL strip composited via `facade_with_text` — the engine has no Rust text rasteriser (the `sign` precedent) |
 
 A node references a texture by id, or by `{ "id": ..., "wrap":
 "repeat" }` for repeat addressing (default `clamp`). sRGB textures
