@@ -1039,7 +1039,15 @@ pub(crate) fn run_telemetry_seq(
         let lt = t - seg.start_s;
         let mut root = roots[si].clone();
         set_root_time(&mut root, lt)?;
-        let label = format!("segment {} scene at lt={lt:.2}", seg.id);
+        // The label is the loader's PATH basis, not prose:
+        // load_root derives the scene dir from it and file
+        // textures resolve against that dir. A descriptive
+        // label silently re-bases textures to the process CWD
+        // (R2-03 finding: canonical telemetry failed on s03's
+        // lens-cloth plate while the driver — which passes the
+        // real path, filmseq.rs — was correct). Pass the real
+        // scene path, exactly as filmseq does.
+        let label = seg.scene_path.display().to_string();
         // Validation gate: the loader must accept this scene at
         // this local time (era pairing fails closed). Loaded is
         // opaque, so the cutouts are read from the folded root
