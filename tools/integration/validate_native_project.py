@@ -14,9 +14,16 @@
 #     in the talerender-plates manifest shape; the film data's own
 #     calendarYears / calendarDark / sign declarations; caption
 #     strips) — no hardcoded film's names remain;
-#   - a bridge in the OLD generation (flat plates.json, or film data
-#     missing the F2 keys the binary's loader demands by name) is
+#   - a bridge in the OLD generation (flat plates.json) is
 #     reported as STALE with the re-bridge remedy, never passed;
+#     [R1-03 AMENDMENT, REMEDIATION-CONTRACTS §4: film data
+#     missing the F2 keys is NO LONGER a stale marker — the
+#     decoupled binary loader treats calendarYears /
+#     calendarDark / sign as optional declarations (absence =
+#     empty calendar / no sign). Staleness is MANIFEST-SHA /
+#     generation drift only: the flat plates.json shape and
+#     SHA mismatch below. A PRESENT-but-malformed F2 key still
+#     fails by name, mirroring the loader.]
 #   - MANIFEST-SHA, when present, is verified — a bridge whose files
 #     drifted from its packaged hashes is stale by definition;
 #   - an unbridged project names the bridge step
@@ -110,12 +117,14 @@ BRIDGE_REMEDY = ("bridge it with tools/bridge/build_bridge.py "
                  "*.scene.json dir> [--film-data <prior film data>] "
                  "(see docs/integration/CR-B1-06-BRIDGE.md)")
 
-# F2 film-data keys the current binary's loader demands BY NAME
-# (film.rs load_film_data; verified 2026-11-15: the provisioned
-# binary refuses the stale packaged Onoda data with
-# "film telemetry failed: film data: missing calendarYears").
-# A bridge whose film data lacks them is a previous generation —
-# stale, however complete its PNG files are.
+# F2 film-data keys (film.rs load_film_data). PRE-decoupling the
+# loader demanded them BY NAME (verified 2026-11-15: the binary
+# refused the packaged Onoda data with "film data: missing
+# calendarYears"), and absence was a previous-generation marker.
+# REMEDIATION-CONTRACTS §4 (loader decoupling) makes all three
+# OPTIONAL: absence = empty calendar / no sign, and a fresh
+# scene-sequence bridge legitimately carries none of them. Only
+# a present-but-wrong-type value still fails by name.
 F2_KEYS = ("calendarYears", "calendarDark", "sign")
 
 PNG_SIG = b"\x89PNG\r\n\x1a\n"
@@ -509,18 +518,30 @@ def validate_project(project):
                     break
         if not isinstance(data.get("anchors"), dict):
             problems.append("onoda.json: anchors{} missing")
-        # STALE-BRIDGE detection (generation check): the current
-        # binary's loader demands the F2 keys by name; film data
-        # without them is a previous bridge generation and the
-        # binary refuses it (verified refusal text in F2_KEYS note).
-        for key in F2_KEYS:
-            if key not in data:
+        # F2 declarations are OPTIONAL (REMEDIATION-CONTRACTS §4,
+        # loader decoupling): film data with NO calendarYears /
+        # calendarDark / sign is a current-generation
+        # scene-sequence bridge, NOT a stale one — the decoupled
+        # loader reads absence as an empty calendar / no sign,
+        # and staleness is MANIFEST-SHA / generation drift only.
+        # What still fails BY NAME, mirroring the loader, is a
+        # declaration that is present but malformed.
+        if "calendarYears" in data and not (
+                isinstance(data["calendarYears"], list)
+                and all(isinstance(y, str)
+                        for y in data["calendarYears"])):
+            problems.append(
+                "onoda.json: calendarYears is present but is not "
+                "a list of strings -- the binary's film loader "
+                "fails it by name (absence would be legal; a "
+                "malformed declaration is not)")
+        for key in ("calendarDark", "sign"):
+            if key in data and not isinstance(data[key], str):
                 problems.append(
-                    "STALE BRIDGE: onoda.json has no %r declaration -- "
-                    "the current binary's film loader demands this "
-                    "key by name and refuses this data (a previous "
-                    "bridge generation). Remedy: re-bridge -- %s"
-                    % (key, BRIDGE_REMEDY))
+                    "onoda.json: %s is present but is not a "
+                    "string -- the binary's film loader fails it "
+                    "by name (absence would be legal; a malformed "
+                    "declaration is not)" % key)
         captions = data.get("captions")
         if not isinstance(captions, list) or not captions:
             problems.append("onoda.json: captions[] missing/empty")
@@ -873,7 +894,9 @@ def _write(path, content, binary=False):
 
 
 def build_fixture(root, omit=None, frame_indices=(0, 1, 2),
-                  plates_shape="manifest", f2=True, drop_asset=None):
+                  plates_shape="manifest", f2=True, drop_asset=None,
+                  manifest_driver=None, write_sha=False,
+                  f2_wrong_type=False):
     """A minimal but complete CURRENT-GENERATION bridged project +
     rendered frames (CR-B2-06: manifest-shape plates.json, F2 film
     data, {start, end} lines — the build_bridge.py output shape).
@@ -916,13 +939,16 @@ def build_fixture(root, omit=None, frame_indices=(0, 1, 2),
             wav.setsampwidth(2)
             wav.setframerate(48000)
             wav.writeframes(b"\x00\x00" * 4800)
-    put(os.path.join("native", "film.json"), json.dumps({
+    manifest_doc = {
         "format": "talerender-film", "version": 1, "title": "Fixture",
         "fps": 30, "durationS": 0.1, "totalFrames": 3,
         "resolution": {"width": 64, "height": 64},
         "segments": [{"id": "s01", "scene": "scenes/film/s01.scene.json",
                       "lines": [0], "startFrame": 0, "endFrame": 3,
-                      "frames": 3}]}))
+                      "frames": 3}]}
+    if manifest_driver is not None:
+        manifest_doc["driver"] = manifest_driver
+    put(os.path.join("native", "film.json"), json.dumps(manifest_doc))
     put(os.path.join("native", "scenes", "film", "s01.scene.json"),
         json.dumps({"format": "talerender-scene", "version": 2,
                     "name": "s01", "nodes": []}))
@@ -936,6 +962,10 @@ def build_fixture(root, omit=None, frame_indices=(0, 1, 2),
         film_data.update({
             "calendarYears": ["1945", "1955", "1965", "1974"],
             "calendarDark": "calendar-dark.png", "sign": "sign.png"})
+    if f2_wrong_type:
+        # Present but malformed: a string where the loader
+        # demands an array of strings (R1-03 self-test case 9).
+        film_data["calendarYears"] = "1945"
     put(os.path.join("native", "film", "onoda.json"),
         json.dumps(film_data))
     plate_names = ("paper-map", "leaflet", "book-open", "book-closed",
@@ -960,6 +990,26 @@ def build_fixture(root, omit=None, frame_indices=(0, 1, 2),
     for n in frame_indices:
         _write(os.path.join(frames, "frame_%05d.png" % n), png,
                binary=True)
+    if write_sha:
+        # MANIFEST-SHA in build_bridge.py's spelling: sha256 of
+        # every file under native/ except MANIFEST-SHA itself,
+        # "<digest>  <relative path>", sorted, trailing newline.
+        import hashlib as _hashlib
+        native_root = os.path.join(proj, "native")
+        entries = []
+        for dirpath, _dirs, files in os.walk(native_root):
+            for fn in sorted(files):
+                if fn == "MANIFEST-SHA":
+                    continue
+                full = os.path.join(dirpath, fn)
+                relp = os.path.relpath(full, native_root) \
+                    .replace(os.sep, "/")
+                h = _hashlib.sha256()
+                with open(full, "rb") as fh:
+                    h.update(fh.read())
+                entries.append("%s  %s" % (h.hexdigest(), relp))
+        _write(os.path.join(native_root, "MANIFEST-SHA"),
+               "\n".join(sorted(entries)) + "\n")
     return proj, frames
 
 
@@ -1003,10 +1053,13 @@ def run_self_test():
         if not ok:
             print(out)
 
-        # Case 4 (CR-B2-06): the PREVIOUS bridge generation (flat
-        # plates.json, no F2 keys — the stale packaged Onoda shape)
-        # fails as STALE with the re-bridge remedy, and no output
-        # routes to Chrome.
+        # Case 4 (CR-B2-06, as amended by R1-03): the PREVIOUS
+        # bridge generation (flat plates.json — the stale packaged
+        # Onoda shape) fails as STALE with the re-bridge remedy,
+        # and no output routes to Chrome. The fixture also lacks
+        # the F2 keys, but post-decoupling that absence alone is
+        # NOT the stale marker (case 7 proves it passes); the
+        # flat plates.json generation shape is.
         proj, frames = build_fixture(os.path.join(tmp, "stale"),
                                      plates_shape="flat", f2=False)
         rc, out = run_cli(proj)
@@ -1046,6 +1099,57 @@ def run_self_test():
         cases.append(("unbridged project -> bridge remedy", ok,
                       "exit %d (want 2, build_bridge named, no "
                       "Chrome)" % rc))
+        if not ok:
+            print(out)
+
+        # Case 7 (R1-03, REMEDIATION-CONTRACTS §4): a FRESH
+        # scene-sequence bridge with NO calendarYears /
+        # calendarDark / sign declarations and a matching
+        # MANIFEST-SHA is current-generation — it must PASS and
+        # must NOT be labelled STALE. Absence of the F2 keys is
+        # a declaration of "no calendar / no sign", not drift.
+        proj, frames = build_fixture(
+            os.path.join(tmp, "fresh-no-f2"), f2=False,
+            manifest_driver="scene-sequence", write_sha=True)
+        rc, out = run_cli(proj)
+        ok = rc == 0 and "RESULT: OK" in out and "STALE" not in out
+        cases.append(("fresh bridge without calendar/sign passes",
+                      ok, "exit %d (want 0, OK, no STALE)" % rc))
+        if not ok:
+            print(out)
+
+        # Case 8 (R1-03): staleness still bites where it should —
+        # a bridge whose files drifted from its MANIFEST-SHA is
+        # STALE even when it declares no F2 keys. The drift here
+        # is a trailing space appended to onoda.json after the
+        # SHA was written (JSON stays valid; the hash does not).
+        proj, frames = build_fixture(
+            os.path.join(tmp, "sha-drift"), f2=False,
+            manifest_driver="scene-sequence", write_sha=True)
+        with open(os.path.join(proj, "native", "film",
+                               "onoda.json"), "a",
+                  encoding="utf-8") as fh:
+            fh.write(" ")
+        rc, out = run_cli(proj)
+        ok = rc == 2 and "STALE BRIDGE" in out \
+            and "MANIFEST-SHA" in out
+        cases.append(("MANIFEST-SHA drift is STALE (no F2 keys)",
+                      ok, "exit %d (want 2, STALE + MANIFEST-SHA)"
+                      % rc))
+        if not ok:
+            print(out)
+
+        # Case 9 (R1-03): a PRESENT-but-malformed F2 declaration
+        # still fails BY NAME — decoupling made absence legal,
+        # not malformed data.
+        proj, frames = build_fixture(
+            os.path.join(tmp, "f2-wrong-type"), f2=False,
+            manifest_driver="scene-sequence", f2_wrong_type=True)
+        rc, out = run_cli(proj)
+        ok = rc == 2 and "calendarYears" in out
+        cases.append(("malformed calendarYears fails by name",
+                      ok, "exit %d (want 2, calendarYears named)"
+                      % rc))
         if not ok:
             print(out)
 

@@ -45,9 +45,18 @@
 #     that flag is reported, not hidden); (c) the binary's own
 #     verdict: `talerender --film-telemetry <film-dir>`, whose
 #     FILM TELEMETRY: CHECK OK line is REQUIRED (the binary loader
-#     is stricter than the adapter — e.g. it demands the F2
-#     calendarYears/calendarDark/sign keys by name). Leg (c) is
-#     skipped only with --no-telemetry, which prints why.
+#     is stricter than the adapter). REMEDIATION (Package 3,
+#     loader decoupling): the F2 calendarYears/calendarDark/sign
+#     keys are OPTIONAL declarations — a film whose data declares
+#     none loads with an empty calendar and no sign; present-but-
+#     wrong-type still fails by name. This builder emits those
+#     keys ONLY when its inputs actually declare them (CLI flags
+#     or a --film-data prior that itself declares them) — it
+#     never invents a calendar or a sign for a film that has
+#     none — and the manifest it emits carries
+#     "driver": "scene-sequence" (REMEDIATION-CONTRACTS §1/§4).
+#     Leg (c) is skipped only with --no-telemetry, which prints
+#     why.
 #
 # Stdlib only. Never commits. Writes only under --out.
 # =====================================================================
@@ -77,9 +86,13 @@ Inputs:
     --film-data   an existing film data file (e.g. the repo's
                   film/onoda.json) whose anchors and F2
                   declarations (calendarYears/calendarDark/sign)
-                  are carried over, and whose captions' fit values
-                  are reused for chunks this build regenerates
-                  identically (same text at the same start time)
+                  are carried over WHEN THE PRIOR DECLARES THEM.
+                  Its captions' fit values are NOT reused: fit is
+                  measured fresh for every chunk (see
+                  --caption-font / --allow-assumed-fit). A prior
+                  without the F2 keys contributes none — absence
+                  is a declaration of "no calendar / no sign",
+                  never filled in from any other film.
     --anchors     JSON: either {"<name>": <seconds>} verbatim, or
                   [["<word>", <line>], ...] resolved with the
                   timing.ts Wd() rule against data/words.json
@@ -123,6 +136,19 @@ import subprocess
 import sys
 import wave
 from pathlib import Path
+
+# Caption-fit measurement (R1-10): Pillow is OPTIONAL at import
+# time so the degradation path below can name its absence instead
+# of dying on an ImportError traceback. When present, the bridge
+# measures fit with the repo's established measurer (the same
+# PIL/FreeType recipe as film/gen_film_data.py and
+# tools/captions/gen_caption_strips.py). When absent — or when no
+# caption font resolves — build() fails closed unless
+# --allow-assumed-fit was given (see measure_caption_fits).
+try:
+    from PIL import ImageFont as _ImageFont
+except Exception:  # ImportError or a broken Pillow install
+    _ImageFont = None
 
 MANAGED = ["film.json", "MANIFEST-SHA", "scenes", "film"]
 
@@ -183,11 +209,14 @@ def dump_js(obj):
 # ends at the next chunk's start, except across a line gap
 # (next.s - lineEnd > 0.6 and next chunk on another line), where
 # e = lineEnd + 0.25; the final chunk ends at the film duration.
-# Lines without `caps` fall back to autoChunks(). The ONE thing
-# this stdlib port cannot reproduce is the strip WIDTH/fit: that
-# needs a font measurer (PIL/FreeType or Skia). fit is carried
-# from --film-data for identical chunks, else assumed 1.0 and the
-# assumption is counted and printed — never silent.
+# Lines without `caps` fall back to autoChunks(). Strip WIDTH/fit
+# is MEASURED (R1-10): PIL/FreeType getlength() in '900 88px
+# Inter' against the caption font, fit = min(1, 960 / rawW) —
+# captions.ts's own definition, with the measurer the repo's
+# film/gen_film_data.py already uses. Only under
+# --allow-assumed-fit (Pillow/font unavailable) does fit fall
+# back to the old carry-or-1.0 behaviour, and then the manifest
+# says so (bridge.captionFit.mode = "assumed-1.0").
 # ---------------------------------------------------------------------
 
 def norm(w):
@@ -267,6 +296,82 @@ def wd(word, line, words):
         if w["line"] == line and norm(w["w"]).startswith(n):
             return w["s"]
     die(f"anchor word {word!r} not found in line {line} of data/words.json")
+
+
+# ---------------------------------------------------------------------
+# Caption fit — MEASURED (R1-10). Definitions are captions.ts's:
+#   CAP = { size: 88, maxW: 960 }, FONT = '900 88px Inter',
+#   rawW = advance width of the chunk text, fit = min(1, maxW/rawW).
+# The measurer is PIL/FreeType getlength() against the shipped
+# Inter-Black.otf — the same font file Chrome's Skia measureText
+# read, and the measurer film/gen_film_data.py used for the
+# reference film (validated in R1-10's measurement report: 59/59
+# matched chunks agree with the Skia first-party metrics on fit,
+# max rawW delta 0.1 px).
+# ---------------------------------------------------------------------
+
+CAP_SIZE, CAP_MAXW = 88, 960.0
+
+
+def resolve_caption_font(args, project):
+    """--caption-font, else the project's own fonts/Inter-Black.otf,
+    else $TALERENDER_CAPTION_FONT. Returns a Path or None."""
+    cands = []
+    if args.caption_font:
+        cands.append(Path(args.caption_font).expanduser())
+    cands.append(project / "fonts" / "Inter-Black.otf")
+    env = os.environ.get("TALERENDER_CAPTION_FONT")
+    if env:
+        cands.append(Path(env).expanduser())
+    for c in cands:
+        if c.is_file():
+            return c
+    return None
+
+
+def measure_caption_fits(raw_caps, args, project):
+    """Returns (fits, caption_fit_block): one measured fit per raw
+    caption chunk, plus the manifest bridge block recording how
+    the fits were obtained. Fails CLOSED (die) when measurement is
+    impossible and --allow-assumed-fit was not given; with the
+    flag, returns (None, block) and the caller falls back to the
+    legacy carry-or-1.0 behaviour with the block recording it."""
+    why = None
+    font_path = None
+    if _ImageFont is None:
+        why = "Pillow (PIL) is not importable in this Python"
+    else:
+        font_path = resolve_caption_font(args, project)
+        if font_path is None:
+            why = ("no caption font found (tried --caption-font, "
+                   "<project>/fonts/Inter-Black.otf, "
+                   "$TALERENDER_CAPTION_FONT)")
+    if why is not None:
+        if not args.allow_assumed_fit:
+            die(f"caption fit cannot be MEASURED: {why}. Refusing "
+                "to assume fit=1.0 silently — the caption audit's "
+                "fit floor (>= 0.68) would be unmeasured for this "
+                "film. Install Pillow / supply the font, or re-run "
+                "with --allow-assumed-fit to build with assumed "
+                "fits (recorded in the manifest bridge block).")
+        return None, {"mode": "assumed-1.0", "reason": why,
+                      "measurer": None}
+    try:
+        font = _ImageFont.truetype(str(font_path), CAP_SIZE)
+    except OSError as e:
+        die(f"caption font {font_path} cannot be opened: {e}")
+    fits = []
+    for c in raw_caps:
+        raw_w = font.getlength(c["text"])
+        fits.append(round(min(1.0, CAP_MAXW / raw_w), 5)
+                    if raw_w > 0 else 1.0)
+    block = {"mode": "measured",
+             "measurer": "PIL/FreeType getlength, 900 88px Inter",
+             "font": str(font_path),
+             "fontMd5": hashlib.md5(
+                 font_path.read_bytes()).hexdigest(),
+             "capMaxW": CAP_MAXW}
+    return fits, block
 
 
 # ---------------------------------------------------------------------
@@ -555,15 +660,37 @@ def build(args):
     if prior:
         for c in prior.get("captions") or []:
             prior_fit[(c.get("text"), round(float(c.get("s", -1)), 3))] = c.get("fit")
+    # R1-10: fit is MEASURED for every chunk (see
+    # measure_caption_fits). A --film-data fit is kept only as a
+    # cross-check: a disagreement > 0.005 is printed and the
+    # measured value wins. measured_fits is None only on the
+    # --allow-assumed-fit degradation path.
+    measured_fits, caption_fit_block = measure_caption_fits(
+        raw_caps, args, project)
     captions = []
     fit_assumed = 0
+    fit_revised = 0
     for k, c in enumerate(raw_caps):
-        fit = prior_fit.get((c["text"], round(c["s"], 3)))
-        if not is_number(fit):
-            fit = 1.0
-            fit_assumed += 1
+        prior_f = prior_fit.get((c["text"], round(c["s"], 3)))
+        if measured_fits is not None:
+            fit = measured_fits[k]
+            if is_number(prior_f) and abs(float(prior_f) - fit) > 0.005:
+                fit_revised += 1
+                print(f"  WARNING: caption {k} {c['text']!r}: "
+                      f"--film-data fit {prior_f} disagrees with "
+                      f"the measured fit {fit} — measured value "
+                      "written")
+        else:
+            fit = prior_f
+            if not is_number(fit):
+                fit = 1.0
+                fit_assumed += 1
         captions.append({"s": c["s"], "e": c["e"], "text": c["text"],
                          "fit": fit, "strip": f"cap_{k:03d}.png"})
+    if caption_fit_block["mode"] == "assumed-1.0":
+        caption_fit_block["chunksAssumed"] = fit_assumed
+    else:
+        caption_fit_block["chunksRevisedVsFilmData"] = fit_revised
     for seg in segments:
         idx = [k for k, c in enumerate(captions)
                if seg["startS"] - 1e-9 <= c["s"] < seg["endS"] - 1e-9
@@ -611,12 +738,16 @@ def build(args):
         "captions": captions,
     }
     if cal_years or cal_dark or sign:
-        # F2 declarations: emitted only when the inputs declare
-        # them. The current binary loader demands these keys by
-        # name for the film.rs path; a film whose transcription
-        # declares no calendar/sign will fail the telemetry leg
-        # BY NAME until its data declares them — that failure is
-        # reported, never papered over with Onoda's values.
+        # F2 declarations: emitted ONLY when the inputs actually
+        # declare them — an explicit --calendar-year /
+        # --calendar-dark / --sign flag, or a --film-data prior
+        # that itself carries the key. Nothing is invented here:
+        # a film whose scenes never use a calendar or a sign is
+        # bridged WITHOUT these keys, and post-decoupling
+        # (REMEDIATION-CONTRACTS §4) the binary loads such a
+        # bridge as an empty calendar / no sign instead of
+        # failing by name. Onoda's values are never papered over
+        # another film.
         if cal_years:
             film_data["calendarYears"] = cal_years
         if cal_dark:
@@ -750,6 +881,12 @@ def build(args):
     manifest = {
         "format": "talerender-film",
         "version": 1,
+        # REMEDIATION-CONTRACTS §1/§4: films bridged from scene
+        # data are driven by the generic scene-sequence driver.
+        # The Onoda repo film is NOT built by this builder and
+        # its manifest gains no driver field — it stays on the
+        # legacy staging by construction.
+        "driver": "scene-sequence",
         "title": script.get("title") or prior and prior.get("title") or "",
         "project": str(project),
         "sourceData": "film/onoda.json",
@@ -782,6 +919,7 @@ def build(args):
                 "transcribed segment scenes; verified against the "
                 "adapter contract (P4 data-driven), the repo "
                 "validator, and the binary's film telemetry.",
+        "captionFit": caption_fit_block,
         "cuesProvenance": provenance,
         "skeletonOwes": [
             {"item": o.get("item"), "severity": o.get("severity")}
@@ -813,11 +951,18 @@ def build(args):
           f"{duration} s, {width}x{height}, {len(segments)} segments")
     print(f"  film data: {len(film_data['lines'])} lines, "
           f"{len(anchors)} anchors, {len(captions)} caption chunks")
-    if fit_assumed:
-        print(f"  WARNING: caption fit assumed 1.0 for {fit_assumed} "
-              "chunk(s) — no font measurer is available to a "
-              "stdlib-only builder and no --film-data fit matched; "
-              "an over-wide chunk's fit can differ (see doc)")
+    if caption_fit_block["mode"] == "measured":
+        print(f"  caption fit: MEASURED for {len(captions)} chunk(s) "
+              f"({caption_fit_block['measurer']}; font "
+              f"{caption_fit_block['font']})")
+    else:
+        print(f"  WARNING: CAPTION FIT UNMEASURED — "
+              f"{caption_fit_block['reason']}; fit assumed for "
+              f"{fit_assumed} chunk(s) (prior-fit carry or 1.0) "
+              "under --allow-assumed-fit. The caption audit's fit "
+              "floor is NOT measured for this film; the manifest "
+              "bridge block records captionFit.mode = "
+              "\"assumed-1.0\".")
     if not anchors:
         print("  WARNING: no word anchors — none declared via "
               "--anchors, --film-data, or scene data; staging that "
@@ -1009,7 +1154,19 @@ def main():
     ap.add_argument("--assets-dir")
     ap.add_argument("--film-data",
                     help="existing film data: anchors + F2 "
-                         "declarations + caption fits carried over")
+                         "declarations carried over (caption fits "
+                         "are measured, not carried)")
+    ap.add_argument("--caption-font",
+                    help="caption font for MEASURED fit (default: "
+                         "<project>/fonts/Inter-Black.otf, else "
+                         "$TALERENDER_CAPTION_FONT)")
+    ap.add_argument("--allow-assumed-fit", action="store_true",
+                    help="only if fit cannot be measured (no "
+                         "Pillow / no font): build anyway with "
+                         "assumed fits, loudly recorded in the "
+                         "manifest (bridge.captionFit.mode = "
+                         "\"assumed-1.0\"); without this flag an "
+                         "unmeasurable fit fails the build")
     ap.add_argument("--anchors",
                     help='JSON {"name": seconds} or [["word", line], ...]')
     ap.add_argument("--fps", type=int, default=None,
