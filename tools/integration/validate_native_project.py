@@ -415,6 +415,23 @@ def validate_project(project):
                                     "an object")
                     continue
                 sid = seg.get("id", "?")
+                # The generic parser (filmseq.rs) demands startS /
+                # endS by name (mnum) — a manifest without them is
+                # refused by name at load, so the validator must
+                # refuse it here first (R2-10 defect D3).
+                start_s, end_s = seg.get("startS"), seg.get("endS")
+                if not (isinstance(start_s, (int, float))
+                        and isinstance(end_s, (int, float))):
+                    problems.append("film manifest: segment %s lacks "
+                                    "numeric startS/endS — the generic "
+                                    "driver/telemetry parser demands "
+                                    "them by name" % sid)
+                    continue
+                if not end_s > start_s:
+                    problems.append("film manifest: segment %s endS "
+                                    "(%s) must exceed startS (%s)"
+                                    % (sid, end_s, start_s))
+                    continue
                 start, end = seg.get("startFrame"), seg.get("endFrame")
                 if not (isinstance(start, int) and isinstance(end, int)):
                     problems.append("film manifest: segment %s lacks "
@@ -944,7 +961,8 @@ def build_fixture(root, omit=None, frame_indices=(0, 1, 2),
         "fps": 30, "durationS": 0.1, "totalFrames": 3,
         "resolution": {"width": 64, "height": 64},
         "segments": [{"id": "s01", "scene": "scenes/film/s01.scene.json",
-                      "lines": [0], "startFrame": 0, "endFrame": 3,
+                      "lines": [0], "startS": 0.0, "endS": 0.1,
+                      "startFrame": 0, "endFrame": 3,
                       "frames": 3}]}
     if manifest_driver is not None:
         manifest_doc["driver"] = manifest_driver
