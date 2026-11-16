@@ -872,8 +872,29 @@ async fn replay_gpu(
         mapped_at_creation: false, // wgpu zero-initialises: the CPU Painter::new zero start
     });
     crate::gpucore::mem_alloc_buffer(crate::gpucore::MemClass::G, (npix * 4) as u64); // VRAM ledger (W84 §5.2)
-    let dummy = device.create_buffer(&wgpu::BufferDescriptor {
-        label: Some("gpupaint dummy"),
+    // HARNESS-RUN FIX (uncommitted, coordinator to integrate): one
+    // dummy per binding. A single shared dummy was bound at once as
+    // STORAGE_READ_ONLY (bindings 2/4, pts/plate) and
+    // STORAGE_READ_WRITE (binding 3, mask) in the same dispatch,
+    // which wgpu validation rejects ("STORAGE_READ_WRITE is an
+    // exclusive usage") — replay panicked on every list containing
+    // a prim with no pts and no mask (e.g. fill_ellipse in prims).
+    let dummy_pts = device.create_buffer(&wgpu::BufferDescriptor {
+        label: Some("gpupaint dummy pts"),
+        size: 4,
+        usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+        mapped_at_creation: false,
+    });
+    crate::gpucore::mem_alloc_buffer(crate::gpucore::MemClass::G, 4); // VRAM ledger (W84 §5.2)
+    let dummy_mask = device.create_buffer(&wgpu::BufferDescriptor {
+        label: Some("gpupaint dummy mask"),
+        size: 4,
+        usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
+        mapped_at_creation: false,
+    });
+    crate::gpucore::mem_alloc_buffer(crate::gpucore::MemClass::G, 4); // VRAM ledger (W84 §5.2)
+    let dummy_plate = device.create_buffer(&wgpu::BufferDescriptor {
+        label: Some("gpupaint dummy plate"),
         size: 4,
         usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
         mapped_at_creation: false,
@@ -927,7 +948,7 @@ async fn replay_gpu(
         queue.write_buffer(&params_buf, 0, &prep.params);
         let pts_buf;
         let pts_ref: &wgpu::Buffer = if prep.pts.is_empty() {
-            &dummy
+            &dummy_pts
         } else {
             let mut bytes = Vec::with_capacity(prep.pts.len() * 4);
             for f in &prep.pts {
@@ -945,13 +966,13 @@ async fn replay_gpu(
             plate_buf = upload(&bytes, "gpupaint plate");
             &plate_buf
         } else {
-            &dummy
+            &dummy_plate
         };
         let mask_ref: &wgpu::Buffer = if let Some(id) = prep.mask_prim {
             mask_buf_for(&mut mask_bufs, id);
             &mask_bufs[&id]
         } else {
-            &dummy
+            &dummy_mask
         };
         let bg = device.create_bind_group(&wgpu::BindGroupDescriptor {
             label: Some("gpupaint bg"),

@@ -1,0 +1,353 @@
+name: GPUFIRST Parity (Batch 2)
+
+# GPUFIRST Batch 2 — HARNESS-RUN seat: the first real GPU-vs-CPU
+# parity table for the gpupaint executor.
+# Builds with --features gpupaint (release), records the 46-class
+# M4 battery (7 cards) + the 75-state film spread on CPU, replays
+# EVERY recorded display list on the GPU (CI lavapipe), runs the
+# canonical tools/gpupaint-compare.py over all pairs, and proves
+# determinism on a named subset (>=10 lists spanning classes,
+# incl. a head_shade case and a composite_plate case) by replaying
+# each twice and byte-comparing the pixel files with cmp (the
+# replay sha256: line is also recorded — the hand-rolled SHA-256
+# was proven correct by the FIX-SHA256 seat, test-constant fix
+# only, so hash equality is valid determinism evidence too).
+# SOFTWARE RENDERING: lavapipe numbers only; they do NOT predict
+# RADV timings/results on the user's PC.
+# Artifact is TEXT ONLY (JSON/CSV/Markdown tables + logs) — no
+# rendered images are uploaded, per programme law.
+on:
+  workflow_dispatch:
+  # Branch-push trigger: workflow_dispatch requires the workflow to
+  # exist on the default branch (gh workflow run 404s otherwise);
+  # this programme lives on gpufirst-phase0 until Batch 3, so
+  # pushes to the branch run it too (mirrors gpufirst-perf.yml).
+  push:
+    branches: [gpufirst-phase0]
+    paths:
+      - 'src/gpupaint*.rs'
+      - 'src/gpupaint.wgsl'
+      - 'src/gpupaint_replay.wgsl'
+      - 'src/gputrace.rs'
+      - 'tools/gpupaint-compare.py'
+      - 'docs/ab/stroke-battery/spec.json'
+      - '.github/workflows/gpufirst-parity.yml'
+
+concurrency:
+  group: gpufirst-parity-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+  RUSTFLAGS: "-C link-arg=-fuse-ld=mold"
+
+jobs:
+  parity:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+          key: ubuntu2204-gpufirst
+
+      - name: Install mold + software Vulkan (lavapipe) + Python compare deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mold mesa-vulkan-drivers vulkan-tools
+          vulkaninfo --summary || true
+          python3 -m pip install --quiet "Pillow>=10" "numpy>=1.26"
+          python3 -c "from PIL import Image; import numpy; print('Pillow', Image.__version__ if hasattr(Image,'__version__') else 'ok', 'numpy', numpy.__version__)"
+
+      - name: Build harness (feature gpupaint, release)
+        run: cargo build --release --features gpupaint
+
+      - name: Record battery + states (CPU reference + display lists)
+        run: |
+          set -euo pipefail
+          mkdir -p parity/cpu-battery parity/cpu-states parity/gpu-battery parity/gpu-states parity/replay-logs parity/det-a parity/det-b parity/states-compare
+          ./target/release/talerender --gpu-paint record-battery parity/cpu-battery 2>&1 | tee parity/record-battery.log
+          ./target/release/talerender --gpu-paint record-states parity/cpu-states 2>&1 | tee parity/record-states.log
+          echo "battery lists:"; ls parity/cpu-battery/*.json | wc -l; ls parity/cpu-battery/
+          echo "state lists:"; ls parity/cpu-states/*.json | wc -l
+          python3 -c "from PIL import Image; print('prims mode:', Image.open('parity/cpu-battery/prims.png').mode)"
+          # Inventory: prim-kind counts per recorded list (drives the
+          # per-operation-class roll-up in the aggregate step).
+          python3 - <<'PY'
+          import json, glob, collections, pathlib
+          inv = {}
+          for p in sorted(glob.glob('parity/cpu-battery/*.json') + glob.glob('parity/cpu-states/*.json')):
+              d = json.load(open(p))
+              kinds = collections.Counter(pr.get('t','?') for pr in d.get('prims',[]))
+              inv[pathlib.Path(p).stem + ('@battery' if 'cpu-battery' in p else '@states')] = {
+                  'canvas': [d.get('canvas_w'), d.get('canvas_h')],
+                  'prims_total': sum(kinds.values()), 'kinds': dict(sorted(kinds.items()))}
+          json.dump(inv, open('parity/list-inventory.json','w'), indent=1)
+          print(f"inventoried {len(inv)} lists")
+          PY
+
+      - name: Replay EVERY recorded list on GPU (lavapipe)
+        run: |
+          set -uo pipefail
+          ICD=$(ls /usr/share/vulkan/icd.d/lvp_icd*.json | head -n 1)
+          echo "lavapipe ICD: $ICD" | tee parity/adapter.txt
+          export VK_ICD_FILENAMES="$ICD"
+          : > parity/replay-failures.txt
+          for src in battery states; do
+            for list in parity/cpu-$src/*.json; do
+              stem=$(basename "$list" .json)
+              out="parity/gpu-$src/$stem.png"
+              log="parity/replay-logs/$src-$stem.log"
+              echo "=== replay $src/$stem ==="
+              if ./target/release/talerender --gpu-paint replay "$list" "$out" > "$log" 2>&1; then
+                grep -E "^(replay:|gpu_wall_ms:|sha256:)" "$log" || true
+                head -n 1 "$log" >> parity/adapter.txt || true
+              else
+                rc=$?
+                echo "REPLAY FAILED rc=$rc $src/$stem" | tee -a parity/replay-failures.txt
+                tail -n 30 "$log" || true
+              fi
+            done
+          done
+          echo "gpu-battery outputs: $(ls parity/gpu-battery/*.png 2>/dev/null | wc -l)"
+          echo "gpu-states outputs:  $(ls parity/gpu-states/*.png 2>/dev/null | wc -l)"
+          echo "failures:"; cat parity/replay-failures.txt
+
+      - name: Determinism proof (named subset, replayed twice, cmp on pixel files)
+        run: |
+          set -uo pipefail
+          ICD=$(ls /usr/share/vulkan/icd.d/lvp_icd*.json | head -n 1)
+          export VK_ICD_FILENAMES="$ICD"
+          python3 - <<'PY'
+          import json, glob, pathlib
+          # Named subset spanning classes; verified/extended below so it
+          # provably contains a head_shade case and a composite_plate case.
+          named = [
+            ('battery','prims'), ('battery','toon'),
+            ('battery','face-neutral'), ('battery','face-laugh'),
+            ('battery','face-shock'),
+            ('states','mood-neutral'), ('states','mood-laugh'),
+            ('states','film-tani-explain'), ('states','legs-walk-p0'),
+            ('states','plate-holdr-parcel-label'), ('states','plate-holdl-parcel'),
+            ('states','anchor-lying-lean82'), ('states','pattern-stripes'),
+            ('states','fx-sweat-only'),
+          ]
+          def kinds(src, stem):
+              p = f'parity/cpu-{src}/{stem}.json'
+              try:
+                  d = json.load(open(p))
+              except FileNotFoundError:
+                  return None
+              return {pr.get('t') for pr in d.get('prims',[])}
+          subset, missing = [], []
+          for src, stem in named:
+              k = kinds(src, stem)
+              if k is None: missing.append(f'{src}/{stem}')
+              else: subset.append((src, stem, k))
+          # Guarantee head_shade + composite_plate coverage from the lists themselves.
+          for need in ('head_shade','composite_plate'):
+              if not any(need in k for _,_,k in subset):
+                  for p in sorted(glob.glob('parity/cpu-states/*.json') + glob.glob('parity/cpu-battery/*.json')):
+                      d = json.load(open(p))
+                      if need in {pr.get('t') for pr in d.get('prims',[])}:
+                          src = 'battery' if 'cpu-battery' in p else 'states'
+                          stem = pathlib.Path(p).stem
+                          if (src,stem) not in [(a,b) for a,b,_ in subset]:
+                              subset.append((src, stem, {pr.get('t') for pr in d.get('prims',[])}))
+                          break
+          json.dump({'subset':[{'src':a,'stem':b,'kinds':sorted(k)} for a,b,k in subset],
+                     'missing_named': missing,
+                     'has_head_shade': any('head_shade' in k for _,_,k in subset),
+                     'has_composite_plate': any('composite_plate' in k for _,_,k in subset)},
+                    open('parity/determinism-subset.json','w'), indent=1)
+          print(f"subset={len(subset)} head_shade={any('head_shade' in k for _,_,k in subset)} composite_plate={any('composite_plate' in k for _,_,k in subset)} missing={missing}")
+          with open('parity/determinism-subset.txt','w') as f:
+              for a,b,_ in subset: f.write(f"{a} {b}\n")
+          PY
+          : > parity/determinism.txt
+          echo "case,src,stem,cmp_identical,sha256_a,sha256_b,hash_equal,png_sha_a,png_sha_b" > parity/determinism.csv
+          i=0
+          while read -r src stem; do
+            i=$((i+1))
+            list="parity/cpu-$src/$stem.json"
+            a="parity/det-a/$src-$stem.png"; b="parity/det-b/$src-$stem.png"
+            ./target/release/talerender --gpu-paint replay "$list" "$a" > "parity/replay-logs/det-a-$src-$stem.log" 2>&1 || echo "DET-A FAILED $src/$stem"
+            ./target/release/talerender --gpu-paint replay "$list" "$b" > "parity/replay-logs/det-b-$src-$stem.log" 2>&1 || echo "DET-B FAILED $src/$stem"
+            ha=$(grep '^sha256:' "parity/replay-logs/det-a-$src-$stem.log" | awk '{print $2}')
+            hb=$(grep '^sha256:' "parity/replay-logs/det-b-$src-$stem.log" | awk '{print $2}')
+            pa=$(sha256sum "$a" 2>/dev/null | awk '{print $1}'); pb=$(sha256sum "$b" 2>/dev/null | awk '{print $1}')
+            if cmp -s "$a" "$b"; then cmp_res=identical; else cmp_res=DIFFER; fi
+            if [ "$ha" = "$hb" ] && [ -n "$ha" ]; then heq=yes; else heq=no; fi
+            echo "$src/$stem cmp=$cmp_res hash_equal=$heq sha256=$ha" | tee -a parity/determinism.txt
+            echo "$i,$src,$stem,$cmp_res,$ha,$hb,$heq,$pa,$pb" >> parity/determinism.csv
+          done < parity/determinism-subset.txt
+          cat parity/determinism.txt
+
+      - name: Compare all pairs (canonical gpupaint-compare.py) + aggregate roll-ups
+        run: |
+          set -uo pipefail
+          # Battery: one canonical run over the 7 cards -> 46 classes + whole cards.
+          python3 tools/gpupaint-compare.py --cpu parity/cpu-battery --gpu parity/gpu-battery \
+            --spec docs/ab/stroke-battery/spec.json \
+            --out parity/battery-parity.json --md parity/battery-parity.md 2>&1 | tee parity/battery-compare.log || echo "BATTERY COMPARE FAILED rc=$?"
+          # States: canonical tool in single-card mode per state (whole-card metrics).
+          : > parity/states-compare-failures.txt
+          for cpu_png in parity/cpu-states/*.png; do
+            stem=$(basename "$cpu_png" .png)
+            gpu_png="parity/gpu-states/$stem.png"
+            if [ ! -f "$gpu_png" ]; then echo "MISSING GPU $stem" >> parity/states-compare-failures.txt; continue; fi
+            python3 tools/gpupaint-compare.py --cpu-card "$cpu_png" --gpu-card "$gpu_png" --card "$stem" \
+              --spec docs/ab/stroke-battery/spec.json \
+              --out "parity/states-compare/$stem.json" --md "parity/states-compare/$stem.md" \
+              > "parity/states-compare/$stem.log" 2>&1 || echo "COMPARE FAILED $stem" >> parity/states-compare-failures.txt
+          done
+          echo "state compares: $(ls parity/states-compare/*.json 2>/dev/null | wc -l)"; cat parity/states-compare-failures.txt
+          # Aggregate: per-case table, per-operation-class roll-ups, worst-5, wall times.
+          python3 - <<'PY'
+          import json, glob, re, pathlib, statistics, collections
+          out, md = {}, []
+          batt = json.load(open('parity/battery-parity.json')) if pathlib.Path('parity/battery-parity.json').exists() else {'classes':{},'cards':{}}
+          inv = json.load(open('parity/list-inventory.json'))
+          # --- replay log stats ---
+          walls, adapter, hashes = {}, None, {}
+          for log in glob.glob('parity/replay-logs/*.log'):
+              if '/det-' in log: continue
+              txt = open(log, errors='replace').read()
+              m = re.search(r'gpu_wall_ms:\s*([0-9.]+)', txt)
+              h = re.search(r'sha256:\s*([0-9a-f]+)', txt)
+              lines = [l for l in txt.splitlines() if l.strip()]
+              if adapter is None and lines: adapter = lines[0]
+              stem = pathlib.Path(log).stem
+              if m: walls[stem] = float(m.group(1))
+              if h: hashes[stem] = h.group(1)
+          def wall_stats(d):
+              v = sorted(d.values())
+              return {'n': len(v), 'min_ms': v[0] if v else None, 'median_ms': statistics.median(v) if v else None,
+                      'max_ms': v[-1] if v else None, 'mean_ms': round(statistics.mean(v),3) if v else None,
+                      'total_ms': round(sum(v),3) if v else None} if v else {'n':0}
+          # --- per-case rows: 46 battery classes + 75 states ---
+          cases = []
+          for name, m in batt.get('classes', {}).items():
+              cases.append({'case': name, 'scope': 'battery-class', 'card': m['card'],
+                  'identical': m['differing_px'] == 0, 'differing_px': m['differing_px'],
+                  'identical_pct': m['identical_pct'], 'max_delta': m['max_delta'],
+                  'alpha_psnr_db': m['alpha_psnr_db'], 'rgba_psnr_db': m['rgba_psnr_db'],
+                  'edge': m['localisation']['edge'], 'fringe': m['localisation']['fringe'], 'interior': m['localisation']['interior']})
+          def rollup(name):
+              g = name.split('-')[0]
+              return {'mood':'mood-features','face':'mood-features','fx':'mood-features','legs':'limbs',
+                      'plate':'plates','anchor':'anchor','pattern':'patterns-and-looks','hat':'patterns-and-looks',
+                      'neck':'patterns-and-looks','extra':'patterns-and-looks','film':'film-looks'}.get(g,'transforms')
+          state_cases = []
+          for p in sorted(glob.glob('parity/states-compare/*.json')):
+              d = json.load(open(p)); stem = pathlib.Path(p).stem
+              m = list(d.get('cards', {}).values())
+              if not m: continue
+              m = m[0]
+              row = {'case': stem, 'scope': 'state', 'rollup': rollup(stem), 'card': stem,
+                  'identical': m['differing_px'] == 0, 'differing_px': m['differing_px'],
+                  'identical_pct': m['identical_pct'], 'max_delta': m['max_delta'],
+                  'alpha_psnr_db': m['alpha_psnr_db'], 'rgba_psnr_db': m['rgba_psnr_db'],
+                  'edge': m['localisation']['edge'], 'fringe': m['localisation']['fringe'], 'interior': m['localisation']['interior'],
+                  'kinds': inv.get(stem+'@states',{}).get('kinds',{})}
+              state_cases.append(row); cases.append(row)
+          # --- roll-up A: battery classes by card, states by rollup_class ---
+          def roll(rows):
+              return {'identical_cases': sum(1 for r in rows if r['identical']), 'total_cases': len(rows),
+                      'differing_px_total': sum(r['differing_px'] for r in rows),
+                      'max_delta_overall': max([max(r['max_delta'].values()) for r in rows], default=0),
+                      'edge': sum(r['edge'] for r in rows), 'fringe': sum(r['fringe'] for r in rows), 'interior': sum(r['interior'] for r in rows),
+                      'worst': sorted(rows, key=lambda r: (-r['differing_px'], r['identical_pct']))[:3]}
+          rollups = {}
+          for card in sorted({r['card'] for r in cases if r['scope']=='battery-class'}):
+              rollups[f'battery:{card}'] = roll([r for r in cases if r['scope']=='battery-class' and r['card']==card])
+          for rc in sorted({r['rollup'] for r in state_cases}):
+              rollups[f'states:{rc}'] = roll([r for r in state_cases if r['rollup']==rc])
+          # --- roll-up B: per operation (prim) kind, over state+battery whole cases ---
+          whole = []
+          for stem, m in batt.get('cards', {}).items():
+              whole.append({'case': stem, 'scope':'battery-card', 'identical': m['differing_px']==0, 'differing_px': m['differing_px'],
+                            'kinds': inv.get(stem+'@battery',{}).get('kinds',{})})
+          whole += [{'case': r['case'], 'scope':'state', 'identical': r['identical'], 'differing_px': r['differing_px'], 'kinds': r.get('kinds',{})} for r in state_cases]
+          kinds_all = sorted({k for w in whole for k in w['kinds']})
+          op_roll = {}
+          for k in kinds_all:
+              rows = [w for w in whole if k in w['kinds']]
+              op_roll[k] = {'identical_cases': sum(1 for r in rows if r['identical']), 'total_cases': len(rows),
+                            'prim_instances': sum(w['kinds'][k] for w in whole if k in w['kinds']),
+                            'note': 'overlapping: a case counts under every prim kind its list contains'}
+          worst5 = sorted(cases, key=lambda r: (-r['differing_px'], r['identical_pct']))[:5]
+          det = {}
+          try: det = json.load(open('parity/determinism-subset.json'))
+          except Exception: pass
+          det_rows = []
+          try:
+              import csv
+              det_rows = list(csv.DictReader(open('parity/determinism.csv')))
+          except Exception: pass
+          summary = {'adapter_first_log_line': adapter, 'gpu_wall_ms': {'all': wall_stats(walls),
+                       'battery': wall_stats({k:v for k,v in walls.items() if k.startswith('battery-')}),
+                       'states': wall_stats({k:v for k,v in walls.items() if k.startswith('states-')}), 'per_case': walls},
+                     'battery_cards': batt.get('cards', {}), 'cases': cases, 'rollups_by_scope': rollups,
+                     'rollups_by_prim_kind': op_roll, 'worst5_overall': worst5,
+                     'determinism_subset': det, 'determinism_rows': det_rows,
+                     'replay_sha256_provisional_note': 'sha256 proven correct (FIX-SHA256 seat); still cross-checked by cmp on the determinism subset'}
+          json.dump(summary, open('parity/parity-summary.json','w'), indent=1)
+          L = ['# GPUFIRST parity summary (CI lavapipe)', '', f"Adapter (first replay log line): `{adapter}`", '',
+               f"gpu_wall_ms: n={summary['gpu_wall_ms']['all'].get('n')} min={summary['gpu_wall_ms']['all'].get('min_ms')} median={summary['gpu_wall_ms']['all'].get('median_ms')} max={summary['gpu_wall_ms']['all'].get('max_ms')} total={summary['gpu_wall_ms']['all'].get('total_ms')}", '',
+               '## Roll-ups (byte-identical cases / total)', '', '| roll-up | identical/total | diff px total | max |Δ| | EDGE | FRINGE | INTERIOR |', '|---|---:|---:|---:|---:|---:|---:|']
+          for k, r in rollups.items():
+              L.append(f"| {k} | {r['identical_cases']}/{r['total_cases']} | {r['differing_px_total']} | {r['max_delta_overall']} | {r['edge']} | {r['fringe']} | {r['interior']} |")
+          L += ['', '## Per prim-kind (overlapping)', '', '| prim kind | identical cases/total | prim instances |', '|---|---:|---:|']
+          for k, r in op_roll.items(): L.append(f"| {k} | {r['identical_cases']}/{r['total_cases']} | {r['prim_instances']} |")
+          L += ['', '## Worst 5 cases overall', '', '| case | scope | diff px | identical % | max Δ (RGBA) | alpha PSNR | RGBA PSNR | EDGE | FRINGE | INTERIOR |', '|---|---|---:|---:|---|---:|---:|---:|---:|---:|']
+          for r in worst5:
+              L.append(f"| {r['case']} | {r['scope']} | {r['differing_px']} | {r['identical_pct']} | {r['max_delta']} | {r['alpha_psnr_db']} | {r['rgba_psnr_db']} | {r['edge']} | {r['fringe']} | {r['interior']} |")
+          L += ['', '## Determinism (cmp on pixel files + sha256)', '', '| case | cmp | hash_equal |', '|---|---|---|']
+          for r in det_rows: L.append(f"| {r.get('src')}/{r.get('stem')} | {r.get('cmp_identical')} | {r.get('hash_equal')} |")
+          L += ['', '## All cases', '', '| case | scope/rollup | identical | diff px | identical % | max ΔR | max ΔG | max ΔB | max ΔA | alpha PSNR | RGBA PSNR | EDGE | FRINGE | INTERIOR |', '|---|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|']
+          for r in sorted(cases, key=lambda x: (-x['differing_px'], x['case'])):
+              md_ = r['max_delta']; L.append(f"| {r['case']} | {r.get('rollup', r['scope'])} | {'Y' if r['identical'] else 'N'} | {r['differing_px']} | {r['identical_pct']} | {md_['R']} | {md_['G']} | {md_['B']} | {md_['A']} | {r['alpha_psnr_db']} | {r['rgba_psnr_db']} | {r['edge']} | {r['fringe']} | {r['interior']} |")
+          open('parity/parity-summary.md','w').write('\n'.join(L)+'\n')
+          print(f"cases={len(cases)} battery_classes={sum(1 for c in cases if c['scope']=='battery-class')} states={len(state_cases)} worst5={[w['case'] for w in worst5]}")
+          PY
+          ls -lh parity/*.json parity/*.md parity/*.csv 2>/dev/null
+
+      - name: Upload parity artifact (text only)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gpufirst-parity
+          path: |
+            parity/parity-summary.json
+            parity/parity-summary.md
+            parity/battery-parity.json
+            parity/battery-parity.md
+            parity/list-inventory.json
+            parity/determinism.csv
+            parity/determinism.txt
+            parity/determinism-subset.json
+            parity/adapter.txt
+            parity/replay-failures.txt
+            parity/states-compare-failures.txt
+            parity/record-battery.log
+            parity/record-states.log
+            parity/battery-compare.log
+            parity/replay-logs/*.log
+            parity/states-compare/*.json
+          retention-days: 14
+
+      - name: Verdict
+        if: always()
+        run: |
+          echo "replay failures:"; cat parity/replay-failures.txt || true
+          echo "compare failures:"; cat parity/states-compare-failures.txt || true
+          if [ -s parity/replay-failures.txt ]; then echo "::error::one or more GPU replays failed"; exit 1; fi
+          test -f parity/parity-summary.json
