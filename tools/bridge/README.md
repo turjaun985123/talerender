@@ -152,6 +152,10 @@ package any repo whose data follows the same layout — but nothing here
 *creates* film data for a new project: transcribing a project's shots into
 segment scene files, generating `onoda.json` (the repo's
 `film/gen_film_data.py` + `film/gen_assets.py` did that, by hand, for this
-film), and producing caption strips remain separate, per-film work. A
-general project→bridge converter is future work; until it exists, an
-unbridged project is captured with Chrome, and the adapter says so itself.
+film), and producing caption strips remain separate, per-film work.
+That converter now exists — it is `build_bridge.py` in this directory
+(above): an unbridged project is bridged with it and then captured
+natively; there is no Chrome capture path (the adapter refuses
+unbridged projects with the bridge remedy, and says so itself).
+*(Corrected 2026-11-16, remediation R2-01 finding: the previous text
+predated the generic bridge and the Chrome replacement.)*
