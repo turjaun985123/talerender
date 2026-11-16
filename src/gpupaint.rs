@@ -785,12 +785,14 @@ async fn replay_gpu(
         usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_SRC | wgpu::BufferUsages::COPY_DST,
         mapped_at_creation: false, // wgpu zero-initialises: the CPU Painter::new zero start
     });
+    crate::gpucore::mem_alloc_buffer(crate::gpucore::MemClass::G, (npix * 4) as u64); // VRAM ledger (W84 §5.2)
     let dummy = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("gpupaint dummy"),
         size: 4,
         usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
         mapped_at_creation: false,
     });
+    crate::gpucore::mem_alloc_buffer(crate::gpucore::MemClass::G, 4); // VRAM ledger (W84 §5.2)
     // Bbox-scoped mask buffers, created lazily on first bind
     // (zero-initialised = the CPU mask's false start).
     let mut mask_bufs: HashMap<u32, wgpu::Buffer> = HashMap::new();
@@ -803,6 +805,7 @@ async fn replay_gpu(
                 usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
                 mapped_at_creation: false,
             });
+            crate::gpucore::mem_alloc_buffer(crate::gpucore::MemClass::G, ((a.w as usize) * (a.h as usize) * 4).max(4) as u64); // VRAM ledger (W84 §5.2)
             mask_bufs.insert(id, b);
         }
     };
@@ -814,6 +817,7 @@ async fn replay_gpu(
             usage: wgpu::BufferUsages::STORAGE | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
+        crate::gpucore::mem_alloc_buffer(crate::gpucore::MemClass::G, data.len() as u64); // VRAM ledger (W84 §5.2)
         queue.write_buffer(&b, 0, data);
         b
     };
@@ -833,6 +837,7 @@ async fn replay_gpu(
             usage: wgpu::BufferUsages::UNIFORM | wgpu::BufferUsages::COPY_DST,
             mapped_at_creation: false,
         });
+        crate::gpucore::mem_alloc_buffer(crate::gpucore::MemClass::G, prep.params.len() as u64); // VRAM ledger (W84 §5.2)
         queue.write_buffer(&params_buf, 0, &prep.params);
         let pts_buf;
         let pts_ref: &wgpu::Buffer = if prep.pts.is_empty() {
@@ -899,6 +904,7 @@ async fn replay_gpu(
         usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
         mapped_at_creation: false,
     });
+    crate::gpucore::mem_note_readback((npix * 4) as u64); // VRAM ledger (W84 §5.2)
     let mut enc2 = device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
         label: Some("gpupaint readback"),
     });

@@ -433,6 +433,7 @@ async fn gpu_replay(
         usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
         view_formats: &[],
     });
+    crate::gpucore::mem_alloc_texture(crate::gpucore::MemClass::A, crate::gpucore::tex_bytes(CANVAS_W, CANVAS_H, wgpu::TextureFormat::Rgba8Unorm, 1)); // VRAM ledger (W84 §5.2)
     let target_view = target.create_view(&wgpu::TextureViewDescriptor::default());
     let src_tex = device.create_texture(&wgpu::TextureDescriptor {
         label: Some("gpupaint-replay-src"),
@@ -444,6 +445,7 @@ async fn gpu_replay(
         usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
         view_formats: &[],
     });
+    crate::gpucore::mem_alloc_texture(crate::gpucore::MemClass::E, crate::gpucore::tex_bytes(CANVAS_W, CANVAS_H, wgpu::TextureFormat::Rgba8Unorm, 1)); // VRAM ledger (W84 §5.2)
     let src_view = src_tex.create_view(&wgpu::TextureViewDescriptor::default());
     let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
         label: Some("gpupaint-replay-bg"),
@@ -469,12 +471,14 @@ async fn gpu_replay(
         usage: wgpu::BufferUsages::QUERY_RESOLVE | wgpu::BufferUsages::COPY_SRC,
         mapped_at_creation: false,
     });
+    crate::gpucore::mem_alloc_buffer(crate::gpucore::MemClass::G, 16); // VRAM ledger (W84 §5.2)
     let query_stage = device.create_buffer(&wgpu::BufferDescriptor {
         label: Some("gpupaint-replay-ts-stage"),
         size: 16,
         usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
         mapped_at_creation: false,
     });
+    crate::gpucore::mem_note_readback(16); // VRAM ledger (W84 §5.2)
     let period_ns = queue.get_timestamp_period() as f64;
     let wait = || {
         device.poll(wgpu::PollType::Wait { submission_index: None, timeout: None });
