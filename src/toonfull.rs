@@ -1738,7 +1738,10 @@ mod canvas_anchor_tests {
         st.lean = 82.0;
         let (ax, ay) = canvas_anchor(&l, &st);
         assert!(ax < -50.0, "expected a strong left pull, got ax={ax}");
-        assert_eq!(ay, 0.0);
+        // The raised right hand (138 deg) also rotates past the
+        // bottom inset, so the anchor pulls up slightly too —
+        // the envelope is honest in both axes, as in TS.
+        assert!(ay < 0.0, "expected a slight upward pull, got ay={ay}");
         st.lean = -82.0;
         let (ax2, _) = canvas_anchor(&l, &st);
         assert!(ax2 > 50.0, "expected a strong right pull, got ax={ax2}");
