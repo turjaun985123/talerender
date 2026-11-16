@@ -33,8 +33,10 @@
 # reports "0 skipped", and checks the rendered count per run.
 #
 # LABELLING: the results file records the binary's path and sha256 and
-# the `renderer:` line from run A (adapter name / backend / device
-# type / driver). A PASS on CI lavapipe and a PASS on the user's PC
+# the renderer line from run A (the canonical C7 `adapter:` line
+# since V2 WP3, ef30684; the legacy `renderer:` prefix is accepted
+# too — adapter name / backend / device type / driver). A PASS on
+# CI lavapipe and a PASS on the user's PC
 # (RADV) are separate evidence; neither stands in for the other.
 #
 # RUNTIME CLASS: four short renders (30 + 15 + 15 + 30 frames) plus
@@ -182,8 +184,8 @@ render_run B-chunk1 "$DIR_B" "$FROM" "$SPLIT" ""
 render_run B-chunk2 "$DIR_B" "$SPLIT" "$TO" ""
 render_run C-cache24 "$DIR_C" "$FROM" "$TO" "$CACHE_CAP_TIGHT"
 
-RENDERER_LINE=$(grep -m1 '^renderer: ' "$LOG_DIR/A-single.log" || true)
-[ -n "$RENDERER_LINE" ] || refuse "run A printed no 'renderer:' line (log: $LOG_DIR/A-single.log) — the run cannot be labelled, so its bytes cannot be cited as evidence."
+RENDERER_LINE=$(grep -m1 -E '^(renderer|adapter): ' "$LOG_DIR/A-single.log" || true)
+[ -n "$RENDERER_LINE" ] || refuse "run A printed no 'renderer:'/'adapter:' line (log: $LOG_DIR/A-single.log) — the run cannot be labelled, so its bytes cannot be cited as evidence."
 say "renderer (run A): $RENDERER_LINE"
 say "runs: A single [$FROM,$TO) · B chunked [$FROM,$SPLIT)+[$SPLIT,$TO) same dir · C single [$FROM,$TO) TALERENDER_PAINT_CACHE=$CACHE_CAP_TIGHT"
 say ""
