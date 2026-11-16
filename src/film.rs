@@ -120,11 +120,19 @@ pub(crate) fn load_film_data(dir: &Path) -> Result<FilmData, String> {
             });
         }
     }
-    // F2 (W53 L1): required keys, demanded through g() like the
-    // rest — a film data file without them fails by name rather
-    // than inheriting this film's values by default.
-    let calendar_years = match g("calendarYears")? {
-        Value::Arr(a) => {
+    // F2 (W53 L1) as amended by REMEDIATION-CONTRACTS §4
+    // (Package 3, loader decoupling): calendarYears /
+    // calendarDark / sign are OPTIONAL declarations. Absence
+    // means "this film declares no calendar / no sign" — the
+    // empty vec / empty string the consumers already rule
+    // legal (calendar_state returns None for zero years) —
+    // never this film's values inherited by default. A key
+    // that is PRESENT but the wrong type still fails BY NAME:
+    // era pairing fails closed on malformed data; only
+    // absence became optional.
+    let calendar_years = match root.get("calendarYears") {
+        None => Vec::new(),
+        Some(Value::Arr(a)) => {
             let mut ys = Vec::new();
             for (i, v) in a.iter().enumerate() {
                 ys.push(
@@ -135,12 +143,16 @@ pub(crate) fn load_film_data(dir: &Path) -> Result<FilmData, String> {
             }
             ys
         }
-        _ => return Err("calendarYears: expected array".to_string()),
+        Some(_) => return Err("calendarYears: expected array".to_string()),
     };
-    let str_key = |k: &str| -> Result<String, String> {
-        g(k)?.as_str()
-            .map(|s| s.to_string())
-            .ok_or_else(|| format!("{k}: expected string"))
+    let opt_str_key = |k: &str| -> Result<String, String> {
+        match root.get(k) {
+            None => Ok(String::new()),
+            Some(v) => v
+                .as_str()
+                .map(|s| s.to_string())
+                .ok_or_else(|| format!("{k}: expected string")),
+        }
     };
     Ok(FilmData {
         duration: jnum(g("duration")?, "duration")?,
@@ -148,10 +160,39 @@ pub(crate) fn load_film_data(dir: &Path) -> Result<FilmData, String> {
         captions,
         lines,
         calendar_years,
-        calendar_dark: str_key("calendarDark")?,
-        sign: str_key("sign")?,
+        calendar_dark: opt_str_key("calendarDark")?,
+        sign: opt_str_key("sign")?,
         s12_clips: load_s12_clips(dir)?,
     })
+}
+
+/// REMEDIATION-CONTRACTS §1.4 — legacy-entry guard. The legacy
+/// staging + telemetry consume a fixed set of anchor names (the
+/// Onoda film's, indexed by name in the shot functions and the
+/// telemetry shot table). A film whose data lacks them is not
+/// staged by this driver: name that, with the remedy, instead
+/// of panicking on a missing key (the B3-01 failure class).
+pub(crate) fn legacy_anchor_guard(data: &FilmData) -> Result<(), String> {
+    const REQUIRED: [&str; 17] = [
+        "bookseller9", "coconuts6", "commander8", "decades6", "flew9",
+        "found7", "loyal11", "message3", "never2", "only8", "order10",
+        "refused7", "surrender2", "surrendered10", "thought4", "trick4",
+        "years0",
+    ];
+    let missing: Vec<&str> = REQUIRED
+        .iter()
+        .filter(|n| !data.anchors.contains_key(**n))
+        .copied()
+        .collect();
+    if missing.is_empty() {
+        Ok(())
+    } else {
+        Err(format!(
+            "film data is not staged by the legacy driver (missing anchors: {}); \
+             bridge it with driver: scene-sequence (see REMEDIATION-CONTRACTS §1)",
+            missing.join(", ")
+        ))
+    }
 }
 
 // §15 step-2 adoption (CR-B1-01 §4.3): resolve s12's scene
@@ -2224,8 +2265,13 @@ pub(crate) struct Assets {
     pub plates: HashMap<String, Plate>,
     pub strips: Vec<(Vec<u8>, u32, u32)>,
     pub cal: Vec<(Vec<u8>, u32, u32)>,
-    pub cal_dark: (Vec<u8>, u32, u32),
-    pub sign: (Vec<u8>, u32, u32),
+    // §4 decoupling: None when the film data declares no dark
+    // plate / no sign (empty calendarDark / sign key). Every
+    // consumer is Option-aware (see overlay_calendar and
+    // Renderer::new); Some(..) carries exactly the tuple the
+    // pre-decoupling loader produced.
+    pub cal_dark: Option<(Vec<u8>, u32, u32)>,
+    pub sign: Option<(Vec<u8>, u32, u32)>,
 }
 
 fn load_png(path: &Path) -> Result<(Vec<u8>, u32, u32), String> {
@@ -2294,16 +2340,32 @@ pub(crate) fn load_assets(dir: &Path, data: &FilmData) -> Result<Assets, String>
     }
     // F2 (W53 L2): the calendar set and the dark/sign files are
     // the film data's declarations; the derivation stays.
+    // §4 decoupling: year PNGs load only for declared years
+    // (unchanged — the loop is over the declared vec, which is
+    // empty when calendarYears is absent); the dark plate and
+    // the sign PNG load only when their keys are non-empty, so
+    // a film that declares neither never touches a calendar /
+    // sign file on disk.
     let mut cal = Vec::new();
     for y in &data.calendar_years {
         cal.push(load_png(&adir.join(format!("calendar-{y}.png")))?);
     }
+    let cal_dark = if data.calendar_dark.is_empty() {
+        None
+    } else {
+        Some(load_png(&adir.join(&data.calendar_dark))?)
+    };
+    let sign = if data.sign.is_empty() {
+        None
+    } else {
+        Some(load_png(&adir.join(&data.sign))?)
+    };
     Ok(Assets {
         plates: plate_map,
         strips,
         cal,
-        cal_dark: load_png(&adir.join(&data.calendar_dark))?,
-        sign: load_png(&adir.join(&data.sign))?,
+        cal_dark,
+        sign,
     })
 }
 
@@ -2646,7 +2708,7 @@ pub(crate) struct Renderer {
 }
 
 impl Renderer {
-    pub(crate) async fn new(width: u32, height: u32, sign: &(Vec<u8>, u32, u32), knobs: crate::Knobs, adapter_policy: &str) -> crate::errors::TaleResult<Renderer> {
+    pub(crate) async fn new(width: u32, height: u32, sign: Option<&(Vec<u8>, u32, u32)>, knobs: crate::Knobs, adapter_policy: &str) -> crate::errors::TaleResult<Renderer> {
         let samples = knobs.samples();
         let shadow_size = knobs.shadow;
         let instance = crate::gpucore::new_instance();
@@ -2667,6 +2729,13 @@ impl Renderer {
             let (r, g, b) = crate::scene::shade_rgb("#3A2E22", 1.25);
             format!("#{r:02X}{g:02X}{b:02X}")
         };
+        // §4 decoupling: a film that declares no sign gets a
+        // 1x1 fully transparent texture in the TEX_SIGN slot —
+        // the slot keeps its index and size class, and a sign
+        // plane sampling it contributes no artwork. Some(sign)
+        // uploads the declared PNG exactly as before.
+        let sign_fallback: (Vec<u8>, u32, u32) = (vec![0, 0, 0, 0], 1, 1);
+        let sign = sign.unwrap_or(&sign_fallback);
         let textures_px: Vec<(Vec<u8>, u32, u32)> = vec![
             paint_sky("#6E9CC0", "#D8E8DA", "#BFE4F7"),
             paint_sky("#6E9CC0", "#E4EEDC", "#BFE4F7"),
@@ -3671,7 +3740,14 @@ fn overlay_calendar(px: &mut [u8], w: u32, h: u32, assets: &Assets, cal: &Calend
             src.3 *= cal.alpha;
             blend_over(px, w, x as u32, y as u32, src);
             if cal.dark > 0.0 {
-                let dsrc = sample_bilinear(&assets.cal_dark, pu, pv);
+                // §4 decoupling: no dark plate declared -> no
+                // dark shading pass (the year plate above still
+                // composites exactly as before). Onoda declares
+                // one, so its Some(..) path is the old code.
+                let Some(cal_dark) = &assets.cal_dark else {
+                    continue;
+                };
+                let dsrc = sample_bilinear(cal_dark, pu, pv);
                 let a = dsrc.3 * cal.dark * 0.22 * cal.alpha;
                 if a > 0.0 {
                     let k = ((y as u32 * w + x as u32) as usize) * 4;
@@ -3685,7 +3761,7 @@ fn overlay_calendar(px: &mut [u8], w: u32, h: u32, assets: &Assets, cal: &Calend
     }
 }
 
-fn overlay_caption(px: &mut [u8], w: u32, h: u32, assets: &Assets, idx: usize, scale: f32) {
+pub(crate) fn overlay_caption(px: &mut [u8], w: u32, h: u32, assets: &Assets, idx: usize, scale: f32) {
     let strip = &assets.strips[idx];
     // F8: frame scale folded into the same expressions (see
     // overlay_calendar); the strip is still sampled in design
@@ -3724,6 +3800,23 @@ fn apply_fade(px: &mut [u8], fade: f32) {
 // ---------------------------------------------------------------------
 
 pub(crate) async fn run_film(width: u32, height: u32, film_dir: &str, out_dir: &str, from: u32, to: u32, knobs: crate::Knobs, adapter_policy: &str, output_mode: crate::streammodes::OutputMode, queue_capacity: usize) -> crate::errors::TaleResult<()> {
+    // REMEDIATION-CONTRACTS §1 fork: discover the manifest and
+    // route BEFORE any film data is loaded. No manifest, or a
+    // manifest without driver == "scene-sequence", falls
+    // through to the legacy staging below, byte-unchanged —
+    // the Onoda manifests carry no driver field, so the census
+    // gate is protected by construction.
+    if let Some(manifest) = crate::filmseq::discover_manifest(Path::new(film_dir))
+        .map_err(|e| crate::errors::TaleError::data_load(film_dir, e))?
+    {
+        if manifest.driver.as_deref() == Some("scene-sequence") {
+            return crate::filmseq::run_film_seq(
+                width, height, &manifest, Path::new(film_dir), out_dir,
+                from, to, knobs, adapter_policy, output_mode, queue_capacity,
+            )
+            .await;
+        }
+    }
     let tag = if knobs.is_draft() {
         format!(" {}", knobs.tag())
     } else {
@@ -3731,11 +3824,12 @@ pub(crate) async fn run_film(width: u32, height: u32, film_dir: &str, out_dir: &
     };
     let dir = Path::new(film_dir);
     let data = load_film_data(dir).map_err(|e| crate::errors::TaleError::data_load(dir, e))?;
+    legacy_anchor_guard(&data).map_err(|e| crate::errors::TaleError::data_load(dir, e))?;
     let assets = load_assets(dir, &data).map_err(|e| crate::errors::TaleError::data_load(dir, e))?;
     let looks = look_registry();
     let frames_total = (data.duration * 30.0).ceil() as u32;
     let (from, to) = crate::schedwire::resolve_range(from, to, frames_total);
-    let mut renderer = Renderer::new(width, height, &assets.sign, knobs, adapter_policy).await?;
+    let mut renderer = Renderer::new(width, height, assets.sign.as_ref(), knobs, adapter_policy).await?;
     // WP4 streaming session (CR-B1-02): in stream mode the
     // frames flow straight into the encoder and NO PNGs are
     // written; `out_dir` is the output MP4 path. The branch
@@ -3990,8 +4084,18 @@ const INSTANCE_IDS: [&str; 11] = [
 ];
 
 pub(crate) fn run_film_telemetry(dir: &Path, tables: bool) -> Result<bool, String> {
+    // REMEDIATION-CONTRACTS §1 fork (telemetry): a manifest
+    // selecting the generic driver gets generic telemetry,
+    // built from the film's own data (filmtelemetry.rs).
+    if let Some(manifest) = crate::filmseq::discover_manifest(dir)? {
+        if manifest.driver.as_deref() == Some("scene-sequence") {
+            let data = load_film_data(dir)?;
+            return crate::filmtelemetry::run_telemetry_seq(&manifest, &data, tables);
+        }
+    }
     use crate::telemetry::*;
     let data = load_film_data(dir)?;
+    legacy_anchor_guard(&data)?;
     let looks = look_registry();
     let assets = load_assets(dir, &data)?;
     let tels: Vec<Look> = looks.iter().map(|(l, _, _)| tel_look(l)).collect();

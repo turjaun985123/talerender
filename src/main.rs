@@ -56,6 +56,8 @@ mod streamsession;
 mod telemetry;
 mod ffstream;
 mod film;
+mod filmseq;
+mod filmtelemetry;
 mod toonfull;
 
 use math::Mat4;

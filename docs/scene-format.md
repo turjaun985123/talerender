@@ -47,6 +47,7 @@ appear in files before every consumer understands them); unknown
   "eye": [0.83432, 2.64354, 5.28499],   // required
   "target": [0.35, 1.11477, -0.55],     // required
   "up": [0, 1, 0]                  // optional
+  "roll": 5                        // optional, v2 only (§14.4); degrees; default 0
 }
 ```
 
@@ -54,7 +55,9 @@ Projection is the engine's: perspective with wgpu clip space
 (z ∈ [0, 1]), view = look-at(eye, target, up). These are the only
 camera semantics v1 has — no per-shot camera animation (scenes are
 stills at a fixed staging; animation is M4+ territory, ADR-001
-Decision 3).
+Decision 3). Format v2 adds one further camera field, `roll`
+(§14.4); a v1 file carrying it is rejected, not reinterpreted
+(§10 rule, the same gate as `keys` and `lights`).
 
 ## 3. Lighting
 
@@ -450,6 +453,62 @@ camK easing); a key with `"ease": "linear"` eases its incoming
 segment linearly (the S05a plane law — constant speed, no
 easing). Outside the key range the end keys hold. Static
 eye/target/fovY remain required as the base/fallback.
+
+**Camera roll (R-A7).** The camera may carry `"roll"` — statically
+on the camera block, and per-key in `keys`:
+
+```jsonc
+"camera": { "fovY": 44, "eye": [...], "target": [...], "roll": 5,
+  "keys": [ { "t": 0.0, "eye": [...], "target": [...], "roll": 0 },
+            { "t": 5.91, "eye": [...], "target": [...], "roll": 5 } ] }
+```
+
+- **Unit: degrees** — the camera block's angle unit. `fovY`, the
+  only other angle in this block (and in keys), is degrees (§2);
+  the §5 radians law governs node *transform ops*, a different
+  object. The loader stores the value as f32 degrees and converts
+  once, `roll.to_radians()`, at the same place `fovY` is converted
+  (`view_proj`). Authored values obey the §11 f32 data law: write
+  the exact f32 (shortest-round-trip decimal is fine) — `12`
+  is exact; a value transcribed from the source engine's radian
+  `ShotLook.roll` is converted by the bridge in f64 and written
+  as the resulting f32 degrees.
+- **Meaning.** Roll is a rotation about the camera's view axis,
+  applied **after** the look-at basis is built and before
+  projection — the native form of the source engine's
+  `cam.lookAt(tgt); if (roll) cam.rotateZ(roll)` (shots.ts
+  `createShoot`). With `(x, y, z)` the look-at (right, true-up,
+  backward) basis and `θ` the roll in radians, the view matrix's
+  basis becomes `right′ = cos θ·x + sin θ·y`,
+  `up′ = −sin θ·x + cos θ·y`, `back′ = z`; in matrix order,
+  `view′ = Rz(−θ) · view` (the view-side inverse of three.js's
+  world-side `rotateZ`). **Sign: roll > 0 tips the horizon
+  clockwise in the rendered frame — its right side drops** (the
+  `ShotLook.roll` law: positive roll rotates the camera
+  counter-clockwise about its view axis). The catalog range is
+  the dutch range, 3–7° (`dutch(deg)` in shots.ts); the format
+  itself imposes no clamp.
+- **What roll cannot change.** Because the rotation's axis is
+  the view axis, view-space z is untouched: the target stays on
+  the image centre, every point's depth is preserved, and
+  `post.bokeh.focus` (a distance along that axis) means the
+  same thing rolled as unrolled. Eye, target, fovY and the
+  framing's centre are roll-invariant; only the frame's
+  orientation about its centre rotates.
+- **Keys.** A key without `roll` falls back to the base camera's
+  `roll`, exactly as a key without `fovY` falls back to the base
+  `fovY`. Between keys, roll interpolates as a plain number with
+  the segment's eased `u` (smootherstep, or linear when the end
+  key says `"ease": "linear"`) — **no angle wrapping and no
+  normalisation**: 350 → 10 interpolates through 180, and an
+  author who wants the short way writes 350 → 370. Outside the
+  key range the end keys hold, as for every other channel.
+- **Additivity.** Absent `roll`, and `roll: 0` (including `-0`),
+  are the pre-amendment camera exactly: the loader's no-roll
+  path performs no extra arithmetic, and renders are
+  byte-identical to the pre-amendment binary (the R-A7 A/B
+  proof). Static `roll` next to `keys` is the base/fallback,
+  exactly as static eye/target/fovY are.
 
 Proof: `scenes/character-v2.scene.json` (the S01 staging as
 data: character node + keys + the noon JG rig) and the loader
@@ -1056,7 +1115,10 @@ scalar, **V** vec3, **C** colour hex, **Step** enum string (no
 interpolation).
 
 **camera** (target `"camera"`): `eye` (V), `target` (V),
-`fovY` (S) — the §14.4 keys.
+`fovY` (S) — the §14.4 keys. `roll` (§14.4) is not a clip
+channel in this amendment; adding `camera.roll` (S) to this
+vocabulary is a separate evaluator change (eval15 channel
+table + fold), not a loader change.
 
 **lights** (target `"lights"`) — the §14.2 rig, carrying
 post-atmosphere values per **R1**:

@@ -24,7 +24,8 @@
 
 use crate::math::{self, Mat4};
 use crate::scene::{
-    self, box_geo, chart_texture_rgba, cone_geo, cross3, cyl_geo, disc_geo, flat_quad_geo,
+    self, box_geo, chart_texture_rgba, cone_geo, cross3, cyl_geo, disc_geo, flat_quad_colour_geo,
+    flat_quad_geo,
     ground_disc_geo, hex_lin, norm3, quad_geo, shade_lin, sky_sphere_geo, sphere_geo, sub3,
     ColourDraw, Geo, TexDraw, TexGeo, Value,
 };
@@ -43,6 +44,15 @@ struct Camera {
     eye: [f32; 3],
     target: [f32; 3],
     up: [f32; 3],
+    /// Camera roll (R-A7), DEGREES — the camera block's angle unit,
+    /// the same unit as `fov_y_deg` (docs/scene-format.md §2: fovY
+    /// is degrees; §5's radians govern node transform ops, not the
+    /// camera). Positive roll tips the horizon clockwise in the
+    /// rendered frame (its right side drops) — the source engine's
+    /// ShotLook.roll sign law (shots.ts), realised in view_proj().
+    /// 0.0 = absent; view_proj() branches on it so the no-roll path
+    /// executes no extra arithmetic (byte-identity, R-A7 contract).
+    roll_deg: f32,
 }
 
 struct Bokeh {
@@ -300,6 +310,11 @@ fn colour_geo(spec: &Value, colour: [f32; 3], ctx: &str) -> Result<Geo, String> 
         "disc" => disc_geo(
             f32_field(spec, "radius", ctx)?,
             u32_field(spec, "segments", ctx)?,
+            colour,
+        ),
+        "flat-quad" => flat_quad_colour_geo(
+            f32_field(spec, "width", ctx)?,
+            f32_field(spec, "depth", ctx)?,
             colour,
         ),
         other => return Err(err(ctx, &format!("unknown colour geometry kind '{other}'"))),
@@ -795,14 +810,20 @@ fn smootherstep(u: f64) -> f64 {
 }
 
 /// Evaluate format v2 camera keys at `time`: returns (eye, target,
-/// fovY). Keys are { t, eye, target, fovY?, ease? }; before the
-/// first / after the last key the end key holds.
+/// fovY, roll_deg). Keys are { t, eye, target, fovY?, roll?, ease? };
+/// before the first / after the last key the end key holds. A key
+/// without `roll` falls back to the base camera's roll, exactly as a
+/// key without `fovY` falls back to the base fovY. Roll interpolates
+/// as a plain number with the same eased `u` as eye/target/fovY —
+/// NO angle wrapping (see the amendment / R1-04 NOTE §4): an author
+/// who wants the short way across 0/360 writes the keys through it
+/// (e.g. 350 -> 370). Values are never normalised or clamped.
 fn eval_camera_keys(
     keys: &[Value],
     time: f64,
     base: &Camera,
-) -> Result<([f32; 3], [f32; 3], f32), String> {
-    let key_at = |k: &Value| -> Result<(f64, [f32; 3], [f32; 3], f32, bool), String> {
+) -> Result<([f32; 3], [f32; 3], f32, f32), String> {
+    let key_at = |k: &Value| -> Result<(f64, [f32; 3], [f32; 3], f32, f32, bool), String> {
         let t = num_field(k, "t", "scene.camera.keys")?;
         let eye = vec3_field(k, "eye", "scene.camera.keys")?;
         let target = vec3_field(k, "target", "scene.camera.keys")?;
@@ -810,12 +831,16 @@ fn eval_camera_keys(
             Some(v) => num(v, "scene.camera.keys.fovY")? as f32,
             None => base.fov_y_deg,
         };
+        let roll = match k.get("roll") {
+            Some(v) => num(v, "scene.camera.keys.roll")? as f32,
+            None => base.roll_deg,
+        };
         let linear = k.get("ease").and_then(Value::as_str) == Some("linear");
-        Ok((t, eye, target, fov, linear))
+        Ok((t, eye, target, fov, roll, linear))
     };
     let first = key_at(&keys[0])?;
     if time <= first.0 || keys.len() == 1 {
-        return Ok((first.1, first.2, first.3));
+        return Ok((first.1, first.2, first.3, first.4));
     }
     for w in keys.windows(2) {
         let a = key_at(&w[0])?;
@@ -823,7 +848,7 @@ fn eval_camera_keys(
         if time <= b.0 {
             let span = b.0 - a.0;
             let raw = if span > 0.0 { (time - a.0) / span } else { 1.0 };
-            let u = if b.4 { raw.clamp(0.0, 1.0) } else { smootherstep(raw) } as f32;
+            let u = if b.5 { raw.clamp(0.0, 1.0) } else { smootherstep(raw) } as f32;
             let mix3 = |x: [f32; 3], y: [f32; 3]| {
                 [
                     x[0] + (y[0] - x[0]) * u,
@@ -831,11 +856,16 @@ fn eval_camera_keys(
                     x[2] + (y[2] - x[2]) * u,
                 ]
             };
-            return Ok((mix3(a.1, b.1), mix3(a.2, b.2), a.3 + (b.3 - a.3) * u));
+            return Ok((
+                mix3(a.1, b.1),
+                mix3(a.2, b.2),
+                a.3 + (b.3 - a.3) * u,
+                a.4 + (b.4 - a.4) * u,
+            ));
         }
     }
     let last = key_at(&keys[keys.len() - 1])?;
-    Ok((last.1, last.2, last.3))
+    Ok((last.1, last.2, last.3, last.4))
 }
 
 fn vec3_field_or(v: &Value, key: &str, ctx: &str, default: [f32; 3]) -> Result<[f32; 3], String> {
@@ -918,12 +948,24 @@ pub(crate) fn load_root(root: Value, label: &str) -> Result<Loaded, String> {
             Some(v) => vec3(v, "scene.camera.up")?,
             None => [0.0, 1.0, 0.0],
         },
+        // R-A7: optional; the v2 gate sits just below, with the keys
+        // gate. f32 law (§11): the JSON number is read as f64 and
+        // cast to f32 by f32_field_or, like every other camera field.
+        roll_deg: f32_field_or(cam_spec, "roll", "scene.camera", 0.0)?,
     };
-    // Format v2 camera keys: keyframed eye/target/fovY evaluated
+    // R-A7: `roll` is a format v2 field, gated exactly like `keys`
+    // and `lights` (§14 / §10 rule: a v1 file carrying v2 fields is
+    // rejected, not reinterpreted). Key-level `roll` needs no gate
+    // of its own — `keys` itself is already v2-gated below.
+    if version < 2 && cam_spec.get("roll").is_some() {
+        return Err(err("scene.camera.roll", "camera roll is a format v2 field"));
+    }
+    // Format v2 camera keys: keyframed eye/target/fovY/roll evaluated
     // at `time` (smootherstep between keys, the engine's camK
     // easing; a key with "ease": "linear" eases its incoming
-    // segment linearly). Static eye/target remain the fallback
-    // and the value outside the key range clamps to the end keys.
+    // segment linearly). Static eye/target/fovY/roll remain the
+    // fallback and the value outside the key range clamps to the
+    // end keys.
     if let Some(keys) = cam_spec.get("keys") {
         if version < 2 {
             return Err(err("scene.camera.keys", "camera keys are a format v2 field"));
@@ -936,6 +978,7 @@ pub(crate) fn load_root(root: Value, label: &str) -> Result<Loaded, String> {
         camera.eye = eval.0;
         camera.target = eval.1;
         camera.fov_y_deg = eval.2;
+        camera.roll_deg = eval.3;
     }
 
     let clear = match root.get("clear") {
@@ -1210,6 +1253,32 @@ fn view_proj(cam: &Camera, width: u32, height: u32) -> Mat4 {
     let aspect = width as f32 / height as f32;
     let proj = math::perspective(cam.fov_y_deg.to_radians(), aspect, cam.near, cam.far);
     let view = math::look_at(cam.eye, cam.target, cam.up);
+    // R-A7 camera roll: a Z-rotation about the VIEW axis, applied
+    // AFTER the look-at basis is built and BEFORE projection — the
+    // native form of the source engine's
+    //     cam.lookAt(tgt); if (roll) cam.rotateZ(roll);
+    // (shots.ts createShoot). three.js rotateZ post-multiplies the
+    // camera's world rotation by Rz(roll); the view matrix is that
+    // rotation's inverse, so the view-side factor is Rz(-roll):
+    //     view' = rotate_z(-roll_rad) * view
+    // In basis terms, with (x, y, z) = look_at's (right, true-up,
+    // backward) rows and th = roll in radians:
+    //     right' = cos(th)*x + sin(th)*y
+    //     up'    = -sin(th)*x + cos(th)*y
+    //     back'  = z                       (row 2 of Rz is (0,0,1))
+    // so view-space z (depth, hence bokeh focus) and the target's
+    // image position (the centre) are exactly preserved, and
+    // roll > 0 tips the horizon clockwise (right side drops),
+    // matching ShotLook.roll's pinned sign law.
+    // Byte-identity: roll == 0.0 (absent, explicit 0, and -0.0 —
+    // IEEE equality identifies them) skips the factor ENTIRELY:
+    // no rotate_z call, no extra mul, the f32 op sequence above
+    // and below is today's, in today's order (R1-04 NOTE §3).
+    let view = if cam.roll_deg == 0.0 {
+        view
+    } else {
+        math::mul(&math::rotate_z(-cam.roll_deg.to_radians()), &view)
+    };
     math::mul(&proj, &view)
 }
 
@@ -2265,7 +2334,102 @@ mod tests {
             eye: [0.0, 0.0, 0.0],
             target: [0.0, 0.0, -1.0],
             up: [0.0, 1.0, 0.0],
+            roll_deg: 0.0,
         }
+    }
+
+    fn mat_bits(m: &Mat4) -> [[u32; 4]; 4] {
+        m.map(|col| col.map(|v| v.to_bits()))
+    }
+
+    #[test]
+    fn view_proj_no_roll_is_bit_identical_to_the_pre_roll_formula() {
+        // The pre-R-A7 view_proj body, written out: for roll absent
+        // (0.0) and for explicit -0.0 the patched function must
+        // produce the identical bits, not merely close values.
+        for roll in [0.0f32, -0.0] {
+            let mut cam = test_camera();
+            cam.eye = [0.85, 2.7, 5.4];
+            cam.target = [0.35, 1.12, -0.55];
+            cam.fov_y_deg = 44.0;
+            cam.roll_deg = roll;
+            let aspect = 1080.0f32 / 1920.0f32;
+            let expect = math::mul(
+                &math::perspective(cam.fov_y_deg.to_radians(), aspect, cam.near, cam.far),
+                &math::look_at(cam.eye, cam.target, cam.up),
+            );
+            assert_eq!(mat_bits(&view_proj(&cam, 1080, 1920)), mat_bits(&expect));
+        }
+    }
+
+    #[test]
+    fn view_proj_roll_preserves_centre_and_depth_and_tips_the_horizon() {
+        let mut cam = test_camera();
+        cam.eye = [0.0, 2.6, 10.5];
+        cam.target = [0.0, 1.2, -1.5];
+        cam.fov_y_deg = 44.0;
+        let flat = view_proj(&cam, 1080, 1920);
+        cam.roll_deg = 12.0;
+        let rolled = view_proj(&cam, 1080, 1920);
+        // The target stays on the image centre (the centre ray is
+        // the rotation axis): both NDC positions are ~0 and agree
+        // to f32 noise — NOT bit-identical, because the look-at
+        // basis dots are themselves rounded; the invariant is the
+        // geometric one, stated honestly.
+        let c0 = math::mul_vec4(&flat, [0.0, 1.2, -1.5, 1.0]);
+        let c1 = math::mul_vec4(&rolled, [0.0, 1.2, -1.5, 1.0]);
+        assert!((c0[0] / c0[3]).abs() < 1e-6 && (c0[1] / c0[3]).abs() < 1e-6, "{c0:?}");
+        assert!((c1[0] / c1[3]).abs() < 1e-6 && (c1[1] / c1[3]).abs() < 1e-6, "{c1:?}");
+        // Depth is preserved for an off-axis point too (Rz row 2
+        // is (0,0,1)): clip z and w are bit-identical, so the
+        // packed depth / bokeh focus cannot shift under roll.
+        let p = [1.8, 1.2, -1.5, 1.0];
+        let q0 = math::mul_vec4(&flat, p);
+        let q1 = math::mul_vec4(&rolled, p);
+        assert_eq!(q1[2].to_bits(), q0[2].to_bits());
+        assert_eq!(q1[3].to_bits(), q0[3].to_bits());
+        // Sign law: the right-hand point's NDC y DROPS under
+        // positive roll (horizon tips clockwise, ShotLook law).
+        assert!(q1[1] / q1[3] < q0[1] / q0[3], "{q0:?} vs {q1:?}");
+    }
+
+    #[test]
+    fn camera_roll_loads_static_keyed_and_v1_rejected() {
+        let dir = std::env::temp_dir();
+        // Static roll, v2.
+        let f = dir.join("talerender-test-roll-static.scene.json");
+        std::fs::write(
+            &f,
+            r##"{"format": "talerender-scene", "version": 2, "name": "rollstatic",
+                "camera": {"fovY": 44.0, "eye": [0, 2.6, 10.5], "target": [0, 1.2, -1.5], "roll": 12.0},
+                "nodes": []}"##,
+        )
+        .unwrap();
+        assert_eq!(load(f.to_str().unwrap()).unwrap().camera.roll_deg, 12.0);
+        // Keyed roll at the smootherstep midpoint: 0 -> 12 at
+        // t = 1.0 of [0, 2] evaluates to exactly 6.0.
+        let f = dir.join("talerender-test-roll-keys.scene.json");
+        std::fs::write(
+            &f,
+            r##"{"format": "talerender-scene", "version": 2, "name": "rollkeys", "time": 1.0,
+                "camera": {"fovY": 44.0, "eye": [0, 2.6, 10.5], "target": [0, 1.2, -1.5],
+                           "keys": [{"t": 0.0, "eye": [0, 2.6, 10.5], "target": [0, 1.2, -1.5], "roll": 0.0},
+                                    {"t": 2.0, "eye": [0, 2.6, 10.5], "target": [0, 1.2, -1.5], "roll": 12.0}]},
+                "nodes": []}"##,
+        )
+        .unwrap();
+        assert_eq!(load(f.to_str().unwrap()).unwrap().camera.roll_deg, 6.0);
+        // The same field in a v1 file is a named rejection.
+        let f = dir.join("talerender-test-roll-v1.scene.json");
+        std::fs::write(
+            &f,
+            r##"{"format": "talerender-scene", "version": 1, "name": "rollv1",
+                "camera": {"fovY": 44.0, "eye": [0, 2.6, 10.5], "target": [0, 1.2, -1.5], "roll": 12.0},
+                "nodes": []}"##,
+        )
+        .unwrap();
+        let e = load(f.to_str().unwrap()).err().expect("v1 roll must be rejected");
+        assert!(e.contains("roll"), "{e}");
     }
 
     #[test]
@@ -2392,6 +2556,36 @@ mod tests {
         // House-light defaults.
         assert_eq!(loaded.light_dir, [0.5, 0.8, 0.6]);
         assert_eq!(loaded.ambient, 0.35);
+    }
+
+    #[test]
+    #[test]
+    fn colour_flat_quad_mesh_loads() {
+        // Remediation lead regression test: colour_geo lacked the
+        // flat-quad kind the format table lists (the textured
+        // path had it); the Lighthouse Cat "sea" planes are the
+        // first colour consumers. Pre-fix this load failed with
+        // "unknown colour geometry kind 'flat-quad'".
+        let dir = std::env::temp_dir();
+        let f = dir.join("talerender-test-flatquad.scene.json");
+        std::fs::write(
+            &f,
+            r##"{"format": "talerender-scene", "version": 1, "name": "fq",
+                "camera": {"fovY": 44.0, "eye": [0, 2.6, 10.5], "target": [0, 1, 0]},
+                "nodes": [{"type": "mesh", "name": "sea",
+                           "geometry": {"kind": "flat-quad", "width": 40.0, "depth": 18.0},
+                           "material": {"color": "#274B66", "roughness": 0.3}}]}"##,
+        )
+        .unwrap();
+        let loaded = load(f.to_str().unwrap()).unwrap();
+        assert_eq!(loaded.draws.len(), 1);
+        match &loaded.draws[0] {
+            Draw::Colour(d) => {
+                assert_eq!(d.geo.verts.len(), 4 * 9, "4 verts x (pos+normal+colour)");
+                assert_eq!(d.geo.idx.len(), 6, "2 triangles");
+            }
+            Draw::Tex(_) => panic!("flat-quad colour mesh must stay a colour draw"),
+        }
     }
 
     #[test]

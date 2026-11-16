@@ -399,6 +399,24 @@ pub(crate) fn quad_geo(w: f32, h: f32, y0: f32) -> TexGeo {
     g
 }
 
+/// Flat XZ quad in the colour pipeline: the textured
+/// `flat_quad_geo`'s exact vertex/winding layout, with the +Y
+/// normal the Lambert term needs. (Remediation lead fix: the
+/// colour loader lacked this kind — a colour "sea" plane in the
+/// Lighthouse Cat staging was its first consumer; the format
+/// table lists flat-quad without a pipeline restriction.)
+pub(crate) fn flat_quad_colour_geo(w: f32, d: f32, col: [f32; 3]) -> Geo {
+    let mut g = Geo::new();
+    let (hw, hd) = (w / 2.0, d / 2.0);
+    g.vert([-hw, 0.0, -hd], [0.0, 1.0, 0.0], col);
+    g.vert([hw, 0.0, -hd], [0.0, 1.0, 0.0], col);
+    g.vert([hw, 0.0, hd], [0.0, 1.0, 0.0], col);
+    g.vert([-hw, 0.0, hd], [0.0, 1.0, 0.0], col);
+    g.tri(0, 2, 1);
+    g.tri(0, 3, 2);
+    g
+}
+
 /// Flat XZ quad (for the blob shadow), centred, size w x d.
 pub(crate) fn flat_quad_geo(w: f32, d: f32) -> TexGeo {
     let mut g = TexGeo::new();
