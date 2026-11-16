@@ -784,9 +784,23 @@ fn walk_nodes(
                     tex: blob_tex,
                     repeat: false,
                 }));
+                // Canvas re-anchor compensation (B-1), as in
+                // film.rs resolve_chars: the painter may have
+                // shifted the figure inside its texture by
+                // toonfull::canvas_anchor; the card draw carries
+                // the opposite local translation so the figure's
+                // world position is unchanged. Attachments below
+                // keep the un-shifted `model` — they read the
+                // hand in stage coords through this same frame.
+                let (anx, any) = crate::toonfull::canvas_anchor(&look, &state);
+                let card_model = if anx != 0.0 || any != 0.0 {
+                    math::mul(&model, &math::translate(-anx * su, any * su, 0.0))
+                } else {
+                    model
+                };
                 draws.push(Draw::Tex(TexDraw {
                     geo: quad_geo(plane_w, plane_h, 552.0 * su - plane_h / 2.0),
-                    model,
+                    model: card_model,
                     tex: card_tex,
                     repeat: false,
                 }));

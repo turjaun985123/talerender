@@ -278,15 +278,17 @@ fn rounded_rect_pts_radii(
 
 /// Composite a held-prop plate at a stage-space hand point,
 /// inverse-mapping each canvas pixel through the lean rotation
-/// (stage -> canvas is lean about (256, 1000), then +(384, 256),
-/// then x res). Bilinear sampling of the plate.
-fn composite_plate(p: &mut Painter, plate: &Plate, hand: (f32, f32), lean_rad: f32) {
+/// (stage -> canvas is lean about (256, 1000), then the canvas
+/// re-anchor, then +(384, 256), then x res). Bilinear sampling
+/// of the plate.
+fn composite_plate(p: &mut Painter, plate: &Plate, hand: (f32, f32), lean_rad: f32, anchor: (f32, f32)) {
     let (s, c) = lean_rad.sin_cos();
+    let (ax, ay) = anchor;
     // Canvas-space corners of the plate rect (forward map).
     let fwd = |lx: f32, ly: f32| -> (f32, f32) {
         let (dx, dy) = (lx - 256.0, ly - 1000.0);
         let (rx, ry) = (256.0 + dx * c - dy * s, 1000.0 + dx * s + dy * c);
-        ((rx + 384.0) * RES, (ry + 256.0) * RES)
+        ((rx + ax + 384.0) * RES, (ry + ay + 256.0) * RES)
     };
     let corners = [
         fwd(hand.0 + plate.x0, hand.1 + plate.y0),
@@ -305,8 +307,8 @@ fn composite_plate(p: &mut Painter, plate: &Plate, hand: (f32, f32), lean_rad: f
     let (pw, ph) = (plate.w as f32, plate.h as f32);
     for y in by0..=by1 {
         for x in bx0..=bx1 {
-            // canvas -> stage (inverse lean).
-            let (ux, uy) = (x as f32 / RES - 384.0, y as f32 / RES - 256.0);
+            // canvas -> stage (inverse lean + anchor).
+            let (ux, uy) = (x as f32 / RES - 384.0 - ax, y as f32 / RES - 256.0 - ay);
             let (dx, dy) = (ux - 256.0, uy - 1000.0);
             let sx = 256.0 + dx * c + dy * s;
             let sy = 1000.0 - dx * s + dy * c;
@@ -352,6 +354,346 @@ fn composite_plate(p: &mut Painter, plate: &Plate, hand: (f32, f32), lean_rad: f
     }
 }
 
+/// Canvas re-anchor (B-1: the Rust port of the TS painter's
+/// `solveCanvasAnchor`, v7 P2 D4 — tall-tale template/src/core/
+/// toon.ts). The cut-out canvas is finite (stage 512x1024 placed
+/// at +(384, 256) inside a 1280x1408 canvas), and two universal
+/// pose families paint outside it: high-|lean| states (lean
+/// rotates the figure about its feet, so at the lying lean the
+/// head lands past the side edge) and high seats at small
+/// scales. Capping the lean or the seat would rewrite clip
+/// contracts, so the painter instead RE-ANCHORS: this function
+/// rebuilds the painted envelope from the painter's own geometry
+/// (the bean cubics, the head ellipse, the hat/neckwear extremes
+/// this painter draws, arm FK, every leg branch this painter
+/// implements), runs it through the painter's transform stack
+/// (head squash -> headTilt about the neck pivot -> lean about
+/// the feet), and returns the smallest whole-figure translation,
+/// in stage units, that brings the envelope inside the canvas —
+/// inset by 4 so antialiased paint never touches the border
+/// strip `scan_canvas_overflow` reads.
+///
+/// Semantics preserved from the TS original: a pure function of
+/// (look, state) — deterministic, ZERO for every state that
+/// already fits (previously clean states paint byte-identically),
+/// and continuous in the state, so an animated fall slides its
+/// anchor instead of popping. `paint_toon_full` applies it
+/// inside the stage -> canvas map (plates included — they ride
+/// the hands); the card-placement sites (film.rs resolve_chars,
+/// scenefile.rs) counter-offset the card model by the opposite
+/// world amount, so a re-anchored figure keeps its exact world
+/// position — only the transparent canvas margins redistribute.
+/// Held plates are NOT modelled in the envelope (their reach is
+/// bounded by the prop contract and they ride the hands, which
+/// are), exactly as in the TS original.
+///
+/// Port notes (where this painter's geometry differs from the
+/// TS painter's, the envelope follows THIS painter): the sit
+/// drop is the painter's own (426 - sitDrop)/0.98 with its fixed
+/// sit-leg polyline (no two-bone sit solve, no kneel, no
+/// tail/scarf-streamer/wing/fox-ear primitives exist here); the
+/// head envelope uses the painter's own squash factors
+/// (1 - 0.3*squash, 1 + squash) rather than the TS anchor's
+/// exact volume factors; hat extremes are this painter's drawn
+/// shapes (tophat crown, bun, bow locks, visor sheet, beanie,
+/// mailcap, the cap/bowler/boater brim family). The anchor
+/// consumes only inputs the painter already consumes, so the
+/// paint-cache key (film.rs state_key, which covers every
+/// FullState field) needs no new component.
+pub(crate) fn canvas_anchor(look: &FullLook, st: &FullState) -> (f32, f32) {
+    const INSET: f32 = 4.0;
+    let sit = st.legs == Legs::Sit;
+    let jump = st.legs == Legs::Jump;
+    let sit_s = st.sit_drop.unwrap_or(220.2);
+    // `by`, top/bot/hip and head geometry exactly as paint_toon_full.
+    let by = (if sit { (426.0 - sit_s) / 0.98 } else { 0.0 })
+        + if look.kid { 190.0 } else { 0.0 }
+        + st.bob
+        + if jump { -60.0 } else { 0.0 };
+    let (bx, top, bot, bw) = (256.0f32, 330.0 + by, 600.0 + by * 0.98, 92.0f32);
+    let hip_y = bot - 26.0;
+    let (hx, hy, r) = (256.0f32, 178.0 + by * 0.99, 138.0f32);
+    let pivot_y = 318.0 + by * 0.99;
+    let rp = r * (1.0 + 0.04 * st.cam_pitch);
+    let turn = st.head_turn;
+    let hatx = hx + turn * 18.0;
+    let htop = hy - rp * 0.97;
+    let lean = st.lean;
+
+    fn rot_pt(x: f32, y: f32, cx: f32, cy: f32, deg: f32) -> (f32, f32) {
+        if deg == 0.0 {
+            return (x, y);
+        }
+        let (s, c) = deg.to_radians().sin_cos();
+        let (dx, dy) = (x - cx, y - cy);
+        (cx + dx * c - dy * s, cy + dx * s + dy * c)
+    }
+    fn quad_pts(p0: (f32, f32), p1: (f32, f32), p2: (f32, f32), n: usize) -> Vec<(f32, f32)> {
+        let mut out = Vec::with_capacity(n + 1);
+        for i in 0..=n {
+            let u = i as f32 / n as f32;
+            let v = 1.0 - u;
+            out.push((
+                v * v * p0.0 + 2.0 * v * u * p1.0 + u * u * p2.0,
+                v * v * p0.1 + 2.0 * v * u * p1.1 + u * u * p2.1,
+            ));
+        }
+        out
+    }
+    fn cubic_pts(
+        p0: (f32, f32),
+        p1: (f32, f32),
+        p2: (f32, f32),
+        p3: (f32, f32),
+        n: usize,
+    ) -> Vec<(f32, f32)> {
+        let mut out = Vec::with_capacity(n + 1);
+        for i in 0..=n {
+            let u = i as f32 / n as f32;
+            let v = 1.0 - u;
+            out.push((
+                v * v * v * p0.0 + 3.0 * v * v * u * p1.0 + 3.0 * v * u * u * p2.0 + u * u * u * p3.0,
+                v * v * v * p0.1 + 3.0 * v * v * u * p1.1 + 3.0 * v * u * u * p2.1 + u * u * u * p3.1,
+            ));
+        }
+        out
+    }
+
+    // Envelope points (stage x, stage y, radius), carried through
+    // the painter's transform stack.
+    let mut pts: Vec<(f32, f32, f32)> = Vec::new();
+    // Body-space push: lean about the feet only (bean, arms, legs,
+    // neckwear — the painter maps them through `px`).
+    macro_rules! push {
+        ($x:expr, $y:expr, $rad:expr) => {{
+            let (qx, qy) = rot_pt($x, $y, 256.0, 1000.0, lean);
+            pts.push((qx, qy, $rad));
+        }};
+    }
+    // Head-space push: the painter's `hpt` stack in stage space —
+    // squash about the head centre (the painter's own factors),
+    // headTilt about the neck pivot, then lean about the feet.
+    macro_rules! push_head {
+        ($x:expr, $y:expr, $rad:expr) => {{
+            let (sx2, sy2) = (
+                hx + ($x - hx) * (1.0 - 0.3 * st.squash),
+                hy + ($y - hy) * (1.0 + st.squash),
+            );
+            let (tx2, ty2) = rot_pt(sx2, sy2, 256.0, pivot_y, st.head_tilt);
+            let (qx, qy) = rot_pt(tx2, ty2, 256.0, 1000.0, lean);
+            pts.push((qx, qy, $rad));
+        }};
+    }
+
+    // Body bean — the painter's four cubics, ink radius 9/2.
+    let bean: [Vec<(f32, f32)>; 4] = [
+        cubic_pts((bx - 58.0, top + 10.0), (bx - 80.0, top + 40.0), (bx - bw - 6.0, bot - 120.0), (bx - bw, bot - 50.0), 12),
+        cubic_pts((bx - bw, bot - 50.0), (bx - bw + 4.0, bot + 6.0), (bx + bw - 4.0, bot + 6.0), (bx + bw, bot - 50.0), 12),
+        cubic_pts((bx + bw, bot - 50.0), (bx + bw + 6.0, bot - 120.0), (bx + 80.0, top + 40.0), (bx + 58.0, top + 10.0), 12),
+        cubic_pts((bx + 58.0, top + 10.0), (bx + 30.0, top - 8.0), (bx - 30.0, top - 8.0), (bx - 58.0, top + 10.0), 12),
+    ];
+    for seg in &bean {
+        for &(x, y) in seg {
+            push!(x, y, 4.5);
+        }
+    }
+    // Head ellipse (the painter draws it at rp with the 0.97
+    // vertical factor; outline stroke lw 10 -> radius 5).
+    for i in 0..16 {
+        let a = (i as f32 / 16.0) * std::f32::consts::TAU;
+        push_head!(hx + rp * a.cos(), hy + rp * 0.97 * a.sin(), 5.0);
+    }
+    // Hat extremes, per this painter's drawHat branches.
+    match look.hat.as_str() {
+        "tophat" => {
+            // Crown roundRect(hatx - rp*0.6, htop - 140, rp*1.2,
+            // 164) + brim ellipse rx rp at htop + 24.
+            for &(x, y) in &[
+                (hatx - rp * 0.6, htop - 140.0),
+                (hatx + rp * 0.6, htop - 140.0),
+                (hatx - rp * 0.6, htop + 24.0),
+                (hatx + rp * 0.6, htop + 24.0),
+                (hatx - rp, htop + 24.0),
+                (hatx + rp, htop + 24.0),
+            ] {
+                push_head!(x, y, 4.5);
+            }
+        }
+        "bun" => {
+            // Bun disc (hx + 10 + turn*18, hy - rp - 8) r 46,
+            // drawn before the head disc.
+            push_head!(hx + 10.0 + turn * 18.0, hy - rp - 8.0, 46.0 * (1.0 + st.squash) + 4.5);
+        }
+        "bow" => {
+            // Side locks: ellipses (hatx +/-(rp + 4), hy + 10)
+            // rx 22 ry 50; loops reach +/-66 / -46..+40 from
+            // (hatx + rp*0.5, htop + 26).
+            for s in [-1.0f32, 1.0] {
+                push_head!(hatx + s * (rp + 4.0), hy + 10.0, 50.0 * (1.0 + st.squash) + 3.0);
+            }
+            push_head!(hatx + rp * 0.5, htop + 26.0, 69.0);
+        }
+        "visor" => {
+            // Sheet corners reach hatx +/- rp*1.15 at htop + 98.
+            for &(x, y) in &[
+                (hatx - rp * 1.15, htop + 98.0),
+                (hatx + rp * 1.15, htop + 98.0),
+                (hatx - rp, htop + 70.0),
+                (hatx + rp, htop + 70.0),
+                (hatx, htop + 10.0),
+            ] {
+                push_head!(x, y, 4.5);
+            }
+        }
+        "beanie" => {
+            // Dome top (hatx, htop + 50 - 96), brim corners, pom
+            // (hatx, htop - 52) r 22.
+            for &(x, y) in &[
+                (hatx, htop - 46.0),
+                (hatx - rp * 0.98, htop + 30.0),
+                (hatx + rp * 0.98, htop + 30.0),
+                (hatx - rp * 0.98, htop + 70.0),
+                (hatx + rp * 0.98, htop + 70.0),
+            ] {
+                push_head!(x, y, 4.5);
+            }
+            push_head!(hatx, htop - 52.0, 22.0 * (1.0 + st.squash) + 4.5);
+        }
+        "mailcap" => {
+            // Crown roundRect(hatx - rp*0.72, htop - 40,
+            // rp*1.44, 70); brim half-ellipse rx rp*0.82 at
+            // (hatx - 10, htop + 34).
+            for &(x, y) in &[
+                (hatx - rp * 0.72, htop - 40.0),
+                (hatx + rp * 0.72, htop - 40.0),
+                (hatx - rp * 0.72, htop + 30.0),
+                (hatx + rp * 0.72, htop + 30.0),
+                (hatx - 10.0 - rp * 0.82, htop + 34.0),
+                (hatx - 10.0 + rp * 0.82, htop + 34.0),
+            ] {
+                push_head!(x, y, 4.5);
+            }
+        }
+        "flower" => {
+            // Petals r 14 at radius 18 around
+            // (hatx + rp*0.62, htop + 40).
+            push_head!(hatx + rp * 0.62, htop + 40.0, 18.0 + 14.0 * (1.0 + st.squash) + 2.0);
+        }
+        "cap" | "bowler" | "boater" => {
+            // The brim family: brim ellipses reach rx rp*1.3
+            // around htop + 26..34; crowns rise to htop - 46 at
+            // rp*0.66.
+            for &(x, y) in &[
+                (hatx + 6.0 - rp * 1.3, htop + 34.0),
+                (hatx + 6.0 + rp * 1.3, htop + 34.0),
+                (hatx - rp * 0.66, htop - 46.0),
+                (hatx + rp * 0.66, htop - 46.0),
+                (hatx, htop - 46.0),
+            ] {
+                push_head!(x, y, 4.5);
+            }
+        }
+        _ => {}
+    }
+    // Neckwear extremes that can leave the bean's sampled edge:
+    // the scarf band (bx +/- 70 at top + 4, knot to top + 76)
+    // and the collar triangles (bx +/- 56 at top + 2).
+    match look.neck.as_str() {
+        "scarf" => {
+            push!(bx - 70.0, top + 4.0, 3.0);
+            push!(bx + 70.0, top + 4.0, 3.0);
+            push!(bx, top + 76.0, 3.0);
+        }
+        "collar" => {
+            push!(bx - 56.0, top + 2.0, 3.0);
+            push!(bx + 56.0, top + 2.0, 3.0);
+        }
+        _ => {}
+    }
+    // Arms — painter FK, quadratic samples + the hand ellipse
+    // (radii 15 x 17; the envelope uses the 17 disc, as TS).
+    for (side, (a, e)) in [(-1.0f32, st.arm_l), (1.0f32, st.arm_r)] {
+        let (sx, sy) = (bx + side * 66.0, top + 46.0);
+        let a1 = (a as f64).to_radians();
+        let a2 = ((a + e) as f64).to_radians();
+        let ex = sx + side * (a1.sin() as f32) * 118.0;
+        let ey = sy + (a1.cos() as f32) * 118.0;
+        let hxp = ex + side * (a2.sin() as f32) * 112.0;
+        let hyp = ey + (a2.cos() as f32) * 112.0;
+        for (x, y) in quad_pts((sx, sy), (ex, ey), (hxp, hyp), 8) {
+            push!(x, y, 7.0);
+        }
+        push!(hxp, hyp, 17.0);
+    }
+    // Legs — the painter's branches (stroke lw 15 -> radius
+    // 7.5; foot ellipse rx 20 at (fx + side*10, fy - 4)).
+    for (sx, side) in [(bx - 42.0, -1.0f32), (bx + 42.0, 1.0f32)] {
+        if sit {
+            let (kx, ky) = (sx + side * 30.0, hip_y + 44.0);
+            let (fx, fy) = (sx + side * 34.0, (hip_y + 220.2).min(1000.0));
+            push!(sx, hip_y, 7.5);
+            push!(kx, ky, 7.5);
+            push!(fx, fy, 7.5);
+            push!(fx + side * 10.0, fy - 4.0, 20.0);
+            continue;
+        }
+        let (kx, ky, fx, fy) = match st.legs {
+            Legs::Walk | Legs::Run => {
+                let amp = if st.legs == Legs::Run { 1.0 } else { 0.55 };
+                let a = (st.phase + if side > 0.0 { std::f32::consts::PI } else { 0.0 }).sin() * amp;
+                let lift = (-(st.phase + if side > 0.0 { std::f32::consts::PI } else { 0.0 }).cos())
+                    .max(0.0)
+                    * if st.legs == Legs::Run { 70.0 } else { 34.0 };
+                (
+                    sx + a * 22.0 + side * 6.0,
+                    hip_y + 200.0 - lift * 0.6,
+                    sx + a * 34.0 + side * 8.0,
+                    1000.0 - lift,
+                )
+            }
+            Legs::Jump => (sx + side * 40.0, hip_y + 170.0, sx + side * 18.0, 940.0),
+            _ => (sx + side * 4.0, hip_y + 210.0, sx + side * 10.0, 1000.0),
+        };
+        for (x, y) in quad_pts((sx, hip_y), (kx, ky), (fx, fy), 8) {
+            push!(x, y, 7.5);
+        }
+        push!(fx + side * 10.0, fy - 4.0, 20.0);
+    }
+    // Excursions against the canvas bounds (stage coords), inset
+    // for paint AA — the TS bounds verbatim: the stage sits at
+    // +(384, 256) inside the 1280x1408 canvas.
+    let (bl, br) = (-384.0 + INSET, 1280.0 - 384.0 - INSET);
+    let (bt, bb) = (-256.0 + INSET, 1408.0 - 256.0 - INSET);
+    let (mut minx, mut maxx, mut miny, mut maxy) = (f32::MAX, f32::MIN, f32::MAX, f32::MIN);
+    for &(x, y, rad) in &pts {
+        minx = minx.min(x - rad);
+        maxx = maxx.max(x + rad);
+        miny = miny.min(y - rad);
+        maxy = maxy.max(y + rad);
+    }
+    let mut ax = 0.0f32;
+    let mut ay = 0.0f32;
+    if maxx - minx <= br - bl {
+        if minx < bl {
+            ax = bl - minx;
+        } else if maxx > br {
+            ax = br - maxx;
+        }
+    } else {
+        ax = (bl + br) / 2.0 - (minx + maxx) / 2.0;
+    }
+    if maxy - miny <= bb - bt {
+        if miny < bt {
+            ay = bt - miny;
+        } else if maxy > bb {
+            ay = bb - maxy;
+        }
+    } else {
+        ay = (bt + bb) / 2.0 - (miny + maxy) / 2.0;
+    }
+    (ax, ay)
+}
+
 /// The full painter. Returns (pixels, w, h, hands) with hands in
 /// stage coordinates, exactly as drawToon returns them.
 pub(crate) fn paint_toon_full(
@@ -364,13 +706,19 @@ pub(crate) fn paint_toon_full(
     let lw = |w: f32| w * RES;
     let th = st.lean.to_radians();
     let (sth, cth) = th.sin_cos();
+    // Canvas re-anchor (B-1, canvas_anchor): the translation is
+    // applied in stage space AFTER the lean rotation — the
+    // outermost transform, exactly as drawToonLayer applies it —
+    // and only shifts paint when the state's envelope would
+    // otherwise leave the canvas.
+    let (anx, any) = canvas_anchor(look, st);
     // Stage -> canvas: lean about the feet (256, 1000), then the
     // canvas offset, then res (as paint_toon / Toon#set).
     let px = |x: f32, y: f32| -> (f32, f32) {
         let (dx, dy) = (x - 256.0, y - 1000.0);
         (
-            (256.0 + dx * cth - dy * sth + 384.0) * RES,
-            (1000.0 + dx * sth + dy * cth + 256.0) * RES,
+            (256.0 + dx * cth - dy * sth + anx + 384.0) * RES,
+            (1000.0 + dx * sth + dy * cth + any + 256.0) * RES,
         )
     };
     // Head-part point map: squash about (hx, hy), then headTilt
@@ -614,7 +962,7 @@ pub(crate) fn paint_toon_full(
         let pts = flatten_quad(px(sx, sy), px(ex, ey), px(hx2, hy2), 20);
         p.stroke_polyline(&pts, lw(14.0), ink);
         if let Some(plate) = hold {
-            composite_plate(&mut p, plate, (hx2, hy2), th);
+            composite_plate(&mut p, plate, (hx2, hy2), th, (anx, any));
         }
         let (hxp, hyp) = px(hx2, hy2);
         p.fill_ellipse(hxp, hyp, 15.0 * RES, 17.0 * RES, th, ink);
@@ -1333,4 +1681,79 @@ pub(crate) fn paint_toon_full(
     }
 
     (p.px, cw as u32, ch as u32, hands.0, hands.1)
+}
+
+#[cfg(test)]
+mod canvas_anchor_tests {
+    use super::*;
+
+    fn finn_look() -> FullLook {
+        // ex07's Finn (the B-1 case): hat=none, plain pattern.
+        FullLook {
+            body: "#DE7A35".into(),
+            head: "#F7F7FA".into(),
+            shade: None,
+            pattern: "plain".into(),
+            pat_col: None,
+            hat: "none".into(),
+            hat_col: None,
+            band: None,
+            neck: "none".into(),
+            neck_col: None,
+            glasses: false,
+            mustache: false,
+            mustache_col: None,
+            kid: false,
+            blush: false,
+            freckles: false,
+            pencil: false,
+            monocle: false,
+            hair_col: None,
+        }
+    }
+
+    #[test]
+    fn rest_and_walk_states_need_no_anchor() {
+        let l = finn_look();
+        assert_eq!(canvas_anchor(&l, &FullState::default()), (0.0, 0.0));
+        let mut st = FullState::default();
+        st.legs = Legs::Walk;
+        st.phase = 1.1;
+        assert_eq!(canvas_anchor(&l, &st), (0.0, 0.0));
+    }
+
+    #[test]
+    fn lying_lean_anchors_back_into_canvas() {
+        // The B-1 case family (ex07's held lie): a high lean
+        // rotates the head past the right canvas edge; the
+        // anchor must pull the figure back left, with no
+        // vertical shift for a pure side overflow. The mirror
+        // lean pulls the other way.
+        let l = finn_look();
+        let mut st = FullState::default();
+        st.mood = Mood::Dizzy;
+        st.arm_l = (150.0, 20.0);
+        st.arm_r = (138.0, -30.0);
+        st.head_tilt = 4.0;
+        st.lean = 82.0;
+        let (ax, ay) = canvas_anchor(&l, &st);
+        assert!(ax < -50.0, "expected a strong left pull, got ax={ax}");
+        assert_eq!(ay, 0.0);
+        st.lean = -82.0;
+        let (ax2, _) = canvas_anchor(&l, &st);
+        assert!(ax2 > 50.0, "expected a strong right pull, got ax={ax2}");
+    }
+
+    #[test]
+    fn high_seat_anchors_down() {
+        // The ex06 family: a high seat (large sitDrop through
+        // the painter's own sit formula) lifts the head past
+        // the canvas top; the anchor pushes the figure down.
+        let l = finn_look();
+        let mut st = FullState::default();
+        st.legs = Legs::Sit;
+        st.sit_drop = Some(900.0);
+        let (_, ay) = canvas_anchor(&l, &st);
+        assert!(ay > 100.0, "expected a strong downward pull, got ay={ay}");
+    }
 }

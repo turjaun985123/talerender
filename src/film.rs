@@ -2568,9 +2568,28 @@ fn resolve_chars(
             &t3(c.pos[0], c.pos[1], c.pos[2]),
             &math::mul(&math::rotate_y(c.yaw), &math::rotate_x(c.pitch)),
         );
+        // Canvas re-anchor compensation (B-1): paint_toon_full
+        // shifts a canvas-overflowing figure inside its texture
+        // by toonfull::canvas_anchor; shifting the CARD by the
+        // opposite world amount (anchor units are stage units,
+        // su = world units per stage unit, applied in the card's
+        // local frame — the Toon#set mesh compensation) keeps
+        // every painted pixel at its un-anchored world position:
+        // ground anchor, seat contact and the rifle's hand
+        // mapping are preserved. The rifle below keeps the
+        // un-shifted card_model on purpose: it reads the hand in
+        // stage coords through this same frame, which is exactly
+        // where the compensated card paints it. At anchor (0, 0)
+        // the draw model IS card_model, byte-identical matrices.
+        let (anx, any) = crate::toonfull::canvas_anchor(look, &st);
+        let card_draw_model = if anx != 0.0 || any != 0.0 {
+            math::mul(&card_model, &t3(-anx * su, any * su, 0.0))
+        } else {
+            card_model
+        };
         infos.push(CharInfo {
             look: c.look,
-            model: card_model,
+            model: card_draw_model,
             painted: entry.clone(),
             mood: st.mood,
             arm_l: st.arm_l,
@@ -2583,7 +2602,7 @@ fn resolve_chars(
         dyn_tex.push(entry);
         f.basics.push(BasicDraw {
             geo: quad_geo(plane_w, plane_h, 552.0 * su - plane_h / 2.0),
-            model: card_model,
+            model: card_draw_model,
             tex: TexSrc::Dyn(slot),
             tint: c.tint,
             opacity: 1.0,
