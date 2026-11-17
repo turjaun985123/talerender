@@ -1,6 +1,6 @@
 # GPUFIRST-PARITY — Batch 2 parity table (GPU vs CPU, executor)
 
-**Status: WORKFLOW READY + LOCALLY SMOKE-VALIDATED; CI TABLE PENDING
+**Status: CI RUN #1 COMPLETE — 77/82 byte-identical, 6 differing px total, determinism 14/14 (see CI results below)
 COORDINATOR PUSH.** The parity workflow cannot be dispatched with
 `gh workflow run` (404: workflow not on the default branch), so it
 carries a `push` trigger on `gpufirst-phase0` (mirroring
@@ -130,12 +130,47 @@ workflow file in the triggering push (the push paths include
   (`faa254310668b2505688e62d601e8754d761cbe648f3300142ba9792895f5662`
   both runs).
 
-## CI results — PENDING
+## CI results — run #1 (2026-11-17)
 
-_To be filled from the `gpufirst-parity` artifact of the first
-push-triggered run: run id, step verdicts, the full per-case table
-+ per-operation-class roll-ups, the five worst cases named
-individually with hypotheses tied to the known risk list
-(fan_sd acos at cap tips; hypot→sqrt ulp flips; FMA contraction;
-ellipse_sd division chain), determinism rows, adapter line, and
-gpu_wall_ms summary._
+Run **43945477118**, triggered by commit `37a22f3` ("GPUFIRST: parity
+workflow + executor dummy-buffer validation fix"). **Verdict:
+SUCCESS** — the `parity` job passed in 6m39s; `replay-failures.txt`
+empty, `parity-summary.json` written. Artifact `gpufirst-parity`
+(text only, 14-day retention).
+
+Adapter: `llvmpipe (LLVM 15.0.7, 256 bits) | backend: Vulkan |
+device type: Cpu | driver: llvmpipe Mesa 23.2.1-1ubuntu3.1~22.04.4
+(LLVM 15.0.7) (software)` — CI lavapipe, as designed; no RADV
+numbers are claimed from this run.
+
+GPU wall time over 82 cases: min 766 ms, median 1,050 ms,
+max 1,452 ms, total 89.5 s.
+
+### Headline
+
+**77 of 82 cases byte-identical; 6 differing pixels in total
+across the whole run.** Determinism subset: **14/14 identical**
+(`cmp` identical + sha256 equal on every row). Per-class roll-ups
+were clean except: battery `toon` 1/3, states `limbs` 7/8, states
+`transforms` 4/6 — every miss is one of the five cases below.
+
+### The five non-identical cases (the complete list)
+
+| case | diff px | max Δ (RGBA) | RGBA PSNR | zone | reading |
+|---|---:|---|---:|---|---|
+| legs-walk-p3 | 2 | 0/0/0/16 | 95.64 dB | EDGE | alpha-only, on the silhouette edge |
+| toon-head-outline | 1 | 14/14/12/0 | 82.23 dB | INTERIOR | the toon head-outline pixel |
+| toon-card | 1 | 14/14/12/0 | 95.44 dB | INTERIOR | same pixel family as toon-head-outline |
+| xf-campitch-s01 | 1 | 13/13/12/0 | 95.90 dB | INTERIOR | single pixel under camera pitch |
+| xf-headtilt-pos6-think | 1 | 13/13/12/0 | 95.90 dB | INTERIOR | single pixel under head tilt |
+
+The local-smoke toon head-outline diff **did reproduce at release
+precision**, with identical numbers (1 px, max Δ 14/14/12/0, RGBA
+PSNR 95.438 dB on toon-card) — it is a stable, real 1-px interior
+difference, not a smoke artifact. Consistent with the known risk
+list (fan_sd acos at cap tips / hypot→sqrt ulp flips moving one
+coverage pixel); no case shows a structural or multi-pixel
+divergence, and FRINGE is 0 everywhere.
+
+Full per-case table, per-prim-kind roll-ups and determinism rows:
+the run's `parity-summary.md` in the `gpufirst-parity` artifact.
