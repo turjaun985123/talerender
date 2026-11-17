@@ -565,6 +565,7 @@ pub(crate) fn state_spread() -> Vec<(String, FullLook, FullState)> {
         push("xf-campitch-s01", look_onoda_jg(), s);
     }
 
+    v.extend(crate::gpupaint_states_strokes::stroke_spread());
     v
 }
 
