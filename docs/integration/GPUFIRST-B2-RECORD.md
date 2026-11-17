@@ -125,15 +125,26 @@ new painter.
 - **Golden pins:** untouched by this batch (no painter change
   reaches any pinned film frame; BROW/SWEAT defaults reproduce
   pinned hashes byte-identically — see dispositions).
-- **VERIFY Phase 2 (seat VERIFY-2):** report outstanding at the
-  time of this record (its local audits — composed state_key
-  table, laws re-check — were in progress; its CI cross-checks
-  are subject to the same rate limit). Phase 1 (baseline @
-  f4b358d) PASSed all laws; its finding F-V1 and gaps G2/G5
-  carry to Batch 3 (below); gap G1 (determinism subset lacked
-  new-channel states) was closed at integration — the subset now
-  has 21 lists, run #2's artifact confirms all 21 rows present
-  (incl. the 7 added lists) and 21/21 identical.
+- **VERIFY Phase 2 (seat VERIFY-2, report
+  `~/workspace/talerender-evidence/gpufirst-b2/verify/PHASE2-INTEGRATED-6aa2142.md`):**
+  laws re-check PASS (3 deps; feature empty/off; film.rs and
+  scenefile.rs contain ZERO gpupaint/gputrace references;
+  production paint is `paint_toon_full` only); **state_key
+  coverage PASS — all 30 FullState fields keyed exactly once, no
+  missing, no duplicated field; F-V1 NOT weakened**; evidence
+  hygiene CLEAN (zero images in the 15-file integration diff);
+  parity independently confirmed from the artifact (221/221,
+  0 px, determinism 21/21, `missing_named` empty — G1 closed by
+  evidence; all five run-#1 cases individually identical). Its
+  one BLOCKER, **F-V2-1** — the ungated shapes/strokes modules
+  breaking the default-features test build at `6aa2142` (the same
+  failure as the CI bullet above; consequence: the suite never
+  executed at `6aa2142`, so the brow/sweat/state_key tests' green
+  verdict rests on the `3939698` CI run) — was already fixed by
+  `3939698` before the report landed, and CI @ `3939698` is
+  SUCCESS. Its census read hit the same rate limit: UNCONFIRMED,
+  corroborating the bullet above. Phase 1 (baseline @ f4b358d)
+  PASSed all laws; F-V1 and gaps G2/G5 carry to Batch 3 (below).
 
 ## What Batch 3 inherits
 
