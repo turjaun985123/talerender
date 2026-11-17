@@ -171,7 +171,7 @@ pub(crate) struct FullState {
     pub look: [f32; 2],
     pub blink: f32,
     pub talk: f32,
-    pub sweat: bool, // drawFace: sweat drop also fires on 'worried'
+    pub sweat: Option<f32>, // Spec 5e: numeric sweat (drawFace line 1490); drop also fires on 'worried', k = sweat.unwrap_or(1.0), alpha = min(1, k)
     pub tears: bool, // drawFace: tears also fire on 'sad'
     pub arm_l: (f32, f32),
     pub arm_r: (f32, f32),
@@ -195,7 +195,7 @@ impl Default for FullState {
             look: [0.0, 0.0],
             blink: 0.0,
             talk: 0.0,
-            sweat: false,
+            sweat: None,
             tears: false,
             arm_l: (8.0, 6.0),
             arm_r: (8.0, 6.0),
@@ -1336,18 +1336,30 @@ pub(crate) fn paint_toon_full(
         ring.push(ring[0]);
         p.stroke_polyline(&ring, lw(4.0), ink);
     }
-    if st.sweat || m == Mood::Worried {
-        // Sweat drop at (fx + 104, hy - 70): two quads, fill +
-        // stroke (alpha 1 in this film: S.sweat unset, worried
-        // gives k = 1).
+    // Spec 5e (TS drawFace line 1490): trigger = (sweat present
+    // AND != 0.0) OR mood == Worried (the FACE_TABLE forceSweat
+    // row); k = sweat.unwrap_or(1.0); alpha = min(1.0, k) applied
+    // to BOTH the drop fill and its outline stroke. Worried +
+    // sweat 0 therefore emits the drop at alpha 0 (pixel-invisible,
+    // matching the TS op stream; that pair is not chased beyond
+    // this semantics). Alpha byte follows the house style of the
+    // other fractional-alpha paints in this file ((k * 255.0) as u8).
+    if st.sweat.map_or(false, |v| v != 0.0) || m == Mood::Worried {
+        let k = st.sweat.unwrap_or(1.0);
+        let a = (k.min(1.0) * 255.0) as u8;
+        let mut drop = rgba("#8FD3F4");
+        drop.3 = a;
+        let mut ink_a = ink;
+        ink_a.3 = a;
+        // Sweat drop at (fx + 104, hy - 70): two quads, fill + stroke.
         let (sx, sy) = (fx + 104.0, hy - 70.0);
         let mut pts = flatten_quad(hpt(sx, sy - 26.0), hpt(sx + 18.0, sy), hpt(sx, sy + 12.0), 16);
         let q2 = flatten_quad(hpt(sx, sy + 12.0), hpt(sx - 18.0, sy), hpt(sx, sy - 26.0), 16);
         pts.extend_from_slice(&q2[1..]);
-        p.fill_polygon(&pts, rgba("#8FD3F4"));
+        p.fill_polygon(&pts, drop);
         let mut ring = pts.clone();
         ring.push(pts[0]);
-        p.stroke_polyline(&ring, lw(4.0), ink);
+        p.stroke_polyline(&ring, lw(4.0), ink_a);
     }
     if st.tears || m == Mood::Sad {
         for s in [-1.0f32, 1.0] {
@@ -1771,5 +1783,113 @@ mod canvas_anchor_tests {
         st.sit_drop = Some(900.0);
         let (_, ay) = canvas_anchor(&l, &st);
         assert!(ay > 100.0, "expected a strong downward pull, got ay={ay}");
+    }
+}
+
+#[cfg(test)]
+mod sweat_tests {
+    use super::*;
+    use std::collections::HashSet;
+
+    /// The gpupaint_states base look (body #E8734A, head #F7F7FA,
+    /// plain / none / none, no extras) — the look the pre-port
+    /// pins below were captured with.
+    fn look() -> FullLook {
+        FullLook {
+            body: "#E8734A".into(),
+            head: "#F7F7FA".into(),
+            shade: None,
+            pattern: "plain".into(),
+            pat_col: None,
+            hat: "none".into(),
+            hat_col: None,
+            band: None,
+            neck: "none".into(),
+            neck_col: None,
+            glasses: false,
+            mustache: false,
+            mustache_col: None,
+            kid: false,
+            blush: false,
+            freckles: false,
+            pencil: false,
+            monocle: false,
+            hair_col: None,
+        }
+    }
+
+    /// FNV-1a 64 over the full RGBA canvas (no hashing dependency
+    /// in this crate; the pin values below are in-crate only).
+    fn fnv(px: &[u8]) -> u64 {
+        let mut h: u64 = 0xcbf29ce484222325;
+        for &b in px {
+            h ^= b as u64;
+            h = h.wrapping_mul(0x100000001b3);
+        }
+        h
+    }
+
+    fn paint_hash(mood: Mood, sweat: Option<f32>) -> u64 {
+        let mut st = FullState::default();
+        st.mood = mood;
+        st.sweat = sweat;
+        fnv(&paint_toon_full(&look(), &st).0)
+    }
+
+    /// Non-regression pins: these FNV hashes were captured BEFORE
+    /// the Spec 5e port, at gpufirst-phase0 f4b358d, with the bool
+    /// painter (neutral+sweat=true, worried+sweat=false,
+    /// neutral+sweat=false). The mapped equivalents after the
+    /// port — Some(1.0), None (worried forcing, k = 1), None —
+    /// must reproduce them byte-identically (alpha min(1, 1) = 1
+    /// is today's unconditional alpha 1; None paints no drop).
+    #[test]
+    fn sweat_pinned_pre_port_hashes() {
+        assert_eq!(paint_hash(Mood::Neutral, Some(1.0)), 0xb90b2423dd32af00, "neutral + sweat Some(1.0) must equal pre-port sweat=true");
+        assert_eq!(paint_hash(Mood::Worried, None), 0xf97d0c5ae8a31394, "worried + no sweat must equal pre-port worried (forced, alpha 1)");
+        assert_eq!(paint_hash(Mood::Neutral, None), 0xd413603252323a7c, "neutral + no sweat must equal pre-port sweat=false");
+    }
+
+    /// Spec 5e acceptance, mirroring S11-sweat: sweat {absent, 0,
+    /// 0.5, 0.99, 1, 1.5} x moods {neutral, worried, sad, happy}
+    /// = 24 paints -> EXACTLY 16 distinct pixel classes.
+    /// Partition (per mood, 4 classes):
+    ///   non-forcing (neutral/sad/happy): {absent, 0}, {0.5},
+    ///     {0.99}, {1, 1.5}  (saturation EQ at 1, gradation
+    ///     distinctness below it);
+    ///   worried (forcing): {absent, 1, 1.5}, {0}, {0.5}, {0.99}.
+    /// Worried + 0 lands pixel-wise as its OWN class: the drop is
+    /// emitted at alpha 0 (invisible), so its pixels are the
+    /// worried face with NO visible drop — distinct from
+    /// worried-absent (visible full-alpha drop) and from every
+    /// other worried cell. That is the pixel-side landing of the
+    /// spec's unadjudicable pair (distinct in the TS op stream,
+    /// invisible in pixels in both painters).
+    #[test]
+    fn sweat_s11_sixteen_pixel_classes() {
+        let moods = [Mood::Neutral, Mood::Worried, Mood::Sad, Mood::Happy];
+        let vals: [Option<f32>; 6] = [None, Some(0.0), Some(0.5), Some(0.99), Some(1.0), Some(1.5)];
+        // h[mood][val]
+        let h: Vec<Vec<u64>> = moods.iter().map(|&m| vals.iter().map(|&v| paint_hash(m, v)).collect()).collect();
+        let distinct: HashSet<u64> = h.iter().flatten().copied().collect();
+        assert_eq!(distinct.len(), 16, "S11-sweat must refine to exactly 16 pixel classes, got {}", distinct.len());
+        for (mi, &m) in moods.iter().enumerate() {
+            let (absent, zero, half, nn, one, over) = (h[mi][0], h[mi][1], h[mi][2], h[mi][3], h[mi][4], h[mi][5]);
+            // Representative classes for this mood, per the partition above.
+            let reps: [u64; 4] = if m == Mood::Worried {
+                assert_eq!(absent, one, "worried: absent == 1 (k = sweat.unwrap_or(1))");
+                assert_eq!(one, over, "worried: 1 == 1.5 (saturation)");
+                [absent, zero, half, nn]
+            } else {
+                assert_eq!(absent, zero, "{m:?}: absent == 0 (no drop)");
+                assert_eq!(one, over, "{m:?}: 1 == 1.5 (saturation)");
+                [absent, half, nn, one]
+            };
+            for i in 0..4 {
+                for j in (i + 1)..4 {
+                    assert_ne!(reps[i], reps[j], "{m:?}: representative classes {i} and {j} must be pixel-distinct");
+                }
+            }
+        }
     }
 }

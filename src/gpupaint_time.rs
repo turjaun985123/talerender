@@ -168,7 +168,7 @@ fn spread() -> Vec<(String, FullLook, FullState)> {
         add("x-blink-full".into(), look(0), st);
         let mut st = FullState::default(); st.talk = 1.0;
         add("x-talk-full".into(), look(0), st);
-        let mut st = FullState::default(); st.sweat = true;
+        let mut st = FullState::default(); st.sweat = Some(1.0);
         add("x-sweat".into(), look(0), st);
         let mut st = FullState::default(); st.tears = true;
         add("x-tears".into(), look(0), st);
