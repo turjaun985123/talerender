@@ -35,6 +35,8 @@ mod eval15;
 mod gpucore;
 #[cfg(feature = "gpupaint")]
 mod gpupaint_states;
+#[cfg(feature = "gpupaint")]
+mod gpupaint_states_brow;
 mod gpupaint_time;
 mod lifetimes;
 mod math;

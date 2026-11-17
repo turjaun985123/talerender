@@ -824,6 +824,8 @@ fn walk_nodes(
                     look: { let (a, b) = pair_field(&st_spec, "look", &nctx, (0.0, 0.0))?; [a, b] },
                     blink: f32_field_or(&st_spec, "blink", &nctx, 0.0)?,
                     talk: f32_field_or(&st_spec, "talk", &nctx, 0.0)?,
+                    brow_lift: f32_field_or(&st_spec, "browLift", &nctx, 0.0)?,
+                    brow_tilt: f32_field_or(&st_spec, "browTilt", &nctx, 0.0)?,
                     sweat: truthy(st_spec.get("sweat")),
                     tears: truthy(st_spec.get("tears")),
                     arm_l: pair_field(&st_spec, "armL", &nctx, (8.0, 6.0))?,

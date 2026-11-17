@@ -2502,6 +2502,9 @@ fn state_key(look: usize, st: &FullState, hold_l: Option<&str>, hold_r: Option<&
     // they are look fields, not FullState fields, so the
     // sweat/tears coverage law above does not extend to them).
     // Regression tests: state_key_tests below.
+    // Spec 5a: brow_lift / brow_tilt are appended after sweat/tears,
+    // keyed by exact f32 bits like every other scalar (Spec §3b law:
+    // a new FullState field omitted here would recreate F-1).
     let q = |v: f32| v.to_bits();
     // CARRY Vec<f32> encoding: length, then each element's bits.
     let vec_key = |v: &[f32]| -> String {
@@ -2520,7 +2523,7 @@ fn state_key(look: usize, st: &FullState, hold_l: Option<&str>, hold_r: Option<&
         }
     };
     format!(
-        "{look}|{:?}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}",
+        "{look}|{:?}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}",
         st.mood,
         q(st.look[0]), q(st.look[1]), q(st.blink), q(st.talk),
         q(st.arm_l.0), q(st.arm_l.1), q(st.arm_r.0), q(st.arm_r.1),
@@ -2535,6 +2538,7 @@ fn state_key(look: usize, st: &FullState, hold_l: Option<&str>, hold_r: Option<&
         opt_key(st.ear_al), opt_key(st.ear_ar),
         vec_key(&st.hair_segs), st.flip,
         q(st.body_pitch), q(st.body_pitch_counter),
+        q(st.brow_lift), q(st.brow_tilt),
     )
 }
 
@@ -2558,6 +2562,8 @@ fn resolve_chars(
             look: c.state.look,
             blink: c.state.blink,
             talk: c.state.talk,
+            brow_lift: c.state.brow_lift,
+            brow_tilt: c.state.brow_tilt,
             sweat: c.state.sweat,
             tears: c.state.tears,
             arm_l: c.state.arm_l,
@@ -4424,5 +4430,32 @@ mod state_key_tests {
         for (name, st) in &variants {
             assert_ne!(base_key, state_key(0, st, None, None), "state_key must distinguish {name}");
         }
+    }
+
+    #[test]
+    fn state_key_distinguishes_brow_lift_only_difference() {
+        // Spec 5a: a 0.5 browLift step must re-key (exact f32 bits,
+        // no quantisation) or the cache would serve the un-offset
+        // brow paint — the F-1 defect class.
+        let a = FullState::default();
+        let mut b = FullState::default();
+        b.brow_lift = 0.5;
+        assert_ne!(
+            state_key(0, &a, None, None),
+            state_key(0, &b, None, None),
+            "states differing only in brow_lift must not share a PaintCache key"
+        );
+    }
+
+    #[test]
+    fn state_key_distinguishes_brow_tilt_only_difference() {
+        let a = FullState::default();
+        let mut b = FullState::default();
+        b.brow_tilt = 0.5;
+        assert_ne!(
+            state_key(0, &a, None, None),
+            state_key(0, &b, None, None),
+            "states differing only in brow_tilt must not share a PaintCache key"
+        );
     }
 }
