@@ -645,6 +645,8 @@ fn character_cutout(
         },
         blink: f32_or(&st_spec, "blink", 0.0),
         talk: f32_or(&st_spec, "talk", 0.0),
+        brow_lift: f32_or(&st_spec, "browLift", 0.0),
+        brow_tilt: f32_or(&st_spec, "browTilt", 0.0),
         sweat: truthy(st_spec.get("sweat")),
         tears: truthy(st_spec.get("tears")),
         arm_l: pair_or(&st_spec, "armL", (8.0, 6.0)),

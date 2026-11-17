@@ -171,6 +171,11 @@ pub(crate) struct FullState {
     pub look: [f32; 2],
     pub blink: f32,
     pub talk: f32,
+    // Spec 5a (RUST-PARITY-SPECS §5a): post-table brow offsets,
+    // stage units, continuous f32 with no clamp / quantisation.
+    // Default 0.0 / 0.0 is exactly the pre-channel arithmetic.
+    pub brow_lift: f32,
+    pub brow_tilt: f32,
     pub sweat: bool, // drawFace: sweat drop also fires on 'worried'
     pub tears: bool, // drawFace: tears also fire on 'sad'
     pub arm_l: (f32, f32),
@@ -195,6 +200,8 @@ impl Default for FullState {
             look: [0.0, 0.0],
             blink: 0.0,
             talk: 0.0,
+            brow_lift: 0.0,
+            brow_tilt: 0.0,
             sweat: false,
             tears: false,
             arm_l: (8.0, 6.0),
@@ -1055,6 +1062,11 @@ pub(crate) fn paint_toon_full(
                 tilt = 8.0;
             }
         }
+        // Spec 5a: post-table brow offsets, applied AFTER the
+        // per-side row/override resolution above. No clamp, no
+        // quantisation (the fixture's 0.5 steps must distinguish).
+        lift += st.brow_lift;
+        tilt += st.brow_tilt * s;
         let y = ey - 44.0 - lift;
         p.stroke_quad(
             hpt(fx + s * (ex - 26.0), y + tilt * 0.5),
@@ -1771,5 +1783,140 @@ mod canvas_anchor_tests {
         st.sit_drop = Some(900.0);
         let (_, ay) = canvas_anchor(&l, &st);
         assert!(ay > 100.0, "expected a strong downward pull, got ay={ay}");
+    }
+}
+
+#[cfg(test)]
+mod brow_tests {
+    use super::*;
+    use std::collections::HashSet;
+
+    /// Full-frame FNV-1a 64 hash of a paint (the test's hash
+    /// instrument; no new dependency).
+    fn fnv1a(px: &[u8]) -> u64 {
+        let mut h: u64 = 0xcbf29ce484222325;
+        for &b in px {
+            h ^= b as u64;
+            h = h.wrapping_mul(0x100000001b3);
+        }
+        h
+    }
+
+    fn brow_look() -> FullLook {
+        // The scene-format default look (same values as
+        // gpupaint_states::base_look).
+        FullLook {
+            body: "#E8734A".into(),
+            head: "#F7F7FA".into(),
+            shade: None,
+            pattern: "plain".into(),
+            pat_col: None,
+            hat: "none".into(),
+            hat_col: None,
+            band: None,
+            neck: "none".into(),
+            neck_col: None,
+            glasses: false,
+            mustache: false,
+            mustache_col: None,
+            kid: false,
+            blush: false,
+            freckles: false,
+            pencil: false,
+            monocle: false,
+            hair_col: None,
+        }
+    }
+
+    fn paint_hash(look: &FullLook, st: &FullState) -> u64 {
+        let (px, w, h, _, _) = paint_toon_full(look, st);
+        assert_eq!((w, h), (2560, 2816));
+        fnv1a(&px)
+    }
+
+    /// Non-regression: hashes pinned at HEAD f4b358d BEFORE the
+    /// Spec 5a painter change (captured with this same helper /
+    /// look / default states on the unmodified painter). Brow-
+    /// absent (Default) and explicit brow 0/0 states must
+    /// reproduce them byte-identically (hash-identically).
+    #[test]
+    fn brow_absent_paints_match_pre_port_pinned_hashes() {
+        let look = brow_look();
+        // (mood, pinned FNV-1a at f4b358d, pre-port painter)
+        let pinned: [(Mood, u64); 8] = [
+            (Mood::Neutral, 0xd413603252323a7c),
+            (Mood::Smug, 0xc77ad1c3ba4db004),
+            (Mood::Suspicious, 0x503455d1f3519971),
+            (Mood::Puzzled, 0x59c8d9bc324d098b),
+            (Mood::Worried, 0xf97d0c5ae8a31394),
+            (Mood::Determined, 0x5596a27e0713ff76),
+            (Mood::Happy, 0x1e3f39de0803d646),
+            (Mood::Sad, 0xe3ce626585f25b3d),
+        ];
+        for (mood, want) in pinned {
+            let mut st = FullState::default();
+            st.mood = mood;
+            assert_eq!(st.brow_lift, 0.0);
+            assert_eq!(st.brow_tilt, 0.0);
+            let got = paint_hash(&look, &st);
+            assert_eq!(got, want, "{mood:?}: brow-absent paint must be byte-identical to pre-port");
+        }
+        // Explicit 0/0 is the same state as absent.
+        let mut st = FullState::default();
+        st.mood = Mood::Neutral;
+        st.brow_lift = 0.0;
+        st.brow_tilt = 0.0;
+        assert_eq!(paint_hash(&look, &st), 0xd413603252323a7c);
+    }
+
+    /// Spec 5a acceptance (S3 bar): 19 moods x browLift
+    /// {0, -8, 0.5, 14} x browTilt {0, -10, 0.5, 10} = 304 paints
+    /// must yield 304 DISTINCT full-frame hashes (pre-port the
+    /// painter yields 19). Every 0.5-step pair is distinct by
+    /// construction of the count, and is also asserted directly
+    /// below for the neutral mood.
+    #[test]
+    fn brow_offsets_yield_304_distinct_classes() {
+        let look = brow_look();
+        let moods = [
+            Mood::Neutral,
+            Mood::Smug,
+            Mood::Happy,
+            Mood::Laugh,
+            Mood::Shock,
+            Mood::Worried,
+            Mood::Angry,
+            Mood::Sad,
+            Mood::Sly,
+            Mood::Proud,
+            Mood::Tired,
+            Mood::Dizzy,
+            Mood::Determined,
+            Mood::Embarrassed,
+            Mood::Awe,
+            Mood::Suspicious,
+            Mood::Relieved,
+            Mood::Puzzled,
+            Mood::Deadpan,
+        ];
+        let lifts = [0.0f32, -8.0, 0.5, 14.0];
+        let tilts = [0.0f32, -10.0, 0.5, 10.0];
+        let mut seen: HashSet<u64> = HashSet::new();
+        for mood in moods {
+            for lift in lifts {
+                for tilt in tilts {
+                    let mut st = FullState::default();
+                    st.mood = mood;
+                    st.brow_lift = lift;
+                    st.brow_tilt = tilt;
+                    let h = paint_hash(&look, &st);
+                    assert!(
+                        seen.insert(h),
+                        "duplicate paint class: mood={mood:?} browLift={lift} browTilt={tilt}"
+                    );
+                }
+            }
+        }
+        assert_eq!(seen.len(), 304);
     }
 }
