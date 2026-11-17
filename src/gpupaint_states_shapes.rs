@@ -429,6 +429,66 @@ mod tests {
         }
     }
 
+    // -----------------------------------------------------------------
+    // Local-run recorders (ignored by default): mirror
+    // gpupaint.rs::record_states exactly (gputrace window +
+    // paint_toon_full + PNG/JSON write) but restricted to one
+    // shape family, so this battery can be recorded without
+    // repainting the whole Phase-0 spread. Output dir from the
+    // SHAPE_OUT env var. Run e.g.:
+    //   SHAPE_OUT=<dir> cargo test --release --features gpupaint \
+    //     record_shape_fill -- --ignored --nocapture
+    // -----------------------------------------------------------------
+    fn record_family(prefix: &str) {
+        let out = std::env::var("SHAPE_OUT").expect("SHAPE_OUT not set");
+        std::fs::create_dir_all(&out).expect("create SHAPE_OUT");
+        crate::gputrace::set_armed(true);
+        let mut n = 0;
+        for (name, look, state) in shape_spread().iter().filter(|(n, _, _)| n.starts_with(prefix)) {
+            crate::gputrace::begin(2560, 2816);
+            let (px, w, h, _, _) = crate::toonfull::paint_toon_full(look, state);
+            let list = crate::gputrace::take();
+            let img = image::RgbaImage::from_raw(w, h, px).expect("pixel buffer size mismatch");
+            img.save(format!("{out}/{name}.png")).expect("save png");
+            std::fs::write(format!("{out}/{name}.json"), list.to_json()).expect("write json");
+            println!("recorded {name} ({} prims)", list.prims.len());
+            n += 1;
+        }
+        crate::gputrace::set_armed(false);
+        assert!(n > 0, "no states matched {prefix}");
+    }
+
+    #[test]
+    #[ignore]
+    fn record_shape_fill() {
+        record_family("shape-fill-");
+    }
+    #[test]
+    #[ignore]
+    fn record_shape_ell() {
+        record_family("shape-ell-");
+    }
+    #[test]
+    #[ignore]
+    fn record_shape_shd() {
+        record_family("shape-shd-");
+    }
+    #[test]
+    #[ignore]
+    fn record_shape_msk() {
+        record_family("shape-msk-");
+    }
+    #[test]
+    #[ignore]
+    fn record_shape_mou() {
+        record_family("shape-mou-");
+    }
+    #[test]
+    #[ignore]
+    fn record_shape_plt() {
+        record_family("shape-plt-");
+    }
+
     #[test]
     fn plate_states_anchor_actually_engages() {
         // The anchor is host-side geometry: a plates battery at
