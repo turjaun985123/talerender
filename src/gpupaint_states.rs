@@ -595,6 +595,7 @@ pub(crate) fn state_spread() -> Vec<(String, FullLook, FullState)> {
 
     v.extend(crate::gpupaint_states_brow::brow_spread());
     v.extend(crate::gpupaint_states_shapes::shape_spread());
+    v.extend(crate::gpupaint_states_strokes::stroke_spread());
     v
 }
 
