@@ -613,7 +613,24 @@ pub(crate) fn state_group(name: &str) -> &str {
 /// (pattern-* + hat-* + neck-* + extra-*), film-looks (film-*),
 /// transforms (xf-*).
 pub(crate) fn rollup_class(name: &str) -> &'static str {
+    // Batch 2 class batteries: the shape battery encodes its class
+    // in the second name segment; read those out by prefix before
+    // the group match (state_group would return "shape" for all).
+    if name.starts_with("shape-fill-") {
+        return "fills";
+    }
+    if name.starts_with("shape-ell-") {
+        return "ellipses-arcs";
+    }
+    if name.starts_with("shape-shd-") || name.starts_with("shape-msk-") || name.starts_with("shape-mou-") {
+        return "shade+masks";
+    }
+    if name.starts_with("shape-plt-") {
+        return "plates+anchor";
+    }
     match state_group(name) {
+        "stroke" => "strokes",
+        "brow" => "brow-offsets",
         "mood" | "face" | "fx" => "mood-features",
         "legs" => "limbs",
         "plate" => "plates",
@@ -762,7 +779,7 @@ mod tests {
     #[test]
     fn spread_shape() {
         let v = state_spread();
-        assert!((60..=80).contains(&v.len()), "spread has {} entries", v.len());
+        assert!((60..=230).contains(&v.len()), "spread has {} entries", v.len()); // Batch 2: bound raised by the coordinator at integration (batteries: +2 sweat, +5 brow, +71 shape, +61 stroke over the 75 base)
         let mut names: Vec<&str> = v.iter().map(|(n, _, _)| n.as_str()).collect();
         names.sort();
         names.dedup();

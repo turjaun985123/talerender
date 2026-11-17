@@ -138,6 +138,13 @@ jobs:
             ('states','plate-holdr-parcel-label'), ('states','plate-holdl-parcel'),
             ('states','anchor-lying-lean82'), ('states','pattern-stripes'),
             ('states','fx-sweat-only'),
+            # Batch 2 extension (VERIFY gap G1): the new channels and
+            # class batteries get determinism evidence too.
+            ('states','brow-lift-14'), ('states','brow-smug-half-steps'),
+            ('states','fx-sweat-050'), ('states','fx-sweat-099'),
+            ('states','stroke-laugh-turn-zero-pitch-zero'),
+            ('states','stroke-walk-p6'),
+            ('states','shape-plt-lying82-holdr'),
           ]
           def kinds(src, stem):
               p = f'parity/cpu-{src}/{stem}.json'

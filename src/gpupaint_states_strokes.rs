@@ -82,6 +82,11 @@ fn base_look() -> FullLook {
         pencil: false,
         monocle: false,
         hair_col: None,
+        wing: false,
+        wing_col: None,
+        wing_lens: Vec::new(),
+        ears: false,
+        hair: false,
     }
 }
 
@@ -108,6 +113,11 @@ fn look_onoda_sh() -> FullLook {
         pencil: false,
         monocle: false,
         hair_col: None,
+        wing: false,
+        wing_col: None,
+        wing_lens: Vec::new(),
+        ears: false,
+        hair: false,
     }
 }
 
