@@ -95,6 +95,27 @@ fn vec3_or(v: &Value, key: &str, default: [f32; 3]) -> [f32; 3] {
     }
 }
 
+/// GPUFIRST B2 CARRY mirrors of scenefile's array / option /
+/// ears accessors (lenient posture, like f32_or/pair_or above:
+/// the scene was already validated by load_root).
+fn arr_or(v: &Value, key: &str) -> Vec<f32> {
+    match v.get(key).and_then(Value::as_arr) {
+        Some(a) => a.iter().map(|x| x.as_f64().unwrap_or(0.0) as f32).collect(),
+        None => Vec::new(),
+    }
+}
+
+fn opt_f32_or(v: &Value, key: &str) -> Option<f32> {
+    v.get(key).and_then(Value::as_f64).map(|n| n as f32)
+}
+
+fn ears_or(v: &Value) -> bool {
+    match v.get("ears") {
+        Some(Value::Str(s)) => s == "fox",
+        other => truthy(other),
+    }
+}
+
 fn pair_or(v: &Value, key: &str, default: (f32, f32)) -> (f32, f32) {
     match v.get(key).and_then(Value::as_arr) {
         Some(a) if a.len() == 2 => (
@@ -625,6 +646,13 @@ fn character_cutout(
         pencil: has_extra("pencil"),
         monocle: has_extra("monocle"),
         hair_col: opt_str(&look_spec, "hairCol"),
+        // GPUFIRST B2 CARRY: mirror scenefile's wing/ears/hair
+        // look parsing (see scenefile::carry_look_fields).
+        wing: truthy(look_spec.get("wing")),
+        wing_col: opt_str(&look_spec, "wingCol"),
+        wing_lens: arr_or(&look_spec, "wingLens"),
+        ears: ears_or(&look_spec),
+        hair: truthy(look_spec.get("hair")),
     };
     let st_spec = node.get("state").cloned().unwrap_or(Value::Null);
     let mut plate_of = |key: &str| -> Option<Plate> {
@@ -669,6 +697,17 @@ fn character_cutout(
         },
         hold_l: plate_of("holdL"),
         hold_r: plate_of("holdR"),
+        // GPUFIRST B2 CARRY: mirror scenefile's state parsing
+        // (see scenefile::carry_state_fields).
+        wing_segs: arr_or(&st_spec, "wingSegs"),
+        wing_a: f32_or(&st_spec, "wingA", 0.0),
+        ear_a: f32_or(&st_spec, "earA", 0.0),
+        ear_al: opt_f32_or(&st_spec, "earAL"),
+        ear_ar: opt_f32_or(&st_spec, "earAR"),
+        hair_segs: arr_or(&st_spec, "hairSegs"),
+        flip: truthy(st_spec.get("flip")),
+        body_pitch: f32_or(&st_spec, "bodyPitch", 0.0),
+        body_pitch_counter: f32_or(&st_spec, "bodyPitchCounter", 1.0),
     };
     let (pxbuf, pw, ph, _, _) = crate::toonfull::paint_toon_full(&look, &state);
     // face(): yaw toward the camera, perspective pitch — the

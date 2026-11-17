@@ -592,6 +592,13 @@ fn fl(body: &str, hat: &str, hat_col: Option<&str>) -> FullLook {
         pencil: false,
         monocle: false,
         hair_col: None,
+        // GPUFIRST B2 CARRY: registry looks declare no wing /
+        // ears / hair, so film paints are unchanged.
+        wing: false,
+        wing_col: None,
+        wing_lens: Vec::new(),
+        ears: false,
+        hair: false,
     }
 }
 
@@ -2478,7 +2485,15 @@ fn state_key(look: usize, st: &FullState, hold_l: Option<&str>, hold_r: Option<&
     // only in sweat or tears collided (defect disclosed in
     // V2-HANDOVER.md; found by the WP10 seat's charstate.rs
     // audit, whose CharStateKey includes both). The two
-    // booleans are appended last; the look index prefix names
+    // booleans are appended last; GPUFIRST Batch 2 (CARRY seat)
+    // appended the nine DESIGN-CARRY FullState fields after them
+    // (wing_segs / wing_a / ear_a / ear_al / ear_ar / hair_segs /
+    // flip / body_pitch / body_pitch_counter): the painter does
+    // not read them yet, but the §3b coverage law is applied NOW
+    // so the deferred painter ports inherit a complete key —
+    // Vec<f32> by length + element bits, Option<f32> by presence
+    // bit + bits, scalars by exact bits, bools as above. The
+    // look index prefix names
     // the FullLook (all 19 of its fields are painter inputs,
     // fixed per run by the look registry — CR-B3-06 added five
     // FullLook fields: blush / freckles / pencil / monocle /
@@ -2488,8 +2503,24 @@ fn state_key(look: usize, st: &FullState, hold_l: Option<&str>, hold_r: Option<&
     // sweat/tears coverage law above does not extend to them).
     // Regression tests: state_key_tests below.
     let q = |v: f32| v.to_bits();
+    // CARRY Vec<f32> encoding: length, then each element's bits.
+    let vec_key = |v: &[f32]| -> String {
+        let mut s = format!("{}", v.len());
+        for x in v {
+            s.push(':');
+            s.push_str(&x.to_bits().to_string());
+        }
+        s
+    };
+    // CARRY Option<f32> encoding: presence bit, then bits (0 when absent).
+    let opt_key = |v: Option<f32>| -> String {
+        match v {
+            None => "0:0".to_string(),
+            Some(x) => format!("1:{}", x.to_bits()),
+        }
+    };
     format!(
-        "{look}|{:?}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}",
+        "{look}|{:?}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}",
         st.mood,
         q(st.look[0]), q(st.look[1]), q(st.blink), q(st.talk),
         q(st.arm_l.0), q(st.arm_l.1), q(st.arm_r.0), q(st.arm_r.1),
@@ -2500,6 +2531,10 @@ fn state_key(look: usize, st: &FullState, hold_l: Option<&str>, hold_r: Option<&
         hold_l.unwrap_or("-"),
         hold_r.unwrap_or("-"),
         st.sweat, st.tears,
+        vec_key(&st.wing_segs), q(st.wing_a), q(st.ear_a),
+        opt_key(st.ear_al), opt_key(st.ear_ar),
+        vec_key(&st.hair_segs), st.flip,
+        q(st.body_pitch), q(st.body_pitch_counter),
     )
 }
 
@@ -2538,6 +2573,17 @@ fn resolve_chars(
             sit_drop: c.state.sit_drop,
             hold_l: None,
             hold_r: None,
+            // GPUFIRST B2 CARRY: copy every plumbed field so the
+            // film path carries them end to end (keyed above).
+            wing_segs: c.state.wing_segs.clone(),
+            wing_a: c.state.wing_a,
+            ear_a: c.state.ear_a,
+            ear_al: c.state.ear_al,
+            ear_ar: c.state.ear_ar,
+            hair_segs: c.state.hair_segs.clone(),
+            flip: c.state.flip,
+            body_pitch: c.state.body_pitch,
+            body_pitch_counter: c.state.body_pitch_counter,
         };
         let plate_of = |name: Option<&str>| -> Option<Plate> {
             name.and_then(|n| assets.plates.get(n)).map(|p| Plate { px: p.px.clone(), w: p.w, h: p.h, x0: p.x0, y0: p.y0 })
@@ -4312,5 +4358,71 @@ mod state_key_tests {
         let a = FullState::default();
         let b = FullState::default();
         assert_eq!(state_key(0, &a, None, None), state_key(0, &b, None, None));
+    }
+
+    /// GPUFIRST Batch 2 CARRY key-coverage (§3b law): for EACH
+    /// plumbed FullState field, two states differing only in that
+    /// field must produce different state_keys — a field that
+    /// exists but is not keyed recreates the F-1 defect. Vec
+    /// fields are varied by length AND by a single element's
+    /// bits; Option fields by presence AND by value; the
+    /// body_pitch_counter pair (1.0 vs 0.5) also guards the
+    /// counter's non-zero default from being keyed as absent.
+    #[test]
+    fn state_key_covers_every_carry_field() {
+        let base = FullState::default();
+        let base_key = state_key(0, &base, None, None);
+        let mut variants: Vec<(&str, FullState)> = Vec::new();
+        let mut v = FullState::default();
+        v.wing_segs = vec![1.25];
+        variants.push(("wing_segs [1.25] vs []", v));
+        let mut v = FullState::default();
+        v.wing_segs = vec![1.25, -0.75];
+        variants.push(("wing_segs len 2 vs []", v));
+        let mut v = FullState::default();
+        v.wing_segs = vec![1.25, -0.75];
+        let mut w = FullState::default();
+        w.wing_segs = vec![1.25, -0.5];
+        assert_ne!(
+            state_key(0, &v, None, None),
+            state_key(0, &w, None, None),
+            "wing_segs element bits must be keyed"
+        );
+        let mut v = FullState::default();
+        v.wing_a = 0.8;
+        variants.push(("wing_a", v));
+        let mut v = FullState::default();
+        v.ear_a = 0.3;
+        variants.push(("ear_a", v));
+        let mut v = FullState::default();
+        v.ear_al = Some(0.0);
+        variants.push(("ear_al presence (Some(0) vs None)", v));
+        let mut v = FullState::default();
+        v.ear_al = Some(0.25);
+        variants.push(("ear_al value", v));
+        let mut v = FullState::default();
+        v.ear_ar = Some(0.0);
+        variants.push(("ear_ar presence (Some(0) vs None)", v));
+        let mut v = FullState::default();
+        v.ear_ar = Some(-0.25);
+        variants.push(("ear_ar value", v));
+        let mut v = FullState::default();
+        v.hair_segs = vec![0.0, 0.0, 0.0];
+        variants.push(("hair_segs len 3 zeros vs []", v));
+        let mut v = FullState::default();
+        v.hair_segs = vec![0.5];
+        variants.push(("hair_segs [0.5]", v));
+        let mut v = FullState::default();
+        v.flip = true;
+        variants.push(("flip", v));
+        let mut v = FullState::default();
+        v.body_pitch = 60.0;
+        variants.push(("body_pitch", v));
+        let mut v = FullState::default();
+        v.body_pitch_counter = 0.5;
+        variants.push(("body_pitch_counter 0.5 vs default 1.0", v));
+        for (name, st) in &variants {
+            assert_ne!(base_key, state_key(0, st, None, None), "state_key must distinguish {name}");
+        }
     }
 }

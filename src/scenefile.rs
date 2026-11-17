@@ -551,6 +551,98 @@ fn pair_field(v: &Value, key: &str, ctx: &str, default: (f32, f32)) -> Result<(f
     }
 }
 
+// ---------------------------------------------------------------------
+// GPUFIRST Batch 2 CARRY plumbing: the wing / ears / hair / flip /
+// bodyPitch scene keys (RUST-PARITY-SPECS Spec 1, §5b, §5c, §5d,
+// Spec 3a). These parse functions are the loader's unit surface
+// for the new fields: the character branch in walk_nodes builds
+// its FullLook / FullState through them, and the unit tests call
+// them directly. Unknown keys keep the loader's standing
+// behaviour (silently ignored); a KNOWN key with the wrong type
+// errors like every other typed field.
+// ---------------------------------------------------------------------
+
+/// An optional number-array field: absent -> empty vec; present
+/// must be an array of numbers.
+fn f32_array_field(v: &Value, key: &str, ctx: &str) -> Result<Vec<f32>, String> {
+    match v.get(key) {
+        None => Ok(Vec::new()),
+        Some(a) => {
+            let a = a
+                .as_arr()
+                .ok_or_else(|| err(ctx, &format!("'{key}' must be an array of numbers")))?;
+            a.iter().map(|x| Ok(num(x, &format!("{ctx}.{key}"))? as f32)).collect()
+        }
+    }
+}
+
+/// An optional f32 field kept as an Option: absent (or null) ->
+/// None; present must be a number.
+fn opt_f32_field(v: &Value, key: &str, ctx: &str) -> Result<Option<f32>, String> {
+    match v.get(key) {
+        None | Some(Value::Null) => Ok(None),
+        Some(x) => Ok(Some(num(x, &format!("{ctx}.{key}"))? as f32)),
+    }
+}
+
+/// The look 'ears' key (§5b): the string "fox" declares fox ears;
+/// JSON true is also accepted. Anything else is no ears.
+fn ears_field(look_spec: &Value) -> bool {
+    match look_spec.get("ears") {
+        Some(Value::Str(s)) => s == "fox",
+        other => truthy(other),
+    }
+}
+
+/// The CARRY look fields parsed from a character node's `look`
+/// object (see FullLook's CARRY field comments).
+struct CarryLook {
+    wing: bool,
+    wing_col: Option<String>,
+    wing_lens: Vec<f32>,
+    ears: bool,
+    hair: bool,
+}
+
+fn carry_look_fields(look_spec: &Value, ctx: &str) -> Result<CarryLook, String> {
+    Ok(CarryLook {
+        wing: truthy(look_spec.get("wing")),
+        wing_col: opt_str(look_spec, "wingCol"),
+        wing_lens: f32_array_field(look_spec, "wingLens", ctx)?,
+        ears: ears_field(look_spec),
+        hair: truthy(look_spec.get("hair")),
+    })
+}
+
+/// The CARRY state fields parsed from a character node's `state`
+/// object (see FullState's CARRY field comments).
+struct CarryState {
+    wing_segs: Vec<f32>,
+    wing_a: f32,
+    ear_a: f32,
+    ear_al: Option<f32>,
+    ear_ar: Option<f32>,
+    hair_segs: Vec<f32>,
+    flip: bool,
+    body_pitch: f32,
+    body_pitch_counter: f32,
+}
+
+fn carry_state_fields(st_spec: &Value, ctx: &str) -> Result<CarryState, String> {
+    Ok(CarryState {
+        wing_segs: f32_array_field(st_spec, "wingSegs", ctx)?,
+        wing_a: f32_field_or(st_spec, "wingA", ctx, 0.0)?,
+        ear_a: f32_field_or(st_spec, "earA", ctx, 0.0)?,
+        ear_al: opt_f32_field(st_spec, "earAL", ctx)?,
+        ear_ar: opt_f32_field(st_spec, "earAR", ctx)?,
+        hair_segs: f32_array_field(st_spec, "hairSegs", ctx)?,
+        flip: truthy(st_spec.get("flip")),
+        body_pitch: f32_field_or(st_spec, "bodyPitch", ctx, 0.0)?,
+        // TS resolved default is `bodyPitchCounter ?? 1` (Spec 3a).
+        body_pitch_counter: f32_field_or(st_spec, "bodyPitchCounter", ctx, 1.0)?,
+    })
+}
+
 #[allow(clippy::too_many_arguments)]
 fn walk_nodes(
     nodes: &[Value],
@@ -675,6 +767,7 @@ fn walk_nodes(
                     .and_then(Value::as_arr)
                     .map(|a| a.iter().filter_map(|v| v.as_str().map(|s| s.to_string())).collect())
                     .unwrap_or_default();
+                let carry_look = carry_look_fields(&look_spec, &nctx)?;
                 let look = FullLook {
                     body: opt_str(&look_spec, "body").unwrap_or_else(|| "#E8734A".to_string()),
                     head: opt_str(&look_spec, "head").unwrap_or_else(|| "#F7F7FA".to_string()),
@@ -698,8 +791,15 @@ fn walk_nodes(
                     pencil: extra.iter().any(|e| e == "pencil"),
                     monocle: extra.iter().any(|e| e == "monocle"),
                     hair_col: opt_str(&look_spec, "hairCol"),
+                    // GPUFIRST B2 CARRY (Spec 1 / §5b / §5c).
+                    wing: carry_look.wing,
+                    wing_col: carry_look.wing_col,
+                    wing_lens: carry_look.wing_lens,
+                    ears: carry_look.ears,
+                    hair: carry_look.hair,
                 };
                 let st_spec = node.get("state").cloned().unwrap_or(Value::Null);
+                let carry_state = carry_state_fields(&st_spec, &nctx)?;
                 let plate_of = |key: &str| -> Result<Option<Plate>, String> {
                     match st_spec.get(key) {
                         None => Ok(None),
@@ -748,6 +848,16 @@ fn walk_nodes(
                     },
                     hold_l: plate_of("holdL")?,
                     hold_r: plate_of("holdR")?,
+                    // GPUFIRST B2 CARRY (Spec 1 / §5b / §5c / §5d / Spec 3a).
+                    wing_segs: carry_state.wing_segs,
+                    wing_a: carry_state.wing_a,
+                    ear_a: carry_state.ear_a,
+                    ear_al: carry_state.ear_al,
+                    ear_ar: carry_state.ear_ar,
+                    hair_segs: carry_state.hair_segs,
+                    flip: carry_state.flip,
+                    body_pitch: carry_state.body_pitch,
+                    body_pitch_counter: carry_state.body_pitch_counter,
                 };
                 let (pxbuf, pw, ph, hand_l, hand_r) = crate::toonfull::paint_toon_full(&look, &state);
                 textures.push((pxbuf, pw, ph));
@@ -2678,6 +2788,97 @@ mod tests {
         assert_eq!(lights.points.len(), 1);
         // The character node emits blob + card textured draws and
         // appends their two textures (card, blob).
+        assert_eq!(loaded.draws.len(), 2);
+        assert_eq!(loaded.textures.len(), 2);
+    }
+
+    // ---- GPUFIRST Batch 2 CARRY loader tests ----
+
+    #[test]
+    fn carry_look_keys_parse_into_fields() {
+        let v = scene::parse_json(
+            r##"{"wing": true, "wingCol": "#7FB6D9", "wingLens": [58, 46.5], "ears": "fox", "hair": true}"##,
+        )
+        .unwrap();
+        let c = carry_look_fields(&v, "test").unwrap();
+        assert!(c.wing);
+        assert_eq!(c.wing_col.as_deref(), Some("#7FB6D9"));
+        assert_eq!(c.wing_lens, vec![58.0, 46.5]);
+        assert!(c.ears, "ears \"fox\" must parse true");
+        assert!(c.hair);
+        // ears also accepts JSON true; other strings / absence do not.
+        let v = scene::parse_json(r##"{"ears": true}"##).unwrap();
+        assert!(carry_look_fields(&v, "test").unwrap().ears);
+        let v = scene::parse_json(r##"{"ears": "cat"}"##).unwrap();
+        assert!(!carry_look_fields(&v, "test").unwrap().ears);
+        // Absent keys -> the TS resolved defaults.
+        let v = scene::parse_json(r##"{}"##).unwrap();
+        let c = carry_look_fields(&v, "test").unwrap();
+        assert!(!c.wing && c.wing_col.is_none() && c.wing_lens.is_empty() && !c.ears && !c.hair);
+        // A known key with the wrong type errors like other typed fields.
+        let v = scene::parse_json(r##"{"wingLens": "long"}"##).unwrap();
+        assert!(carry_look_fields(&v, "test").is_err());
+    }
+
+    #[test]
+    fn carry_state_keys_parse_into_fields() {
+        let v = scene::parse_json(
+            r##"{"wingSegs": [1.5, 1.68], "wingA": 0.8, "earA": 0.1, "earAL": 0.25,
+                "hairSegs": [0, 0.5, -0.5], "flip": true, "bodyPitch": 60, "bodyPitchCounter": 0.5}"##,
+        )
+        .unwrap();
+        let c = carry_state_fields(&v, "test").unwrap();
+        assert_eq!(c.wing_segs, vec![1.5, 1.68]);
+        assert_eq!(c.wing_a.to_bits(), 0.8f32.to_bits());
+        assert_eq!(c.ear_a.to_bits(), 0.1f32.to_bits());
+        assert_eq!(c.ear_al, Some(0.25));
+        assert_eq!(c.ear_ar, None, "absent earAR stays None (per-side win is a painter concern)");
+        assert_eq!(c.hair_segs, vec![0.0, 0.5, -0.5]);
+        assert!(c.flip);
+        assert_eq!(c.body_pitch.to_bits(), 60.0f32.to_bits());
+        assert_eq!(c.body_pitch_counter.to_bits(), 0.5f32.to_bits());
+        // Absent keys -> TS resolved defaults; the counter default
+        // is 1.0 (`?? 1`), and an explicit 0 is honoured as 0.
+        let v = scene::parse_json(r##"{}"##).unwrap();
+        let c = carry_state_fields(&v, "test").unwrap();
+        assert!(c.wing_segs.is_empty() && c.hair_segs.is_empty());
+        assert_eq!(c.wing_a, 0.0);
+        assert_eq!(c.ear_a, 0.0);
+        assert_eq!(c.ear_al, None);
+        assert_eq!(c.ear_ar, None);
+        assert!(!c.flip);
+        assert_eq!(c.body_pitch, 0.0);
+        assert_eq!(c.body_pitch_counter.to_bits(), 1.0f32.to_bits());
+        let v = scene::parse_json(r##"{"bodyPitchCounter": 0}"##).unwrap();
+        assert_eq!(carry_state_fields(&v, "test").unwrap().body_pitch_counter, 0.0);
+        // Wrong type on a known key errors.
+        let v = scene::parse_json(r##"{"wingSegs": 5}"##).unwrap();
+        assert!(carry_state_fields(&v, "test").is_err());
+    }
+
+    #[test]
+    fn carry_keys_load_end_to_end_and_unknown_keys_still_ignored() {
+        let dir = std::env::temp_dir();
+        let f = dir.join("talerender-test-carry.scene.json");
+        std::fs::write(
+            &f,
+            r##"{"format": "talerender-scene", "version": 2, "name": "carry",
+                "time": 0.0,
+                "camera": {"fovY": 40.0, "eye": [0, 2, 6], "target": [0, 1, 0]},
+                "nodes": [{"type": "character", "position": [0, 0, 0],
+                           "look": {"body": "#DE7A35", "wing": true, "wingCol": "#7FB6D9",
+                                    "wingLens": [58, 46], "ears": "fox", "hair": true,
+                                    "hairCol": "#101010", "someFutureKey": 3},
+                           "state": {"mood": "neutral", "wingSegs": [1.5, 1.68], "wingA": 0.8,
+                                     "earA": 0.1, "earAL": 0.25, "hairSegs": [0, 0.5],
+                                     "flip": true, "bodyPitch": 60, "anotherFutureKey": "x"}}]}"##,
+        )
+        .unwrap();
+        let loaded = load(f.to_str().unwrap()).unwrap();
+        // Same shape as the v2 character proof: blob + card draws,
+        // card + blob textures. The painter does not paint the
+        // CARRY channels yet, so this asserts load acceptance and
+        // unchanged unknown-key behaviour, not new pixels.
         assert_eq!(loaded.draws.len(), 2);
         assert_eq!(loaded.textures.len(), 2);
     }

@@ -164,6 +164,17 @@ pub(crate) struct FullLook {
     pub pencil: bool,   // extra 'pencil'
     pub monocle: bool,  // extra 'monocle'
     pub hair_col: Option<String>, // 'hairCol' (bow hat's side locks; hair strands are a later port)
+    // GPUFIRST Batch 2 CARRY plumbing (DESIGN-CARRY, no painter):
+    // the wing / ears / hair look channels of RUST-PARITY-SPECS
+    // Spec 1 / §5b / §5c. The FIELDS exist so no format break
+    // stands between here and the deferred painter ports; the
+    // painter does NOT read them yet, so every pre-existing look
+    // (all defaults below) paints byte-identically.
+    pub wing: bool,              // look 'wing' (Spec 1: wing appendage declared)
+    pub wing_col: Option<String>, // look 'wingCol' (Spec 1: wing palette)
+    pub wing_lens: Vec<f32>,     // look 'wingLens' (Spec 1: per-segment lengths)
+    pub ears: bool,              // look 'ears' ("fox" / true; §5b fox ears)
+    pub hair: bool,              // look 'hair' (§5c hair strands; colour is hair_col above)
 }
 
 pub(crate) struct FullState {
@@ -186,6 +197,21 @@ pub(crate) struct FullState {
     pub sit_drop: Option<f32>,
     pub hold_l: Option<Plate>,
     pub hold_r: Option<Plate>,
+    // GPUFIRST Batch 2 CARRY plumbing (DESIGN-CARRY, no painter):
+    // the wing / ears / hair / flip / bodyPitch state channels of
+    // RUST-PARITY-SPECS Spec 1 / §5b / §5c / §5d / Spec 3a. The
+    // painter does NOT read them yet; they are keyed in film.rs
+    // state_key per the §3b coverage law, so a future port cannot
+    // silently recreate the F-1 defect on these channels.
+    pub wing_segs: Vec<f32>, // state 'wingSegs' (Spec 1: per-segment absolute angles)
+    pub wing_a: f32,         // state 'wingA' (Spec 1: scalar fallback angle)
+    pub ear_a: f32,          // state 'earA' (§5b: both-ears angle, radians)
+    pub ear_al: Option<f32>, // state 'earAL' (§5b: left-ear angle, wins per side)
+    pub ear_ar: Option<f32>, // state 'earAR' (§5b: right-ear angle, wins per side)
+    pub hair_segs: Vec<f32>, // state 'hairSegs' (§5c: per-strand angles; length sets strand count)
+    pub flip: bool,          // state 'flip' (§5d: whole-figure mirror)
+    pub body_pitch: f32,     // state 'bodyPitch' (Spec 3a: degrees, hip-pivot)
+    pub body_pitch_counter: f32, // state 'bodyPitchCounter' (Spec 3a: TS resolved default ?? 1)
 }
 
 impl Default for FullState {
@@ -210,6 +236,15 @@ impl Default for FullState {
             sit_drop: None,
             hold_l: None,
             hold_r: None,
+            wing_segs: Vec::new(),
+            wing_a: 0.0,
+            ear_a: 0.0,
+            ear_al: None,
+            ear_ar: None,
+            hair_segs: Vec::new(),
+            flip: false,
+            body_pitch: 0.0,
+            body_pitch_counter: 1.0,
         }
     }
 }
@@ -395,6 +430,14 @@ fn composite_plate(p: &mut Painter, plate: &Plate, hand: (f32, f32), lean_rad: f
 /// Held plates are NOT modelled in the envelope (their reach is
 /// bounded by the prop contract and they ride the hands, which
 /// are), exactly as in the TS original.
+///
+/// CARRY note (GPUFIRST Batch 2): the wing / ear envelope points
+/// the TS anchor models (Spec 1: both wing chains; §5b: both ear
+/// triangles) are deliberately NOT added here — the wing/ear
+/// painters do not exist yet and the anchor models painted
+/// geometry only. Adding those points is a port-time obligation
+/// of the wing/ear painter ports (recorded in
+/// docs/integration/GPUFIRST-B2-CARRY.md).
 ///
 /// Port notes (where this painter's geometry differs from the
 /// TS painter's, the envelope follows THIS painter): the sit
@@ -1722,6 +1765,11 @@ mod canvas_anchor_tests {
             pencil: false,
             monocle: false,
             hair_col: None,
+            wing: false,
+            wing_col: None,
+            wing_lens: Vec::new(),
+            ears: false,
+            hair: false,
         }
     }
 
@@ -1771,5 +1819,146 @@ mod canvas_anchor_tests {
         st.sit_drop = Some(900.0);
         let (_, ay) = canvas_anchor(&l, &st);
         assert!(ay > 100.0, "expected a strong downward pull, got ay={ay}");
+    }
+}
+
+
+#[cfg(test)]
+mod carry_plumbing_tests {
+    use super::*;
+
+    fn fnv(px: &[u8]) -> u64 {
+        let mut h: u64 = 0xcbf29ce484222325;
+        for &b in px {
+            h ^= b as u64;
+            h = h.wrapping_mul(0x100000001b3);
+        }
+        h
+    }
+
+    fn look(body: &str) -> FullLook {
+        FullLook {
+            body: body.into(),
+            head: "#F7F7FA".into(),
+            shade: None,
+            pattern: "plain".into(),
+            pat_col: None,
+            hat: "none".into(),
+            hat_col: None,
+            band: None,
+            neck: "none".into(),
+            neck_col: None,
+            glasses: false,
+            mustache: false,
+            mustache_col: None,
+            kid: false,
+            blush: false,
+            freckles: false,
+            pencil: false,
+            monocle: false,
+            hair_col: None,
+            wing: false,
+            wing_col: None,
+            wing_lens: Vec::new(),
+            ears: false,
+            hair: false,
+        }
+    }
+
+    /// Non-regression gate for the CARRY plumbing: the five
+    /// full-frame FNV-1a hashes below were pinned at
+    /// gpufirst-phase0 f4b358d BEFORE the wing/ears/hair/flip/
+    /// bodyPitch fields existed (probe log:
+    /// ~/workspace/talerender-evidence/gpufirst-b2/carry/baseline-probe.log).
+    /// The states here carry the new fields at their defaults
+    /// (FullState::default + the look() defaults above), so
+    /// reproducing the hashes byte-identically proves the
+    /// plumbing changed no paint.
+    #[test]
+    fn default_carry_fields_reproduce_pre_plumbing_hashes() {
+        let mut cases: Vec<(&str, FullLook, FullState, u64)> = Vec::new();
+        cases.push(("A-default", look("#DE7A35"), FullState::default(), 0xcfb4d768fb09fdbf));
+        {
+            let mut s = FullState::default();
+            s.mood = Mood::Happy;
+            s.legs = Legs::Walk;
+            s.phase = 1.1;
+            cases.push(("B-happy-walk", look("#DE7A35"), s, 0x05a781daa65cb22b));
+        }
+        {
+            let mut l = look("#5C6644");
+            l.hat = "cap".into();
+            l.hat_col = Some("#4C5638".into());
+            l.pattern = "vest".into();
+            l.pat_col = Some("#33304A".into());
+            l.neck = "scarf".into();
+            l.neck_col = Some("#8A7A52".into());
+            let mut s = FullState::default();
+            s.mood = Mood::Determined;
+            s.arm_l = (28.0, -24.0);
+            s.arm_r = (68.0, -42.0);
+            s.look = [0.3, 0.0];
+            s.lean = 1.0;
+            cases.push(("C-hero-vest", l, s, 0x1ed010bf0e163e77));
+        }
+        {
+            let mut l = look("#E8734A");
+            l.kid = true;
+            let mut s = FullState::default();
+            s.mood = Mood::Sad;
+            s.legs = Legs::Sit;
+            s.sit_drop = Some(300.0);
+            s.tears = true;
+            cases.push(("D-kid-sit-sad", l, s, 0xcec92a8d3ebab654));
+        }
+        {
+            let mut l = look("#4A4560");
+            l.hat = "bowler".into();
+            l.hat_col = Some("#2E2A3A".into());
+            l.glasses = true;
+            l.mustache = true;
+            l.mustache_col = Some("#C9C9D2".into());
+            l.blush = true;
+            l.freckles = true;
+            let mut s = FullState::default();
+            s.mood = Mood::Worried;
+            s.sweat = true;
+            s.talk = 0.7;
+            s.blink = 0.3;
+            s.head_tilt = 6.0;
+            s.head_turn = 0.3;
+            s.squash = 0.1;
+            s.cam_pitch = 0.28747;
+            cases.push(("E-tani-worried", l, s, 0x2cb164e9c2e44aa6));
+        }
+        for (name, lk, st, want) in &cases {
+            let (px, w, h, _, _) = paint_toon_full(lk, st);
+            assert_eq!((w, h), (2560, 2816), "{name}: canvas size changed");
+            assert_eq!(fnv(&px), *want, "{name}: default-carry paint drifted from the pre-plumbing hash");
+        }
+    }
+
+    /// The resolved defaults are the TS defaults (RUST-PARITY-SPECS
+    /// Spec 1 / §5b / §5c / §5d / Spec 3a): wing/ears/hair/flip off,
+    /// angles 0, arrays empty, per-ear overrides absent — and
+    /// body_pitch_counter defaults to 1.0 (TS `?? 1`), NOT 0.0.
+    #[test]
+    fn carry_defaults_match_ts_resolved_defaults() {
+        let st = FullState::default();
+        assert!(st.wing_segs.is_empty());
+        assert_eq!(st.wing_a.to_bits(), 0.0f32.to_bits());
+        assert_eq!(st.ear_a.to_bits(), 0.0f32.to_bits());
+        assert_eq!(st.ear_al, None);
+        assert_eq!(st.ear_ar, None);
+        assert!(st.hair_segs.is_empty());
+        assert!(!st.flip);
+        assert_eq!(st.body_pitch.to_bits(), 0.0f32.to_bits());
+        assert_eq!(st.body_pitch_counter.to_bits(), 1.0f32.to_bits());
+        let lk = look("#000000");
+        assert!(!lk.wing);
+        assert_eq!(lk.wing_col, None);
+        assert!(lk.wing_lens.is_empty());
+        assert!(!lk.ears);
+        assert!(!lk.hair);
     }
 }
