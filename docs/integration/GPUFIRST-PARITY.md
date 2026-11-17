@@ -174,3 +174,82 @@ divergence, and FRINGE is 0 everywhere.
 
 Full per-case table, per-prim-kind roll-ups and determinism rows:
 the run's `parity-summary.md` in the `gpufirst-parity` artifact.
+
+## CI results — run #2 (Batch 2 close, 2026-11-17)
+
+Run **44025547389**, triggered by commit `6aa2142` (Batch 2
+integration). **Verdict: SUCCESS.** Adapter identical to run #1
+(llvmpipe, Mesa 23.2.1, CI lavapipe; no RADV numbers claimed).
+
+### Headline
+
+**221 of 221 cases byte-identical; 0 differing pixels in total.**
+Determinism subset: **21/21 identical** (extended from 14 with
+seven Batch 2 channel lists: brow-lift-14, brow-smug-half-steps,
+fx-sweat-050, fx-sweat-099, stroke-laugh-turn-zero-pitch-zero,
+stroke-walk-p6, shape-plt-lying82-holdr). `replay-failures.txt`
+and `states-compare-failures.txt` both empty. GPU wall over 221
+cases: min 1,647 ms, median 2,312 ms, max 3,240 ms, total 532 s
+(debug harness path on lavapipe; not a production perf figure).
+
+Case census: 82 run-#1 cases (7 battery cards + 75 states) + 139
+new Batch 2 states = 221. New states: brow 5, sweat 2 (the
+pre-existing 3 fx sweat states ride in the base 75), SHAPE battery
+71 (`shape-`: fills 10, ellipses-arcs 12, shade+masks 39,
+plates+anchor 10), STROKE battery 61 (`stroke-`: laugh-quirk grid
+9, gait phase sweeps 16, sit legs 3, arm FK extremes 6, mood sweep
+14, ellipse rings 13).
+
+### The five run-#1 diffs — all resolved
+
+Root cause (seat NUMERICS, bit-proven): `acos` inside the cap-fan
+`fan_sd` in `gpupaint.wgsl`. Lavapipe's `acos` runs up to 3,861 ulp
+(mean 832) from Rust libm, while sqrt/hypot/dot/cos are
+bit-identical CPU↔GPU; at the toon-head-outline pixel the error
+moved the fan boundary +55 ulp and flipped one supersample. Fix:
+one guarded Newton step on cos(φ) = cosang using the driver's
+bit-exact cos/sin (engages only when sin φ > 0.02 and |correction|
+< 0.002; refined φ lands a mean 1.37 ulp from libm). All five
+run-#1 cases — legs-walk-p3, toon-head-outline, toon-card,
+xf-campitch-s01, xf-headtilt-pos6-think — are byte-identical in
+run #2, and no previously identical case moved (221/221). The
+EDGE seat's measured CONDITIONAL bound for legs-walk-p3 (≤2 px,
+alpha-only, ΔA ≤ 16, EDGE — `GPUFIRST-B2-EDGE.md`) is therefore
+**superseded by the fix**, not merely satisfied. The battery
+seats' local fan-family findings (F-STROKE-1/2/3, F-SHAPE-1/2/3 —
+7 px and 5 px respectively against the stock shader, all 1-px
+cap-fan signatures) likewise resolved: 0 diff px across all 132
+new states on CI.
+
+### Per-class roll-ups (run #2)
+
+| roll-up | identical/total | diff px |
+|---|---:|---:|
+| battery: face-angry / determined / laugh / neutral / shock | 2/2 each | 0 |
+| battery: prims | 33/33 | 0 |
+| battery: toon | 3/3 | 0 |
+| states: anchor | 2/2 | 0 |
+| states: film-looks | 6/6 | 0 |
+| states: limbs | 8/8 | 0 |
+| states: mood-features | 34/34 | 0 |
+| states: patterns-and-looks | 18/18 | 0 |
+| states: plates | 3/3 | 0 |
+| states: transforms (incl. shape + stroke batteries) | 143/143 | 0 |
+
+Per prim-kind (overlapping): composite_plate 13/13, ellipse_mask
+8/8, fill_ellipse 221/221 (1,675 instances), fill_ellipse_masked
+220/220, fill_polygon 220/220, fill_polygon_masked 10/10,
+fill_rect 2/2, head_shade 220/220, masked_blend 13/13,
+polygon_mask 220/220, stroke_polyline 221/221 (2,371 instances).
+FRINGE 0 everywhere, as in run #1.
+
+Notes: (1) the "gradient" class from the Batch 1 inventory is
+formally closed as documented — this painter has no gradient
+prim; the shading surface is head_shade + masked shade/highlight
+ellipses, all at parity above. (2) A follow-up commit `3939698`
+gated the two battery modules behind the `gpupaint` feature after
+CI's default-features Test step failed at `6aa2142` (E0432/E0433 —
+the ungated modules' test recorders referenced feature-only
+modules); the parity verdict above is unaffected (featured build;
+no paint code changed). Full Batch 2 record:
+`GPUFIRST-B2-RECORD.md`.
