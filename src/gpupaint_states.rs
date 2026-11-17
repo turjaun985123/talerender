@@ -388,7 +388,7 @@ pub(crate) fn state_spread() -> Vec<(String, FullLook, FullState)> {
     // precedent; the mood-fired pair proves the OR-branches.
     {
         let mut s = st(Mood::Neutral);
-        s.sweat = true;
+        s.sweat = Some(1.0);
         push("fx-sweat-only", base_look(), s);
     }
     {
@@ -398,9 +398,22 @@ pub(crate) fn state_spread() -> Vec<(String, FullLook, FullState)> {
     }
     {
         let mut s = st(Mood::Neutral);
-        s.sweat = true;
+        s.sweat = Some(1.0);
         s.tears = true;
         push("fx-sweat-tears", base_look(), s);
+    }
+    {
+        // Spec 5e gradation: alpha = min(1, k) must reach the GPU
+        // prims at fractional strengths (see sweat_tests in
+        // toonfull.rs for the 16-class CPU partition).
+        let mut s = st(Mood::Neutral);
+        s.sweat = Some(0.5);
+        push("fx-sweat-050", base_look(), s);
+    }
+    {
+        let mut s = st(Mood::Neutral);
+        s.sweat = Some(0.99);
+        push("fx-sweat-099", base_look(), s);
     }
     push("fx-worried-sweat-via-mood", base_look(), st(Mood::Worried));
     push("fx-sad-tears-via-mood", base_look(), st(Mood::Sad));
@@ -842,6 +855,39 @@ mod tests {
         test2[0] = 7; // differ at x=0 only, alphas all opaque
         let p2 = compare_paints(&reference2, &test2, w, h);
         assert_eq!((p2.diff_px, p2.edge, p2.fringe, p2.interior), (1, 0, 0, 1));
+    }
+
+    /// SWEAT seat (Spec 5e): record ONLY the fx sweat states to
+    /// $SWEAT_OUT (default: target-local sweat-evidence) — PNG +
+    /// display-list JSON per state, same shape as
+    /// gpupaint::record_states — for GPU replay parity of the
+    /// gradation states. Ignored by default (full-canvas paints).
+    /// Run with:
+    ///   SWEAT_OUT=<dir> cargo test --features gpupaint sweat_record_states -- --ignored --nocapture
+    #[test]
+    #[ignore]
+    fn sweat_record_states() {
+        let out = std::env::var("SWEAT_OUT").unwrap_or_else(|_| "sweat-evidence".to_string());
+        std::fs::create_dir_all(&out).expect("create SWEAT_OUT");
+        let v = state_spread();
+        crate::gputrace::set_armed(true);
+        for name in ["fx-sweat-only", "fx-sweat-050", "fx-sweat-099", "fx-sweat-tears", "fx-worried-sweat-via-mood"] {
+            let (_, look, state) = v.iter().find(|(n, _, _)| n == name).expect(name);
+            crate::gputrace::begin(2560, 2816);
+            let (px, w, h, _, _) = paint_toon_full(look, state);
+            let list = crate::gputrace::take();
+            // The traced sweat-drop prims must carry the painter's
+            // alpha (fill #8FD3F4 and the INK stroke, both at the
+            // gradation alpha) — print them for the parity report.
+            for (i, prim) in list.prims.iter().enumerate() {
+                println!("{name} prim {i}: {prim:?}");
+            }
+            let img = image::RgbaImage::from_raw(w, h, px).expect("pixels");
+            img.save(format!("{out}/{name}.png")).expect("save png");
+            std::fs::write(format!("{out}/{name}.json"), list.to_json()).expect("write json");
+            println!("recorded {name}: {} prims", list.prims.len());
+        }
+        crate::gputrace::set_armed(false);
     }
 
     /// CPU-vs-CPU dry run: paint the whole spread twice through

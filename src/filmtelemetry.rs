@@ -76,6 +76,17 @@ fn truthy(v: Option<&Value>) -> bool {
     matches!(v, Some(Value::Bool(true))) || v.and_then(Value::as_f64).unwrap_or(0.0) != 0.0
 }
 
+/// Spec 5e sweat loader — same compatibility ruling as
+/// scenefile::sweat_field (true -> Some(1.0); false/absent -> None;
+/// number -> Some(value)).
+fn sweat_field(v: Option<&Value>) -> Option<f32> {
+    match v {
+        Some(Value::Bool(true)) => Some(1.0),
+        Some(Value::Bool(false)) | None => None,
+        Some(other) => other.as_f64().map(|n| n as f32),
+    }
+}
+
 fn opt_str(v: &Value, key: &str) -> Option<String> {
     v.get(key).and_then(Value::as_str).map(|s| s.to_string())
 }
@@ -675,7 +686,7 @@ fn character_cutout(
         talk: f32_or(&st_spec, "talk", 0.0),
         brow_lift: f32_or(&st_spec, "browLift", 0.0),
         brow_tilt: f32_or(&st_spec, "browTilt", 0.0),
-        sweat: truthy(st_spec.get("sweat")),
+        sweat: sweat_field(st_spec.get("sweat")),
         tears: truthy(st_spec.get("tears")),
         arm_l: pair_or(&st_spec, "armL", (8.0, 6.0)),
         arm_r: pair_or(&st_spec, "armR", (8.0, 6.0)),

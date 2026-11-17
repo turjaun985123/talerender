@@ -534,6 +534,20 @@ fn truthy(v: Option<&Value>) -> bool {
     matches!(v, Some(Value::Bool(true))) || v.and_then(Value::as_f64).unwrap_or(0.0) != 0.0
 }
 
+/// Spec 5e sweat loader (compatibility ruling): read "sweat" as a
+/// NUMBER with presence. A JSON `true` maps to Some(1.0) so
+/// truthy-authored scenes keep painting exactly as before;
+/// `false` / absent / null map to None; a number maps to
+/// Some(value) — including Some(0.0), whose presence matters for
+/// the worried-forcing semantics and for state_key.
+fn sweat_field(v: Option<&Value>) -> Option<f32> {
+    match v {
+        Some(Value::Bool(true)) => Some(1.0),
+        Some(Value::Bool(false)) | None => None,
+        Some(other) => other.as_f64().map(|n| n as f32),
+    }
+}
+
 fn opt_str(v: &Value, key: &str) -> Option<String> {
     v.get(key).and_then(Value::as_str).map(|s| s.to_string())
 }
@@ -826,7 +840,7 @@ fn walk_nodes(
                     talk: f32_field_or(&st_spec, "talk", &nctx, 0.0)?,
                     brow_lift: f32_field_or(&st_spec, "browLift", &nctx, 0.0)?,
                     brow_tilt: f32_field_or(&st_spec, "browTilt", &nctx, 0.0)?,
-                    sweat: truthy(st_spec.get("sweat")),
+                    sweat: sweat_field(st_spec.get("sweat")),
                     tears: truthy(st_spec.get("tears")),
                     arm_l: pair_field(&st_spec, "armL", &nctx, (8.0, 6.0))?,
                     arm_r: pair_field(&st_spec, "armR", &nctx, (8.0, 6.0))?,
@@ -2487,6 +2501,20 @@ async fn run_composer(width: u32, height: u32, out: SceneOut<'_>, scene: &Loaded
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn sweat_field_compatibility_ruling() {
+        // Spec 5e loader ruling: true -> Some(1.0) (today's
+        // truthy-authored scenes keep painting), false / absent
+        // -> None, a number -> Some(value) — including Some(0.0),
+        // whose presence matters under Worried.
+        assert_eq!(sweat_field(Some(&Value::Bool(true))), Some(1.0));
+        assert_eq!(sweat_field(Some(&Value::Bool(false))), None);
+        assert_eq!(sweat_field(None), None);
+        assert_eq!(sweat_field(Some(&Value::Num(0.5))), Some(0.5));
+        assert_eq!(sweat_field(Some(&Value::Num(0.0))), Some(0.0));
+        assert_eq!(sweat_field(Some(&Value::Num(1.5))), Some(1.5));
+    }
 
     fn test_camera() -> Camera {
         Camera {

@@ -2485,14 +2485,17 @@ fn state_key(look: usize, st: &FullState, hold_l: Option<&str>, hold_r: Option<&
     // only in sweat or tears collided (defect disclosed in
     // V2-HANDOVER.md; found by the WP10 seat's charstate.rs
     // audit, whose CharStateKey includes both). The two
-    // booleans are appended last; GPUFIRST Batch 2 (CARRY seat)
-    // appended the nine DESIGN-CARRY FullState fields after them
-    // (wing_segs / wing_a / ear_a / ear_al / ear_ar / hair_segs /
-    // flip / body_pitch / body_pitch_counter): the painter does
-    // not read them yet, but the §3b coverage law is applied NOW
-    // so the deferred painter ports inherit a complete key —
-    // Vec<f32> by length + element bits, Option<f32> by presence
-    // bit + bits, scalars by exact bits, bools as above. The
+    // fields are appended last, with two Batch 2 amendments:
+    // Spec 5e keys sweat as a presence bit + its exact f32 bits
+    // when present (0.5 vs 0.99 and Some(0.0) vs None all re-key;
+    // tears stays a bool), and the CARRY seat appended the nine
+    // DESIGN-CARRY FullState fields after them (wing_segs /
+    // wing_a / ear_a / ear_al / ear_ar / hair_segs / flip /
+    // body_pitch / body_pitch_counter): the painter does not read
+    // them yet, but the §3b coverage law is applied NOW so the
+    // deferred painter ports inherit a complete key — Vec<f32> by
+    // length + element bits, Option<f32> by presence bit + bits,
+    // scalars by exact bits, bools as above. The
     // look index prefix names
     // the FullLook (all 19 of its fields are painter inputs,
     // fixed per run by the look registry — CR-B3-06 added five
@@ -2523,7 +2526,7 @@ fn state_key(look: usize, st: &FullState, hold_l: Option<&str>, hold_r: Option<&
         }
     };
     format!(
-        "{look}|{:?}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}",
+        "{look}|{:?}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}|{}",
         st.mood,
         q(st.look[0]), q(st.look[1]), q(st.blink), q(st.talk),
         q(st.arm_l.0), q(st.arm_l.1), q(st.arm_r.0), q(st.arm_r.1),
@@ -2533,7 +2536,7 @@ fn state_key(look: usize, st: &FullState, hold_l: Option<&str>, hold_r: Option<&
         st.sit_drop.map(q).map(|v| v as i64).unwrap_or(-1),
         hold_l.unwrap_or("-"),
         hold_r.unwrap_or("-"),
-        st.sweat, st.tears,
+        st.sweat.is_some(), st.sweat.map(|v| v.to_bits()).unwrap_or(0), st.tears,
         vec_key(&st.wing_segs), q(st.wing_a), q(st.ear_a),
         opt_key(st.ear_al), opt_key(st.ear_ar),
         vec_key(&st.hair_segs), st.flip,
@@ -4339,7 +4342,7 @@ mod state_key_tests {
     fn state_key_distinguishes_sweat_only_difference() {
         let a = FullState::default();
         let mut b = FullState::default();
-        b.sweat = true;
+        b.sweat = Some(1.0);
         assert_ne!(
             state_key(0, &a, None, None),
             state_key(0, &b, None, None),
@@ -4357,6 +4360,28 @@ mod state_key_tests {
             state_key(0, &b, None, None),
             "states differing only in tears must not share a PaintCache key"
         );
+    }
+
+    #[test]
+    fn state_key_distinguishes_sweat_gradation() {
+        // Spec 5e: the numeric magnitude is paint (alpha), so
+        // 0.5 vs 0.99 must re-key, not just presence.
+        let mut a = FullState::default();
+        a.sweat = Some(0.5);
+        let mut b = FullState::default();
+        b.sweat = Some(0.99);
+        assert_ne!(state_key(0, &a, None, None), state_key(0, &b, None, None));
+    }
+
+    #[test]
+    fn state_key_distinguishes_sweat_presence_at_zero() {
+        // Some(0.0) vs None: same pixels under a non-forcing mood,
+        // different paints under Worried (k = 0 vs k = 1), so the
+        // presence bit must be in the key.
+        let a = FullState::default();
+        let mut b = FullState::default();
+        b.sweat = Some(0.0);
+        assert_ne!(state_key(0, &a, None, None), state_key(0, &b, None, None));
     }
 
     #[test]

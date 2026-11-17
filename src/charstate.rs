@@ -52,7 +52,7 @@
 //   gaze_bits: [u32; 2]     q(st.look[0]), q(st.look[1])  gaze [f32; 2]
 //   blink_bits: u32         q(st.blink)                 FullState.blink
 //   talk_bits: u32          q(st.talk)                  FullState.talk
-//   sweat: bool             *** ABSENT from real key ***  FullState.sweat
+//   sweat: Option<u32>      presence + exact bits (Spec 5e)  FullState.sweat (Option<f32>)
 //   tears: bool             *** ABSENT from real key ***  FullState.tears
 //   arm_l_bits: [u32; 2]    q(st.arm_l.0), q(st.arm_l.1)
 //   arm_r_bits: [u32; 2]    q(st.arm_r.0), q(st.arm_r.1)
@@ -322,9 +322,12 @@ pub(crate) struct CharStateKey {
     pub blink_bits: u32,
     /// Mouth openness (lip-sync), FullState.talk, exact bits.
     pub talk_bits: u32,
-    /// Sweat drop flag. ABSENT from the real String key —
-    /// see the delivery note's finding; the painter reads it.
-    pub sweat: bool,
+    /// Sweat drop value (Spec 5e): presence + EXACT f32 bits
+    /// of FullState.sweat (Option<f32>), mirroring this key's
+    /// exact-bits law — gradations (0.5 vs 0.99) and presence
+    /// (Some(0.0) vs None) both distinguish, as in film.rs's
+    /// state_key. The painter reads it.
+    pub sweat: Option<u32>,
     /// Tear flag. ABSENT from the real String key; the
     /// painter reads it.
     pub tears: bool,
@@ -377,7 +380,7 @@ impl CharStateKey {
         gaze: [f32; 2],
         blink: f32,
         talk: f32,
-        sweat: bool,
+        sweat: Option<f32>,
         tears: bool,
         arm_l: (f32, f32),
         arm_r: (f32, f32),
@@ -400,7 +403,7 @@ impl CharStateKey {
             gaze_bits: [gaze[0].to_bits(), gaze[1].to_bits()],
             blink_bits: blink.to_bits(),
             talk_bits: talk.to_bits(),
-            sweat,
+            sweat: sweat.map(f32::to_bits),
             tears,
             arm_l_bits: [arm_l.0.to_bits(), arm_l.1.to_bits()],
             arm_r_bits: [arm_r.0.to_bits(), arm_r.1.to_bits()],
@@ -796,7 +799,7 @@ mod tests {
             [0.0, 0.0],
             0.0,
             0.0,
-            false,
+            None,
             false,
             (8.0, 6.0),
             (8.0, 6.0),
@@ -872,7 +875,7 @@ mod tests {
         v.talk_bits = 0.5f32.to_bits();
         variants.push(v);
         let mut v = base();
-        v.sweat = true;
+        v.sweat = Some(1.0f32.to_bits());
         variants.push(v);
         let mut v = base();
         v.tears = true;
@@ -969,7 +972,7 @@ mod tests {
         // Sweat-only — the change the real String key cannot
         // even see (delivery-note finding).
         let mut sweat = base();
-        sweat.sweat = true;
+        sweat.sweat = Some(1.0f32.to_bits());
         assert_eq!(diff(&base(), &sweat), ChangeClass::Partial(FACE_RECT));
         // Tears-only, same story.
         let mut tears = base();
@@ -980,7 +983,7 @@ mod tests {
         all.mood = MoodKey::Laugh;
         all.blink_bits = 0.5f32.to_bits();
         all.talk_bits = 1.0f32.to_bits();
-        all.sweat = true;
+        all.sweat = Some(1.0f32.to_bits());
         assert_eq!(diff(&base(), &all), ChangeClass::Partial(FACE_RECT));
         // At the nominal pose the rect helper is the const.
         assert_eq!(face_rect_for(&base()), FACE_RECT);
