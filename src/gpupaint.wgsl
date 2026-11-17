@@ -336,7 +336,27 @@ fn fan_sd(which: u32, qx: f32, qy: f32) -> f32 {
     if (cosang < 0.0) {
         return rl - r;
     }
-    let phi = acos(cosang);
+    // acos refinement (GPUFIRST Batch 2, numerics seat): WGSL acos
+    // is implementation-precision — on lavapipe it lands up to
+    // ~851 ulp from Rust libm's acos for the same input bits
+    // (measured: cosang 0x3f72efc3 -> phi 0x3ea441c4 vs libm
+    // 0x3ea44517), and that error moves rb by ~55 ulp, enough to
+    // flip a supersample inside test whose CPU sd is +4.8e-6
+    // (toon prim 24 end cap, pixel (1360,1009): CPU cov 6/16,
+    // unrefined GPU 7/16). One Newton step on cos(phi) = cosang,
+    // using the driver's cos/sin (measured bit-exact vs libm at
+    // the operating point), brings phi to within a few ulp of
+    // libm's. Guards: near the axis (sin ~ 0) rb is insensitive
+    // to phi (tan(phi - phi_mid) ~ 0), and an implausible
+    // correction keeps the raw acos value — never worse.
+    var phi = acos(cosang);
+    let s0 = sin(phi);
+    if (s0 > 0.02) {
+        let corr = (cos(phi) - cosang) / s0;
+        if (abs(corr) < 0.002) {
+            phi = phi + corr;
+        }
+    }
     let dth = PI_F / f32(n);
     var k = i32(floor((FRAC_PI_2_F - phi) / dth));
     k = clamp(k, 0, i32(n) - 1);
