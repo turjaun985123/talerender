@@ -202,12 +202,15 @@ pub(crate) struct FullState {
     pub sit_drop: Option<f32>,
     pub hold_l: Option<Plate>,
     pub hold_r: Option<Plate>,
-    // GPUFIRST Batch 2 CARRY plumbing (DESIGN-CARRY, no painter):
-    // the wing / ears / hair / flip / bodyPitch state channels of
-    // RUST-PARITY-SPECS Spec 1 / §5b / §5c / §5d / Spec 3a. The
-    // painter does NOT read them yet; they are keyed in film.rs
-    // state_key per the §3b coverage law, so a future port cannot
-    // silently recreate the F-1 defect on these channels.
+    // GPUFIRST Batch 2 CARRY plumbing: the wing / ears / hair /
+    // flip / bodyPitch state channels of RUST-PARITY-SPECS
+    // Spec 1 / §5b / §5c / §5d / Spec 3a, keyed in film.rs
+    // state_key per the §3b coverage law. Wing / ears / hair are
+    // still DESIGN-CARRY (the painter does not read them);
+    // flip + bodyPitch were PORTED in Batch 3 (seat FLIPPITCH):
+    // the painter reads them below (flip mirror in the point
+    // maps + canvas_anchor; bodyPitch hip-pivot seam as the
+    // host-side `pxu` / `hpt` transforms + effective head tilt).
     pub wing_segs: Vec<f32>, // state 'wingSegs' (Spec 1: per-segment absolute angles)
     pub wing_a: f32,         // state 'wingA' (Spec 1: scalar fallback angle)
     pub ear_a: f32,          // state 'earA' (§5b: both-ears angle, radians)
@@ -325,20 +328,73 @@ fn rounded_rect_pts_radii(
     pts
 }
 
+/// Rotate a stage point about the hip pivot `(bx, hip_y)` by
+/// `pitch_deg` (bodyPitch, Spec 3) — the TS painter's `rotPt`.
+/// At pitch 0 this returns the point EXACTLY (the TS seam emits
+/// no transform at pitch 0; byte-identity depends on it).
+pub(crate) fn pitch_pt(x: f32, y: f32, bx: f32, hip_y: f32, pitch_deg: f32) -> (f32, f32) {
+    if pitch_deg == 0.0 {
+        return (x, y);
+    }
+    let (s, c) = pitch_deg.to_radians().sin_cos();
+    let (dx, dy) = (x - bx, y - hip_y);
+    (bx + dx * c - dy * s, hip_y + dx * s + dy * c)
+}
+
+/// The head's effective tilt under bodyPitch (Spec 3):
+/// `headTilt − bodyPitch · bodyPitchCounter` (counter defaults
+/// to 1.0, TS `?? 1` — see FullState::default). At pitch 0 this
+/// is exactly `head_tilt`.
+pub(crate) fn effective_head_tilt(st: &FullState) -> f32 {
+    st.head_tilt - st.body_pitch * st.body_pitch_counter
+}
+
 /// Composite a held-prop plate at a stage-space hand point,
-/// inverse-mapping each canvas pixel through the lean rotation
-/// (stage -> canvas is lean about (256, 1000), then the canvas
-/// re-anchor, then +(384, 256), then x res). Bilinear sampling
-/// of the plate.
-fn composite_plate(p: &mut Painter, plate: &Plate, hand: (f32, f32), lean_rad: f32, anchor: (f32, f32)) {
+/// inverse-mapping each canvas pixel through the full figure
+/// transform stack (stage -> canvas is: bodyPitch about the hip
+/// pivot for the upper assembly the plate rides, then lean about
+/// (256, 1000), then the flip mirror x -> 512 - x, then the
+/// canvas re-anchor, then +(384, 256), then x res). Bilinear
+/// sampling of the plate.
+///
+/// B3-CARRY-1: the inverse map carries flip + pitch as well as
+/// the lean + anchor it always had — before Batch 3 no painter
+/// emitted flip/pitch, so the omission was latent; a flipped or
+/// pitched hold would have sampled its plate un-mirrored /
+/// un-rotated. `hand` is the UN-pitched stage hand (the plate's
+/// figure-local origin, exactly as the TS held-prop callbacks
+/// receive it inside the pitched frame); `hip` is the pitch
+/// pivot `(bx, hip_y)`. At flip=false / pitch=0 every added
+/// branch is skipped and the arithmetic is the pre-Batch-3 map,
+/// byte for byte.
+#[allow(clippy::too_many_arguments)]
+fn composite_plate(
+    p: &mut Painter,
+    plate: &Plate,
+    hand: (f32, f32),
+    lean_rad: f32,
+    anchor: (f32, f32),
+    flip: bool,
+    pitch_rad: f32,
+    hip: (f32, f32),
+) {
     #[cfg(feature = "gpupaint")]
-    crate::gputrace::trace_composite_plate(plate, hand, lean_rad, anchor);
+    crate::gputrace::trace_composite_plate(plate, hand, lean_rad, anchor, flip, pitch_rad, hip);
     let (s, c) = lean_rad.sin_cos();
+    let pitched = pitch_rad != 0.0;
+    let (sp, cp) = pitch_rad.sin_cos();
     let (ax, ay) = anchor;
     // Canvas-space corners of the plate rect (forward map).
     let fwd = |lx: f32, ly: f32| -> (f32, f32) {
-        let (dx, dy) = (lx - 256.0, ly - 1000.0);
+        let (ux, uy) = if pitched {
+            let (dx, dy) = (lx - hip.0, ly - hip.1);
+            (hip.0 + dx * cp - dy * sp, hip.1 + dx * sp + dy * cp)
+        } else {
+            (lx, ly)
+        };
+        let (dx, dy) = (ux - 256.0, uy - 1000.0);
         let (rx, ry) = (256.0 + dx * c - dy * s, 1000.0 + dx * s + dy * c);
+        let rx = if flip { 512.0 - rx } else { rx };
         ((rx + ax + 384.0) * RES, (ry + ay + 256.0) * RES)
     };
     let corners = [
@@ -358,11 +414,18 @@ fn composite_plate(p: &mut Painter, plate: &Plate, hand: (f32, f32), lean_rad: f
     let (pw, ph) = (plate.w as f32, plate.h as f32);
     for y in by0..=by1 {
         for x in bx0..=bx1 {
-            // canvas -> stage (inverse lean + anchor).
-            let (ux, uy) = (x as f32 / RES - 384.0 - ax, y as f32 / RES - 256.0 - ay);
+            // canvas -> stage (inverse anchor, flip, lean, pitch).
+            let (ux0, uy) = (x as f32 / RES - 384.0 - ax, y as f32 / RES - 256.0 - ay);
+            let ux = if flip { 512.0 - ux0 } else { ux0 };
             let (dx, dy) = (ux - 256.0, uy - 1000.0);
-            let sx = 256.0 + dx * c + dy * s;
-            let sy = 1000.0 - dx * s + dy * c;
+            let sx0 = 256.0 + dx * c + dy * s;
+            let sy0 = 1000.0 - dx * s + dy * c;
+            let (sx, sy) = if pitched {
+                let (dx, dy) = (sx0 - hip.0, sy0 - hip.1);
+                (hip.0 + dx * cp + dy * sp, hip.1 - dx * sp + dy * cp)
+            } else {
+                (sx0, sy0)
+            };
             let lx = (sx - hand.0 - plate.x0) * RES;
             let ly = (sy - hand.1 - plate.y0) * RES;
             if lx < -0.5 || ly < -0.5 || lx > pw - 0.5 || ly > ph - 0.5 {
@@ -478,6 +541,17 @@ pub(crate) fn canvas_anchor(look: &FullLook, st: &FullState) -> (f32, f32) {
     let hatx = hx + turn * 18.0;
     let htop = hy - rp * 0.97;
     let lean = st.lean;
+    // Batch 3 (flip §5d + bodyPitch Spec 3): the envelope runs
+    // through the painter's full stack — head points rotate by
+    // the EFFECTIVE tilt, upper-assembly points then rotate by
+    // the pitch about (bx, hip_y), every point then leans about
+    // the feet, and the flip mirror (x -> 512 - x) is applied
+    // LAST, exactly as the TS anchor's push() does (toon.ts
+    // solveCanvasAnchor). Leg points are never pitched. At
+    // pitch 0 / flip false each added step is the identity, so
+    // pre-Batch-3 envelopes (and anchors) are unchanged.
+    let pitch = st.body_pitch;
+    let eff_tilt = effective_head_tilt(st);
 
     fn rot_pt(x: f32, y: f32, cx: f32, cy: f32, deg: f32) -> (f32, f32) {
         if deg == 0.0 {
@@ -521,26 +595,41 @@ pub(crate) fn canvas_anchor(look: &FullLook, st: &FullState) -> (f32, f32) {
     // Envelope points (stage x, stage y, radius), carried through
     // the painter's transform stack.
     let mut pts: Vec<(f32, f32, f32)> = Vec::new();
-    // Body-space push: lean about the feet only (bean, arms, legs,
-    // neckwear — the painter maps them through `px`).
+    // The flip mirror, applied last to every envelope point
+    // (TS anchor: `if (S.flip) px = GEO.stage.w - px`).
+    let flip_x = |x: f32| if st.flip { 512.0 - x } else { x };
+    // Upper-assembly push (bean, arms, neckwear — the painter
+    // maps them through its pitched map): pitch about the hip,
+    // lean about the feet, flip.
     macro_rules! push {
         ($x:expr, $y:expr, $rad:expr) => {{
+            let (ux, uy) = rot_pt($x, $y, bx, hip_y, pitch);
+            let (qx, qy) = rot_pt(ux, uy, 256.0, 1000.0, lean);
+            pts.push((flip_x(qx), qy, $rad));
+        }};
+    }
+    // Leg push: lean about the feet, then flip — legs are NEVER
+    // pitched (Spec 3).
+    macro_rules! push_leg {
+        ($x:expr, $y:expr, $rad:expr) => {{
             let (qx, qy) = rot_pt($x, $y, 256.0, 1000.0, lean);
-            pts.push((qx, qy, $rad));
+            pts.push((flip_x(qx), qy, $rad));
         }};
     }
     // Head-space push: the painter's `hpt` stack in stage space —
     // squash about the head centre (the painter's own factors),
-    // headTilt about the neck pivot, then lean about the feet.
+    // effective headTilt about the neck pivot, pitch about the
+    // hip, lean about the feet, flip.
     macro_rules! push_head {
         ($x:expr, $y:expr, $rad:expr) => {{
             let (sx2, sy2) = (
                 hx + ($x - hx) * (1.0 - 0.3 * st.squash),
                 hy + ($y - hy) * (1.0 + st.squash),
             );
-            let (tx2, ty2) = rot_pt(sx2, sy2, 256.0, pivot_y, st.head_tilt);
-            let (qx, qy) = rot_pt(tx2, ty2, 256.0, 1000.0, lean);
-            pts.push((qx, qy, $rad));
+            let (tx2, ty2) = rot_pt(sx2, sy2, 256.0, pivot_y, eff_tilt);
+            let (ux, uy) = rot_pt(tx2, ty2, bx, hip_y, pitch);
+            let (qx, qy) = rot_pt(ux, uy, 256.0, 1000.0, lean);
+            pts.push((flip_x(qx), qy, $rad));
         }};
     }
 
@@ -690,10 +779,10 @@ pub(crate) fn canvas_anchor(look: &FullLook, st: &FullState) -> (f32, f32) {
         if sit {
             let (kx, ky) = (sx + side * 30.0, hip_y + 44.0);
             let (fx, fy) = (sx + side * 34.0, (hip_y + 220.2).min(1000.0));
-            push!(sx, hip_y, 7.5);
-            push!(kx, ky, 7.5);
-            push!(fx, fy, 7.5);
-            push!(fx + side * 10.0, fy - 4.0, 20.0);
+            push_leg!(sx, hip_y, 7.5);
+            push_leg!(kx, ky, 7.5);
+            push_leg!(fx, fy, 7.5);
+            push_leg!(fx + side * 10.0, fy - 4.0, 20.0);
             continue;
         }
         let (kx, ky, fx, fy) = match st.legs {
@@ -714,9 +803,9 @@ pub(crate) fn canvas_anchor(look: &FullLook, st: &FullState) -> (f32, f32) {
             _ => (sx + side * 4.0, hip_y + 210.0, sx + side * 10.0, 1000.0),
         };
         for (x, y) in quad_pts((sx, hip_y), (kx, ky), (fx, fy), 8) {
-            push!(x, y, 7.5);
+            push_leg!(x, y, 7.5);
         }
-        push!(fx + side * 10.0, fy - 4.0, 20.0);
+        push_leg!(fx + side * 10.0, fy - 4.0, 20.0);
     }
     // Excursions against the canvas bounds (stage coords), inset
     // for paint AA — the TS bounds verbatim: the stage sits at
@@ -771,17 +860,34 @@ pub(crate) fn paint_toon_full(
     // and only shifts paint when the state's envelope would
     // otherwise leave the canvas.
     let (anx, any) = canvas_anchor(look, st);
+    // ---- Batch 3 transform stack (flip §5d + bodyPitch Spec 3) ----
+    // Composition, outermost first, exactly as TS drawToonLayer:
+    //   anchor ∘ flip ∘ lean ∘ pitch ∘ headTilt(effective)
+    // `px` below is the LEG map (lean -> flip -> anchor; legs are
+    // never pitched). `pxu` is the UPPER-ASSEMBLY map (pitch about
+    // the hip first, then `px`) used by the bean / pattern /
+    // neckwear / arms. `hpt` is the head map (squash -> effective
+    // tilt -> pitch -> `px`). The flip is a stage-space reflection
+    // x -> 512 - x applied AFTER the lean rotation and BEFORE the
+    // anchor translation (the anchor was solved in mirrored
+    // space — see canvas_anchor). At flip=false / pitch=0 every
+    // added step is skipped or the identity and the maps are the
+    // pre-Batch-3 maps, byte for byte.
+    let flip = st.flip;
+    let sgn: f32 = if flip { -1.0 } else { 1.0 };
+    let pitch_deg = st.body_pitch;
+    let pitch_rad = pitch_deg.to_radians();
     // Stage -> canvas: lean about the feet (256, 1000), then the
-    // canvas offset, then res (as paint_toon / Toon#set).
+    // flip mirror, then the canvas offset, then res (as
+    // paint_toon / Toon#set).
     let px = |x: f32, y: f32| -> (f32, f32) {
         let (dx, dy) = (x - 256.0, y - 1000.0);
+        let lx = 256.0 + dx * cth - dy * sth;
         (
-            (256.0 + dx * cth - dy * sth + anx + 384.0) * RES,
+            ((if flip { 512.0 - lx } else { lx }) + anx + 384.0) * RES,
             (1000.0 + dx * sth + dy * cth + any + 256.0) * RES,
         )
     };
-    // Head-part point map: squash about (hx, hy), then headTilt
-    // about (256, pivotY), then the lean map.
     let sit = st.legs == Legs::Sit;
     let jump = st.legs == Legs::Jump;
     let sit_s = st.sit_drop.unwrap_or(220.2);
@@ -791,20 +897,40 @@ pub(crate) fn paint_toon_full(
         + if jump { -60.0 } else { 0.0 };
     let (bx, top, bot, bw) = (256.0f32, 330.0 + by, 600.0 + by * 0.98, 92.0f32);
     let hip_y = bot - 26.0;
+    // Upper-assembly point map: pitch about the hip pivot first
+    // (identity at pitch 0 via pitch_pt's exact early return),
+    // then the leg map's lean/flip/anchor stack.
+    let pxu = |x: f32, y: f32| -> (f32, f32) {
+        let (ux, uy) = pitch_pt(x, y, bx, hip_y, pitch_deg);
+        px(ux, uy)
+    };
     let (hx, hy, r) = (256.0f32, 178.0 + by * 0.99, 138.0f32);
     let pivot_y = 318.0 + by * 0.99;
-    let tilt = st.head_tilt.to_radians();
+    // Head counter-tilt (Spec 3): the head painter receives the
+    // EFFECTIVE tilt headTilt - bodyPitch*bodyPitchCounter about
+    // the neck pivot, inside the pitched frame.
+    let tilt = effective_head_tilt(st).to_radians();
     let (sti, cti) = tilt.sin_cos();
     let sq = st.squash;
     let hpt = |x: f32, y: f32| -> (f32, f32) {
         // squash about the head centre
         let (sx, sy) = (hx + (x - hx) * (1.0 - 0.3 * sq), hy + (y - hy) * (1.0 + sq));
-        // tilt about the neck pivot
+        // effective tilt about the neck pivot
         let (dx, dy) = (sx - 256.0, sy - pivot_y);
         let (rx, ry) = (256.0 + dx * cti - dy * sti, pivot_y + dx * sti + dy * cti);
-        px(rx, ry)
+        // pitch about the hip, then lean/flip/anchor via px.
+        let (ux, uy) = pitch_pt(rx, ry, bx, hip_y, pitch_deg);
+        px(ux, uy)
     };
-    let head_rot = th + tilt;
+    // Canvas-space rotation angles for the ellipse calls (the
+    // painter passes rotations explicitly, unlike the TS canvas
+    // transform): a stage rotation angle is negated by the flip
+    // mirror, and the pitch adds to every upper-assembly angle.
+    // head_rot's net world tilt is headTilt + pitch*(1-counter)
+    // before the mirror, per Spec 3.
+    let head_rot = sgn * (th + tilt + pitch_rad);
+    let th_up = sgn * (th + pitch_rad); // upper assembly, non-head
+    let th_leg = sgn * th; // legs: lean only, mirrored
 
     // ---- legs ----
     for (sx0, side) in [(bx - 42.0, -1.0f32), (bx + 42.0, 1.0f32)] {
@@ -817,7 +943,7 @@ pub(crate) fn paint_toon_full(
                 ink,
             );
             let (ex, ey) = px(fx + side * 10.0, fy - 4.0);
-            p.fill_ellipse(ex, ey, 20.0 * RES, 10.0 * RES, th, ink);
+            p.fill_ellipse(ex, ey, 20.0 * RES, 10.0 * RES, th_leg, ink);
             continue;
         }
         let (kx, ky, fx, fy) = match st.legs {
@@ -840,7 +966,7 @@ pub(crate) fn paint_toon_full(
         let pts = flatten_quad(px(sx0, hip_y), px(kx, ky), px(fx, fy), 20);
         p.stroke_polyline(&pts, lw(15.0), ink);
         let (ex, ey) = px(fx + side * 10.0, fy - 4.0);
-        p.fill_ellipse(ex, ey, 20.0 * RES, 10.0 * RES, th, ink);
+        p.fill_ellipse(ex, ey, 20.0 * RES, 10.0 * RES, th_leg, ink);
     }
 
     // ---- body bean ----
@@ -852,10 +978,10 @@ pub(crate) fn paint_toon_full(
             bean.extend_from_slice(&pts[1..]);
         }
     };
-    seg(flatten_cubic(px(bx - 58.0, top + 10.0), px(bx - 80.0, top + 40.0), px(bx - bw - 6.0, bot - 120.0), px(bx - bw, bot - 50.0), 28));
-    seg(flatten_cubic(px(bx - bw, bot - 50.0), px(bx - bw + 4.0, bot + 6.0), px(bx + bw - 4.0, bot + 6.0), px(bx + bw, bot - 50.0), 28));
-    seg(flatten_cubic(px(bx + bw, bot - 50.0), px(bx + bw + 6.0, bot - 120.0), px(bx + 80.0, top + 40.0), px(bx + 58.0, top + 10.0), 28));
-    seg(flatten_cubic(px(bx + 58.0, top + 10.0), px(bx + 30.0, top - 8.0), px(bx - 30.0, top - 8.0), px(bx - 58.0, top + 10.0), 28));
+    seg(flatten_cubic(pxu(bx - 58.0, top + 10.0), pxu(bx - 80.0, top + 40.0), pxu(bx - bw - 6.0, bot - 120.0), pxu(bx - bw, bot - 50.0), 28));
+    seg(flatten_cubic(pxu(bx - bw, bot - 50.0), pxu(bx - bw + 4.0, bot + 6.0), pxu(bx + bw - 4.0, bot + 6.0), pxu(bx + bw, bot - 50.0), 28));
+    seg(flatten_cubic(pxu(bx + bw, bot - 50.0), pxu(bx + bw + 6.0, bot - 120.0), pxu(bx + 80.0, top + 40.0), pxu(bx + 58.0, top + 10.0), 28));
+    seg(flatten_cubic(pxu(bx + 58.0, top + 10.0), pxu(bx + 30.0, top - 8.0), pxu(bx - 30.0, top - 8.0), pxu(bx - 58.0, top + 10.0), 28));
     p.fill_polygon(&bean, rgba(&look.body));
     let mask = p.polygon_mask(&bean);
     // Pattern (clipped to the bean, as drawPattern runs inside the
@@ -872,10 +998,10 @@ pub(crate) fn paint_toon_full(
         let mut sx = bx - 130.0;
         while sx < bx + 130.0 {
             let rect = [
-                px(sx, top - 20.0),
-                px(sx + 14.0, top - 20.0),
-                px(sx + 14.0, bot + 20.0),
-                px(sx, bot + 20.0),
+                pxu(sx, top - 20.0),
+                pxu(sx + 14.0, top - 20.0),
+                pxu(sx + 14.0, bot + 20.0),
+                pxu(sx, bot + 20.0),
             ];
             fill_polygon_masked(&mut p, &rect, &mask, pc);
             sx += 36.0;
@@ -894,13 +1020,13 @@ pub(crate) fn paint_toon_full(
         let body_pts: Vec<(f32, f32)> =
             rounded_rect_pts_radii(bx - 70.0, top + 90.0, 140.0, bot - top, [18.0; 4], 6)
                 .iter()
-                .map(|&(x, y)| px(x, y))
+                .map(|&(x, y)| pxu(x, y))
                 .collect();
         fill_polygon_masked(&mut p, &body_pts, &mask, rgba(pc_hex));
         let pocket: Vec<(f32, f32)> =
             rounded_rect_pts_radii(bx - 40.0, top + 190.0, 80.0, 60.0, [8.0; 4], 6)
                 .iter()
-                .map(|&(x, y)| px(x, y))
+                .map(|&(x, y)| pxu(x, y))
                 .collect();
         let mut ring = pocket.clone();
         ring.push(pocket[0]);
@@ -910,27 +1036,27 @@ pub(crate) fn paint_toon_full(
         let pc = look.pat_col.as_deref().unwrap_or("#3B3346");
         for s in [-1.0f32, 1.0] {
             let panel = [
-                px(bx + s * 140.0, top - 10.0),
-                px(bx + s * 8.0, top + 120.0),
-                px(bx + s * 8.0, bot + 20.0),
-                px(bx + s * 140.0, bot + 20.0),
+                pxu(bx + s * 140.0, top - 10.0),
+                pxu(bx + s * 8.0, top + 120.0),
+                pxu(bx + s * 8.0, bot + 20.0),
+                pxu(bx + s * 140.0, bot + 20.0),
             ];
             fill_polygon_masked(&mut p, &panel, &mask, rgba(pc));
         }
         for dy in [150.0f32, 195.0, 240.0] {
-            let (cxp, cyp) = px(bx + 26.0, top + dy);
-            p.fill_ellipse(cxp, cyp, 6.0 * RES, 6.0 * RES, th, rgba("#E9C46A"));
+            let (cxp, cyp) = pxu(bx + 26.0, top + dy);
+            p.fill_ellipse(cxp, cyp, 6.0 * RES, 6.0 * RES, th_up, rgba("#E9C46A"));
         }
     }
     // Shade + highlight, clipped.
-    let (shx, shy) = px(bx + bw + 40.0, (top + bot) / 2.0 + 20.0);
+    let (shx, shy) = pxu(bx + bw + 40.0, (top + bot) / 2.0 + 20.0);
     let shade_col = match &look.shade {
         Some(s) => rgba(s.as_str()),
         None => shade_rgba(&look.body, 0.8),
     };
-    p.fill_ellipse_masked(shx, shy, 70.0 * RES, 260.0 * RES, th, (shade_col.0, shade_col.1, shade_col.2, (0.85 * 255.0) as u8), &mask);
-    let (hix, hiy) = px(bx - 50.0, top + 90.0);
-    p.fill_ellipse_masked(hix, hiy, 16.0 * RES, 60.0 * RES, 0.2 + th, (255, 255, 255, (0.25 * 255.0) as u8), &mask);
+    p.fill_ellipse_masked(shx, shy, 70.0 * RES, 260.0 * RES, th_up, (shade_col.0, shade_col.1, shade_col.2, (0.85 * 255.0) as u8), &mask);
+    let (hix, hiy) = pxu(bx - 50.0, top + 90.0);
+    p.fill_ellipse_masked(hix, hiy, 16.0 * RES, 60.0 * RES, sgn * 0.2 + th_up, (255, 255, 255, (0.25 * 255.0) as u8), &mask);
     {
         let mut ring = bean.clone();
         ring.push(bean[0]);
@@ -942,11 +1068,11 @@ pub(crate) fn paint_toon_full(
         "tie" => {
             let c = look.neck_col.as_deref().unwrap_or("#D8343F");
             let poly = [
-                px(bx - 14.0, top + 10.0),
-                px(bx + 14.0, top + 10.0),
-                px(bx + 20.0, top + 140.0),
-                px(bx, top + 170.0),
-                px(bx - 20.0, top + 140.0),
+                pxu(bx - 14.0, top + 10.0),
+                pxu(bx + 14.0, top + 10.0),
+                pxu(bx + 20.0, top + 140.0),
+                pxu(bx, top + 170.0),
+                pxu(bx - 20.0, top + 140.0),
             ];
             p.fill_polygon(&poly, rgba(c));
             let mut ring = poly.to_vec();
@@ -956,10 +1082,10 @@ pub(crate) fn paint_toon_full(
         "scarf" => {
             let c = look.neck_col.as_deref().unwrap_or("#D8343F");
             let tail = [
-                px(bx + 20.0, top + 20.0),
-                px(bx + 58.0, top + 130.0),
-                px(bx + 24.0, top + 138.0),
-                px(bx + 6.0, top + 26.0),
+                pxu(bx + 20.0, top + 20.0),
+                pxu(bx + 58.0, top + 130.0),
+                pxu(bx + 24.0, top + 138.0),
+                pxu(bx + 6.0, top + 26.0),
             ];
             p.fill_polygon(&tail, rgba(c));
             let mut ring = tail.to_vec();
@@ -967,10 +1093,10 @@ pub(crate) fn paint_toon_full(
             p.stroke_polyline(&ring, lw(6.0), ink);
             // Wrap: two quads forming the band, then its shade line.
             let mut band: Vec<(f32, f32)> = Vec::new();
-            band.extend_from_slice(&flatten_quad(px(bx - 70.0, top + 4.0), px(bx, top + 44.0), px(bx + 70.0, top + 4.0), 16));
-            let lower = flatten_quad(px(bx + 70.0, top + 4.0), px(bx + 66.0, top + 34.0), px(bx, top + 76.0), 16);
+            band.extend_from_slice(&flatten_quad(pxu(bx - 70.0, top + 4.0), pxu(bx, top + 44.0), pxu(bx + 70.0, top + 4.0), 16));
+            let lower = flatten_quad(pxu(bx + 70.0, top + 4.0), pxu(bx + 66.0, top + 34.0), pxu(bx, top + 76.0), 16);
             band.extend_from_slice(&lower[1..]);
-            let lower2 = flatten_quad(px(bx, top + 76.0), px(bx - 66.0, top + 34.0), px(bx - 70.0, top + 4.0), 16);
+            let lower2 = flatten_quad(pxu(bx, top + 76.0), pxu(bx - 66.0, top + 34.0), pxu(bx - 70.0, top + 4.0), 16);
             band.extend_from_slice(&lower2[1..]);
             p.fill_polygon(&band, rgba(c));
             let mut bring = band.clone();
@@ -978,9 +1104,9 @@ pub(crate) fn paint_toon_full(
             p.stroke_polyline(&bring, lw(6.0), ink);
             let shade = shade_rgba(c, 0.75);
             p.stroke_quad(
-                px(bx - 50.0, top + 26.0),
-                px(bx, top + 56.0),
-                px(bx + 50.0, top + 26.0),
+                pxu(bx - 50.0, top + 26.0),
+                pxu(bx, top + 56.0),
+                pxu(bx + 50.0, top + 26.0),
                 lw(4.0),
                 shade,
             );
@@ -992,9 +1118,9 @@ pub(crate) fn paint_toon_full(
             // top+46); fill + stroke lw6.
             for s in [-1.0f32, 1.0] {
                 let tri = [
-                    px(bx, top + 18.0),
-                    px(bx + s * 56.0, top + 2.0),
-                    px(bx + s * 40.0, top + 46.0),
+                    pxu(bx, top + 18.0),
+                    pxu(bx + s * 56.0, top + 2.0),
+                    pxu(bx + s * 40.0, top + 46.0),
                 ];
                 p.fill_polygon(&tri, rgba("#FFFFFF"));
                 let mut ring = tri.to_vec();
@@ -1018,17 +1144,23 @@ pub(crate) fn paint_toon_full(
         let ey = sy + (a1.cos() as f32) * 118.0;
         let hx2 = ex + side * (a2.sin() as f32) * 112.0;
         let hy2 = ey + (a2.cos() as f32) * 112.0;
-        let pts = flatten_quad(px(sx, sy), px(ex, ey), px(hx2, hy2), 20);
+        let pts = flatten_quad(pxu(sx, sy), pxu(ex, ey), pxu(hx2, hy2), 20);
         p.stroke_polyline(&pts, lw(14.0), ink);
         if let Some(plate) = hold {
-            composite_plate(&mut p, plate, (hx2, hy2), th, (anx, any));
+            composite_plate(&mut p, plate, (hx2, hy2), th, (anx, any), flip, pitch_rad, (bx, hip_y));
         }
-        let (hxp, hyp) = px(hx2, hy2);
-        p.fill_ellipse(hxp, hyp, 15.0 * RES, 17.0 * RES, th, ink);
+        let (hxp, hyp) = pxu(hx2, hy2);
+        p.fill_ellipse(hxp, hyp, 15.0 * RES, 17.0 * RES, th_up, ink);
+        // Returned hands are the PITCHED stage positions (Spec 3,
+        // as TS rotPt) — the plate above keeps the UN-pitched
+        // hand as its figure-local origin. Flip does not change
+        // the returned stage coordinates (TS returns pre-flip
+        // stage hands; only pitch is folded in).
+        let hand_ret = pitch_pt(hx2, hy2, bx, hip_y, pitch_deg);
         if side < 0.0 {
-            hands.0 = (hx2, hy2);
+            hands.0 = hand_ret;
         } else {
-            hands.1 = (hx2, hy2);
+            hands.1 = hand_ret;
         }
     }
 
@@ -1432,7 +1564,7 @@ pub(crate) fn paint_toon_full(
             let cap = rgba(cap_hex);
             {
                 let (ccx, ccy) = hpt(hatx + 6.0, htop + 34.0);
-                let (rx, ry, rot) = (rp * 0.98 * (1.0 - 0.3 * sq) * RES, 62.0 * (1.0 + sq) * RES, -0.05 + head_rot);
+                let (rx, ry, rot) = (rp * 0.98 * (1.0 - 0.3 * sq) * RES, 62.0 * (1.0 + sq) * RES, -0.05 * sgn + head_rot);
                 let (s3, c3) = rot.sin_cos();
                 let mut pts: Vec<(f32, f32)> = Vec::new();
                 for i in 0..=48 {
@@ -1447,7 +1579,7 @@ pub(crate) fn paint_toon_full(
             }
             {
                 let (bcx, bcy) = hpt(hatx - 24.0, htop + 40.0);
-                let (rx, ry, rot) = (rp * 0.78 * (1.0 - 0.3 * sq) * RES, 22.0 * (1.0 + sq) * RES, 0.05 + head_rot);
+                let (rx, ry, rot) = (rp * 0.78 * (1.0 - 0.3 * sq) * RES, 22.0 * (1.0 + sq) * RES, 0.05 * sgn + head_rot);
                 let (s3, c3) = rot.sin_cos();
                 let mut pts: Vec<(f32, f32)> = Vec::new();
                 for i in 0..=48 {
@@ -1700,7 +1832,7 @@ pub(crate) fn paint_toon_full(
             for s in [-1.0f32, 1.0] {
                 let (lx2, ly2) = hpt(hatx + s * (rp + 4.0), hy + 10.0);
                 let (lrx, lry) = (22.0 * (1.0 - 0.3 * sq) * RES, 50.0 * (1.0 + sq) * RES);
-                let lrot = head_rot - s * 0.2;
+                let lrot = head_rot - sgn * s * 0.2;
                 p.fill_ellipse(lx2, ly2, lrx, lry, lrot, lock_col);
                 p.stroke_ellipse(lx2, ly2, lrx, lry, lrot, lw(6.0), ink);
             }
@@ -1724,7 +1856,7 @@ pub(crate) fn paint_toon_full(
             p.stroke_polyline(&ring, lw(9.0), ink);
             {
                 let (bcx, bcy) = hpt(hatx - 10.0, htop + 34.0);
-                let (rx, ry, rot) = (rp * 0.82 * (1.0 - 0.3 * sq) * RES, 18.0 * (1.0 + sq) * RES, 0.04 + head_rot);
+                let (rx, ry, rot) = (rp * 0.82 * (1.0 - 0.3 * sq) * RES, 18.0 * (1.0 + sq) * RES, 0.04 * sgn + head_rot);
                 let (s3, c3) = rot.sin_cos();
                 let mut pts: Vec<(f32, f32)> = Vec::new();
                 for i in 0..=48 {
@@ -2237,5 +2369,354 @@ mod sweat_tests {
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod flippitch_tests {
+    use super::*;
+    use std::collections::HashSet;
+
+    fn fnv(px: &[u8]) -> u64 {
+        let mut h: u64 = 0xcbf29ce484222325;
+        for &b in px {
+            h ^= b as u64;
+            h = h.wrapping_mul(0x100000001b3);
+        }
+        h
+    }
+
+    fn look() -> FullLook {
+        // The gpupaint_states base look (the look the pre-port
+        // pins in brow_tests / sweat_tests were captured with).
+        FullLook {
+            body: "#E8734A".into(),
+            head: "#F7F7FA".into(),
+            shade: None,
+            pattern: "plain".into(),
+            pat_col: None,
+            hat: "none".into(),
+            hat_col: None,
+            band: None,
+            neck: "none".into(),
+            neck_col: None,
+            glasses: false,
+            mustache: false,
+            mustache_col: None,
+            kid: false,
+            blush: false,
+            freckles: false,
+            pencil: false,
+            monocle: false,
+            hair_col: None,
+            wing: false,
+            wing_col: None,
+            wing_lens: Vec::new(),
+            ears: false,
+            hair: false,
+        }
+    }
+
+    fn paint_hash(st: &FullState) -> u64 {
+        let (px, w, h, _, _) = paint_toon_full(&look(), st);
+        assert_eq!((w, h), (2560, 2816));
+        fnv(&px)
+    }
+
+    /// Defaults byte-identity (flip §5d acceptance "flip: false
+    /// renders byte-identical to today" + Spec 3 acceptance
+    /// "byte-identity at 0"): the neutral default paint must
+    /// reproduce the PRE-PORT pinned hash (brow_tests pin at
+    /// f4b358d, before flip/pitch existed in the painter) under
+    /// flip=false explicitly, and under every pitch-0 variant:
+    /// absent (Default), 0, 0 + counter 0, 0 + counter 0.37.
+    #[test]
+    fn defaults_reproduce_pre_port_hash() {
+        const PRE_PORT_NEUTRAL: u64 = 0xd413603252323a7c;
+        assert_eq!(paint_hash(&FullState::default()), PRE_PORT_NEUTRAL);
+        let mut s = FullState::default();
+        s.flip = false;
+        assert_eq!(paint_hash(&s), PRE_PORT_NEUTRAL, "explicit flip:false drifted");
+        for counter in [1.0f32, 0.0, 0.37] {
+            let mut s = FullState::default();
+            s.body_pitch = 0.0;
+            s.body_pitch_counter = counter;
+            assert_eq!(
+                paint_hash(&s),
+                PRE_PORT_NEUTRAL,
+                "pitch 0 with counter {counter} must paint identically (Spec 3)"
+            );
+        }
+    }
+
+    /// Flip acceptance (Spec §5d, S12-placement): the fixture
+    /// cells {neutral, happy} x flip x bob {0, 14} x lean {0, 9}
+    /// = 16 cells must yield 16 DISTINCT paint classes (TS 16;
+    /// pre-port Rust merged the 8 flip pairs -> 8).
+    #[test]
+    fn flip_s12_sixteen_classes() {
+        let mut seen: HashSet<u64> = HashSet::new();
+        for mood in [Mood::Neutral, Mood::Happy] {
+            for flip in [false, true] {
+                for bob in [0.0f32, 14.0] {
+                    for lean in [0.0f32, 9.0] {
+                        let mut s = FullState::default();
+                        s.mood = mood;
+                        s.flip = flip;
+                        s.bob = bob;
+                        s.lean = lean;
+                        let h = paint_hash(&s);
+                        assert!(
+                            seen.insert(h),
+                            "S12 cell merged: mood={mood:?} flip={flip} bob={bob} lean={lean}"
+                        );
+                    }
+                }
+            }
+        }
+        assert_eq!(seen.len(), 16, "S12 must refine to 16 classes (TS 16, pre-port 8)");
+    }
+
+    /// Flip is a whole-figure mirror, measured: the flipped paint
+    /// of an asymmetric state (Suspicious slit eye + look offset
+    /// + arm asymmetry) against the device-mirror of the
+    /// unflipped paint. Exact bit-mirror is not demanded (cubic /
+    /// quad flattening rounds differently in mirrored order);
+    /// the measured diff is printed and bounded well under 0.1%
+    /// of the canvas — a missed mirror on any part (a brow, an
+    /// ellipse rotation, the plate) would blow past it by orders
+    /// of magnitude.
+    #[test]
+    fn flip_paint_mirrors_the_unflipped_paint() {
+        let mut s = FullState::default();
+        s.mood = Mood::Suspicious;
+        s.look = [0.4, -0.3];
+        s.arm_l = (28.0, -24.0);
+        s.arm_r = (68.0, -42.0);
+        let (a, w, h, _, _) = paint_toon_full(&look(), &s);
+        s.flip = true;
+        let (b, _, _, _, _) = paint_toon_full(&look(), &s);
+        let w = w as usize;
+        let mut diff_px = 0u64;
+        let mut max_d = 0u8;
+        for y in 0..h as usize {
+            for x in 0..w {
+                let ka = (y * w + x) * 4;
+                let kb = (y * w + (w - 1 - x)) * 4;
+                let mut differs = false;
+                for ch in 0..4 {
+                    let d = (a[ka + ch] as i32 - b[kb + ch] as i32).abs();
+                    if d > 0 {
+                        differs = true;
+                        max_d = max_d.max(d as u8);
+                    }
+                }
+                if differs {
+                    diff_px += 1;
+                }
+            }
+        }
+        println!("FLIP-MIRROR: diff_px={diff_px} max_delta={max_d} of {} px", w * h as usize);
+        assert!(
+            diff_px < 7_200,
+            "flipped paint is not the mirror of the unflipped paint: {diff_px} differing px (max delta {max_d})"
+        );
+    }
+
+    /// Flip + anchor: the anchor is solved in mirrored space, so
+    /// flipping an anchor-engaging state negates ax and keeps ay
+    /// (the canvas bounds are symmetric about the stage centre
+    /// x=256: [-380, 892]).
+    #[test]
+    fn flip_anchor_mirrors_ax() {
+        let l = look();
+        let mut s = FullState::default();
+        s.mood = Mood::Dizzy;
+        s.arm_l = (150.0, 20.0);
+        s.arm_r = (138.0, -30.0);
+        s.head_tilt = 4.0;
+        s.lean = 82.0;
+        let (ax, ay) = canvas_anchor(&l, &s);
+        assert!(ax < -50.0, "unflipped lying lean must engage, got {ax}");
+        s.flip = true;
+        let (fx, fy) = canvas_anchor(&l, &s);
+        assert!((fx + ax).abs() < 1e-3, "flipped ax {fx} must negate unflipped ax {ax}");
+        assert!((fy - ay).abs() < 1e-3, "flipped ay {fy} must equal unflipped ay {ay}");
+    }
+
+    /// Spec 3 counter-tilt, exact: state headTilt 10, bodyPitch
+    /// 60 -> effective head rotation -50 at counter 1, -20 at
+    /// 0.5, +10 at 0 (the spec's TS numbers, verbatim).
+    #[test]
+    fn pitch_counter_tilt_exact() {
+        for (counter, want) in [(1.0f32, -50.0f32), (0.5, -20.0), (0.0, 10.0)] {
+            let mut s = FullState::default();
+            s.head_tilt = 10.0;
+            s.body_pitch = 60.0;
+            s.body_pitch_counter = counter;
+            assert_eq!(effective_head_tilt(&s), want, "counter {counter}");
+        }
+    }
+
+    /// Spec 3 hands: the returned hand positions are the pitched
+    /// stage positions — pitch_pt of the un-pitched hands, to
+    /// float precision — and the hip pivot itself is
+    /// pitch-invariant.
+    #[test]
+    fn pitch_hands_are_pitched_positions() {
+        let l = look();
+        let mut s = FullState::default();
+        s.arm_l = (28.0, -24.0);
+        s.arm_r = (68.0, -42.0);
+        let (_, _, _, hl0, hr0) = paint_toon_full(&l, &s);
+        s.body_pitch = 60.0;
+        let (_, _, _, hl1, hr1) = paint_toon_full(&l, &s);
+        // Rest geometry: by = 0, hip = (256, 600 - 26).
+        for (before, after) in [(hl0, hl1), (hr0, hr1)] {
+            let want = pitch_pt(before.0, before.1, 256.0, 574.0, 60.0);
+            assert!(
+                (after.0 - want.0).abs() < 1e-3 && (after.1 - want.1).abs() < 1e-3,
+                "hand {before:?} pitched to {after:?}, want {want:?}"
+            );
+            assert_ne!(after, before, "pitch 60 must move the hands");
+        }
+        assert_eq!(pitch_pt(256.0, 574.0, 256.0, 574.0, 60.0), (256.0, 574.0));
+    }
+
+    /// Spec 3 legs: at pitch 60 the leg strokes are identical to
+    /// pitch 0. Pixel-level form: the bottom strip of the canvas
+    /// (device rows >= 2400, stage y >= ~919 — feet + lower legs
+    /// only; no upper-assembly point of this state reaches it
+    /// under a 60-degree hip rotation) must be byte-identical
+    /// between the pitch-0 and pitch-60 paints, while the full
+    /// frames differ.
+    #[test]
+    fn pitch_60_legs_paint_identically() {
+        let l = look();
+        let s0 = FullState::default();
+        let (a, w, h, _, _) = paint_toon_full(&l, &s0);
+        let mut s1 = FullState::default();
+        s1.body_pitch = 60.0;
+        let (b, _, _, _, _) = paint_toon_full(&l, &s1);
+        assert_ne!(a, b, "pitch 60 must change the full paint");
+        let row_bytes = w as usize * 4;
+        let strip_a = &a[2400 * row_bytes..];
+        let strip_b = &b[2400 * row_bytes..];
+        assert_eq!(strip_a.len(), (h as usize - 2400) * row_bytes);
+        assert_eq!(strip_a, strip_b, "leg strip (rows >= 2400) differs under pitch 60");
+    }
+
+    /// Spec 3 envelope: the crawl working range (55–70°) never
+    /// engages the anchor at adult or kid scale, and a full
+    /// -90..180 sweep stays finite (anchor is a pure function —
+    /// no panic, no NaN).
+    #[test]
+    fn pitch_anchor_crawl_range_never_engages() {
+        for kid in [false, true] {
+            let mut l = look();
+            l.kid = kid;
+            for pitch in [55.0f32, 60.0, 65.0, 70.0] {
+                let mut s = FullState::default();
+                s.body_pitch = pitch;
+                assert_eq!(
+                    canvas_anchor(&l, &s),
+                    (0.0, 0.0),
+                    "crawl pitch {pitch} (kid={kid}) must not engage the anchor"
+                );
+            }
+            let mut p = -90.0f32;
+            while p <= 180.0 {
+                let mut s = FullState::default();
+                s.body_pitch = p;
+                let a = canvas_anchor(&l, &s);
+                assert!(a.0.is_finite() && a.1.is_finite(), "pitch {p}: anchor {a:?}");
+                p += 15.0;
+            }
+        }
+    }
+
+    // ---- B3-CARRY-1: plate sampling under flip / pitch ----
+    //
+    // A synthetic 40x40 plate (20x20 stage units), left half red,
+    // right half blue, fully opaque, centred on the hand at
+    // (256, 600) with hip (256, 574). Sampled at interior points
+    // 6 stage units either side of the plate centre — far from
+    // the half boundary and the plate edge, so bilinear sampling
+    // returns the exact half colour.
+
+    fn half_plate() -> Plate {
+        let (w, h) = (40u32, 40u32);
+        let mut px = vec![0u8; (w * h * 4) as usize];
+        for y in 0..h {
+            for x in 0..w {
+                let k = ((y * w + x) * 4) as usize;
+                let (r, b) = if x < 20 { (255u8, 0u8) } else { (0u8, 255u8) };
+                px[k] = r;
+                px[k + 2] = b;
+                px[k + 3] = 255;
+            }
+        }
+        Plate { px, w, h, x0: -10.0, y0: -10.0 }
+    }
+
+    fn sample(p: &Painter, stage_x: f32, stage_y: f32) -> (u8, u8, u8, u8) {
+        // Stage -> canvas device pixel (lean 0, anchor 0):
+        // ((x + 384) * RES, (y + 256) * RES), pixel-centre safe
+        // for the integer stage points used here.
+        let cx = ((stage_x + 384.0) * RES) as usize;
+        let cy = ((stage_y + 256.0) * RES) as usize;
+        let k = (cy * p.w + cx) * 4;
+        (p.px[k], p.px[k + 1], p.px[k + 2], p.px[k + 3])
+    }
+
+    const RED: (u8, u8, u8, u8) = (255, 0, 0, 255);
+    const BLUE: (u8, u8, u8, u8) = (0, 0, 255, 255);
+
+    #[test]
+    fn plate_sampling_mirrors_under_flip() {
+        let plate = half_plate();
+        let hand = (256.0, 600.0);
+        let hip = (256.0, 574.0);
+        // Unflipped: stage (250, 600) samples the plate's left
+        // (red) half; (262, 600) the right (blue) half.
+        let mut p = Painter::new(2560, 2816);
+        composite_plate(&mut p, &plate, hand, 0.0, (0.0, 0.0), false, 0.0, hip);
+        assert_eq!(sample(&p, 250.0, 600.0), RED, "unflipped left");
+        assert_eq!(sample(&p, 262.0, 600.0), BLUE, "unflipped right");
+        // Flipped: the SAME stage points must sample the OPPOSITE
+        // halves — the plate mirrors with the figure. Pre-B3-CARRY-1
+        // (lean+anchor-only inverse map) this returned RED/BLUE
+        // again: the plate was sampled un-mirrored.
+        let mut p = Painter::new(2560, 2816);
+        composite_plate(&mut p, &plate, hand, 0.0, (0.0, 0.0), true, 0.0, hip);
+        assert_eq!(sample(&p, 250.0, 600.0), BLUE, "flipped left must sample the blue half");
+        assert_eq!(sample(&p, 262.0, 600.0), RED, "flipped right must sample the red half");
+    }
+
+    #[test]
+    fn plate_sampling_rotates_under_pitch() {
+        let plate = half_plate();
+        let hand = (256.0, 600.0);
+        let hip = (256.0, 574.0);
+        // Pitch +90 about the hip: the plate-local point
+        // (250, 600) (red half) rotates to stage (230, 568);
+        // (262, 600) (blue half) rotates to (230, 580).
+        // (rotPt: rel hip (-6, 26) -> (-26, -6); (6, 26) -> (-26, 6).)
+        let mut p = Painter::new(2560, 2816);
+        composite_plate(
+            &mut p,
+            &plate,
+            hand,
+            0.0,
+            (0.0, 0.0),
+            false,
+            std::f32::consts::FRAC_PI_2,
+            hip,
+        );
+        assert_eq!(sample(&p, 230.0, 568.0), RED, "pitched red half must land at (230, 568)");
+        assert_eq!(sample(&p, 230.0, 580.0), BLUE, "pitched blue half must land at (230, 580)");
+        // And the un-pitched location no longer carries the plate's
+        // red half (the plate has rotated away from it).
+        assert_ne!(sample(&p, 250.0, 600.0), RED, "plate must not sample un-pitched under pitch 90");
     }
 }

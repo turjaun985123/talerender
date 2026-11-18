@@ -46,7 +46,12 @@ pub(crate) enum Prim {
     FillRect { x: f32, y: f32, w: f32, h: f32, col: Rgba },
     PolygonMask { pts: Vec<(f32, f32)> },
     EllipseMask { cx: f32, cy: f32, rx: f32, ry: f32, rot: f32 },
-    CompositePlate { plate: usize, hand: (f32, f32), lean_rad: f32, anchor: (f32, f32) },
+    /// B3-CARRY-1 (Batch 3): `flip` / `pitch_rad` / `hip` extend
+    /// the inverse map beyond lean + anchor — the plate rides the
+    /// upper assembly, so its sampling must undo the flip mirror
+    /// and the bodyPitch hip-pivot rotation as well. `hand` stays
+    /// the UN-pitched stage hand (the plate's figure-local origin).
+    CompositePlate { plate: usize, hand: (f32, f32), lean_rad: f32, anchor: (f32, f32), flip: bool, pitch_rad: f32, hip: (f32, f32) },
     /// The even-odd head shade: an open-coded per-pixel loop in
     /// both character painters (no Painter method), recorded as
     /// its own prim so the pixels are not silently dropped.
@@ -384,14 +389,16 @@ pub(crate) fn trace_masked_blend(rect: (i32, i32, i32, i32), mask: &[bool], col:
     record(Prim::MaskedBlend { rect, mask: mask_id, col });
 }
 
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn trace_composite_plate(
     plate: &Plate, hand: (f32, f32), lean_rad: f32, anchor: (f32, f32),
+    flip: bool, pitch_rad: f32, hip: (f32, f32),
 ) {
     if !active() {
         return;
     }
     let idx = push_plate(plate);
-    record(Prim::CompositePlate { plate: idx, hand, lean_rad, anchor });
+    record(Prim::CompositePlate { plate: idx, hand, lean_rad, anchor, flip, pitch_rad, hip });
 }
 
 // ---------------------------------------------------------------------
@@ -501,9 +508,9 @@ fn prim_json(p: &Prim) -> String {
         Prim::EllipseMask { cx, cy, rx, ry, rot } => format!(
             "{{\"t\":\"ellipse_mask\",\"cx\":{},\"cy\":{},\"rx\":{},\"ry\":{},\"rot\":{}}}",
             fb(*cx), fb(*cy), fb(*rx), fb(*ry), fb(*rot)),
-        Prim::CompositePlate { plate, hand, lean_rad, anchor } => format!(
-            "{{\"t\":\"composite_plate\",\"plate\":{},\"hand\":{},\"lean_rad\":{},\"anchor\":{}}}",
-            plate, pt_json(*hand), fb(*lean_rad), pt_json(*anchor)),
+        Prim::CompositePlate { plate, hand, lean_rad, anchor, flip, pitch_rad, hip } => format!(
+            "{{\"t\":\"composite_plate\",\"plate\":{},\"hand\":{},\"lean_rad\":{},\"anchor\":{},\"flip\":{},\"pitch_rad\":{},\"hip\":{}}}",
+            plate, pt_json(*hand), fb(*lean_rad), pt_json(*anchor), flip, fb(*pitch_rad), pt_json(*hip)),
         Prim::HeadShade { form, head_c, head_r, circ_c, circ_r, rot, rad, col } => format!(
             "{{\"t\":\"head_shade\",\"form\":{},\"head_c\":{},\"head_r\":{},\"circ_c\":{},\"circ_r\":{},\"rot\":{},\"rad\":{},\"col\":{}}}",
             form,
@@ -687,6 +694,18 @@ impl DisplayList {
                     hand: pt_of(g("hand")?, "hand")?,
                     lean_rad: f32_of(g("lean_rad")?, "lean_rad")?,
                     anchor: pt_of(g("anchor")?, "anchor")?,
+                    // B3-CARRY-1 additive fields: pre-Batch-3 lists
+                    // (no flip/pitch/hip keys) parse at the identity
+                    // defaults, so old recordings replay unchanged.
+                    flip: pv.get("flip").map(|v| matches!(v, Value::Bool(true))).unwrap_or(false),
+                    pitch_rad: match pv.get("pitch_rad") {
+                        Some(v) => f32_of(v, "pitch_rad")?,
+                        None => 0.0,
+                    },
+                    hip: match pv.get("hip") {
+                        Some(v) => pt_of(v, "hip")?,
+                        None => (256.0, 574.0),
+                    },
                 },
                 "head_shade" => Prim::HeadShade {
                     form: {
@@ -781,6 +800,9 @@ mod tests {
                     hand: (10.0, 20.0),
                     lean_rad: 0.125,
                     anchor: (0.0, -0.0),
+                    flip: true,
+                    pitch_rad: -0.5,
+                    hip: (256.0, 574.0),
                 },
                 Prim::HeadShade {
                     form: 1,
@@ -815,6 +837,29 @@ mod tests {
                 assert_eq!(rot.to_bits(), 0x7fc0_0042);
             }
             other => panic!("prim 0 changed shape: {other:?}"),
+        }
+    }
+
+    #[test]
+    fn composite_plate_pre_b3_json_parses_at_identity_defaults() {
+        // A pre-Batch-3 display list: composite_plate WITHOUT the
+        // B3-CARRY-1 flip/pitch_rad/hip keys must parse at the
+        // identity defaults (flip false, pitch 0, rest hip), so
+        // old recordings replay unchanged.
+        let text = "{\"format\":\"talerender-displaylist\",\"version\":1,\
+            \"canvas_w\":64,\"canvas_h\":64,\"plates\":[],\"prims\":[\
+            {\"t\":\"composite_plate\",\"plate\":0,\
+            \"hand\":[{\"b\":1092616192},{\"b\":1101004800}],\
+            \"lean_rad\":{\"b\":1040187392},\
+            \"anchor\":[{\"b\":0},{\"b\":2147483648}]}]}";
+        let list = DisplayList::from_json(text).expect("pre-B3 list parses");
+        match &list.prims[0] {
+            Prim::CompositePlate { flip, pitch_rad, hip, .. } => {
+                assert!(!flip);
+                assert_eq!(pitch_rad.to_bits(), 0.0f32.to_bits());
+                assert_eq!(*hip, (256.0, 574.0));
+            }
+            other => panic!("prim 0 shape: {other:?}"),
         }
     }
 

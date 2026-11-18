@@ -738,7 +738,7 @@ fn prepare(list: &gputrace::DisplayList) -> Result<(Vec<PrepPrim>, HashMap<u32, 
                 p.u0([*form as u32, 0, 0, 0]);
                 PrepPrim { kind: "head_shade", entry: "main_headshade", params: p.bytes(), pts: Vec::new(), plate: None, mask_prim: None, bbox, groups: groups_of(bbox) }
             }
-            Prim::CompositePlate { plate, hand, lean_rad, anchor } => {
+            Prim::CompositePlate { plate, hand, lean_rad, anchor, flip, pitch_rad, hip } => {
                 let pd = list
                     .plates
                     .get(*plate)
@@ -748,10 +748,24 @@ fn prepare(list: &gputrace::DisplayList) -> Result<(Vec<PrepPrim>, HashMap<u32, 
                 }
                 let (s, c) = lean_rad.sin_cos();
                 let (ax, ay) = *anchor;
-                // toonfull::composite_plate's forward map, verbatim.
+                // B3-CARRY-1: pitch sin/cos for the WGSL inverse
+                // map, carried in the previously-spare p3 slot;
+                // flip / pitched flags in the spare u0.z / u0.w.
+                let pitched = *pitch_rad != 0.0;
+                let (sp, cp) = pitch_rad.sin_cos();
+                // toonfull::composite_plate's forward map, verbatim
+                // (pitch about the hip, lean, flip mirror — each
+                // step guarded so defaults reproduce the old map).
                 let fwd = |lx: f32, ly: f32| -> (f32, f32) {
-                    let (dx, dy) = (lx - 256.0, ly - 1000.0);
+                    let (ux, uy) = if pitched {
+                        let (dx, dy) = (lx - hip.0, ly - hip.1);
+                        (hip.0 + dx * cp - dy * sp, hip.1 + dx * sp + dy * cp)
+                    } else {
+                        (lx, ly)
+                    };
+                    let (dx, dy) = (ux - 256.0, uy - 1000.0);
                     let (rx, ry) = (256.0 + dx * c - dy * s, 1000.0 + dx * s + dy * c);
+                    let rx = if *flip { 512.0 - rx } else { rx };
                     ((rx + ax + 384.0) * PLATE_RES, (ry + ay + 256.0) * PLATE_RES)
                 };
                 let corners = [
@@ -772,7 +786,12 @@ fn prepare(list: &gputrace::DisplayList) -> Result<(Vec<PrepPrim>, HashMap<u32, 
                 p.p(0, [hand.0, hand.1, pd.x0, pd.y0]);
                 p.p(1, [s, c, ax, ay]);
                 p.p(2, [pd.w as f32, pd.h as f32, PLATE_RES, 0.0]);
-                p.u0([pd.w, pd.h, 0, 0]);
+                // B3-CARRY-1 param block: p3 = (sin pitch, cos
+                // pitch, hip.x, hip.y); u0.z = flip flag,
+                // u0.w = pitched flag (the WGSL inverse branches
+                // on the flags so default lists stay bit-exact).
+                p.p(3, [sp, cp, hip.0, hip.1]);
+                p.u0([pd.w, pd.h, *flip as u32, pitched as u32]);
                 let packed: Vec<u32> = pd
                     .px
                     .chunks_exact(4)
@@ -1343,7 +1362,7 @@ mod exec_tests {
             ], vec![])),
             ("head_shade0", one(vec![Prim::HeadShade { form: 0, head_c: (32.0, 32.0), head_r: (18.0, 20.0), circ_c: (40.0, 24.0), circ_r: (12.0, 9.0), rot: 0.2, rad: 22.5, col: (50, 60, 70, 128) }], vec![])),
             ("head_shade1", one(vec![Prim::HeadShade { form: 1, head_c: (32.0, 32.0), head_r: (18.0, 20.0), circ_c: (40.0, 24.0), circ_r: (15.0, 15.0), rot: 0.2, rad: 22.5, col: (50, 60, 70, 128) }], vec![])),
-            ("composite_plate", one(vec![Prim::CompositePlate { plate: 0, hand: (100.0, 200.0), lean_rad: 0.35, anchor: (12.0, -8.0) }],
+            ("composite_plate", one(vec![Prim::CompositePlate { plate: 0, hand: (100.0, 200.0), lean_rad: 0.35, anchor: (12.0, -8.0), flip: false, pitch_rad: 0.0, hip: (256.0, 574.0) }],
                 vec![gputrace::PlateData { px: (0..48u8).collect(), w: 4, h: 3, x0: 1.5, y0: -2.0 }])),
             ("stroke_polyline", one(vec![Prim::StrokePolyline { pts: vec![(5.0, 5.0), (20.0, 15.0), (35.0, 10.0), (50.0, 30.0)], width: 6.5, col: (255, 128, 0, 255) }], vec![])),
             ("fill_ellipse_masked", one(vec![
@@ -1363,7 +1382,7 @@ mod exec_tests {
             ("masked_blend", 1, "masked_blend", "40000000400000000500000006000000280000002c0000000000000000000000090000000800000007000000ff00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e000000090000001d00000023000000"),
             ("head_shade0", 0, "head_shade", "4000000040000000090000000900000037000000370000000000000000000000320000003c00000046000000800000000000004200000042000090410000a041f96f4b3ea5e57a3f0000000000000000000020420000c0410000404100001041000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"),
             ("head_shade1", 0, "head_shade", "4000000040000000090000000900000037000000370000000000000000000000320000003c00000046000000800000000000004200000042000090410000a041f96f4b3ea5e57a3f0000000000000000000020420000c0410000704100007041000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000"),
-            ("composite_plate", 0, "composite_plate", "40000000400000001a060000730300003f0000003f0000000000000000000000000000000000000000000000000000000000c842000048430000c03f000000c04d90af3ebb7a703f00004041000000c100008040000040400000004000000000000000000000000000000000000000000400000003000000000000000000000000000000000000000000000000000000"),
+            ("composite_plate", 0, "composite_plate", "40000000400000001a060000730300003f0000003f0000000000000000000000000000000000000000000000000000000000c842000048430000c03f000000c04d90af3ebb7a703f00004041000000c100008040000040400000004000000000000000000000803f0000804300800f440400000003000000000000000000000000000000000000000000000000000000"),
             ("stroke_polyline", 0, "stroke_polyline", "4000000040000000000000000000000037000000230000000000000000000000ff0000008000000000000000ff000000000050400000000000000000000000000000a0400000a040400155bfd5000ebf000050405e836c3f000048420000f0419a99193fcdcc4c3f000050405e836c3f0400000004000000040000000300000000000000000000000000000000000000"),
             ("fill_ellipse_masked", 0, "polygon_mask", "40000000400000000a0000000a000000320000003200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000a0000000a0000002900000029000000"),
             ("fill_ellipse_masked", 1, "fill_ellipse_masked", "40000000400000000f0000000e0000002d0000002a00000000000000000000004d0000005800000063000000d20000000000f0410000e0410000304100001041d761c73ea7ca6b3f00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000a0000000a0000002900000029000000"),
@@ -1387,6 +1406,51 @@ mod exec_tests {
             }
         }
         assert_eq!(gi, golden.len());
+    }
+
+    /// B3-CARRY-1 (Batch 3): a flipped + pitched CompositePlate
+    /// must reach the WGSL inverse map — p3 carries
+    /// (sin pitch, cos pitch, hip.x, hip.y) and u0.z / u0.w carry
+    /// the flip / pitched flags, in the slots Batch 2 left spare.
+    #[test]
+    fn plate_b3_carry1_params_carry_flip_and_pitch() {
+        let list = gputrace::DisplayList {
+            canvas_w: 2560,
+            canvas_h: 2816,
+            plates: vec![gputrace::PlateData {
+                px: (0..64u8).collect(),
+                w: 4,
+                h: 4,
+                x0: -2.0,
+                y0: -2.0,
+            }],
+            prims: vec![Prim::CompositePlate {
+                plate: 0,
+                hand: (300.0, 600.0),
+                lean_rad: 0.1,
+                anchor: (0.0, 0.0),
+                flip: true,
+                pitch_rad: 1.0,
+                hip: (256.0, 574.0),
+            }],
+        };
+        let (preps, _) = prepare(&list).expect("prepare");
+        let b = &preps[0].params;
+        let f32_at = |off: usize| f32::from_ne_bytes(b[off..off + 4].try_into().unwrap());
+        let u32_at = |off: usize| u32::from_ne_bytes(b[off..off + 4].try_into().unwrap());
+        // p3 at byte offset 96, u0 at 112 (Params layout, above).
+        assert_eq!(f32_at(96), 1.0f32.sin());
+        assert_eq!(f32_at(100), 1.0f32.cos());
+        assert_eq!(f32_at(104), 256.0);
+        assert_eq!(f32_at(108), 574.0);
+        assert_eq!(u32_at(112), 4); // plate w
+        assert_eq!(u32_at(116), 4); // plate h
+        assert_eq!(u32_at(120), 1); // flip flag
+        assert_eq!(u32_at(124), 1); // pitched flag
+        // The forward-mapped bbox must sit on the MIRRORED side:
+        // the hand at stage x=300 pitches about (256, 574) then
+        // mirrors to x < 256 stage, i.e. canvas x < (256+384)*2.
+        assert!(preps[0].bbox.2 < (256 + 384) * 2, "flipped plate bbox not mirrored: {:?}", preps[0].bbox);
     }
 
     #[test]
