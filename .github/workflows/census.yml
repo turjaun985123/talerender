@@ -41,6 +41,36 @@ on:
         type: boolean
         required: false
         default: false
+      max_ram_pct:
+        # GOV-CORE (GPUFIRST Batch 3): resource-governor RAM cap
+        # override for this run, exported as
+        # TALERENDER_MAX_RAM_PCT on the telemetry + census steps
+        # when non-empty. Empty = governor defaults (60). A
+        # small value (e.g. "5") is the forced-low-cap pressure
+        # run: the paint cache must shrink under its byte budget
+        # and still produce identical frame hashes.
+        description: "Governor RAM cap % (TALERENDER_MAX_RAM_PCT); empty = default 60"
+        type: string
+        required: false
+        default: ""
+      max_gpu_pct:
+        # GOV-CORE: governor GPU cap override, exported as
+        # TALERENDER_MAX_GPU_PCT when non-empty. The GPU cap is
+        # an APPROXIMATION (submission pacing; see
+        # src/resource.rs) — this input exercises the pacing
+        # path, it does not promise a utilisation %.
+        description: "Governor GPU cap % (TALERENDER_MAX_GPU_PCT, pacing approximation); empty = default 60"
+        type: string
+        required: false
+        default: ""
+      max_threads:
+        # GOV-CORE: governor thread cap override, exported as
+        # TALERENDER_MAX_THREADS when non-empty (consumed by
+        # parallel telemetry via governor().thread_cap()).
+        description: "Governor thread cap (TALERENDER_MAX_THREADS); empty = default (half the cores)"
+        type: string
+        required: false
+        default: ""
 
 env:
   CARGO_TERM_COLOR: always
@@ -60,7 +90,7 @@ jobs:
       - name: Install mold + lavapipe
         run: |
           sudo apt-get update
-          sudo apt-get install -y mold mesa-vulkan-drivers vulkan-tools
+          sudo apt-get install -y mold mesa-vulkan-drivers vulkan-tools time
           ICD=$(ls /usr/share/vulkan/icd.d/lvp_icd*.json | head -n 1)
           echo "VK_ICD_FILENAMES=$ICD" >> "$GITHUB_ENV"
           echo "lavapipe ICD: $ICD"
@@ -78,24 +108,44 @@ jobs:
           sha256sum ./target/release/talerender
           ./target/release/talerender --version
       - name: Film telemetry (verdict line is the contract)
+        env:
+          GOV_MAX_RAM: ${{ inputs.max_ram_pct }}
+          GOV_MAX_GPU: ${{ inputs.max_gpu_pct }}
+          GOV_MAX_THREADS: ${{ inputs.max_threads }}
         run: |
+          # GOV-CORE: governor overrides apply only when the
+          # dispatch inputs are non-empty (empty = defaults).
+          if [ -n "$GOV_MAX_RAM" ]; then export TALERENDER_MAX_RAM_PCT="$GOV_MAX_RAM"; fi
+          if [ -n "$GOV_MAX_GPU" ]; then export TALERENDER_MAX_GPU_PCT="$GOV_MAX_GPU"; fi
+          if [ -n "$GOV_MAX_THREADS" ]; then export TALERENDER_MAX_THREADS="$GOV_MAX_THREADS"; fi
           set +e
-          TALERENDER_PAINT_CACHE=24 ./target/release/talerender --film-telemetry film > telemetry.log 2>&1
+          TALERENDER_PAINT_CACHE=24 /usr/bin/time -v ./target/release/talerender --film-telemetry film > telemetry.log 2>&1
           rc=$?
           set -e
           grep -E "^(FILM TELEMETRY|paint-cache)" telemetry.log || true
+          grep -E "^governor:" telemetry.log || true
+          # GOV-CORE: peak RSS in the log, greppable.
+          grep -E "Maximum resident set size" telemetry.log || true
           echo "telemetry exit: $rc (0 = CHECK OK, 1 = CHECK FAILED, 3 = could not run)"
           exit $rc
       - name: Film telemetry FLAGGED (gpupaint dispatches only)
         if: ${{ inputs.gpupaint }}
         env:
           TALERENDER_GPUPAINT: "1"
+          GOV_MAX_RAM: ${{ inputs.max_ram_pct }}
+          GOV_MAX_GPU: ${{ inputs.max_gpu_pct }}
+          GOV_MAX_THREADS: ${{ inputs.max_threads }}
         run: |
+          if [ -n "$GOV_MAX_RAM" ]; then export TALERENDER_MAX_RAM_PCT="$GOV_MAX_RAM"; fi
+          if [ -n "$GOV_MAX_GPU" ]; then export TALERENDER_MAX_GPU_PCT="$GOV_MAX_GPU"; fi
+          if [ -n "$GOV_MAX_THREADS" ]; then export TALERENDER_MAX_THREADS="$GOV_MAX_THREADS"; fi
           set +e
-          TALERENDER_PAINT_CACHE=24 ./target/release/talerender --film-telemetry film > telemetry-flagged.log 2>&1
+          TALERENDER_PAINT_CACHE=24 /usr/bin/time -v ./target/release/talerender --film-telemetry film > telemetry-flagged.log 2>&1
           rc=$?
           set -e
           grep -E "^(FILM TELEMETRY|paint-cache)" telemetry-flagged.log || true
+          grep -E "^governor:" telemetry-flagged.log || true
+          grep -E "Maximum resident set size" telemetry-flagged.log || true
           echo "flagged telemetry exit: $rc (0 = CHECK OK, 1 = CHECK FAILED, 3 = could not run)"
           exit $rc
       - name: Full-film census (chunked renders, hashes to log, frames deleted)
@@ -106,14 +156,25 @@ jobs:
           # the variable is ignored entirely. Scoped to THIS
           # step: the telemetry step above never sees it.
           TALERENDER_GPUPAINT: ${{ inputs.gpupaint && '1' || '0' }}
+          GOV_MAX_RAM: ${{ inputs.max_ram_pct }}
+          GOV_MAX_GPU: ${{ inputs.max_gpu_pct }}
+          GOV_MAX_THREADS: ${{ inputs.max_threads }}
         run: |
           echo "census paint env: TALERENDER_GPUPAINT=$TALERENDER_GPUPAINT"
+          # GOV-CORE: governor overrides, only when non-empty.
+          if [ -n "$GOV_MAX_RAM" ]; then export TALERENDER_MAX_RAM_PCT="$GOV_MAX_RAM"; fi
+          if [ -n "$GOV_MAX_GPU" ]; then export TALERENDER_MAX_GPU_PCT="$GOV_MAX_GPU"; fi
+          if [ -n "$GOV_MAX_THREADS" ]; then export TALERENDER_MAX_THREADS="$GOV_MAX_THREADS"; fi
+          echo "census governor env: TALERENDER_MAX_RAM_PCT=${TALERENDER_MAX_RAM_PCT:-<default>} TALERENDER_MAX_GPU_PCT=${TALERENDER_MAX_GPU_PCT:-<default>} TALERENDER_MAX_THREADS=${TALERENDER_MAX_THREADS:-<default>}"
           total=0
           for range in "0 250" "250 500" "500 750" "750 1000" "1000 1250" "1250 1500" "1500 1750" "1750 1811"; do
             set -- $range
             out="census-$1-$2"
-            ./target/release/talerender --film film --out "$out" --from "$1" --to "$2" > "$out.log" 2>&1
+            /usr/bin/time -v ./target/release/talerender --film film --out "$out" --from "$1" --to "$2" > "$out.log" 2>&1
             grep -E "^(renderer:|gpu-mem:|film render complete|paint-backend:)" "$out.log" || true
+            grep -E "^governor:" "$out.log" || true
+            # GOV-CORE: peak RSS per chunk, greppable in the log.
+            grep -E "Maximum resident set size" "$out.log" || true
             echo "== sha256 $out =="
             sha256sum "$out"/frame_*.png
             n=$(ls "$out"/frame_*.png | wc -l)

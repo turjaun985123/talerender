@@ -165,6 +165,19 @@ impl PaintBudget {
         )
     }
 
+    /// GOV-CORE (GPUFIRST Batch 3): cap the byte budget at
+    /// `cap` — the governor's paint-cache share of the RAM
+    /// budget (resource.rs). A disabled budget (0) is REPLACED
+    /// by the cap: under the governor there is always a byte
+    /// bound, and the smaller of the operator's budget and the
+    /// governor's share wins. Eviction under either bound
+    /// costs re-paint time, never pixels (module law above).
+    pub(crate) fn cap_budget_bytes(&mut self, cap: u64) {
+        if self.budget_bytes == 0 || cap < self.budget_bytes {
+            self.budget_bytes = cap;
+        }
+    }
+
     /// Would an entry of `bytes` fit within the byte budget once
     /// resident? Always true when the byte budget is disabled.
     /// The cache may use this to skip retaining a single entry
@@ -544,6 +557,20 @@ mod tests {
         let mut b = PaintBudget::new(0, 160);
         b.on_miss("x");
         assert_eq!(b.hit_rate_permille(), 0); // all misses
+    }
+
+    #[test]
+    fn governor_cap_takes_the_smaller_budget() {
+        let mut b = PaintBudget::new(2000, 160);
+        b.cap_budget_bytes(1000);
+        assert_eq!(b.budget_bytes(), 1000);
+        // A larger governor cap never raises an operator budget.
+        b.cap_budget_bytes(5000);
+        assert_eq!(b.budget_bytes(), 1000);
+        // A disabled budget (0) is replaced by the cap.
+        let mut b = PaintBudget::new(0, 160);
+        b.cap_budget_bytes(700);
+        assert_eq!(b.budget_bytes(), 700);
     }
 
     #[test]

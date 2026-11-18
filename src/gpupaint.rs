@@ -1098,6 +1098,11 @@ async fn replay_gpu(
         dispatches += 1;
     }
 
+    // GOV-CORE GPU pacing (APPROXIMATION — a userspace
+    // submission delay cannot enforce a GPU utilisation %;
+    // see resource.rs): paced BEFORE the timing origin so the
+    // harness's gpu_wall_ms still measures submit->complete.
+    crate::resource::pace_gpu_submission();
     // GPU wall time: queue submit -> completion (readback excluded).
     let t0 = std::time::Instant::now();
     queue.submit(Some(encoder.finish()));
@@ -1118,6 +1123,8 @@ async fn replay_gpu(
         label: Some("gpupaint readback"),
     });
     enc2.copy_buffer_to_buffer(&canvas, 0, &staging, 0, (npix * 4) as u64);
+    // GOV-CORE GPU pacing (APPROXIMATION, as above).
+    crate::resource::pace_gpu_submission();
     queue.submit(Some(enc2.finish()));
     let slice = staging.slice(..);
     let (tx, rx) = std::sync::mpsc::channel();

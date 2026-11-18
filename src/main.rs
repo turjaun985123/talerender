@@ -60,6 +60,7 @@ mod locomotion;
 mod paint_backend;
 mod paintbudget;
 mod rendergraph;
+mod resource;
 mod runlog;
 mod scheduler;
 mod schedwire;
@@ -169,6 +170,29 @@ OPTIONS:
                             on machines with <= 8 GiB RAM).
                             Profiles change budgets and queue
                             sizes only — never quality.
+    --max-gpu-pct <N>       Resource governor: GPU cap, an
+                            integer percentage 1..=100
+                            (default: 60). APPROXIMATION only:
+                            a utilisation % cannot be enforced
+                            from userspace; the cap drives
+                            submission pacing / queue depth
+                            (see src/resource.rs). Never a
+                            hard GPU-% guarantee.
+    --max-ram-pct <N>       Resource governor: RAM cap, an
+                            integer percentage 1..=100 of total
+                            RAM (default: 60). Directly
+                            enforced as byte budgets on the
+                            paint cache and texture/buffer
+                            pools. On an integrated GPU this
+                            one budget covers GPU allocations
+                            too — same shared pool.
+    --max-threads <N>       Resource governor: thread cap, a
+                            positive integer (default: half the
+                            logical cores, min 1). Requests
+                            above the core count are clamped
+                            to it and the clamp is printed.
+                            Consumed by parallel telemetry;
+                            parsed and reported in every run.
     --adapter-policy <P>    Adapter selection: auto |
                             hardware-only | software-ok |
                             named:<substring> (default: auto).
@@ -203,6 +227,28 @@ ENVIRONMENT:
                             2048 MiB). 0 disables the byte budget
                             (entry cap alone). Eviction under
                             either cap costs time, never pixels.
+    TALERENDER_MAX_GPU_PCT / TALERENDER_MAX_RAM_PCT /
+    TALERENDER_MAX_THREADS
+                            Resource-governor limits, the env
+                            forms of --max-gpu-pct / --max-ram-pct
+                            / --max-threads. Precedence for every
+                            governor limit: CLI flag > env var >
+                            config file > built-in default
+                            (60 / 60 / half the cores). The
+                            config-file keys are max_gpu_pct,
+                            max_ram_pct, max_threads in
+                            talerender.toml (see --config; the
+                            default lookup is ./talerender.toml,
+                            then ~/.config/talerender/
+                            talerender.toml). Invalid values in
+                            any layer are an error (exit 2),
+                            never silently ignored. The effective
+                            limits print on a `governor:` line
+                            in every run.
+    TALERENDER_GOVERNOR <on|off>
+                            Governor kill switch: `off` disables
+                            enforcement; the effective limits
+                            are still resolved and printed.
 
 EXIT CODES:
     0   Success.
@@ -281,6 +327,86 @@ impl Knobs {
         format!("[DRAFT res={} aa={} shadow={} — NOT FOR DELIVERY]",
                 self.res, self.aa, self.shadow)
     }
+}
+
+/// GOV-CORE: a governor percentage flag value, validated the
+/// CLI way (standard error + exit 2 via the caller's
+/// `cli_error` path in `value`/here): an integer in 1..=100.
+fn parse_pct_flag(args: &[String], i: usize, flag: &str) -> u32 {
+    let raw = value(args, i, flag);
+    let v: u32 = raw.parse().unwrap_or_else(|_| {
+        cli_error(&format!(
+            "invalid value for {flag}: '{raw}' (expected an integer percentage, 1..=100)"
+        ))
+    });
+    if !(1..=100).contains(&v) {
+        cli_error(&format!(
+            "invalid value for {flag}: '{raw}' (expected an integer percentage, 1..=100)"
+        ));
+    }
+    v
+}
+
+/// GOV-CORE: a governor thread-count flag value: a positive
+/// integer. (Clamping to the core count happens in
+/// resource::resolve and is printed, never silent.)
+fn parse_threads_flag(args: &[String], i: usize, flag: &str) -> usize {
+    let raw = value(args, i, flag);
+    let v: usize = raw.parse().unwrap_or_else(|_| {
+        cli_error(&format!(
+            "invalid value for {flag}: '{raw}' (expected a positive integer)"
+        ))
+    });
+    if v == 0 {
+        cli_error(&format!(
+            "invalid value for {flag}: '{raw}' (expected a positive integer)"
+        ));
+    }
+    v
+}
+
+/// GOV-CORE: pre-scan the raw argv for the governor flags and
+/// the (already existing) --config path, validate the flag
+/// values with the CLI error surface, and hand the resolved
+/// CLI layer to `resource::configure`. This runs BEFORE every
+/// dispatch — including the --gpu-paint harness, which exits
+/// before the main argument loop — so no code path can call
+/// `resource::governor()` before the CLI layer is configured.
+/// The main loop below re-consumes the same flags (its arms
+/// are no-ops beyond advancing past the value).
+fn configure_governor_from_argv(args: &[String]) {
+    let mut limits = resource::CliLimits::default();
+    let mut i = 1;
+    while i < args.len() {
+        match args[i].as_str() {
+            "--max-gpu-pct" => {
+                i += 1;
+                limits.gpu_pct = Some(parse_pct_flag(args, i, "--max-gpu-pct"));
+            }
+            "--max-ram-pct" => {
+                i += 1;
+                limits.ram_pct = Some(parse_pct_flag(args, i, "--max-ram-pct"));
+            }
+            "--max-threads" => {
+                i += 1;
+                limits.threads = Some(parse_threads_flag(args, i, "--max-threads"));
+            }
+            "--config" => {
+                i += 1;
+                limits.config_path =
+                    Some(std::path::PathBuf::from(value(args, i, "--config")));
+            }
+            _ => {}
+        }
+        i += 1;
+    }
+    resource::configure(limits);
+    // The effective limits print in EVERY run (stderr, so the
+    // pinned stdout surfaces — telemetry's verdict line, the
+    // census frame hashes — stay byte-identical). The same
+    // line also prints on stdout beside the mem-report block
+    // at render tails (memreport_print::print_full_block).
+    eprintln!("{}", resource::governor().effective_line());
 }
 
 fn parse_res(args: &[String], i: usize) -> f32 {
@@ -364,6 +490,9 @@ fn main() {
         println!("talerender {}", env!("CARGO_PKG_VERSION"));
         return;
     }
+    // GOV-CORE: configure the resource governor from the CLI
+    // layer before ANY dispatch (see configure_governor_from_argv).
+    configure_governor_from_argv(&args);
     let mut width: u32 = 1080;
     let mut height: u32 = 1920;
     let mut knobs = Knobs::FULL;
@@ -493,6 +622,14 @@ fn main() {
             "--config" => {
                 i += 1;
                 config_path = Some(std::path::PathBuf::from(value(&args, i, "--config")));
+            }
+            // GOV-CORE governor flags: already pre-scanned,
+            // validated and handed to resource::configure by
+            // configure_governor_from_argv (before this loop);
+            // these arms only consume the value.
+            "--max-gpu-pct" | "--max-ram-pct" | "--max-threads" => {
+                i += 1;
+                let _ = value(&args, i, "--max-gpu-pct/--max-ram-pct/--max-threads");
             }
             "--draft" => {
                 // A writer of all three fields; the loop is

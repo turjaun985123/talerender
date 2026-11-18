@@ -2478,14 +2478,94 @@ impl PaintCache {
         let cap: usize = std::env::var("TALERENDER_PAINT_CACHE").ok()
             .and_then(|v| v.parse().ok())
             .unwrap_or(crate::paintbudget::DEFAULT_ENTRY_CAP);
+        let mut budget = crate::paintbudget::PaintBudget::from_env(
+            cap,
+            crate::paintbudget::CANVAS_BYTES,
+        );
+        // GOV-CORE (GPUFIRST Batch 3): the resource governor's
+        // RAM budget bounds this cache — the largest host-RAM
+        // consumer — at PAINT_CACHE_SHARE (50%) of the RAM
+        // budget (resource.rs). The existing entry cap stays as
+        // an additional bound; the byte budget wins when
+        // smaller. Eviction only ever costs a re-paint (paint
+        // is a pure function of the exact state key), so this
+        // changes memory and speed, never a pixel.
+        let gov = crate::resource::governor();
+        if gov.enabled() {
+            budget.cap_budget_bytes(gov.paint_cache_budget_bytes());
+            static LOG_ONCE: std::sync::Once = std::sync::Once::new();
+            LOG_ONCE.call_once(|| {
+                eprintln!(
+                    "governor: paint-cache budget_bytes={} share_pct={} of ram_budget_bytes={} (entry cap {} unchanged)",
+                    budget.budget_bytes(),
+                    crate::resource::PAINT_CACHE_SHARE_PCT,
+                    gov.ram_budget_bytes(),
+                    cap,
+                );
+            });
+        }
         PaintCache {
             map: HashMap::new(),
             order: std::collections::VecDeque::new(),
-            budget: crate::paintbudget::PaintBudget::from_env(
-                cap,
-                crate::paintbudget::CANVAS_BYTES,
-            ),
+            budget,
             backend,
+        }
+    }
+
+    /// Evict the least-recently-used entry, accounting it with
+    /// `budget` under `reason`. Returns false when the cache
+    /// is empty. The ONLY eviction path: both the standing
+    /// budget loop and the governor pressure shrink go through
+    /// here, so map/order/budget accounting cannot drift.
+    fn evict_lru(&mut self, reason: crate::paintbudget::EvictReason) -> bool {
+        let Some(old) = self.order.pop_front() else {
+            return false;
+        };
+        let old_v = self.map.remove(&old).expect("cache order");
+        self.budget.on_evict(&old, crate::paintbudget::entry_bytes(&old_v.0), reason);
+        true
+    }
+
+    /// GOV-CORE pressure behaviour: when the cache's accounted
+    /// bytes reach 90% of its (governor-capped) byte budget,
+    /// shrink proactively — evict LRU down to 75% of the
+    /// budget, keeping a floor of ONE live entry (a single
+    /// canvas larger than the budget stays resident, exactly
+    /// paintbudget's live-entry rule). Shrinking prefers
+    /// recompute over store: an evicted state is simply
+    /// repainted on its next use, byte-identically. Never
+    /// panics, never blocks; the action is logged once per
+    /// shrink event on stderr (stdout stays the pinned
+    /// telemetry/census surface).
+    fn governor_pressure_shrink(&mut self) {
+        let gov = crate::resource::governor();
+        if !gov.enabled() {
+            return;
+        }
+        let budget_bytes = self.budget.budget_bytes();
+        if budget_bytes == 0 || self.budget.entries() <= 1 {
+            return;
+        }
+        let bytes_before = self.budget.bytes();
+        if bytes_before * 10 < budget_bytes * 9 {
+            return; // below 90%: no pressure action
+        }
+        let target = budget_bytes * 3 / 4;
+        let mut evicted = 0u64;
+        while self.budget.bytes() > target && self.budget.entries() > 1 {
+            if !self.evict_lru(crate::paintbudget::EvictReason::ByteBudget) {
+                break;
+            }
+            evicted += 1;
+        }
+        if evicted > 0 {
+            eprintln!(
+                "governor: paint-cache pressure shrink evicted={} bytes_before={} bytes_after={} budget_bytes={}",
+                evicted,
+                bytes_before,
+                self.budget.bytes(),
+                budget_bytes,
+            );
         }
     }
     fn get_or_paint(&mut self, key: String, look: &FullLook, st: &FullState) -> std::rc::Rc<Painted> {
@@ -2508,14 +2588,19 @@ impl PaintCache {
             return v;
         }
         self.budget.on_miss(&key);
+        // GOV-CORE: under memory pressure, shrink BEFORE
+        // painting a new canvas (recompute-over-store: room is
+        // made by dropping LRU entries that can be repainted,
+        // never by failing this paint).
+        self.governor_pressure_shrink();
         let v = std::rc::Rc::new(self.paint_miss(look, st));
         self.budget.on_insert(crate::paintbudget::entry_bytes(&v.0));
         self.map.insert(key.clone(), v.clone());
         self.order.push_back(key);
         while let Some(reason) = self.budget.eviction_reason() {
-            let old = self.order.pop_front().expect("cache order");
-            let old_v = self.map.remove(&old).expect("cache order");
-            self.budget.on_evict(&old, crate::paintbudget::entry_bytes(&old_v.0), reason);
+            if !self.evict_lru(reason) {
+                break;
+            }
         }
         v
     }
@@ -3813,6 +3898,10 @@ impl Renderer {
         // encoder — one submit per frame, the load-bearing
         // batching GPU-CORE-W07 s4 names) ----
         let rb = crate::gpucore::Readback::record(device, &mut encoder, &self.final_tex, width, height, "readback buffer");
+        // GOV-CORE GPU pacing (APPROXIMATION — a userspace
+        // submission delay cannot enforce a GPU utilisation
+        // %; see resource.rs): pace the one submit per frame.
+        crate::resource::pace_gpu_submission();
         queue.submit(Some(encoder.finish()));
         let pixels = rb.collect(device)?;
         Ok(pixels)

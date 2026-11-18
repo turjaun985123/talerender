@@ -176,6 +176,12 @@ pub(crate) fn print_full_block(report: &crate::adapter::AdapterReport, features:
     for line in full_block(&gpu_mem_line, &snap, report, features) {
         println!("{line}");
     }
+    // GOV-CORE (GPUFIRST Batch 3): the effective resource
+    // limits print beside the mem-report block in every render
+    // tail, so a run's log always names what governed it.
+    // (The pure `full_block` above is untouched — its line
+    // grammar stays pinned; this line is print-site glue.)
+    println!("{}", crate::resource::governor().effective_line());
 }
 
 /// Convenience for sites holding the adapter itself (main.rs
