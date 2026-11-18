@@ -2472,6 +2472,7 @@ mod earshair_tests {
         lk_col.hair = true;
         lk_col.hair_col = Some("#101010".into());
         let col = paint(&lk_col, &FullState::default()).0;
+        println!("HAIRDEBUG absent={absent:016x} mixed={mixed:016x} three={three:016x} col={col:016x}");
         let classes: HashSet<u64> = [absent, mixed, three, col].into_iter().collect();
         assert_eq!(classes.len(), 4, "S10-hair must refine to 4 classes, got {}", classes.len());
     }
