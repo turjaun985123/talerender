@@ -596,9 +596,10 @@ pub(crate) fn state_spread() -> Vec<(String, FullLook, FullState)> {
     v.extend(crate::gpupaint_states_brow::brow_spread());
     v.extend(crate::gpupaint_states_shapes::shape_spread());
     v.extend(crate::gpupaint_states_strokes::stroke_spread());
-    // Batch 3 (FLIPPITCH seat): appended LAST so the 221-state
-    // Batch-2 baseline above is undisturbed, in order.
+    // Batch 3: appended after the 221-state Batch-2 baseline
+    // above, which stays undisturbed, in seat order.
     v.extend(crate::gpupaint_states_flippitch::flippitch_spread());
+    v.extend(crate::gpupaint_states_earshair::earshair_spread());
     v
 }
 
@@ -637,6 +638,7 @@ pub(crate) fn rollup_class(name: &str) -> &'static str {
     match state_group(name) {
         "stroke" => "strokes",
         "brow" => "brow-offsets",
+        "ears" | "hair" => "ears+hair",
         "mood" | "face" | "fx" => "mood-features",
         "legs" => "limbs",
         "plate" => "plates",
@@ -785,7 +787,7 @@ mod tests {
     #[test]
     fn spread_shape() {
         let v = state_spread();
-        assert!((60..=250).contains(&v.len()), "spread has {} entries", v.len()); // Batch 2: bound raised by the coordinator at integration (batteries: +2 sweat, +5 brow, +71 shape, +61 stroke over the 75 base); Batch 3: +16 flippitch appended (221 baseline undisturbed)
+        assert!((60..=270).contains(&v.len()), "spread has {} entries", v.len()); // Batch 2: bound raised by the coordinator at integration (batteries: +2 sweat, +5 brow, +71 shape, +61 stroke over the 75 base) -> 221. Batch 3 coordinator integration: +16 flippitch +11 earshair +8 wing appended -> 256; bound 270.
         let mut names: Vec<&str> = v.iter().map(|(n, _, _)| n.as_str()).collect();
         names.sort();
         names.dedup();
