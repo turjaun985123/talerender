@@ -222,6 +222,113 @@ pub(crate) fn scan_canvas_overflow(px: &[u8], w: usize, h: usize, res: f64) -> O
 }
 
 // ---------------------------------------------------------------------
+// B3 TELEM — check/telemetry paint backend selection.
+//
+// SHARED CONTRACT (owned by the FILMPATH seat; this is the local
+// form in the telemetry files, flagged for the coordinator to
+// unify with FILMPATH's helper at integration): GPU paint is
+// selected iff the binary was built `--features gpupaint` AND
+// the environment variable `TALERENDER_GPUPAINT` is exactly
+// "1". Every other combination paints on the CPU — production
+// default stays CPU, in the default build and with the env
+// unset alike. `gpupaint_selected` below is the ONLY env read
+// for this selection in the telemetry files.
+//
+// What "GPU paint" means here, with the harness that exists
+// today: the CPU paint runs inside a `gputrace` window (it is
+// the display-list recorder, not the verdict source), the
+// recorded list is replayed on the GPU
+// (`gpupaint::replay_list_pixels`), and the REPLAYED pixels are
+// what `scan_canvas_overflow` judges. Failure posture is fail
+// closed: if the flag is on and the trace or replay fails, the
+// caller gets an `Err` (the telemetry run reports it could not
+// run) — never a silent CPU fallback, because a verdict printed
+// as a GPU verdict must be a GPU verdict (parity law).
+// ---------------------------------------------------------------------
+
+/// The one env read for the telemetry backend selection (see
+/// the contract above).
+pub(crate) fn gpupaint_selected() -> bool {
+    #[cfg(feature = "gpupaint")]
+    return std::env::var("TALERENDER_GPUPAINT").map(|v| v == "1").unwrap_or(false);
+    #[cfg(not(feature = "gpupaint"))]
+    return false;
+}
+
+/// Paint one character canvas through the selected backend:
+/// `paint_canvas_backend(closure)` is what the telemetry paint
+/// sites call. The closure is the site's existing CPU paint,
+/// returning `(pixels, w, h)`; it runs exactly once on every
+/// path (on the GPU path it runs as the trace recorder).
+pub(crate) fn paint_canvas_backend<F>(paint: F) -> Result<(Vec<u8>, u32, u32), String>
+where
+    F: FnOnce() -> (Vec<u8>, u32, u32),
+{
+    paint_canvas_with_backend(gpupaint_selected(), paint)
+}
+
+/// `paint_canvas_backend` with the selection made explicit —
+/// the verdict-equivalence test drives this directly with
+/// `false` and `true` so it needs no env mutation. With the
+/// `gpupaint` feature off, `selected = true` still paints on
+/// the CPU: the feature build is a necessary half of the
+/// contract, so a default build cannot produce a GPU verdict.
+pub(crate) fn paint_canvas_with_backend<F>(selected: bool, paint: F) -> Result<(Vec<u8>, u32, u32), String>
+where
+    F: FnOnce() -> (Vec<u8>, u32, u32),
+{
+    #[cfg(feature = "gpupaint")]
+    {
+        if selected {
+            return paint_canvas_gpu(paint);
+        }
+    }
+    #[cfg(not(feature = "gpupaint"))]
+    let _ = selected;
+    Ok(paint())
+}
+
+/// The GPU half of `paint_canvas_with_backend` (feature builds
+/// only): record the CPU paint's display list, replay it on
+/// the GPU, return the replayed pixels. Both telemetry
+/// painters (`toonfull::paint_toon_full`,
+/// `scene::paint_toon`) paint the fixed 2560x2816 canvas
+/// (1280x1408 @ res 2); the trace window is opened at that
+/// size and the recorded list is checked against the paint's
+/// own returned size before any replay happens.
+#[cfg(feature = "gpupaint")]
+fn paint_canvas_gpu<F>(paint: F) -> Result<(Vec<u8>, u32, u32), String>
+where
+    F: FnOnce() -> (Vec<u8>, u32, u32),
+{
+    crate::gputrace::set_armed(true);
+    crate::gputrace::begin(2560, 2816);
+    let (cpu_px, w, h) = paint();
+    let list = crate::gputrace::take();
+    crate::gputrace::set_armed(false);
+    if (list.canvas_w, list.canvas_h) != (w, h) || list.prims.is_empty() {
+        return Err(format!(
+            "telemetry gpupaint: trace recorded {} prims on {}x{} for a {}x{} paint — painter not traced",
+            list.prims.len(),
+            list.canvas_w,
+            list.canvas_h,
+            w,
+            h
+        ));
+    }
+    let px = crate::gpupaint::replay_list_pixels(&list)
+        .map_err(|e| format!("telemetry gpupaint replay: {e}"))?;
+    if px.len() != cpu_px.len() {
+        return Err(format!(
+            "telemetry gpupaint: replay returned {} bytes for a {} byte canvas",
+            px.len(),
+            cpu_px.len()
+        ));
+    }
+    Ok((px, w, h))
+}
+
+// ---------------------------------------------------------------------
 // Box projection — three.js arithmetic in f64 (main.ts:94-113)
 // ---------------------------------------------------------------------
 
@@ -1554,11 +1661,13 @@ fn cutout_from(px: &[u8], w: u32, h: u32, model: &M4, cam: &ProjCamera, pose: &P
 /// ab1::paint_onoda (the M4 painter at res 2, 2560x2816 — the same
 /// canvas size the Chrome toon paints) and the card draw's own
 /// model matrix from the scene graph (ab1::onoda_card_and_rifle).
-pub(crate) fn ab1_cutout() -> Cutout {
-    let (px, w, h) = crate::ab1::paint_onoda();
+pub(crate) fn ab1_cutout() -> Result<Cutout, String> {
+    // B3 TELEM: the painter canvas comes through the backend
+    // selection (CPU by default; GPU replay under the flag).
+    let (px, w, h) = paint_canvas_backend(crate::ab1::paint_onoda)?;
     let (card, _rifle) = crate::ab1::onoda_card_and_rifle();
     let model = model_from_f32(&card.model);
-    cutout_from(&px, w, h, &model, &ab1_camera(), &onoda_pose())
+    Ok(cutout_from(&px, w, h, &model, &ab1_camera(), &onoda_pose()))
 }
 
 /// ab1, scene-file form: the camera parsed from
@@ -1600,7 +1709,8 @@ pub(crate) fn ab1_file_cutout(path: &str) -> Result<Cutout, String> {
             .and_then(|v| v.as_f64())
             .ok_or("camera.far missing")?,
     };
-    let (px, w, h) = crate::ab1::paint_onoda();
+    // B3 TELEM: backend-selected paint, as in ab1_cutout.
+    let (px, w, h) = paint_canvas_backend(crate::ab1::paint_onoda)?;
     let (card, _rifle) = crate::ab1::onoda_card_and_rifle();
     let model = model_from_f32(&card.model);
     Ok(cutout_from(&px, w, h, &model, &cam, &onoda_pose()))
@@ -1616,7 +1726,7 @@ pub(crate) fn ab1_file_cutout(path: &str) -> Result<Cutout, String> {
 pub(crate) const VARIANT_POS: [f64; 3] = [1.9, -0.55, 0.6];
 pub(crate) const VARIANT_LEAN_DEG: f32 = 42.0;
 
-pub(crate) fn ab1_variant_cutout() -> Cutout {
+pub(crate) fn ab1_variant_cutout() -> Result<Cutout, String> {
     let h_t = 1.75 / 0.96;
     let cam = ab1_camera();
     let (yaw, pitch) = face_angles(VARIANT_POS, cam.eye, h_t, true);
@@ -1633,14 +1743,15 @@ pub(crate) fn ab1_variant_cutout() -> Cutout {
         head_turn: -0.025,
         cam_pitch: cam_pitch as f32,
     };
-    let (px, w, h) = crate::scene::paint_toon(&spec);
+    // B3 TELEM: backend-selected paint, as in ab1_cutout.
+    let (px, w, h) = paint_canvas_backend(|| crate::scene::paint_toon(&spec))?;
     let model = toon_model(VARIANT_POS, yaw, pitch);
     // The variant's poseSummary carries the literal headTurn its
     // set() passes (-0.025), not S01's poseTrack value — the real
     // harness page prints exactly that (docs/ab/telemetry/).
     let mut pose = onoda_pose();
     pose.head_turn = -0.025;
-    cutout_from(&px, w, h, &model, &cam, &pose)
+    Ok(cutout_from(&px, w, h, &model, &cam, &pose))
 }
 
 // ---------------------------------------------------------------------
@@ -1734,7 +1845,13 @@ pub(crate) fn run(mode: &str, scene_file: Option<&str>, captions_path: Option<&s
         .map(|v| v.trim().to_lowercase() == "strict")
         .unwrap_or(false);
     let (label, cutout) = match mode {
-        "ab1" => ("ab1 (hand-authored staging, S01 @ t=1.50)", ab1_cutout()),
+        "ab1" => match ab1_cutout() {
+            Ok(c) => ("ab1 (hand-authored staging, S01 @ t=1.50)", c),
+            Err(e) => {
+                eprintln!("telemetry: {e}");
+                return 2;
+            }
+        },
         "ab1-file" => {
             let path = scene_file.unwrap_or("scenes/ab1.scene.json");
             match ab1_file_cutout(path) {
@@ -1745,7 +1862,13 @@ pub(crate) fn run(mode: &str, scene_file: Option<&str>, captions_path: Option<&s
                 }
             }
         }
-        "ab1-variant" => ("ab1-variant (deliberate overflow staging)", ab1_variant_cutout()),
+        "ab1-variant" => match ab1_variant_cutout() {
+            Ok(c) => ("ab1-variant (deliberate overflow staging)", c),
+            Err(e) => {
+                eprintln!("telemetry: {e}");
+                return 2;
+            }
+        },
         other => {
             eprintln!("unknown telemetry mode: {other} (expected ab1, ab1-file or ab1-variant)");
             return 2;
@@ -1968,6 +2091,168 @@ mod tests {
         let fails2 = print_caption_audit(&caps, true, &mut lines2);
         assert_eq!(fails2, 1);
         assert!(lines2.iter().any(|l| l.contains("CAPTION WIDTH FAIL:")));
+    }
+
+    // ---- B3 TELEM: backend verdict equivalence ----
+    //
+    // For every standing scene below, the flag-off (CPU) overflow
+    // verdict and the flag-on (backend-selected) overflow verdict
+    // must be IDENTICAL — same OverflowCounts, not just the same
+    // pass/fail class (Batch 2 parity was byte-identical, so the
+    // counts are the honest bar). In the default build the GPU
+    // half cannot engage (the `gpupaint` feature is a necessary
+    // half of the contract), so flag-on repaints on the CPU and
+    // the test proves the routing + scene classes; in a
+    // `--features gpupaint` build flag-on is a real GPU replay
+    // and the same assertions are the parity proof. Any mismatch
+    // is a verdict defect — the assert messages quote both
+    // verdicts; thresholds are never adjusted to make it pass.
+
+    /// ex07's Finn look, transcribed from the in-repo B-1 fixture
+    /// (toonfull.rs `canvas_anchor_tests::finn_look`; the same
+    /// look gpupaint_states records as `anchor-lying-lean82`).
+    fn telem_finn_look() -> crate::toonfull::FullLook {
+        crate::toonfull::FullLook {
+            body: "#DE7A35".to_string(),
+            head: "#F7F7FA".to_string(),
+            shade: None,
+            pattern: "plain".to_string(),
+            pat_col: None,
+            hat: "none".to_string(),
+            hat_col: None,
+            band: None,
+            neck: "none".to_string(),
+            neck_col: None,
+            glasses: false,
+            mustache: false,
+            mustache_col: None,
+            kid: false,
+            blush: false,
+            freckles: false,
+            pencil: false,
+            monocle: false,
+            hair_col: None,
+            wing: false,
+            wing_col: None,
+            wing_lens: Vec::new(),
+            ears: false,
+            hair: false,
+        }
+    }
+
+    /// The ex07-class held lie, transcribed from the in-repo B-1
+    /// fixture (toonfull.rs `canvas_anchor_tests::
+    /// lying_lean_anchors_back_into_canvas`): lean 82 about the
+    /// feet rotates the head past the side edge, and the
+    /// canvas_anchor re-solve is what decides the verdict.
+    fn telem_lying_state() -> crate::toonfull::FullState {
+        let mut st = crate::toonfull::FullState::default();
+        st.mood = crate::toonfull::Mood::Dizzy;
+        st.arm_l = (150.0, 20.0);
+        st.arm_r = (138.0, -30.0);
+        st.head_tilt = 4.0;
+        st.lean = 82.0;
+        st
+    }
+
+    fn telem_paint_full(
+        look: &crate::toonfull::FullLook,
+        st: &crate::toonfull::FullState,
+    ) -> (Vec<u8>, u32, u32) {
+        let (px, w, h, _, _) = crate::toonfull::paint_toon_full(look, st);
+        (px, w, h)
+    }
+
+    fn scene_clean_standing() -> (Vec<u8>, u32, u32) {
+        telem_paint_full(&telem_finn_look(), &crate::toonfull::FullState::default())
+    }
+
+    fn scene_ab1_s01() -> (Vec<u8>, u32, u32) {
+        crate::ab1::paint_onoda()
+    }
+
+    fn scene_ab1_variant() -> (Vec<u8>, u32, u32) {
+        // The deliberate-overflow staging of ab1_variant_cutout,
+        // rebuilt here so the test drives the painter directly.
+        let h_t = 1.75 / 0.96;
+        let cam = ab1_camera();
+        let cam_pitch = cam_pitch_of(VARIANT_POS, cam.eye, h_t);
+        crate::scene::paint_toon(&crate::scene::ToonSpec {
+            body: "#5C6644",
+            head: "#F7F7FA",
+            shade: Some("#878E6E"),
+            cap: Some("#4C5638"),
+            mood: crate::scene::ToonMood::Determined,
+            arm_l: (10.0, 6.0),
+            arm_r: (16.0, -6.0),
+            lean_deg: VARIANT_LEAN_DEG,
+            head_turn: -0.025,
+            cam_pitch: cam_pitch as f32,
+        })
+    }
+
+    fn scene_held_lie_clean() -> (Vec<u8>, u32, u32) {
+        telem_paint_full(&telem_finn_look(), &telem_lying_state())
+    }
+
+    fn scene_held_lie_plate_overflow() -> (Vec<u8>, u32, u32) {
+        // The same held lie, now HOLDING a prop past the canvas
+        // edge: a 2600x2600 px opaque board plate (1300x1300
+        // stage units at res 2) centred on the right hand
+        // (x0 = y0 = -650). Held plates are NOT modelled in the
+        // canvas_anchor envelope (toonfull.rs, canvas_anchor
+        // doc: "Held plates are NOT modelled in the envelope"),
+        // so the anchor re-solve that saves the figure cannot
+        // save the plate: a plate 1300 stage units wide centred
+        // on any hand position crosses the 1280-wide canvas's
+        // left or right border strip (a centred fit would need
+        // the hand at stage x in [266, 246] — an empty interval),
+        // so this scene must report overflow on BOTH backends.
+        let mut st = telem_lying_state();
+        st.hold_r = Some(crate::toonfull::Plate {
+            px: vec![255u8; 2600 * 2600 * 4],
+            w: 2600,
+            h: 2600,
+            x0: -650.0,
+            y0: -650.0,
+        });
+        telem_paint_full(&telem_finn_look(), &st)
+    }
+
+    #[test]
+    fn telem_backend_verdict_equivalence() {
+        // The held-lie scenes only mean what the brief needs if
+        // the anchor actually engages on them (a no-anchor lie
+        // would be a plain overflow scene, not the B-1 case).
+        assert_ne!(
+            crate::toonfull::canvas_anchor(&telem_finn_look(), &telem_lying_state()),
+            (0.0, 0.0),
+            "held-lie fixture must engage canvas_anchor"
+        );
+        let scenes: [(&str, fn() -> (Vec<u8>, u32, u32), bool); 5] = [
+            ("clean-standing-finn", scene_clean_standing, false),
+            ("clean-ab1-s01", scene_ab1_s01, false),
+            ("overflow-ab1-variant-lean42", scene_ab1_variant, true),
+            ("held-lie-lean82-anchor-clean", scene_held_lie_clean, false),
+            ("held-lie-lean82-plate-overflow", scene_held_lie_plate_overflow, true),
+        ];
+        for (name, paint, expect_overflow) in scenes {
+            let (px, w, h) = paint_canvas_with_backend(false, paint)
+                .unwrap_or_else(|e| panic!("{name}: flag-off paint failed: {e}"));
+            let off = scan_canvas_overflow(&px, w as usize, h as usize, 2.0);
+            let off_any = off.top > 0 || off.right > 0 || off.bottom > 0 || off.left > 0;
+            assert_eq!(
+                off_any, expect_overflow,
+                "{name}: CPU verdict class wrong — expected overflow={expect_overflow}, counts {off:?}"
+            );
+            let (px, w, h) = paint_canvas_with_backend(true, paint)
+                .unwrap_or_else(|e| panic!("{name}: flag-on paint failed: {e}"));
+            let on = scan_canvas_overflow(&px, w as usize, h as usize, 2.0);
+            assert_eq!(
+                on, off,
+                "{name}: VERDICT DIFFERS flag-off vs flag-on — off {off:?}, on {on:?}"
+            );
+        }
     }
 
     // ---- film tables (TABLES-IMPL-W85 §6.1) ----

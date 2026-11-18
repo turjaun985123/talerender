@@ -1172,6 +1172,23 @@ fn replay(list_path: &str, out_path: &str) -> i32 {
     }
 }
 
+/// B3 TELEM (additive, for the check/telemetry legs): synchronous
+/// in-memory replay of a recorded display list — the same
+/// `prepare` + `replay_gpu` the `replay` subcommand runs, minus
+/// the PNG / sha256 harness surface. Returns the replayed canvas
+/// pixels (RGBA8, `canvas_w * canvas_h * 4` bytes). The telemetry
+/// backend helper (`telemetry::paint_canvas_with_backend`) is the
+/// only caller; if the FILMPATH seat's shared helper supersedes
+/// this at integration, this wrapper is the piece to fold into it.
+pub(crate) fn replay_list_pixels(list: &gputrace::DisplayList) -> Result<Vec<u8>, String> {
+    if list.canvas_w == 0 || list.canvas_h == 0 {
+        return Err("gpupaint replay: canvas size is zero".to_string());
+    }
+    let (preps, allocs) = prepare(list)?;
+    let outcome = pollster::block_on(replay_gpu(list, &preps, &allocs))?;
+    Ok(outcome.px)
+}
+
 #[cfg(test)]
 mod exec_tests {
     use super::*;

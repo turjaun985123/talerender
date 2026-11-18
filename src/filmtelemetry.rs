@@ -7,7 +7,10 @@
 //! What is shared with the legacy gate, by construction:
 //! - the audit engine itself (`telemetry::Audit`, `print_audit` /
 //!   `print_continuity` / `print_composition`), fed `Cutout`s built
-//!   from the same painter (`toonfull::paint_toon_full`), the same
+//!   from the same painter (`toonfull::paint_toon_full`, routed
+//!   through the B3 backend selection in
+//!   `telemetry::paint_canvas_backend` — CPU by default, GPU
+//!   replay under the gpupaint flag), the same
 //!   canvas-overflow scan (`telemetry::scan_canvas_overflow`,
 //!   res 2.0), the same pose summary and look signature, and the
 //!   same plane projection (`telemetry::project_box`);
@@ -722,7 +725,18 @@ fn character_cutout(
         body_pitch: f32_or(&st_spec, "bodyPitch", 0.0),
         body_pitch_counter: f32_or(&st_spec, "bodyPitchCounter", 1.0),
     };
-    let (pxbuf, pw, ph, _, _) = crate::toonfull::paint_toon_full(&look, &state);
+    // B3 TELEM: the painted canvas comes through the shared
+    // backend selection (`telemetry::paint_canvas_backend` —
+    // CPU by default; GPU replay under `--features gpupaint` +
+    // `TALERENDER_GPUPAINT=1`). The overflow scan below judges
+    // whichever pixels the selected backend produced; a GPU
+    // trace/replay failure is a named `Err` here, never a
+    // silent CPU fallback. Hands are unused by the cutout (the
+    // scan reads pixels only), exactly as before.
+    let (pxbuf, pw, ph) = crate::telemetry::paint_canvas_backend(|| {
+        let (px, w, h, _, _) = crate::toonfull::paint_toon_full(&look, &state);
+        (px, w, h)
+    })?;
     // face(): yaw toward the camera, perspective pitch — the
     // loader's f32 arithmetic (scenefile walk_nodes).
     let yaw = (ctx.cam.eye[0] - pos[0]).atan2(ctx.cam.eye[2] - pos[2]);
