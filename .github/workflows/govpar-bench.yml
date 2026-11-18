@@ -1,0 +1,72 @@
+name: GOV-PAR bench (dispatch)
+
+# GOV-PAR (Batch 3 Part 6b) evidence: wall time of the legacy
+# --film-telemetry leg over the full in-repo Onoda film (242
+# samples at 0.25 s over 60.37 s), serial (TALERENDER_THREADS=1)
+# vs parallel (TALERENDER_THREADS=4, governor thread cap), plus a
+# byte-diff of the two runs' STDOUT (the verdict surface: the
+# paint-cache line, the audit lines and the FILM TELEMETRY
+# verdict must be identical; stderr progress lines are excluded
+# by construction — stdout and stderr are captured separately).
+#
+# Honest labels: GitHub ubuntu-22.04 runners (4 vCPU at dispatch
+# time), CPU painter (default build, no gpupaint flag), lavapipe
+# is installed for the toolchain but telemetry paints on CPU.
+# These numbers INDICATE the parallel scaling; the user's-PC
+# proof (Ryzen 5 PRO 5650G) stays owed.
+#
+# No artifacts: evidence is text in the job log (the 2026-11-15
+# artifact-storage quota law).
+
+on:
+  workflow_dispatch:
+  # Branch-push trigger: workflow_dispatch requires the workflow
+  # to exist on the default branch; this programme lives on
+  # b3/govpar until integration, so a push touching THIS file on
+  # the branch runs it too (the gpufirst-perf.yml precedent).
+  push:
+    branches: [b3/govpar]
+    paths:
+      - '.github/workflows/govpar-bench.yml'
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+  RUSTFLAGS: "-C link-arg=-fuse-ld=mold"
+
+jobs:
+  bench:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+          key: ubuntu2204
+      - name: Install mold + lavapipe
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mold mesa-vulkan-drivers vulkan-tools time
+          nproc; uname -a
+      - name: Build
+        run: cargo build --release
+      - name: Telemetry serial vs parallel (full film, timed, stdout diffed)
+        run: |
+          set +e
+          for threads in 1 4; do
+            echo "=== TALERENDER_THREADS=$threads ==="
+            /usr/bin/time -f "wall_elapsed=%e s user=%U s sys=%S s max_rss_kb=%M" \
+              env TALERENDER_THREADS=$threads TALERENDER_PAINT_CACHE=24 \
+              ./target/release/talerender --film-telemetry film \
+              > "tele-out-$threads.log" 2> "tele-err-$threads.log"
+            echo "exit=$?"
+            grep -E "^(FILM TELEMETRY|paint-cache)" "tele-out-$threads.log" || true
+            tail -1 "tele-err-$threads.log"
+          done
+          set -e
+          echo "=== stdout diff (empty = byte-identical verdict surface) ==="
+          diff "tele-out-1.log" "tele-out-4.log" && echo "STDOUT IDENTICAL"
+          echo "=== full serial stdout ==="
+          cat "tele-out-1.log"

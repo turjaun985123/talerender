@@ -1049,6 +1049,123 @@ pub(crate) fn run_telemetry_seq(
     data: &crate::film::FilmData,
     tables: bool,
 ) -> Result<bool, String> {
+    // GOV-PAR: the sample count follows the serial loop's own
+    // arithmetic (t from 0 while t < duration, t += 0.25).
+    let n_samples = {
+        let mut n = 0usize;
+        let mut t = 0.0f64;
+        while t < manifest.duration_s {
+            n += 1;
+            t += 0.25;
+        }
+        n
+    };
+    let workers = crate::par_eval::worker_count(n_samples);
+    let (lines, ok) = run_telemetry_seq_impl(manifest, data, tables, workers)?;
+    for line in &lines {
+        println!("{line}");
+    }
+    Ok(ok)
+}
+
+/// GOV-PAR: one evaluated generic-telemetry sample — the serial
+/// loop body's products for one `t`, before aggregation.
+struct SeqSample {
+    t: f64,
+    seg_id: String,
+    cuts: Vec<Cutout>,
+    unresolved_plates: usize,
+}
+
+/// Evaluate one sample at film time `t` — the serial loop body,
+/// verbatim: clone the owning segment's root, set its local time,
+/// validate through `load_root` (fail closed), fold with
+/// `process_scene`, build the cutouts. `intern` is the evaluating
+/// worker's own interner (see the collector's inventory).
+fn eval_seq_sample(
+    manifest: &crate::filmseq::FilmManifest,
+    roots: &[Value],
+    scene_dirs: &[PathBuf],
+    t: f64,
+    intern: &mut Interner,
+) -> Result<SeqSample, String> {
+    let si = segment_index_at(manifest, t);
+    let seg = &manifest.segments[si];
+    let lt = t - seg.start_s;
+    let mut root = roots[si].clone();
+    set_root_time(&mut root, lt)?;
+    // The label is the loader's PATH basis, not prose:
+    // load_root derives the scene dir from it and file
+    // textures resolve against that dir. A descriptive
+    // label silently re-bases textures to the process CWD
+    // (R2-03 finding: canonical telemetry failed on s03's
+    // lens-cloth plate while the driver — which passes the
+    // real path, filmseq.rs — was correct). Pass the real
+    // scene path, exactly as filmseq does.
+    let label = seg.scene_path.display().to_string();
+    // Validation gate: the loader must accept this scene at
+    // this local time (era pairing fails closed). Loaded is
+    // opaque, so the cutouts are read from the folded root
+    // below — the same root, the same fold.
+    crate::scenefile::load_root(root.clone(), &label).map_err(|e| {
+        format!("filmtelemetry: segment {} at lt={lt:.2}: {e}", seg.id)
+    })?;
+    let folded = crate::eval15::process_scene(root, &[]).map_err(|e| {
+        format!("filmtelemetry: segment {} at lt={lt:.2}: {e}", seg.id)
+    })?;
+    let mut unresolved_plates = 0usize;
+    let cuts = cutouts_from_root(
+        &folded,
+        &scene_dirs[si],
+        &seg.id,
+        intern,
+        &mut unresolved_plates,
+    )?;
+    Ok(SeqSample {
+        t,
+        seg_id: seg.id.clone(),
+        cuts,
+        unresolved_plates,
+    })
+}
+
+/// `run_telemetry_seq` with the worker count explicit (the
+/// production entry derives it from the governor; tests drive
+/// 1 vs 4 directly, with no env mutation). Returns the complete
+/// stdout line surface in order — verdict line and, when
+/// `tables`, the post-verdict tables included — plus the
+/// verdict bool, so serial-vs-parallel equality is asserted on
+/// the full surface, not a hash.
+///
+/// Cross-frame state inventory for this leg:
+/// - `Audit` and `presence`: NOT shared; fed in frame order on
+///   this thread after evaluation, exactly as the serial loop
+///   interleaved them.
+/// - `Interner` (leaked &'static look strings): serial uses one
+///   for the whole run; parallel uses one PER WORKER BLOCK.
+///   Interning affects only pointer identity, never contents —
+///   every consumer (`describe`, `look_signature`) reads the
+///   string bytes — so per-block interners yield byte-identical
+///   cutouts; they merely leak each distinct string at most once
+///   per block instead of once per run.
+/// - `unresolved_plates`: a plain counter; each sample returns
+///   its own count and the total is their sum (order-free), and
+///   only the total is printed.
+/// - Paint cache: NONE on this leg (paints are uncached by
+///   design — see the module header), so there are no cache
+///   statistics to reproduce.
+/// - Errors: a failing sample aborts the run; parallel reports
+///   the LOWEST-index failure (`par_eval::first_error`), which
+///   is the failure the serial loop would have hit first.
+/// - Progress eprintln: serial keeps the every-20-samples line;
+///   parallel prints one stderr line naming the worker count
+///   (stderr is not part of the verdict surface).
+fn run_telemetry_seq_impl(
+    manifest: &crate::filmseq::FilmManifest,
+    data: &crate::film::FilmData,
+    tables: bool,
+    workers: usize,
+) -> Result<(Vec<String>, bool), String> {
     if manifest.segments.is_empty() {
         return Err("filmtelemetry: manifest carries no segments".to_string());
     }
@@ -1087,53 +1204,50 @@ pub(crate) fn run_telemetry_seq(
     let shots_keep = shots.clone();
     let mut audit = Audit::new(shots);
     let mut presence: Vec<PresenceRow> = Vec::new();
-    let mut intern = Interner::default();
     let mut unresolved_plates = 0usize;
 
-    // 0.25 s sampling, the legacy loop's shape (t from 0 while
-    // t < duration, stderr progress every 20 samples).
-    let mut t = 0.0f64;
-    let mut sample_no = 0u32;
-    while t < manifest.duration_s {
-        sample_no += 1;
-        if sample_no % 20 == 0 {
-            eprintln!("film-telemetry: sample {sample_no} (t={t:.2})");
+    // 0.25 s sampling times, generated by the serial loop's own
+    // iterative accumulation (t from 0 while t < duration).
+    let mut times: Vec<f64> = Vec::new();
+    {
+        let mut t = 0.0f64;
+        while t < manifest.duration_s {
+            times.push(t);
+            t += 0.25;
         }
-        let si = segment_index_at(manifest, t);
-        let seg = &manifest.segments[si];
-        let lt = t - seg.start_s;
-        let mut root = roots[si].clone();
-        set_root_time(&mut root, lt)?;
-        // The label is the loader's PATH basis, not prose:
-        // load_root derives the scene dir from it and file
-        // textures resolve against that dir. A descriptive
-        // label silently re-bases textures to the process CWD
-        // (R2-03 finding: canonical telemetry failed on s03's
-        // lens-cloth plate while the driver — which passes the
-        // real path, filmseq.rs — was correct). Pass the real
-        // scene path, exactly as filmseq does.
-        let label = seg.scene_path.display().to_string();
-        // Validation gate: the loader must accept this scene at
-        // this local time (era pairing fails closed). Loaded is
-        // opaque, so the cutouts are read from the folded root
-        // below — the same root, the same fold.
-        crate::scenefile::load_root(root.clone(), &label).map_err(|e| {
-            format!("filmtelemetry: segment {} at lt={lt:.2}: {e}", seg.id)
-        })?;
-        let folded = crate::eval15::process_scene(root, &[]).map_err(|e| {
-            format!("filmtelemetry: segment {} at lt={lt:.2}: {e}", seg.id)
-        })?;
-        let cuts = cutouts_from_root(
-            &folded,
-            &scene_dirs[si],
-            &seg.id,
-            &mut intern,
-            &mut unresolved_plates,
-        )?;
-        audit.sample(t, &cuts);
-        let ids: Vec<&str> = cuts.iter().map(|c| c.id.as_str()).collect();
-        note_presence(&mut presence, &seg.id, t, &ids);
-        t += 0.25;
+    }
+
+    // Evaluate (serial or block-parallel), then aggregate in
+    // frame order on this thread.
+    let samples: Vec<SeqSample> = if workers <= 1 {
+        let mut intern = Interner::default();
+        let mut out = Vec::with_capacity(times.len());
+        for (i, &t) in times.iter().enumerate() {
+            let sample_no = i as u32 + 1;
+            if sample_no % 20 == 0 {
+                eprintln!("film-telemetry: sample {sample_no} (t={t:.2})");
+            }
+            out.push(eval_seq_sample(manifest, &roots, &scene_dirs, t, &mut intern)?);
+        }
+        out
+    } else {
+        eprintln!(
+            "film-telemetry: evaluating {} samples across {workers} workers (governor thread cap)",
+            times.len()
+        );
+        let results = crate::par_eval::parallel_block_map(times.len(), workers, |range| {
+            let mut intern = Interner::default();
+            range
+                .map(|i| eval_seq_sample(manifest, &roots, &scene_dirs, times[i], &mut intern))
+                .collect::<Vec<Result<SeqSample, String>>>()
+        });
+        crate::par_eval::first_error(results)?
+    };
+    for sample in &samples {
+        audit.sample(sample.t, &sample.cuts);
+        let ids: Vec<&str> = sample.cuts.iter().map(|c| c.id.as_str()).collect();
+        note_presence(&mut presence, &sample.seg_id, sample.t, &ids);
+        unresolved_plates += sample.unresolved_plates;
     }
 
     let mut out: Vec<String> = Vec::new();
@@ -1158,18 +1272,13 @@ pub(crate) fn run_telemetry_seq(
         audit.violations_len(),
         cap_fails,
     ));
-    for line in &out {
-        println!("{line}");
-    }
     if tables {
         // Tables print AFTER the verdict, as in the legacy path:
         // the default output stays a strict prefix of the
         // --tables output and the verdict scan is unaffected.
-        for line in table_lines(manifest, &shots_keep, &caps, &presence) {
-            println!("{line}");
-        }
+        out.extend(table_lines(manifest, &shots_keep, &caps, &presence));
     }
-    Ok(bad == 0)
+    Ok((out, bad == 0))
 }
 
 // ---------------------------------------------------------------------
@@ -1404,5 +1513,154 @@ mod tests {
         assert!(cuts[0].box_.is_some());
         assert!(cuts[0].pose.starts_with("mood=proud"), "pose: {}", cuts[0].pose);
         assert_eq!(unresolved, 0);
+    }
+
+    /// GOV-PAR: serial vs parallel verdict equality on a
+    /// multi-sample scene-sequence fixture — two segments, 16
+    /// samples at 0.25 s, enough to exercise a 4-worker pool
+    /// (4 samples per block). The fixture is deliberately
+    /// verdict-FAILED on three independent surfaces so equality
+    /// cannot be vacuous:
+    /// - segment 2 restages Biscuit with a different body colour
+    ///   (look-signature change -> continuity violation);
+    /// - segment 2's state is the TELEM held-lie staging
+    ///   (lean 82, wide arms — the canvas_anchor case from
+    ///   telemetry.rs's equivalence scenes, incl. its plate-free
+    ///   form);
+    /// - the single caption has fit 0.50 (< 0.68 -> FIT fail).
+    /// The assertion is the FULL line surface (audit +
+    /// continuity + composition + caption audit + verdict, and
+    /// with --tables the shot/caption/cast tables too), compared
+    /// byte-for-byte: workers=1 vs workers=4, plus a second
+    /// parallel run for parallel-vs-parallel determinism.
+    #[test]
+    fn govpar_serial_vs_parallel_verdict_equality() {
+        let base = std::env::temp_dir().join(format!("govpar-seq-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&base);
+        let scenes = base.join("scenes");
+        let film_dir = base.join("film");
+        std::fs::create_dir_all(scenes.clone()).expect("scenes dir");
+        std::fs::create_dir_all(film_dir.join("assets")).expect("assets dir");
+
+        // Caption strip: ink columns 10..110 of a 120 px strip.
+        let mut img = image::RgbaImage::new(120, 20);
+        for x in 10..110 {
+            for y in 0..20 {
+                img.put_pixel(x, y, image::Rgba([255, 255, 255, 255]));
+            }
+        }
+        img.save(film_dir.join("assets").join("cap_000.png")).expect("strip png");
+
+        let scene = |body: &str, state: &str| {
+            format!(
+                r##"{{
+                    "format": "talerender-scene", "version": 2, "name": "govpar fixture",
+                    "time": 0.0,
+                    "camera": {{"eye": [0, 2.6, 10.5], "target": [0, 1.2, 0], "fovY": 44}},
+                    "nodes": [
+                        {{"type": "character", "name": "Biscuit",
+                         "position": [0, 0, 0], "height": 1.15, "perspective": true,
+                         "look": {{"body": "{body}", "hat": "none", "kid": true,
+                                  "neck": "collar", "neckCol": "#B5372E"}},
+                         "state": {state}}}
+                    ]
+                }}"##
+            )
+        };
+        std::fs::write(
+            scenes.join("s01.json"),
+            scene("#E8913A", r#"{"mood": "proud", "armR": [50, -40], "blink": 0}"#),
+        )
+        .expect("s01 scene");
+        std::fs::write(
+            scenes.join("s02.json"),
+            scene(
+                "#224466",
+                r#"{"mood": "determined", "armL": [150, 20], "armR": [138, -30], "headTilt": 4, "lean": 82, "blink": 0}"#,
+            ),
+        )
+        .expect("s02 scene");
+
+        let seg = |id: &str, file: &str, start_s: f64, end_s: f64, sf: u32, ef: u32, cap: Option<(usize, usize)>| {
+            crate::filmseq::Segment {
+                id: id.to_string(),
+                scene: file.to_string(),
+                scene_path: scenes.join(file),
+                lines: vec![0],
+                start_s,
+                end_s,
+                start_frame: sf,
+                end_frame: ef,
+                caption_first: cap.map(|c| c.0),
+                caption_last: cap.map(|c| c.1),
+                set: "TST".to_string(),
+                atmosphere: "noon".to_string(),
+            }
+        };
+        let manifest = crate::filmseq::FilmManifest {
+            title: "GOV-PAR fixture".to_string(),
+            fps: 30.0,
+            duration_s: 4.0,
+            total_frames: 120,
+            driver: Some("scene-sequence".to_string()),
+            segments: vec![
+                seg("s01", "s01.json", 0.0, 2.0, 0, 60, Some((0, 0))),
+                seg("s02", "s02.json", 2.0, 4.0, 60, 120, None),
+            ],
+            manifest_dir: base.clone(),
+            film_dir: film_dir.clone(),
+            manifest_path: base.join("film.json"),
+        };
+        let data = crate::film::FilmData {
+            duration: 4.0,
+            anchors: HashMap::new(),
+            captions: vec![crate::film::Caption {
+                s: 0.5,
+                e: 2.0,
+                text: "shrunk caption".to_string(),
+                fit: 0.5,
+                strip: "cap_000.png".to_string(),
+            }],
+            lines: vec![(0.0, 4.0)],
+            calendar_years: Vec::new(),
+            calendar_dark: String::new(),
+            sign: String::new(),
+            s12_clips: None,
+        };
+
+        let serial = run_telemetry_seq_impl(&manifest, &data, false, 1).expect("serial run");
+        // Non-vacuous: the verdict is FAILED and names all three
+        // failure classes' counts (overflow groups may be zero
+        // only if the held lie anchors clean — the violation and
+        // caption counts may not be).
+        assert!(!serial.1, "fixture verdict must be FAILED: {:?}", serial.0);
+        let verdict = serial.0.last().expect("verdict line").clone();
+        assert!(verdict.starts_with("FILM TELEMETRY: CHECK FAILED ("), "verdict: {verdict}");
+        assert!(verdict.contains("continuity violations"), "verdict: {verdict}");
+        assert!(!verdict.contains("0 continuity violations"), "sig change must violate: {verdict}");
+        assert!(!verdict.contains("0 caption failures"), "fit 0.50 must fail: {verdict}");
+        assert!(
+            serial.0.iter().any(|l| l.starts_with("CANVAS OVERFLOW:")),
+            "audit surface present: {:?}",
+            serial.0
+        );
+
+        let parallel = run_telemetry_seq_impl(&manifest, &data, false, 4).expect("parallel run");
+        assert_eq!(parallel, serial, "workers=4 surface must be byte-identical to workers=1");
+        let parallel2 = run_telemetry_seq_impl(&manifest, &data, false, 4).expect("parallel run 2");
+        assert_eq!(parallel2, serial, "parallel-vs-parallel must be deterministic");
+
+        // The --tables surface (printed after the verdict) is
+        // part of the equality claim too.
+        let serial_t = run_telemetry_seq_impl(&manifest, &data, true, 1).expect("serial tables");
+        let parallel_t = run_telemetry_seq_impl(&manifest, &data, true, 4).expect("parallel tables");
+        assert_eq!(parallel_t, serial_t, "tables surface must be byte-identical");
+        assert!(
+            serial_t.0.iter().any(|l| l.starts_with("SHOT TABLE")),
+            "tables present: {:?}",
+            serial_t.0
+        );
+
+        let _ = std::fs::remove_dir_all(&base);
     }
 }
