@@ -596,6 +596,10 @@ pub(crate) fn state_spread() -> Vec<(String, FullLook, FullState)> {
     v.extend(crate::gpupaint_states_brow::brow_spread());
     v.extend(crate::gpupaint_states_shapes::shape_spread());
     v.extend(crate::gpupaint_states_strokes::stroke_spread());
+    // GPUFIRST Batch 3 (PORT-WING): APPEND-ONLY — the Batch 2
+    // baseline spread above is untouched; the wing battery is
+    // reported as additions (8 states, spread total 222).
+    v.extend(crate::gpupaint_states_wing::wing_spread());
     v
 }
 
@@ -631,6 +635,7 @@ pub(crate) fn rollup_class(name: &str) -> &'static str {
     match state_group(name) {
         "stroke" => "strokes",
         "brow" => "brow-offsets",
+        "wing" => "wing-panels",
         "mood" | "face" | "fx" => "mood-features",
         "legs" => "limbs",
         "plate" => "plates",

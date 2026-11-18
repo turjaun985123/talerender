@@ -41,6 +41,8 @@ mod gpupaint_states_brow;
 mod gpupaint_states_shapes;
 #[cfg(feature = "gpupaint")]
 mod gpupaint_states_strokes;
+#[cfg(feature = "gpupaint")]
+mod gpupaint_states_wing;
 mod gpupaint_time;
 mod lifetimes;
 mod math;
