@@ -122,6 +122,13 @@ new painter.
   anyone claims it. Follow-up for the parent: read run
   44025611760's conclusion + census comparison step, then update
   this section.
+  **[CORRECTION, Batch 3 close 2026-11-18: READ — run
+  44025611760 completed SUCCESS; telemetry FILM TELEMETRY:
+  CHECK OK; all 1,811 extracted frame hashes IDENTICAL to the
+  flip-era census (file sha256 ce08dff5…). The UNVERIFIED /
+  UNCONFIRMED wording above and in the VERIFY Phase 2 bullet
+  below is superseded by this read; see COVERAGE-MATRIX.md
+  Group 9, post-Batch-2 census row.]**
 - **Golden pins:** untouched by this batch (no painter change
   reaches any pinned film frame; BROW/SWEAT defaults reproduce
   pinned hashes byte-identically — see dispositions).

@@ -120,14 +120,19 @@ MODES (choose one; the default is a built-in scene render):
                             frame_%05d.png; existing frames are
                             skipped (resume).
     --film-telemetry <DIR>  Native telemetry gate over a film
-                            directory (CPU only, no GPU). The
+                            directory (CPU painter by default;
+                            gpupaint paint under TALERENDER_GPUPAINT=1
+                            in gpupaint builds; evaluation parallel
+                            under the resource governor). The
                             verdict is the printed line
                             \"FILM TELEMETRY: CHECK OK\" /
                             \"CHECK FAILED (...)\" — read the line.
     --tables                With --film-telemetry: also print the
                             shot, caption and cast tables after the
                             verdict line. Default output is unchanged.
-    --telemetry <MODE>      M6 QA telemetry (CPU only):
+    --telemetry <MODE>      M6 QA telemetry (CPU painter by
+                            default; gpupaint paint under
+                            TALERENDER_GPUPAINT=1 in gpupaint builds):
                             ab1 | ab1-file | ab1-variant.
                             Pair ab1-file with --scene-file.
 
