@@ -19,6 +19,25 @@ name: Census (dispatch)
 
 on:
   workflow_dispatch:
+    inputs:
+      gpupaint:
+        # GPUFIRST Batch 3 (seat FILMPATH): when true, build
+        # with `--features gpupaint` and run the census renders
+        # with TALERENDER_GPUPAINT=1, so the film path paints
+        # characters via gpupaint (see src/paint_backend.rs for
+        # the selection contract). Default false = today's
+        # exact behaviour: default-features build, CPU painter,
+        # no env. The telemetry step is NEVER flagged — film
+        # telemetry is a CPU-only mode (W84 ruling D1) — in
+        # both modes. Dispatch twice with gpupaint=true for a
+        # flagged-vs-flagged determinism pair; dispatch once
+        # true + once false for the flagged-vs-unflagged
+        # parity diff. Frame hashes are in the job log either
+        # way (no artifacts, by design — see header).
+        description: "Paint characters via gpupaint (feature build + TALERENDER_GPUPAINT=1 on census renders only)"
+        type: boolean
+        required: false
+        default: false
 
 env:
   CARGO_TERM_COLOR: always
@@ -43,8 +62,16 @@ jobs:
           echo "VK_ICD_FILENAMES=$ICD" >> "$GITHUB_ENV"
           echo "lavapipe ICD: $ICD"
       - name: Build
+        env:
+          GPUPAINT_INPUT: ${{ inputs.gpupaint }}
         run: |
-          cargo build --release
+          if [ "$GPUPAINT_INPUT" = "true" ]; then
+            echo "build mode: --features gpupaint (GPUFIRST Batch 3 flagged census)"
+            cargo build --release --features gpupaint
+          else
+            echo "build mode: default features (CPU painter census)"
+            cargo build --release
+          fi
           sha256sum ./target/release/talerender
           ./target/release/talerender --version
       - name: Film telemetry (verdict line is the contract)
@@ -57,13 +84,21 @@ jobs:
           echo "telemetry exit: $rc (0 = CHECK OK, 1 = CHECK FAILED, 3 = could not run)"
           exit $rc
       - name: Full-film census (chunked renders, hashes to log, frames deleted)
+        env:
+          # "1" only for a flagged dispatch; "0" otherwise —
+          # paint_backend() treats anything but exactly "1" as
+          # CPU, and in an unflagged (default-features) build
+          # the variable is ignored entirely. Scoped to THIS
+          # step: the telemetry step above never sees it.
+          TALERENDER_GPUPAINT: ${{ inputs.gpupaint && '1' || '0' }}
         run: |
+          echo "census paint env: TALERENDER_GPUPAINT=$TALERENDER_GPUPAINT"
           total=0
           for range in "0 250" "250 500" "500 750" "750 1000" "1000 1250" "1250 1500" "1500 1750" "1750 1811"; do
             set -- $range
             out="census-$1-$2"
             ./target/release/talerender --film film --out "$out" --from "$1" --to "$2" > "$out.log" 2>&1
-            grep -E "^(renderer:|gpu-mem:|film render complete)" "$out.log" || true
+            grep -E "^(renderer:|gpu-mem:|film render complete|paint-backend:)" "$out.log" || true
             echo "== sha256 $out =="
             sha256sum "$out"/frame_*.png
             n=$(ls "$out"/frame_*.png | wc -l)
