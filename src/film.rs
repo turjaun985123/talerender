@@ -2405,10 +2405,72 @@ pub(crate) struct PaintCache {
     map: HashMap<String, std::rc::Rc<Painted>>,
     order: std::collections::VecDeque<String>,
     budget: crate::paintbudget::PaintBudget,
+    /// GPUFIRST Batch 3 (seat FILMPATH): which painter serves
+    /// cache misses. Pinned ONCE at construction — a run never
+    /// switches painters mid-film. The cache itself is
+    /// backend-agnostic: it stores finished `Painted` canvases
+    /// under the SAME exact `state_key` for either backend, so
+    /// key coverage (incl. the F-V1 hold_l/hold_r name keying
+    /// and every FullState field) is neither weakened nor
+    /// duplicated by the GPU path, and eviction stays a pure
+    /// time cost. See `new_for_film`.
+    backend: crate::paint_backend::PaintBackend,
 }
 
 impl PaintCache {
     fn new() -> PaintCache {
+        PaintCache::with_backend(crate::paint_backend::PaintBackend::Cpu)
+    }
+
+    /// Film-path constructor (GPUFIRST Batch 3): the backend is
+    /// selected by the ONE contract in `crate::paint_backend`
+    /// — GPU only in a `--features gpupaint` build with
+    /// `TALERENDER_GPUPAINT=1`, CPU otherwise. Used by the two
+    /// film RENDER paths (`run_film`, `run_film_stream`) ONLY.
+    /// `new` (above) stays CPU-always: film telemetry is a
+    /// CPU-only mode (W84 ruling D1) and its constructor must
+    /// not grow a GPU device because an env var is set.
+    fn new_for_film() -> PaintCache {
+        let backend = crate::paint_backend::paint_backend();
+        if backend == crate::paint_backend::PaintBackend::GpuPaint {
+            // Evidence line for flagged runs (census greps it);
+            // printed only when the GPU backend is actually
+            // selected, so CPU runs' stdout is byte-identical.
+            println!("paint-backend: gpupaint (feature gpupaint, TALERENDER_GPUPAINT=1)");
+        }
+        PaintCache::with_backend(backend)
+    }
+
+    /// Telemetry-path constructor (GPUFIRST Batch 3, seat
+    /// TELEM): same ONE contract as `new_for_film` — the backend
+    /// is `crate::paint_backend::paint_backend()`, pinned once
+    /// for the cache's lifetime — used by `run_film_telemetry`
+    /// ONLY, so the legacy film-telemetry leg's character paints
+    /// (via `resolve_chars` -> `get_or_paint` -> `paint_miss`)
+    /// ride gpupaint under the flag, with the same loud failure
+    /// posture (`paint_miss` panics on GPU failure; no silent
+    /// CPU fallback). This deliberately supersedes, for THIS
+    /// constructor only, the W84 D1 "telemetry stays CPU-only"
+    /// posture that `new` above still honours and that
+    /// paint_backend.rs's header still states — the Batch 3
+    /// user scope note (2026-11-18: "check/telemetry paint rides
+    /// gpupaint under the flag") is the later ruling; the
+    /// coordinator should amend paint_backend.rs's header at
+    /// integration to match. Verdict semantics are unchanged:
+    /// same verdict lines, meanings and exit codes, flag on or
+    /// off. The evidence line goes to STDERR (telemetry progress
+    /// already lives there), so telemetry STDOUT — the verdict
+    /// surface check_mode.mjs scans — is byte-identical in
+    /// every configuration.
+    fn new_for_telemetry() -> PaintCache {
+        let backend = crate::paint_backend::paint_backend();
+        if backend == crate::paint_backend::PaintBackend::GpuPaint {
+            eprintln!("paint-backend: gpupaint (feature gpupaint, TALERENDER_GPUPAINT=1)");
+        }
+        PaintCache::with_backend(backend)
+    }
+
+    fn with_backend(backend: crate::paint_backend::PaintBackend) -> PaintCache {
         // TALERENDER_PAINT_CACHE overrides the entry cap for
         // memory-tight runs (telemetry on a shared VM); the byte
         // budget derives from it (TALERENDER_PAINT_BUDGET_MB
@@ -2423,6 +2485,7 @@ impl PaintCache {
                 cap,
                 crate::paintbudget::CANVAS_BYTES,
             ),
+            backend,
         }
     }
     fn get_or_paint(&mut self, key: String, look: &FullLook, st: &FullState) -> std::rc::Rc<Painted> {
@@ -2445,7 +2508,7 @@ impl PaintCache {
             return v;
         }
         self.budget.on_miss(&key);
-        let v = std::rc::Rc::new(paint_toon_full(look, st));
+        let v = std::rc::Rc::new(self.paint_miss(look, st));
         self.budget.on_insert(crate::paintbudget::entry_bytes(&v.0));
         self.map.insert(key.clone(), v.clone());
         self.order.push_back(key);
@@ -2455,6 +2518,31 @@ impl PaintCache {
             self.budget.on_evict(&old, crate::paintbudget::entry_bytes(&old_v.0), reason);
         }
         v
+    }
+    /// Paint one cache miss with the backend pinned at
+    /// construction. The GPU arm exists only in
+    /// `--features gpupaint` builds; `paint_backend()` never
+    /// selects it otherwise, so the non-feature arm is
+    /// unreachable by construction (not a fallback). A GPU
+    /// failure PANICS — loud, run-aborting — rather than
+    /// silently substituting a CPU paint: under the parity
+    /// law a flagged census must never contain unmarked CPU
+    /// pixels (see gpupaint::paint_state_gpu's failure note).
+    fn paint_miss(&self, look: &FullLook, st: &FullState) -> Painted {
+        if self.backend == crate::paint_backend::PaintBackend::GpuPaint {
+            #[cfg(feature = "gpupaint")]
+            return crate::gpupaint::paint_state_gpu(look, st).unwrap_or_else(|e| {
+                panic!(
+                    "gpupaint film paint failed (TALERENDER_GPUPAINT=1, \
+                     no CPU fallback by parity law): {e}"
+                )
+            });
+            #[cfg(not(feature = "gpupaint"))]
+            unreachable!(
+                "paint_backend() selected GpuPaint in a build without feature gpupaint"
+            );
+        }
+        paint_toon_full(look, st)
     }
     fn stats_line(&self) -> String {
         self.budget.stats_line()
@@ -3921,7 +4009,7 @@ pub(crate) async fn run_film(width: u32, height: u32, film_dir: &str, out_dir: &
         "film: {} — {} frames @30fps, rendering {}..{} at {}x{} (clean PNG frames; decision B){tag}",
         "THE SOLDIER WHO DIDN'T KNOW THE WAR WAS OVER", frames_total, from, to, width, height
     );
-    let mut cache = PaintCache::new();
+    let mut cache = PaintCache::new_for_film();
     let clock = crate::runlog::RunClock::new();
     // WP6: per-frame timing lines, env-gated OFF by default
     // (runlog::frame_timing_enabled). The line shape is the
@@ -4045,7 +4133,7 @@ fn run_film_stream(
         audio,
         queue_capacity,
     };
-    let mut cache = PaintCache::new();
+    let mut cache = PaintCache::new_for_film();
     let clock = crate::runlog::RunClock::new();
     let mut done = 0u32;
     // The producer: run_film's loop body, minus skip + save.
@@ -4192,7 +4280,10 @@ pub(crate) fn run_film_telemetry(dir: &Path, tables: bool) -> Result<bool, Strin
     ];
     let shots_keep = shots.clone();
     let mut audit = Audit::new(shots);
-    let mut cache = PaintCache::new();
+    // B3 TELEM: telemetry-specific cache — backend pinned from
+    // the ONE contract (crate::paint_backend), so this leg's
+    // paints ride gpupaint under the flag (see new_for_telemetry).
+    let mut cache = PaintCache::new_for_telemetry();
     let mut presence: Vec<PresenceRow> = Vec::new();
     let mut t = 0.0f64;
     let mut sample_no = 0u32;
@@ -4323,6 +4414,27 @@ pub(crate) fn run_film_telemetry(dir: &Path, tables: bool) -> Result<bool, Strin
 #[cfg(test)]
 mod state_key_tests {
     use super::*;
+
+    /// B3 TELEM: the telemetry cache constructor pins the ONE
+    /// contracted selection (`crate::paint_backend`), exactly
+    /// like the film constructor — and in a build without the
+    /// gpupaint feature that selection is always Cpu, whatever
+    /// the ambient env says (the test does not mutate the env;
+    /// the feature half of the contract is what pins this).
+    /// `PaintCache::new` stays Cpu-always in every build.
+    #[test]
+    fn telemetry_cache_pins_the_contracted_backend() {
+        assert_eq!(
+            PaintCache::new_for_telemetry().backend,
+            crate::paint_backend::paint_backend()
+        );
+        assert_eq!(PaintCache::new().backend, crate::paint_backend::PaintBackend::Cpu);
+        #[cfg(not(feature = "gpupaint"))]
+        assert_eq!(
+            PaintCache::new_for_telemetry().backend,
+            crate::paint_backend::PaintBackend::Cpu
+        );
+    }
 
     /// Regression tests for the state_key sweat/tears defect
     /// (disclosed in V2-HANDOVER.md): the painter consumes

@@ -168,6 +168,89 @@ pub(crate) fn run(args: &[String]) -> i32 {
     }
 }
 
+/// Backend-selection predicate for the film path, in this
+/// module's namespace. The contract itself lives in ONE place —
+/// `crate::paint_backend` (module header there is normative);
+/// this is a delegation, not a second env read.
+#[allow(dead_code)] // contracted entry point for the telemetry seat (Batch 3)
+pub(crate) fn enabled() -> bool {
+    crate::paint_backend::gpupaint_enabled()
+}
+
+/// Film-path GPU paint (GPUFIRST Batch 3, seat FILMPATH): paint
+/// ONE character state on the GPU and return the result in the
+/// CPU painter's exact return shape — `(pixels, w, h, hand_l,
+/// hand_r)`, the `film::Painted` tuple — so the film composite
+/// consumes it unchanged.
+///
+/// HOW (the only executor shape that exists at this head —
+/// there is no direct state->prims translator): the CPU paint
+/// runs inside a gputrace window to produce the display list
+/// (the same record path `record-states` uses), the list is
+/// prepared and replayed on the GPU by the harness executor
+/// (`prepare` + `replay_gpu`), and the read-back pixels REPLACE
+/// the CPU pixels. The CPU tuple's `w`/`h`/hands are carried
+/// through verbatim: hands are stage-space values the GPU
+/// replay does not recompute, and they are a pure function of
+/// the same (look, state) the list was traced from.
+///
+/// COST HONESTY: this is Batch 3 INTEGRATION, not the perf
+/// endgame — the CPU paint still runs (to trace), and
+/// `replay_gpu` creates a fresh instance/adapter/device per
+/// call, exactly as the `--gpu-paint replay` harness does.
+/// Callers must therefore cache results (the film path's
+/// PaintCache does, keyed exactly as for CPU paints) so this
+/// runs once per distinct state, not once per frame. A
+/// persistent executor is a later seat's optimisation; it must
+/// not change a pixel.
+///
+/// FAILURE: any failure (empty trace, prepare error, no
+/// adapter, readback error, size mismatch) is returned as
+/// `Err` — the caller fails loudly. There is NO silent CPU
+/// fallback: a flagged run that quietly painted some states on
+/// the CPU would corrupt the parity census it exists to feed.
+///
+/// The replay's VRAM-ledger registrations are wrapped in a
+/// `gpucore::MemScope` so the film renderer's end-of-run
+/// `gpu-mem:` line keeps its standing meaning (the scope
+/// restores the transient E/G classes on drop; the peak
+/// watermark is NOT restored, by the ledger's own design, so
+/// `peak_accounted_bytes` in a flagged run may sit higher —
+/// an accounting watermark, not a pixel).
+pub(crate) fn paint_state_gpu(
+    look: &FullLook,
+    st: &FullState,
+) -> Result<(Vec<u8>, u32, u32, (f32, f32), (f32, f32)), String> {
+    // Trace: the record-states window, verbatim (canvas is
+    // paint_toon_full's fixed 1280x1408 @ res 2).
+    gputrace::set_armed(true);
+    gputrace::begin(2560, 2816);
+    let cpu = crate::toonfull::paint_toon_full(look, st);
+    let list = gputrace::take();
+    gputrace::set_armed(false);
+    if list.canvas_w == 0 || list.canvas_h == 0 || list.prims.is_empty() {
+        return Err(format!(
+            "gpupaint film paint: trace produced an empty display list ({}x{}, {} prims)",
+            list.canvas_w,
+            list.canvas_h,
+            list.prims.len()
+        ));
+    }
+    let (preps, allocs) = prepare(&list)?;
+    let outcome = {
+        let _mem_scope = crate::gpucore::mem_scope();
+        pollster::block_on(replay_gpu(&list, &preps, &allocs))?
+    };
+    if outcome.px.len() != cpu.0.len() {
+        return Err(format!(
+            "gpupaint film paint: GPU canvas is {} bytes, CPU canvas is {} bytes",
+            outcome.px.len(),
+            cpu.0.len()
+        ));
+    }
+    Ok((outcome.px, cpu.1, cpu.2, cpu.3, cpu.4))
+}
+
 // =====================================================================
 // GPU executor (seat GPUX) — `replay`.
 //
@@ -1172,14 +1255,16 @@ fn replay(list_path: &str, out_path: &str) -> i32 {
     }
 }
 
-/// B3 TELEM (additive, for the check/telemetry legs): synchronous
-/// in-memory replay of a recorded display list — the same
-/// `prepare` + `replay_gpu` the `replay` subcommand runs, minus
-/// the PNG / sha256 harness surface. Returns the replayed canvas
-/// pixels (RGBA8, `canvas_w * canvas_h * 4` bytes). The telemetry
-/// backend helper (`telemetry::paint_canvas_with_backend`) is the
-/// only caller; if the FILMPATH seat's shared helper supersedes
-/// this at integration, this wrapper is the piece to fold into it.
+/// B3 TELEM (additive): synchronous in-memory replay of a
+/// recorded display list — the same `prepare` + `replay_gpu`
+/// the `replay` subcommand runs, minus the PNG / sha256 harness
+/// surface. Returns the replayed canvas pixels (RGBA8,
+/// `canvas_w * canvas_h * 4` bytes). Its remaining caller is
+/// the telemetry backend helper for the `scene::paint_toon`
+/// family (`telemetry::paint_canvas_with_backend` — the ab1 /
+/// ab1-variant cutouts), which `paint_state_gpu` above does not
+/// cover because that helper is `toonfull`-shaped. The
+/// `toonfull` telemetry sites use `paint_state_gpu` directly.
 pub(crate) fn replay_list_pixels(list: &gputrace::DisplayList) -> Result<Vec<u8>, String> {
     if list.canvas_w == 0 || list.canvas_h == 0 {
         return Err("gpupaint replay: canvas size is zero".to_string());

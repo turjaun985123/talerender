@@ -222,69 +222,109 @@ pub(crate) fn scan_canvas_overflow(px: &[u8], w: usize, h: usize, res: f64) -> O
 }
 
 // ---------------------------------------------------------------------
-// B3 TELEM — check/telemetry paint backend selection.
+// B3 TELEM — check/telemetry paint backend routing.
 //
-// SHARED CONTRACT (owned by the FILMPATH seat; this is the local
-// form in the telemetry files, flagged for the coordinator to
-// unify with FILMPATH's helper at integration): GPU paint is
-// selected iff the binary was built `--features gpupaint` AND
-// the environment variable `TALERENDER_GPUPAINT` is exactly
-// "1". Every other combination paints on the CPU — production
-// default stays CPU, in the default build and with the env
-// unset alike. `gpupaint_selected` below is the ONLY env read
-// for this selection in the telemetry files.
+// Backend selection is the FILMPATH seat's ONE contract,
+// consumed here exactly (no env read in this file):
+// `crate::paint_backend::paint_backend()` returns
+// `PaintBackend::GpuPaint` iff the binary was built
+// `--features gpupaint` AND env `TALERENDER_GPUPAINT` is
+// exactly "1"; every other configuration is
+// `PaintBackend::Cpu` (production default stays CPU).
+// STANDALONE-BUILD SHIM: this branch carries
+// `src/paint_backend.rs` as a VERBATIM copy of b3/filmpath
+// 1fac3f8's module (plus its identical `mod paint_backend;`
+// line in main.rs) so the branch compiles on its own; at
+// integration the coordinator drops the duplicate — the two
+// copies are byte-identical, so the merge is a no-op.
 //
-// What "GPU paint" means here, with the harness that exists
-// today: the CPU paint runs inside a `gputrace` window (it is
-// the display-list recorder, not the verdict source), the
-// recorded list is replayed on the GPU
-// (`gpupaint::replay_list_pixels`), and the REPLAYED pixels are
-// what `scan_canvas_overflow` judges. Failure posture is fail
-// closed: if the flag is on and the trace or replay fails, the
-// caller gets an `Err` (the telemetry run reports it could not
-// run) — never a silent CPU fallback, because a verdict printed
-// as a GPU verdict must be a GPU verdict (parity law).
+// Two routed shapes, matching the two painters the telemetry
+// legs use:
+//  * `paint_full_backend` — for `toonfull::paint_toon_full`
+//    sites (filmtelemetry's cutouts): dispatches to FILMPATH's
+//    `gpupaint::paint_state_gpu`, the contracted GPU entry.
+//  * `paint_canvas_backend` / `paint_canvas_with_backend` —
+//    for `scene::paint_toon` sites (the ab1 cutouts below),
+//    which `paint_state_gpu` does not cover (it is
+//    toonfull-shaped): the CPU paint runs inside a `gputrace`
+//    window (the display-list recorder, not the verdict
+//    source), the recorded list is replayed on the GPU
+//    (`gpupaint::replay_list_pixels`), and the REPLAYED pixels
+//    are what `scan_canvas_overflow` judges.
+// Failure posture matches FILMPATH's (parity law): flag-on +
+// GPU failure is LOUD — an `Err` the telemetry run reports
+// (and, on the PaintCache telemetry leg in film.rs, the same
+// named panic as the film path) — never a silent CPU fallback,
+// because a verdict printed as a GPU verdict must be a GPU
+// verdict.
 // ---------------------------------------------------------------------
 
-/// The one env read for the telemetry backend selection (see
-/// the contract above).
-pub(crate) fn gpupaint_selected() -> bool {
-    #[cfg(feature = "gpupaint")]
-    return std::env::var("TALERENDER_GPUPAINT").map(|v| v == "1").unwrap_or(false);
-    #[cfg(not(feature = "gpupaint"))]
-    return false;
+/// Paint one `toonfull` character through the contracted
+/// backend. Returns the painter's full tuple
+/// `(pixels, w, h, hand_l, hand_r)`. The GPU arm exists only
+/// in feature builds; `paint_backend()` never selects it
+/// otherwise, so the non-feature arm is unreachable by
+/// construction (not a fallback) — the same shape as
+/// `film::PaintCache::paint_miss`.
+pub(crate) fn paint_full_backend(
+    look: &crate::toonfull::FullLook,
+    st: &crate::toonfull::FullState,
+) -> Result<(Vec<u8>, u32, u32, (f32, f32), (f32, f32)), String> {
+    paint_full_with_backend(crate::paint_backend::paint_backend(), look, st)
 }
 
-/// Paint one character canvas through the selected backend:
-/// `paint_canvas_backend(closure)` is what the telemetry paint
-/// sites call. The closure is the site's existing CPU paint,
-/// returning `(pixels, w, h)`; it runs exactly once on every
-/// path (on the GPU path it runs as the trace recorder).
+/// `paint_full_backend` with the selection made explicit —
+/// the verdict-equivalence test drives this directly with
+/// `PaintBackend::Cpu` / `PaintBackend::GpuPaint` so it needs
+/// no env mutation. Passing `GpuPaint` in a build without the
+/// feature is unreachable by construction (the contracted
+/// selection can never produce it there), mirroring
+/// `film::PaintCache::paint_miss`.
+pub(crate) fn paint_full_with_backend(
+    backend: crate::paint_backend::PaintBackend,
+    look: &crate::toonfull::FullLook,
+    st: &crate::toonfull::FullState,
+) -> Result<(Vec<u8>, u32, u32, (f32, f32), (f32, f32)), String> {
+    if backend == crate::paint_backend::PaintBackend::GpuPaint {
+        #[cfg(feature = "gpupaint")]
+        return crate::gpupaint::paint_state_gpu(look, st);
+        #[cfg(not(feature = "gpupaint"))]
+        unreachable!("paint_backend() selected GpuPaint in a build without feature gpupaint");
+    }
+    Ok(crate::toonfull::paint_toon_full(look, st))
+}
+
+/// Paint one character canvas through the contracted backend:
+/// `paint_canvas_backend(closure)` is what the `scene::paint_toon`
+/// telemetry sites call. The closure is the site's existing CPU
+/// paint, returning `(pixels, w, h)`; it runs exactly once on
+/// every path (on the GPU path it runs as the trace recorder).
 pub(crate) fn paint_canvas_backend<F>(paint: F) -> Result<(Vec<u8>, u32, u32), String>
 where
     F: FnOnce() -> (Vec<u8>, u32, u32),
 {
-    paint_canvas_with_backend(gpupaint_selected(), paint)
+    paint_canvas_with_backend(crate::paint_backend::paint_backend(), paint)
 }
 
 /// `paint_canvas_backend` with the selection made explicit —
 /// the verdict-equivalence test drives this directly with
-/// `false` and `true` so it needs no env mutation. With the
-/// `gpupaint` feature off, `selected = true` still paints on
-/// the CPU: the feature build is a necessary half of the
-/// contract, so a default build cannot produce a GPU verdict.
-pub(crate) fn paint_canvas_with_backend<F>(selected: bool, paint: F) -> Result<(Vec<u8>, u32, u32), String>
+/// `PaintBackend::Cpu` / `PaintBackend::GpuPaint` so it needs
+/// no env mutation.
+pub(crate) fn paint_canvas_with_backend<F>(
+    backend: crate::paint_backend::PaintBackend,
+    paint: F,
+) -> Result<(Vec<u8>, u32, u32), String>
 where
     F: FnOnce() -> (Vec<u8>, u32, u32),
 {
     #[cfg(feature = "gpupaint")]
     {
-        if selected {
+        if backend == crate::paint_backend::PaintBackend::GpuPaint {
             return paint_canvas_gpu(paint);
         }
     }
     #[cfg(not(feature = "gpupaint"))]
-    let _ = selected;
+    let _ = backend;
     Ok(paint())
 }
 
@@ -2155,16 +2195,8 @@ mod tests {
         st
     }
 
-    fn telem_paint_full(
-        look: &crate::toonfull::FullLook,
-        st: &crate::toonfull::FullState,
-    ) -> (Vec<u8>, u32, u32) {
-        let (px, w, h, _, _) = crate::toonfull::paint_toon_full(look, st);
-        (px, w, h)
-    }
-
-    fn scene_clean_standing() -> (Vec<u8>, u32, u32) {
-        telem_paint_full(&telem_finn_look(), &crate::toonfull::FullState::default())
+    fn scene_clean_standing() -> (crate::toonfull::FullLook, crate::toonfull::FullState) {
+        (telem_finn_look(), crate::toonfull::FullState::default())
     }
 
     fn scene_ab1_s01() -> (Vec<u8>, u32, u32) {
@@ -2191,11 +2223,11 @@ mod tests {
         })
     }
 
-    fn scene_held_lie_clean() -> (Vec<u8>, u32, u32) {
-        telem_paint_full(&telem_finn_look(), &telem_lying_state())
+    fn scene_held_lie_clean() -> (crate::toonfull::FullLook, crate::toonfull::FullState) {
+        (telem_finn_look(), telem_lying_state())
     }
 
-    fn scene_held_lie_plate_overflow() -> (Vec<u8>, u32, u32) {
+    fn scene_held_lie_plate_overflow() -> (crate::toonfull::FullLook, crate::toonfull::FullState) {
         // The same held lie, now HOLDING a prop past the canvas
         // edge: a 2600x2600 px opaque board plate (1300x1300
         // stage units at res 2) centred on the right hand
@@ -2216,11 +2248,28 @@ mod tests {
             x0: -650.0,
             y0: -650.0,
         });
-        telem_paint_full(&telem_finn_look(), &st)
+        (telem_finn_look(), st)
+    }
+
+    /// The flag-on backend for the equivalence test: a real
+    /// `GpuPaint` selection in feature builds; in the default
+    /// build the contracted selection can never produce
+    /// `GpuPaint`, so the on-run is `Cpu` and the test proves
+    /// the routing + scene classes (the GPU assertions engage
+    /// in `--features gpupaint` runs).
+    #[cfg(feature = "gpupaint")]
+    fn telem_on_backend() -> crate::paint_backend::PaintBackend {
+        crate::paint_backend::PaintBackend::GpuPaint
+    }
+
+    #[cfg(not(feature = "gpupaint"))]
+    fn telem_on_backend() -> crate::paint_backend::PaintBackend {
+        crate::paint_backend::PaintBackend::Cpu
     }
 
     #[test]
     fn telem_backend_verdict_equivalence() {
+        use crate::paint_backend::PaintBackend;
         // The held-lie scenes only mean what the brief needs if
         // the anchor actually engages on them (a no-anchor lie
         // would be a plain overflow scene, not the B-1 case).
@@ -2229,29 +2278,51 @@ mod tests {
             (0.0, 0.0),
             "held-lie fixture must engage canvas_anchor"
         );
-        let scenes: [(&str, fn() -> (Vec<u8>, u32, u32), bool); 5] = [
-            ("clean-standing-finn", scene_clean_standing, false),
-            ("clean-ab1-s01", scene_ab1_s01, false),
-            ("overflow-ab1-variant-lean42", scene_ab1_variant, true),
-            ("held-lie-lean82-anchor-clean", scene_held_lie_clean, false),
-            ("held-lie-lean82-plate-overflow", scene_held_lie_plate_overflow, true),
-        ];
-        for (name, paint, expect_overflow) in scenes {
-            let (px, w, h) = paint_canvas_with_backend(false, paint)
-                .unwrap_or_else(|e| panic!("{name}: flag-off paint failed: {e}"));
-            let off = scan_canvas_overflow(&px, w as usize, h as usize, 2.0);
+        let check = |name: &str, off: OverflowCounts, on: OverflowCounts, expect_overflow: bool| {
             let off_any = off.top > 0 || off.right > 0 || off.bottom > 0 || off.left > 0;
             assert_eq!(
                 off_any, expect_overflow,
                 "{name}: CPU verdict class wrong — expected overflow={expect_overflow}, counts {off:?}"
             );
-            let (px, w, h) = paint_canvas_with_backend(true, paint)
-                .unwrap_or_else(|e| panic!("{name}: flag-on paint failed: {e}"));
-            let on = scan_canvas_overflow(&px, w as usize, h as usize, 2.0);
             assert_eq!(
                 on, off,
                 "{name}: VERDICT DIFFERS flag-off vs flag-on — off {off:?}, on {on:?}"
             );
+        };
+        // toonfull scenes — the production route is
+        // paint_full_with_backend (filmtelemetry's shape; the
+        // legacy film-telemetry leg reaches the same GPU entry
+        // through PaintCache::paint_miss).
+        let full_scenes: [(&str, fn() -> (crate::toonfull::FullLook, crate::toonfull::FullState), bool); 3] = [
+            ("clean-standing-finn", scene_clean_standing, false),
+            ("held-lie-lean82-anchor-clean", scene_held_lie_clean, false),
+            ("held-lie-lean82-plate-overflow", scene_held_lie_plate_overflow, true),
+        ];
+        for (name, scene, expect_overflow) in full_scenes {
+            let (look, st) = scene();
+            let (px, w, h, _, _) = paint_full_with_backend(PaintBackend::Cpu, &look, &st)
+                .unwrap_or_else(|e| panic!("{name}: flag-off paint failed: {e}"));
+            let off = scan_canvas_overflow(&px, w as usize, h as usize, 2.0);
+            let (look, st) = scene();
+            let (px, w, h, _, _) = paint_full_with_backend(telem_on_backend(), &look, &st)
+                .unwrap_or_else(|e| panic!("{name}: flag-on paint failed: {e}"));
+            let on = scan_canvas_overflow(&px, w as usize, h as usize, 2.0);
+            check(name, off, on, expect_overflow);
+        }
+        // scene::paint_toon scenes — the production route is
+        // paint_canvas_with_backend (the ab1 cutouts' shape).
+        let canvas_scenes: [(&str, fn() -> (Vec<u8>, u32, u32), bool); 2] = [
+            ("clean-ab1-s01", scene_ab1_s01, false),
+            ("overflow-ab1-variant-lean42", scene_ab1_variant, true),
+        ];
+        for (name, paint, expect_overflow) in canvas_scenes {
+            let (px, w, h) = paint_canvas_with_backend(PaintBackend::Cpu, paint)
+                .unwrap_or_else(|e| panic!("{name}: flag-off paint failed: {e}"));
+            let off = scan_canvas_overflow(&px, w as usize, h as usize, 2.0);
+            let (px, w, h) = paint_canvas_with_backend(telem_on_backend(), paint)
+                .unwrap_or_else(|e| panic!("{name}: flag-on paint failed: {e}"));
+            let on = scan_canvas_overflow(&px, w as usize, h as usize, 2.0);
+            check(name, off, on, expect_overflow);
         }
     }
 
