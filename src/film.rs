@@ -2415,6 +2415,25 @@ pub(crate) struct PaintCache {
     /// duplicated by the GPU path, and eviction stays a pure
     /// time cost. See `new_for_film`.
     backend: crate::paint_backend::PaintBackend,
+    /// GOV-PAR: every lookup's exact key, in lookup order —
+    /// `(key, Some(entry_bytes))` for a miss (painted + inserted),
+    /// `(key, None)` for a hit. The parallel telemetry collector
+    /// merges the per-worker logs in frame order and replays them
+    /// through `CacheStatsSim` to reproduce the SERIAL cache's
+    /// stats line exactly (see `simulated_stats_line`); the serial
+    /// path never reads its own log. The log is inert for pixels:
+    /// it records lookups, it never influences them.
+    key_log: Vec<(String, Option<u64>)>,
+}
+
+/// The entry cap a `PaintCache` is constructed with:
+/// TALERENDER_PAINT_CACHE overrides, else the historic default.
+/// Factored out of `with_backend` so `CacheStatsSim` is built
+/// with the SAME cap the serial cache would have had.
+fn paint_cache_entry_cap() -> usize {
+    std::env::var("TALERENDER_PAINT_CACHE").ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(crate::paintbudget::DEFAULT_ENTRY_CAP)
 }
 
 impl PaintCache {
@@ -2475,9 +2494,10 @@ impl PaintCache {
         // memory-tight runs (telemetry on a shared VM); the byte
         // budget derives from it (TALERENDER_PAINT_BUDGET_MB
         // overrides the budget; 0 disables byte enforcement).
-        let cap: usize = std::env::var("TALERENDER_PAINT_CACHE").ok()
-            .and_then(|v| v.parse().ok())
-            .unwrap_or(crate::paintbudget::DEFAULT_ENTRY_CAP);
+        PaintCache::with_backend_cap(backend, paint_cache_entry_cap())
+    }
+
+    fn with_backend_cap(backend: crate::paint_backend::PaintBackend, cap: usize) -> PaintCache {
         PaintCache {
             map: HashMap::new(),
             order: std::collections::VecDeque::new(),
@@ -2486,10 +2506,28 @@ impl PaintCache {
                 crate::paintbudget::CANVAS_BYTES,
             ),
             backend,
+            key_log: Vec::new(),
         }
+    }
+
+    /// GOV-PAR worker constructor (parallel telemetry only): the
+    /// telemetry backend, with the entry cap DIVIDED by the worker
+    /// count (min 1). N worker caches then carry the same aggregate
+    /// entry/byte worst case as the one serial cache — parallel
+    /// evaluation must not multiply the run's memory ceiling. The
+    /// division is verdict-neutral by construction: paint is a pure
+    /// function of the exact key, a worker cache only decides how
+    /// often its owner repaints, and the PRINTED stats line comes
+    /// from the serial simulation (`simulated_stats_line`), never
+    /// from a worker cache.
+    fn new_for_telemetry_worker(workers: usize) -> PaintCache {
+        let backend = crate::paint_backend::paint_backend();
+        let cap = (paint_cache_entry_cap() / workers.max(1)).max(1);
+        PaintCache::with_backend_cap(backend, cap)
     }
     fn get_or_paint(&mut self, key: String, look: &FullLook, st: &FullState) -> std::rc::Rc<Painted> {
         if let Some(v) = self.map.get(&key).cloned() {
+            self.key_log.push((key.clone(), None));
             self.budget.on_hit();
             // LRU touch (WP1.1, V2-WP1-LRU-SPEC §1): a hit makes
             // `key` the most-recently-used entry — move it to the
@@ -2509,6 +2547,8 @@ impl PaintCache {
         }
         self.budget.on_miss(&key);
         let v = std::rc::Rc::new(self.paint_miss(look, st));
+        self.key_log
+            .push((key.clone(), Some(crate::paintbudget::entry_bytes(&v.0))));
         self.budget.on_insert(crate::paintbudget::entry_bytes(&v.0));
         self.map.insert(key.clone(), v.clone());
         self.order.push_back(key);
@@ -2547,6 +2587,103 @@ impl PaintCache {
     fn stats_line(&self) -> String {
         self.budget.stats_line()
     }
+}
+
+/// GOV-PAR: a pixel-free replay of `PaintCache`'s accounting —
+/// the same LRU order, the same `PaintBudget` calls in the same
+/// order, fed only keys and entry byte lengths. It exists because
+/// the parallel telemetry path cannot share the serial cache:
+/// `PaintCache` stores `Rc<Painted>` (not `Send`), and a locked
+/// shared cache would make hit/miss/eviction counts a function of
+/// thread scheduling, so the printed `paint-cache:` line would
+/// stop being reproducible. The simulator is deterministic: fed
+/// the merged in-frame-order key log of a parallel run, it
+/// reproduces the stats line the SERIAL cache produces on the
+/// same samples, byte for byte. Entry bytes are a pure function
+/// of the key (same look+state -> same canvas), so the byte
+/// length recorded at any worker's miss is the length the serial
+/// cache would insert for that key. Equality with the real cache
+/// is pinned by `govpar_tests::cache_stats_sim_matches_real_cache`.
+pub(crate) struct CacheStatsSim {
+    resident: HashMap<String, u64>,
+    order: std::collections::VecDeque<String>,
+    budget: crate::paintbudget::PaintBudget,
+}
+
+impl CacheStatsSim {
+    /// Explicit cap/budget form (tests drive small caps to force
+    /// evictions deterministically).
+    fn new(budget_bytes: u64, entry_cap: usize) -> CacheStatsSim {
+        CacheStatsSim {
+            resident: HashMap::new(),
+            order: std::collections::VecDeque::new(),
+            budget: crate::paintbudget::PaintBudget::new(budget_bytes, entry_cap),
+        }
+    }
+
+    /// The serial cache's own construction parameters: the same
+    /// entry cap `PaintCache::with_backend` would read and the
+    /// same `PaintBudget::from_env` derivation.
+    fn from_env_like_cache() -> CacheStatsSim {
+        let cap = paint_cache_entry_cap();
+        CacheStatsSim {
+            resident: HashMap::new(),
+            order: std::collections::VecDeque::new(),
+            budget: crate::paintbudget::PaintBudget::from_env(
+                cap,
+                crate::paintbudget::CANVAS_BYTES,
+            ),
+        }
+    }
+
+    /// One lookup, mirroring `get_or_paint`'s accounting call for
+    /// call: hit -> `on_hit` + LRU touch; miss -> `on_miss`,
+    /// `on_insert(bytes)`, then the eviction loop (`eviction_reason`
+    /// + pop_front + `on_evict`) until no reason remains.
+    fn lookup(&mut self, key: &str, entry_bytes: u64) {
+        if self.resident.contains_key(key) {
+            self.budget.on_hit();
+            if let Some(pos) = self.order.iter().position(|k| k == key) {
+                let k = self.order.remove(pos).expect("sim cache order");
+                self.order.push_back(k);
+            }
+            return;
+        }
+        self.budget.on_miss(key);
+        self.budget.on_insert(entry_bytes);
+        self.resident.insert(key.to_string(), entry_bytes);
+        self.order.push_back(key.to_string());
+        while let Some(reason) = self.budget.eviction_reason() {
+            let old = self.order.pop_front().expect("sim cache order");
+            let old_bytes = self.resident.remove(&old).expect("sim cache order");
+            self.budget.on_evict(&old, old_bytes, reason);
+        }
+    }
+
+    fn stats_line(&self) -> String {
+        self.budget.stats_line()
+    }
+}
+
+/// GOV-PAR: the serial `paint-cache:` stats line for a parallel
+/// telemetry run, from the workers' key logs merged in frame
+/// order (each sample's lookups in the order `resolve_chars`
+/// issued them). See `CacheStatsSim` for why this is exact.
+pub(crate) fn simulated_stats_line(key_log_in_frame_order: &[(String, Option<u64>)]) -> String {
+    // Byte length per key, from any recorded miss (all misses of
+    // one key record the same length — the paint is pure).
+    let mut bytes_of: HashMap<&str, u64> = HashMap::new();
+    for (key, bytes) in key_log_in_frame_order {
+        if let Some(b) = bytes {
+            bytes_of.entry(key.as_str()).or_insert(*b);
+        }
+    }
+    let mut sim = CacheStatsSim::from_env_like_cache();
+    for (key, _) in key_log_in_frame_order {
+        let bytes = bytes_of.get(key.as_str()).copied().unwrap_or(crate::paintbudget::CANVAS_BYTES);
+        sim.lookup(key, bytes);
+    }
+    sim.stats_line()
 }
 
 fn state_key(look: usize, st: &FullState, hold_l: Option<&str>, hold_r: Option<&str>) -> String {
@@ -4245,6 +4382,184 @@ const INSTANCE_IDS: [&str; 11] = [
     "onoda", "compA", "compB", "suzuki", "tani", "onoda", "compA", "compB", "tani", "tani", "onoda",
 ];
 
+/// The legacy telemetry shot list (extracted verbatim from
+/// `run_film_telemetry` so the GOV-PAR collector and its tests
+/// build the identical list).
+fn legacy_shots(data: &FilmData) -> Vec<crate::telemetry::ShotInfo> {
+    use crate::telemetry::ShotInfo;
+    let l0 = |i: usize| data.lines[i].0 - 0.06;
+    vec![
+        ShotInfo { id: "S01".into(), at: l0(0) },
+        ShotInfo { id: "S02".into(), at: l0(1) },
+        ShotInfo { id: "S03".into(), at: l0(2) },
+        ShotInfo { id: "S04".into(), at: l0(3) },
+        ShotInfo { id: "S05a".into(), at: l0(4) },
+        ShotInfo { id: "S05b".into(), at: data.anchors["thought4"] - 0.12 },
+        ShotInfo { id: "S06".into(), at: l0(5) },
+        ShotInfo { id: "S07".into(), at: data.anchors["decades6"] - 0.25 },
+        ShotInfo { id: "S08".into(), at: l0(7) },
+        ShotInfo { id: "S08b".into(), at: data.anchors["refused7"] - 0.1 },
+        ShotInfo { id: "S09".into(), at: l0(8) },
+        ShotInfo { id: "S10".into(), at: l0(9) },
+        ShotInfo { id: "S11".into(), at: l0(10) },
+        ShotInfo { id: "S12".into(), at: l0(11) },
+    ]
+}
+
+/// GOV-PAR: one evaluated legacy telemetry sample — everything
+/// the serial loop body computed for one `t`, and nothing it
+/// aggregated. `key_log` is the sample's slice of the evaluating
+/// cache's lookup log (parallel path only; the stats simulation
+/// consumes it — see `CacheStatsSim`).
+struct LegacySample {
+    t: f64,
+    cuts: Vec<crate::telemetry::Cutout>,
+    key_log: Vec<(String, Option<u64>)>,
+}
+
+/// Evaluate one legacy sample at `t` against `cache` — the serial
+/// loop body, verbatim: `eval_frame`, `resolve_chars` (which is
+/// where the cache is consulted and the characters are painted),
+/// then the cutout construction. Pure with respect to everything
+/// except the cache passed in: same `t` + same cache contents
+/// class -> same cutouts, because paint is a pure function of the
+/// exact state key (a cache hit and a repaint are pixel-equal).
+fn eval_legacy_sample(
+    data: &FilmData,
+    looks: &[(FullLook, bool, f64)],
+    assets: &Assets,
+    tels: &[crate::telemetry::Look],
+    t: f64,
+    cache: &mut PaintCache,
+) -> LegacySample {
+    use crate::telemetry::*;
+    let log_start = cache.key_log.len();
+    let mut spec = eval_frame(data, looks, t);
+    let cam = ProjCamera {
+        eye: [spec.eye[0] as f64, spec.eye[1] as f64, spec.eye[2] as f64],
+        target: [spec.target[0] as f64, spec.target[1] as f64, spec.target[2] as f64],
+        up: [0.0, 1.0, 0.0],
+        fov_deg: spec.fov as f64,
+        aspect: 1080.0 / 1920.0,
+        near: 0.05,
+        far: 800.0,
+    };
+    let (_, infos) = resolve_chars(&mut spec, looks, assets, cache);
+    let cuts: Vec<Cutout> = infos
+        .iter()
+        .map(|ci| {
+            let tl = &tels[ci.look];
+            Cutout {
+                id: INSTANCE_IDS[ci.look].to_string(),
+                desc: describe(tl),
+                pose: pose_summary(&PoseState {
+                    mood: mood_name(ci.mood),
+                    arm_l: (ci.arm_l.0 as f64, ci.arm_l.1 as f64),
+                    arm_r: (ci.arm_r.0 as f64, ci.arm_r.1 as f64),
+                    legs: legs_name(ci.legs),
+                    head_tilt: ci.head_tilt as f64,
+                    head_turn: ci.head_turn as f64,
+                }),
+                overflow: Some(scan_canvas_overflow(&ci.painted.0, ci.painted.1 as usize, ci.painted.2 as usize, 2.0)),
+                box_: Some(project_box(&model_from_f32(&ci.model), &cam, 1.75)),
+                sig: look_signature(tl),
+            }
+        })
+        .collect();
+    LegacySample {
+        t,
+        cuts,
+        key_log: cache.key_log[log_start..].to_vec(),
+    }
+}
+
+/// GOV-PAR collector for the legacy leg: evaluate `times` (serial
+/// when `workers <= 1`, block-parallel otherwise) and aggregate in
+/// FRAME ORDER on this thread — `Audit::sample` and
+/// `note_presence` run in the serial sequence whatever the
+/// evaluation schedule was, so every order-sensitive product
+/// (overflow/violation insertion order, first-seen times,
+/// presence rows) is the serial product. Returns the audit, the
+/// presence rows and the `paint-cache:` stats line.
+///
+/// Cross-frame state inventory for this leg:
+/// - `Audit` (sigs/overflow/edge/comp accumulators): NOT shared;
+///   fed in frame order here, after evaluation.
+/// - `presence`: same — accumulated here, in frame order.
+/// - `PaintCache`: the one genuinely shared mutable structure.
+///   Serial: the single telemetry cache, stats from the cache
+///   itself (unchanged). Parallel: one cache PER WORKER (divided
+///   cap, see `new_for_telemetry_worker`) — a shared cache is
+///   impossible without changing semantics (`Rc` storage is not
+///   `Send`; a locked cache's LRU/hit sequence would be
+///   schedule-dependent) — and the printed stats line is the
+///   serial simulation over the merged key logs
+///   (`simulated_stats_line`), byte-identical to the serial
+///   cache's line on the same samples.
+/// - Progress eprintln: serial keeps the every-20-samples line;
+///   parallel prints one stderr line naming the worker count
+///   (stderr is not part of the verdict surface).
+fn collect_legacy_samples(
+    data: &FilmData,
+    looks: &[(FullLook, bool, f64)],
+    assets: &Assets,
+    tels: &[crate::telemetry::Look],
+    shots: Vec<crate::telemetry::ShotInfo>,
+    times: &[f64],
+    workers: usize,
+) -> Result<(crate::telemetry::Audit, Vec<crate::telemetry::PresenceRow>, String), String> {
+    use crate::telemetry::*;
+    let shots_keep = shots.clone();
+    let mut audit = Audit::new(shots);
+    let mut presence: Vec<PresenceRow> = Vec::new();
+    let stats_line: String;
+    if workers <= 1 {
+        // Serial path: one telemetry cache, evaluated and
+        // aggregated interleaved exactly as the pre-GOV-PAR loop.
+        // B3 TELEM: backend pinned from the ONE contract
+        // (crate::paint_backend) — see new_for_telemetry.
+        let mut cache = PaintCache::new_for_telemetry();
+        for (i, &t) in times.iter().enumerate() {
+            let sample_no = i as u32 + 1;
+            if sample_no % 20 == 0 {
+                eprintln!("film-telemetry: sample {sample_no} (t={t:.2})");
+            }
+            let sample = eval_legacy_sample(data, looks, assets, tels, t, &mut cache);
+            audit.sample(t, &sample.cuts);
+            let sid = shot_at(&shots_keep, t).id.clone();
+            let ids: Vec<&str> = sample.cuts.iter().map(|c| c.id.as_str()).collect();
+            note_presence(&mut presence, &sid, t, &ids);
+        }
+        stats_line = cache.stats_line();
+    } else {
+        eprintln!(
+            "film-telemetry: evaluating {} samples across {workers} workers (governor thread cap)",
+            times.len()
+        );
+        let results = crate::par_eval::parallel_block_map(times.len(), workers, |range| {
+            // One cache per BLOCK (per worker thread): contiguous
+            // samples share a shot's working set, so the block
+            // cache captures the same locality the serial cache
+            // sees within a shot.
+            let mut cache = PaintCache::new_for_telemetry_worker(workers);
+            range
+                .map(|i| Ok(eval_legacy_sample(data, looks, assets, tels, times[i], &mut cache)))
+                .collect::<Vec<Result<LegacySample, String>>>()
+        });
+        let samples = crate::par_eval::first_error(results)?;
+        let mut merged_log: Vec<(String, Option<u64>)> = Vec::new();
+        for sample in &samples {
+            audit.sample(sample.t, &sample.cuts);
+            let sid = shot_at(&shots_keep, sample.t).id.clone();
+            let ids: Vec<&str> = sample.cuts.iter().map(|c| c.id.as_str()).collect();
+            note_presence(&mut presence, &sid, sample.t, &ids);
+            merged_log.extend(sample.key_log.iter().cloned());
+        }
+        stats_line = simulated_stats_line(&merged_log);
+    }
+    Ok((audit, presence, stats_line))
+}
+
 pub(crate) fn run_film_telemetry(dir: &Path, tables: bool) -> Result<bool, String> {
     // REMEDIATION-CONTRACTS §1 fork (telemetry): a manifest
     // selecting the generic driver gets generic telemetry,
@@ -4261,79 +4576,25 @@ pub(crate) fn run_film_telemetry(dir: &Path, tables: bool) -> Result<bool, Strin
     let looks = look_registry();
     let assets = load_assets(dir, &data)?;
     let tels: Vec<Look> = looks.iter().map(|(l, _, _)| tel_look(l)).collect();
-    let l0 = |i: usize| data.lines[i].0 - 0.06;
-    let shots = vec![
-        ShotInfo { id: "S01".into(), at: l0(0) },
-        ShotInfo { id: "S02".into(), at: l0(1) },
-        ShotInfo { id: "S03".into(), at: l0(2) },
-        ShotInfo { id: "S04".into(), at: l0(3) },
-        ShotInfo { id: "S05a".into(), at: l0(4) },
-        ShotInfo { id: "S05b".into(), at: data.anchors["thought4"] - 0.12 },
-        ShotInfo { id: "S06".into(), at: l0(5) },
-        ShotInfo { id: "S07".into(), at: data.anchors["decades6"] - 0.25 },
-        ShotInfo { id: "S08".into(), at: l0(7) },
-        ShotInfo { id: "S08b".into(), at: data.anchors["refused7"] - 0.1 },
-        ShotInfo { id: "S09".into(), at: l0(8) },
-        ShotInfo { id: "S10".into(), at: l0(9) },
-        ShotInfo { id: "S11".into(), at: l0(10) },
-        ShotInfo { id: "S12".into(), at: l0(11) },
-    ];
+    let shots = legacy_shots(&data);
     let shots_keep = shots.clone();
-    let mut audit = Audit::new(shots);
-    // B3 TELEM: telemetry-specific cache — backend pinned from
-    // the ONE contract (crate::paint_backend), so this leg's
-    // paints ride gpupaint under the flag (see new_for_telemetry).
-    let mut cache = PaintCache::new_for_telemetry();
-    let mut presence: Vec<PresenceRow> = Vec::new();
-    let mut t = 0.0f64;
-    let mut sample_no = 0u32;
-    while t < data.duration {
-        sample_no += 1;
-        if sample_no % 20 == 0 {
-            eprintln!("film-telemetry: sample {sample_no} (t={t:.2})");
+    // GOV-PAR: the 0.25 s sample times, generated by the SAME
+    // iterative f64 accumulation the serial loop used
+    // (t = 0; while t < duration { ...; t += 0.25 }) so the
+    // sampled instants are bit-identical in both paths.
+    let mut times: Vec<f64> = Vec::new();
+    {
+        let mut t = 0.0f64;
+        while t < data.duration {
+            times.push(t);
+            t += 0.25;
         }
-        let mut spec = eval_frame(&data, &looks, t);
-        let cam = ProjCamera {
-            eye: [spec.eye[0] as f64, spec.eye[1] as f64, spec.eye[2] as f64],
-            target: [spec.target[0] as f64, spec.target[1] as f64, spec.target[2] as f64],
-            up: [0.0, 1.0, 0.0],
-            fov_deg: spec.fov as f64,
-            aspect: 1080.0 / 1920.0,
-            near: 0.05,
-            far: 800.0,
-        };
-        let (_, infos) = resolve_chars(&mut spec, &looks, &assets, &mut cache);
-        let cuts: Vec<Cutout> = infos
-            .iter()
-            .map(|ci| {
-                let tl = &tels[ci.look];
-                Cutout {
-                    id: INSTANCE_IDS[ci.look].to_string(),
-                    desc: describe(tl),
-                    pose: pose_summary(&PoseState {
-                        mood: mood_name(ci.mood),
-                        arm_l: (ci.arm_l.0 as f64, ci.arm_l.1 as f64),
-                        arm_r: (ci.arm_r.0 as f64, ci.arm_r.1 as f64),
-                        legs: legs_name(ci.legs),
-                        head_tilt: ci.head_tilt as f64,
-                        head_turn: ci.head_turn as f64,
-                    }),
-                    overflow: Some(scan_canvas_overflow(&ci.painted.0, ci.painted.1 as usize, ci.painted.2 as usize, 2.0)),
-                    box_: Some(project_box(&model_from_f32(&ci.model), &cam, 1.75)),
-                    sig: look_signature(tl),
-                }
-            })
-            .collect();
-        audit.sample(t, &cuts);
-        // Sampled presence for the --tables cast list (W85 §1.3):
-        // the staging work is already paid; this is one pass over
-        // the sample's cutouts, attributed by the audit's own rule.
-        let sid = shot_at(&shots_keep, t).id.clone();
-        let ids: Vec<&str> = cuts.iter().map(|c| c.id.as_str()).collect();
-        note_presence(&mut presence, &sid, t, &ids);
-        t += 0.25;
     }
-    println!("{}", cache.stats_line());
+    let workers = crate::par_eval::worker_count(times.len());
+    let (audit, presence, stats_line) = collect_legacy_samples(
+        &data, &looks, &assets, &tels, shots, &times, workers,
+    )?;
+    println!("{stats_line}");
     // Caption audit: rendered width = ink bbox of the film's own
     // strip; raw width = rendered / fit.
     let mut caps: Vec<CaptionInfo> = Vec::new();
@@ -4594,5 +4855,146 @@ mod state_key_tests {
             state_key(0, &b, None, None),
             "states differing only in brow_tilt must not share a PaintCache key"
         );
+    }
+}
+
+#[cfg(test)]
+mod govpar_tests {
+    use super::*;
+
+    /// The stats simulator must reproduce the REAL cache's stats
+    /// line on the same lookup sequence — this is what makes the
+    /// parallel path's printed `paint-cache:` line byte-identical
+    /// to the serial one, rather than merely plausible. The
+    /// sequence mixes hits and misses over four distinct states
+    /// (phase-keyed, so each phase is a distinct exact key).
+    #[test]
+    fn cache_stats_sim_matches_real_cache() {
+        let look = FullLook {
+            body: "#5C6644".to_string(),
+            head: "#F7F7FA".to_string(),
+            shade: None,
+            pattern: "plain".to_string(),
+            pat_col: None,
+            hat: "cap".to_string(),
+            hat_col: None,
+            band: None,
+            neck: "none".to_string(),
+            neck_col: None,
+            glasses: false,
+            mustache: false,
+            mustache_col: None,
+            kid: false,
+            blush: false,
+            freckles: false,
+            pencil: false,
+            monocle: false,
+            hair_col: None,
+            wing: false,
+            wing_col: None,
+            wing_lens: Vec::new(),
+            ears: false,
+            hair: false,
+        };
+        let mut cache = PaintCache::new();
+        // Phases: three distinct states, revisited — hits and
+        // misses interleaved (0, 1, 0, 2, 1, 0).
+        for phase in [0.0f32, 0.5, 0.0, 1.0, 0.5, 0.0] {
+            let mut st = FullState::default();
+            st.phase = phase;
+            let key = state_key(0, &st, None, None);
+            cache.get_or_paint(key, &look, &st);
+        }
+        let real_line = cache.stats_line();
+        assert!(real_line.contains("hits=3"), "sequence must exercise hits: {real_line}");
+        assert!(real_line.contains("misses=3"), "sequence must exercise misses: {real_line}");
+        let sim_line = simulated_stats_line(&cache.key_log);
+        assert_eq!(sim_line, real_line, "simulated stats must equal the real cache's");
+    }
+
+    /// The simulator's eviction/rerender accounting under a small
+    /// cap, against hand-computed expectations: cap 2, budget
+    /// disabled; lookups a b c a — c's insert evicts a (LRU), the
+    /// second a is a miss AND a rerender, its insert evicts b.
+    #[test]
+    fn cache_stats_sim_eviction_and_rerender_accounting() {
+        let c = crate::paintbudget::CANVAS_BYTES;
+        let mut sim = CacheStatsSim::new(0, 2);
+        for key in ["a", "b", "c", "a"] {
+            sim.lookup(key, c);
+        }
+        assert_eq!(
+            sim.stats_line(),
+            format!(
+                "paint-cache: entries=2 bytes={} hits=0 misses=4 evictions=2 rerenders=1 peak_bytes={} budget_bytes=0 hit_rate_permille=0 evictions_byte=0 evictions_cap=2",
+                2 * c,
+                3 * c
+            )
+        );
+        // A resident key is a hit and becomes most-recently-used:
+        // c a d — d's insert must evict c (now the LRU), not a.
+        sim.lookup("c", c);
+        sim.lookup("a", c);
+        sim.lookup("d", c);
+        assert!(sim.resident.contains_key("a"), "a was touched last-but-one and must survive");
+        assert!(!sim.resident.contains_key("c"), "c is the LRU after a's hit and must be evicted");
+    }
+
+    /// Serial vs parallel evaluation of the REAL legacy film
+    /// (in-repo `film/` — the Onoda staging the census gates):
+    /// the first 12 samples (t = 0..2.75, S01 into S02) evaluated
+    /// with 1 vs 4 workers must aggregate to the identical audit
+    /// surface, presence rows and paint-cache stats line, and a
+    /// second parallel run must be identical again (determinism).
+    /// Skips (does not fail) if the film data is absent.
+    #[test]
+    fn legacy_serial_vs_parallel_samples_equal() {
+        use crate::telemetry::*;
+        let dir = Path::new(env!("CARGO_MANIFEST_DIR")).join("film");
+        let Ok(data) = load_film_data(&dir) else { return };
+        if legacy_anchor_guard(&data).is_err() {
+            return;
+        }
+        let looks = look_registry();
+        let assets = load_assets(&dir, &data).expect("film assets load");
+        let tels: Vec<Look> = looks.iter().map(|(l, _, _)| tel_look(l)).collect();
+        let times: Vec<f64> = (0..12).map(|i| i as f64 * 0.25).collect();
+
+        let run = |workers: usize| {
+            let (audit, presence, stats) = collect_legacy_samples(
+                &data,
+                &looks,
+                &assets,
+                &tels,
+                legacy_shots(&data),
+                &times,
+                workers,
+            )
+            .expect("collect samples");
+            let mut lines: Vec<String> = Vec::new();
+            audit.print_audit(false, &mut lines);
+            audit.print_continuity(&mut lines);
+            audit.print_composition(&mut lines);
+            let presence_key: Vec<String> = presence
+                .iter()
+                .map(|r| {
+                    format!(
+                        "{}|{}|{}|{}|{}|{}",
+                        r.id, r.shot, r.samples, r.max_simul, r.first, r.last
+                    )
+                })
+                .collect();
+            (lines, presence_key, stats, audit.overflow_len(), audit.violations_len())
+        };
+
+        let serial = run(1);
+        // Non-vacuous: samples produced cutouts and presence, and
+        // the stats line is a real cache line.
+        assert!(!serial.1.is_empty(), "presence rows must be produced: {serial:?}");
+        assert!(serial.2.starts_with("paint-cache: entries="), "stats: {}", serial.2);
+        let parallel = run(4);
+        assert_eq!(parallel, serial, "parallel aggregation must equal serial, full surface");
+        let parallel2 = run(4);
+        assert_eq!(parallel2, serial, "parallel-vs-parallel must be deterministic");
     }
 }

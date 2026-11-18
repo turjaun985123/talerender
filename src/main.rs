@@ -59,6 +59,8 @@ mod outwire;
 mod locomotion;
 mod paint_backend;
 mod paintbudget;
+mod par_eval;
+mod resource;
 mod rendergraph;
 mod runlog;
 mod scheduler;
