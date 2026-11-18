@@ -3,7 +3,9 @@
 //! moods, walk/run/sit/jump legs, patterns (vest, stripes, apron),
 //! neckwear (tie, scarf, collar), hats (cap, bowler, boater,
 //! beanie, visor, tophat, bun, flower, bow, mailcap), extras
-//! (glasses, mustache, blush, freckles, pencil, monocle), blink /
+//! (glasses, mustache, blush, freckles, pencil, monocle), fox
+//! ears + hair strands behind the head disc (Spec §5b / §5c),
+//! blink /
 //! talk / look / sweat / tears, headTilt / headTurn / camPitch /
 //! squash, and held-prop plates — where scene::paint_toon (M4) is
 //! the five-mood stand subset the §28 scene needs.
@@ -163,13 +165,16 @@ pub(crate) struct FullLook {
     pub freckles: bool, // extra 'freckles'
     pub pencil: bool,   // extra 'pencil'
     pub monocle: bool,  // extra 'monocle'
-    pub hair_col: Option<String>, // 'hairCol' (bow hat's side locks; hair strands are a later port)
-    // GPUFIRST Batch 2 CARRY plumbing (DESIGN-CARRY, no painter):
+    pub hair_col: Option<String>, // 'hairCol' (bow hat's side locks + §5c hair strands)
+    // GPUFIRST Batch 2 CARRY plumbing (DESIGN-CARRY fields):
     // the wing / ears / hair look channels of RUST-PARITY-SPECS
     // Spec 1 / §5b / §5c. The FIELDS exist so no format break
-    // stands between here and the deferred painter ports; the
-    // painter does NOT read them yet, so every pre-existing look
-    // (all defaults below) paints byte-identically.
+    // stands between here and the painter ports. Batch 3: the
+    // ears (§5b) and hair (§5c) painters now READ their fields;
+    // the wing fields are still plumbing only (the painter does
+    // NOT read them yet). Every pre-existing look carries the
+    // defaults below, so paints without these channels are
+    // byte-identical.
     pub wing: bool,              // look 'wing' (Spec 1: wing appendage declared)
     pub wing_col: Option<String>, // look 'wingCol' (Spec 1: wing palette)
     pub wing_lens: Vec<f32>,     // look 'wingLens' (Spec 1: per-segment lengths)
@@ -202,12 +207,14 @@ pub(crate) struct FullState {
     pub sit_drop: Option<f32>,
     pub hold_l: Option<Plate>,
     pub hold_r: Option<Plate>,
-    // GPUFIRST Batch 2 CARRY plumbing (DESIGN-CARRY, no painter):
+    // GPUFIRST Batch 2 CARRY plumbing (DESIGN-CARRY fields):
     // the wing / ears / hair / flip / bodyPitch state channels of
-    // RUST-PARITY-SPECS Spec 1 / §5b / §5c / §5d / Spec 3a. The
-    // painter does NOT read them yet; they are keyed in film.rs
-    // state_key per the §3b coverage law, so a future port cannot
-    // silently recreate the F-1 defect on these channels.
+    // RUST-PARITY-SPECS Spec 1 / §5b / §5c / §5d / Spec 3a. They
+    // are keyed in film.rs state_key per the §3b coverage law, so
+    // a port cannot silently recreate the F-1 defect on these
+    // channels. Batch 3: the painter now reads ear_a / ear_al /
+    // ear_ar (§5b) and hair_segs (§5c); wing / flip / bodyPitch
+    // remain plumbing only (their ports are other seats).
     pub wing_segs: Vec<f32>, // state 'wingSegs' (Spec 1: per-segment absolute angles)
     pub wing_a: f32,         // state 'wingA' (Spec 1: scalar fallback angle)
     pub ear_a: f32,          // state 'earA' (§5b: both-ears angle, radians)
@@ -438,13 +445,17 @@ fn composite_plate(p: &mut Painter, plate: &Plate, hand: (f32, f32), lean_rad: f
 /// bounded by the prop contract and they ride the hands, which
 /// are), exactly as in the TS original.
 ///
-/// CARRY note (GPUFIRST Batch 2): the wing / ear envelope points
-/// the TS anchor models (Spec 1: both wing chains; §5b: both ear
-/// triangles) are deliberately NOT added here — the wing/ear
-/// painters do not exist yet and the anchor models painted
-/// geometry only. Adding those points is a port-time obligation
-/// of the wing/ear painter ports (recorded in
-/// docs/integration/GPUFIRST-B2-CARRY.md).
+/// CARRY note (GPUFIRST Batch 2, updated Batch 3): the wing
+/// envelope points the TS anchor models (Spec 1: both wing
+/// chains) are deliberately NOT added here — the wing painter
+/// does not exist yet and the anchor models painted geometry
+/// only; adding them remains the wing port's obligation. The
+/// EAR envelope (§5b: both ear triangles, tips included, radius
+/// 3.5 = appendage width 7 / 2, exactly as the TS anchor at
+/// toon.ts 683–693) IS modelled below, because the ear painter
+/// now exists. Hair (§5c) is deliberately NOT modelled: the TS
+/// anchor does not envelope hair strands — mirror that, invent
+/// nothing.
 ///
 /// Port notes (where this painter's geometry differs from the
 /// TS painter's, the envelope follows THIS painter): the sit
@@ -561,6 +572,25 @@ pub(crate) fn canvas_anchor(look: &FullLook, st: &FullState) -> (f32, f32) {
     for i in 0..16 {
         let a = (i as f32 / 16.0) * std::f32::consts::TAU;
         push_head!(hx + rp * a.cos(), hy + rp * 0.97 * a.sin(), 5.0);
+    }
+    // Fox ears (§5b): the painter's triangles, tips included —
+    // the TS anchor models both ear triangles (toon.ts 683–693)
+    // with radius 3.5 (the appendage stroke width 7 / 2), so a
+    // tilted ear cannot paint outside the cleared envelope.
+    // The rotation is about the ear anchor, in head space
+    // (push_head applies this painter's squash/tilt/lean stack,
+    // the same stack the ear painter's points pass through).
+    // Hair is NOT modelled here (§5c: the TS anchor gives hair
+    // no envelope — mirror that exactly).
+    if look.ears {
+        for s in [-1.0f32, 1.0] {
+            let ea = (if s < 0.0 { st.ear_al } else { st.ear_ar }).unwrap_or(st.ear_a);
+            let (exx, eyy) = (hx + s * rp * 0.52, hy - rp * 0.74);
+            let (sa, ca) = (s * 0.16 + ea).sin_cos();
+            for (lx, ly) in [(-28.0f32, 8.0f32), (0.0, -88.0), (28.0, 8.0)] {
+                push_head!(exx + lx * ca - ly * sa, eyy + lx * sa + ly * ca, 3.5);
+            }
+        }
     }
     // Hat extremes, per this painter's drawHat branches.
     match look.hat.as_str() {
@@ -1036,6 +1066,71 @@ pub(crate) fn paint_toon_full(
     let turn = st.head_turn;
     let rp = r * (1.0 + 0.04 * st.cam_pitch);
     let fx = hx + turn * 30.0;
+    // Appendages on the head, BEHIND the head disc so the bases
+    // tuck under it (TS drawHeadPart order: ears, then hair,
+    // then the bun, then the disc). All geometry is computed in
+    // head space and mapped through `hpt`, which applies this
+    // painter's squash / headTilt / lean stack exactly as the TS
+    // transform nest (tilt sandwich outside, squash inside) does
+    // for every other head part.
+    if look.ears {
+        // Spec §5b fox ears. Per side s: ea = (s<0 ? earAL :
+        // earAR) ?? earA (per-ear wins per side; earA default 0);
+        // anchor (hx + s*rp*0.52, hy - rp*0.74); rotate by
+        // (s*0.16 + ea) about the anchor. Outer triangle
+        // (-28, 8), (0, -88), (28, 8): fill = look body colour,
+        // stroke INK at the appendage width (default 7). Inner
+        // triangle (-14, 2), (0, -52), (14, 2): fill '#F7F1E3',
+        // no stroke.
+        for s in [-1.0f32, 1.0] {
+            let ea = (if s < 0.0 { st.ear_al } else { st.ear_ar }).unwrap_or(st.ear_a);
+            let (exx, eyy) = (hx + s * rp * 0.52, hy - rp * 0.74);
+            let (sa, ca) = (s * 0.16 + ea).sin_cos();
+            let rot = |lx: f32, ly: f32| -> (f32, f32) {
+                hpt(exx + lx * ca - ly * sa, eyy + lx * sa + ly * ca)
+            };
+            let outer = [rot(-28.0, 8.0), rot(0.0, -88.0), rot(28.0, 8.0)];
+            p.fill_polygon(&outer, rgba(&look.body));
+            let mut ring = outer.to_vec();
+            ring.push(outer[0]);
+            p.stroke_polyline(&ring, lw(7.0), ink);
+            let inner = [rot(-14.0, 2.0), rot(0.0, -52.0), rot(14.0, 2.0)];
+            p.fill_polygon(&inner, rgba("#F7F1E3"));
+        }
+    }
+    if look.hair {
+        // Spec §5c hair strands. Strand count: the hairSegs
+        // array length SETS it; the plumbed representation
+        // (Vec, empty = absent) maps absent to the TS default
+        // of 6 rest strands. Two passes in the TS order (ALL
+        // ink strands first, then ALL colour strands): pass 0
+        // INK lw 17, pass 1 hairCol (|| '#6B4A3A') lw 11.
+        // NOTE: hair has NO canvas envelope (§5c) — canvas_anchor
+        // deliberately does not model these strands.
+        let n = if st.hair_segs.is_empty() { 6 } else { st.hair_segs.len() };
+        let col = rgba(look.hair_col.as_deref().unwrap_or("#6B4A3A"));
+        for pass in 0..2 {
+            let (w, c) = if pass == 0 { (17.0, ink) } else { (11.0, col) };
+            for k in 0..n {
+                let arc_a = if n > 1 {
+                    -1.0 + 2.0 * k as f32 / (n - 1) as f32
+                } else {
+                    0.0
+                };
+                let root = (
+                    hx + arc_a.sin() * rp * 0.98,
+                    hy - arc_a.cos() * rp * 0.95,
+                );
+                let a = st.hair_segs.get(k).copied().unwrap_or(0.0);
+                let tip = (root.0 + a.sin() * 74.0, root.1 + a.cos() * 74.0);
+                let ctrl = (
+                    root.0 + a.sin() * 36.0 + arc_a.cos() * 7.0,
+                    root.1 + a.cos() * 36.0,
+                );
+                p.stroke_quad(hpt(root.0, root.1), hpt(ctrl.0, ctrl.1), hpt(tip.0, tip.1), lw(w), c);
+            }
+        }
+    }
     if look.hat == "bun" {
         // drawHeadPart: the bun is drawn BEFORE the head disc (it
         // is not a drawHat branch): circle (hx + 10 + turn*18,
@@ -2237,5 +2332,205 @@ mod sweat_tests {
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod earshair_tests {
+    use super::*;
+    use std::collections::HashSet;
+
+    /// Full-frame FNV-1a 64 hash of a paint (the house test
+    /// instrument; no new dependency).
+    fn fnv1a(px: &[u8]) -> u64 {
+        let mut h: u64 = 0xcbf29ce484222325;
+        for &b in px {
+            h ^= b as u64;
+            h = h.wrapping_mul(0x100000001b3);
+        }
+        h
+    }
+
+    fn look(body: &str) -> FullLook {
+        FullLook {
+            body: body.into(),
+            head: "#F7F7FA".into(),
+            shade: None,
+            pattern: "plain".into(),
+            pat_col: None,
+            hat: "none".into(),
+            hat_col: None,
+            band: None,
+            neck: "none".into(),
+            neck_col: None,
+            glasses: false,
+            mustache: false,
+            mustache_col: None,
+            kid: false,
+            blush: false,
+            freckles: false,
+            pencil: false,
+            monocle: false,
+            hair_col: None,
+            wing: false,
+            wing_col: None,
+            wing_lens: Vec::new(),
+            ears: false,
+            hair: false,
+        }
+    }
+
+    fn paint(look: &FullLook, st: &FullState) -> (u64, usize) {
+        let (px, w, h, _, _) = paint_toon_full(look, st);
+        assert_eq!((w, h), (2560, 2816));
+        // Non-background = any pixel with non-zero alpha (the
+        // canvas starts transparent; every paint lands alpha).
+        let non_bg = px.chunks_exact(4).filter(|p| p[3] != 0).count();
+        (fnv1a(&px), non_bg)
+    }
+
+    /// The S9 fixture states (tests/face-table/face-fixtures.mjs
+    /// 157–159), in fixture order, on look {ears:'fox',
+    /// body:'#DE7A35'} at mood neutral.
+    fn s9_states() -> Vec<FullState> {
+        let mut v = Vec::new();
+        v.push(FullState::default());
+        let mut s = FullState::default();
+        s.ear_a = 0.3;
+        v.push(s);
+        let mut s = FullState::default();
+        s.ear_a = -0.3;
+        v.push(s);
+        let mut s = FullState::default();
+        s.ear_a = 0.3;
+        s.ear_al = Some(-0.2);
+        v.push(s);
+        let mut s = FullState::default();
+        s.ear_a = 0.3;
+        s.ear_ar = Some(0.25);
+        v.push(s);
+        let mut s = FullState::default();
+        s.ear_al = Some(-0.2);
+        s.ear_ar = Some(0.25);
+        v.push(s);
+        v
+    }
+
+    /// Spec §5b acceptance (S9-ears): TS 6 classes -> Rust 6
+    /// (pre-port 1: all six merged into the no-ears default).
+    /// All 15 within-group pairs must distinguish, and every ear
+    /// cell's non-background pixel count must EXCEED the no-ears
+    /// default's (pre-port it was equal, 82,260 in the TS-side
+    /// replay's stage canvas; the Rust canvas is 2560x2816, so
+    /// the comparison here is against this painter's own
+    /// no-ears count, measured in the same test).
+    #[test]
+    fn ears_s9_six_classes_and_more_painted_pixels() {
+        let mut lk = look("#DE7A35");
+        lk.ears = true;
+        let plain = look("#DE7A35"); // ears OFF, same body colour
+        let (_, plain_non_bg) = paint(&plain, &FullState::default());
+        let mut hashes = Vec::new();
+        for st in s9_states() {
+            let (h, non_bg) = paint(&lk, &st);
+            assert!(
+                non_bg > plain_non_bg,
+                "ear cell must paint more non-background pixels than the no-ears default ({non_bg} <= {plain_non_bg})"
+            );
+            hashes.push(h);
+        }
+        let distinct: HashSet<u64> = hashes.iter().copied().collect();
+        assert_eq!(distinct.len(), 6, "S9-ears must refine to 6 classes, got {}", distinct.len());
+        for i in 0..hashes.len() {
+            for j in (i + 1)..hashes.len() {
+                assert_ne!(hashes[i], hashes[j], "S9 cells {i} and {j} must be pixel-distinct");
+            }
+        }
+    }
+
+    /// Spec §5c acceptance (S10-hair): 5 cells -> TS 4 classes
+    /// (pre-port Rust 1). The absent == all-zero hairSegs EQ
+    /// pair must HOLD (both paint the 6 rest strands); the
+    /// mixed-angle 6-strand cell, the 3-strand cell, and the
+    /// hairCol '#101010' cell each distinguish.
+    #[test]
+    fn hair_s10_four_classes_with_absent_eq_zeroes() {
+        let mut lk = look("#E8734A");
+        lk.hair = true;
+        let absent = paint(&lk, &FullState::default()).0;
+        let mut s = FullState::default();
+        s.hair_segs = vec![0.0, 0.0, 0.0, 0.0, 0.0, 0.0];
+        let zeroes = paint(&lk, &s).0;
+        assert_eq!(absent, zeroes, "absent hairSegs == all-zero hairSegs (6 rest strands)");
+        let mut s = FullState::default();
+        s.hair_segs = vec![0.3, -0.3, 0.15, 0.0, 0.0, -0.15];
+        let mixed = paint(&lk, &s).0;
+        let mut s = FullState::default();
+        s.hair_segs = vec![0.2, 0.0, -0.2];
+        let three = paint(&lk, &s).0;
+        let mut lk_col = look("#E8734A");
+        lk_col.hair = true;
+        lk_col.hair_col = Some("#101010".into());
+        let col = paint(&lk_col, &FullState::default()).0;
+        let classes: HashSet<u64> = [absent, mixed, three, col].into_iter().collect();
+        assert_eq!(classes.len(), 4, "S10-hair must refine to 4 classes, got {}", classes.len());
+    }
+
+    /// Non-regression for the ports themselves: ears OFF and
+    /// hair OFF (every existing character's default) must paint
+    /// byte-identically to the ears/hair channels never having
+    /// been set — including when the (now-read) state fields
+    /// carry non-default values under an OFF look flag: the TS
+    /// painter gates both blocks on the LOOK, so ear/hair state
+    /// under ears:false / hair:false paints nothing.
+    #[test]
+    fn ears_hair_off_look_paints_nothing_extra() {
+        let lk = look("#DE7A35"); // ears: false, hair: false
+        let base = paint(&lk, &FullState::default()).0;
+        let mut s = FullState::default();
+        s.ear_a = 0.3;
+        s.ear_al = Some(-0.2);
+        s.ear_ar = Some(0.25);
+        s.hair_segs = vec![0.3, -0.3, 0.15];
+        assert_eq!(paint(&lk, &s).0, base, "state under an OFF look flag must not paint");
+        // And the standing default pin (carry_plumbing_tests
+        // case A) is the byte-identity proof at defaults.
+    }
+
+    /// Ears envelope (§5b): with a strong lean the ear tips are
+    /// the envelope's extreme; a look WITH ears must anchor at
+    /// least as far as the same state without them, and the
+    /// earred anchor must differ when the ears are what pushes
+    /// the envelope out. Hair envelope (§5c): NONE — the same
+    /// state with hair:true vs hair:false must return the
+    /// IDENTICAL anchor (the TS anchor does not model hair).
+    #[test]
+    fn ears_anchor_envelopes_hair_anchor_does_not() {
+        // A lean that engages the anchor (mirrors the B-1 lying
+        // family, milder so the ear tips are near the edge).
+        let mut st = FullState::default();
+        st.lean = 82.0;
+        st.head_tilt = 4.0;
+        let plain = look("#DE7A35");
+        let mut earred = look("#DE7A35");
+        earred.ears = true;
+        let a_plain = canvas_anchor(&plain, &st);
+        let a_ears = canvas_anchor(&earred, &st);
+        assert_ne!(a_plain, (0.0, 0.0), "test state must engage the anchor");
+        assert!(
+            a_ears.0.abs() >= a_plain.0.abs() && a_ears.1.abs() >= a_plain.1.abs(),
+            "ears envelope must not shrink the anchor: plain {a_plain:?} vs ears {a_ears:?}"
+        );
+        // Hair: identical anchor, by design (§5c).
+        let mut haired = look("#DE7A35");
+        haired.hair = true;
+        let mut s2 = FullState::default();
+        s2.hair_segs = vec![0.3, -0.3, 0.15, 0.0, 0.0, -0.15];
+        s2.lean = 82.0;
+        assert_eq!(
+            canvas_anchor(&haired, &s2),
+            canvas_anchor(&plain, &s2),
+            "hair must NOT change the canvas anchor (§5c: no hair envelope)"
+        );
     }
 }

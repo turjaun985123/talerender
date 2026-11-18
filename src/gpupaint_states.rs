@@ -596,6 +596,7 @@ pub(crate) fn state_spread() -> Vec<(String, FullLook, FullState)> {
     v.extend(crate::gpupaint_states_brow::brow_spread());
     v.extend(crate::gpupaint_states_shapes::shape_spread());
     v.extend(crate::gpupaint_states_strokes::stroke_spread());
+    v.extend(crate::gpupaint_states_earshair::earshair_spread());
     v
 }
 
@@ -631,6 +632,7 @@ pub(crate) fn rollup_class(name: &str) -> &'static str {
     match state_group(name) {
         "stroke" => "strokes",
         "brow" => "brow-offsets",
+        "ears" | "hair" => "ears+hair",
         "mood" | "face" | "fx" => "mood-features",
         "legs" => "limbs",
         "plate" => "plates",
@@ -779,7 +781,7 @@ mod tests {
     #[test]
     fn spread_shape() {
         let v = state_spread();
-        assert!((60..=230).contains(&v.len()), "spread has {} entries", v.len()); // Batch 2: bound raised by the coordinator at integration (batteries: +2 sweat, +5 brow, +71 shape, +61 stroke over the 75 base)
+        assert!((60..=245).contains(&v.len()), "spread has {} entries", v.len()); // Batch 2: bound raised by the coordinator at integration (batteries: +2 sweat, +5 brow, +71 shape, +61 stroke over the 75 base). Batch 3 EARSHAIR: +11 (6 ears + 5 hair, gpupaint_states_earshair) over the 221 Batch-2 total -> 232; bound raised to 245 for this seat's additions only.
         let mut names: Vec<&str> = v.iter().map(|(n, _, _)| n.as_str()).collect();
         names.sort();
         names.dedup();

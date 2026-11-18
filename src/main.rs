@@ -38,6 +38,8 @@ mod gpupaint_states;
 #[cfg(feature = "gpupaint")]
 mod gpupaint_states_brow;
 #[cfg(feature = "gpupaint")]
+mod gpupaint_states_earshair;
+#[cfg(feature = "gpupaint")]
 mod gpupaint_states_shapes;
 #[cfg(feature = "gpupaint")]
 mod gpupaint_states_strokes;
