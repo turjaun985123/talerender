@@ -62,7 +62,7 @@ cargo build --release
 
 Run `./target/release/talerender --help` for the full flag
 reference (all modes, defaults, and exit codes) and
-`--version` for the version (`talerender 1.0.1`). Bad
+`--version` for the version (`talerender 1.1.0`). Bad
 invocations print `error: …` plus a help hint and exit 2 —
 no panics on bad input.
 
