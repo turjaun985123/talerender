@@ -162,8 +162,13 @@ mod tests {
 
     /// The battery entries must actually exercise the painters
     /// at CPU level (the GPU replay compares against these CPU
-    /// paints): S9 -> 6 distinct classes, S10 -> 4 distinct
-    /// classes with the absent == zeroes EQ pair held.
+    /// paints): S9 -> 6 distinct pixel classes; S10 -> 3
+    /// distinct pixel classes with the absent == zeroes EQ pair
+    /// held, PLUS the hairCol distinction at op-stream level
+    /// (see the trace test below — the TS fixture's 4th S10
+    /// class is an op-stream class; in pixels the colour pass
+    /// is occluded by the head disc + ink ring in both
+    /// painters, measured 0 differing pixels on this branch).
     #[test]
     fn earshair_spread_paints_refine_to_spec_classes() {
         let v = earshair_spread();
@@ -178,10 +183,51 @@ mod tests {
             .collect();
         assert_eq!(ear_hashes.len(), 6, "ears battery must paint 6 distinct classes");
         assert_eq!(hash("hair-absent"), hash("hair-zeroes"), "hair EQ pair must hold");
-        let hair_classes: HashSet<u64> = ["hair-absent", "hair-mixed", "hair-three-strands", "hair-col-101010"]
+        assert_eq!(hash("hair-absent"), hash("hair-col-101010"), "hairCol is pixel-identical to absent (occluded colour pass)");
+        let hair_classes: HashSet<u64> = ["hair-absent", "hair-mixed", "hair-three-strands"]
             .iter()
             .map(|n| hash(n))
             .collect();
-        assert_eq!(hair_classes.len(), 4, "hair battery must paint 4 distinct classes");
+        assert_eq!(hair_classes.len(), 3, "hair battery must paint 3 distinct pixel classes");
+    }
+
+    /// The hairCol distinction at OP-STREAM level (the level
+    /// the TS fixture hash measures): recording the two paints
+    /// through the gpupaint trace must yield StrokeQuad prims
+    /// carrying the hair colours — (107, 74, 58) '#6B4A3A' for
+    /// hair-absent, (16, 16, 16) '#101010' for hair-col-101010 —
+    /// and the two display lists must differ. This is also the
+    /// GPU-replay surface: the executor replays these recorded
+    /// prims, so the distinction reaches the GPU path verbatim.
+    #[test]
+    fn hair_col_distinguishes_in_recorded_op_stream() {
+        use crate::gputrace::Prim;
+        let v = earshair_spread();
+        let quad_cols = |name: &str| -> Vec<(u8, u8, u8, u8)> {
+            let (_, l, s) = v.iter().find(|(n, _, _)| n == name).expect(name);
+            crate::gputrace::set_armed(true);
+            crate::gputrace::begin(2560, 2816);
+            let _ = paint_toon_full(l, s);
+            let list = crate::gputrace::take();
+            crate::gputrace::set_armed(false);
+            list.prims
+                .iter()
+                .filter_map(|p| match p {
+                    Prim::StrokeQuad { col, .. } => Some(*col),
+                    _ => None,
+                })
+                .collect()
+        };
+        let absent_cols = quad_cols("hair-absent");
+        let col_cols = quad_cols("hair-col-101010");
+        assert!(
+            absent_cols.contains(&(107, 74, 58, 255)),
+            "hair-absent trace must carry the default hair colour #6B4A3A, got {absent_cols:?}"
+        );
+        assert!(
+            col_cols.contains(&(16, 16, 16, 255)),
+            "hair-col-101010 trace must carry #101010, got {col_cols:?}"
+        );
+        assert_ne!(absent_cols, col_cols, "recorded op streams must differ by hair colour");
     }
 }

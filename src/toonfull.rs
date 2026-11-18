@@ -2451,10 +2451,36 @@ mod earshair_tests {
     /// Spec §5c acceptance (S10-hair): 5 cells -> TS 4 classes
     /// (pre-port Rust 1). The absent == all-zero hairSegs EQ
     /// pair must HOLD (both paint the 6 rest strands); the
-    /// mixed-angle 6-strand cell, the 3-strand cell, and the
-    /// hairCol '#101010' cell each distinguish.
+    /// mixed-angle 6-strand cell and the 3-strand cell each
+    /// distinguish AT PIXEL LEVEL.
+    ///
+    /// MEASURED DIVERGENCE from the spec's "4 classes" bar, with
+    /// root cause (CI run 44244470403, this branch): the
+    /// hairCol '#101010' cell is PIXEL-IDENTICAL to the absent
+    /// cell in this painter (FNV fb94c92d734f770f for both; 0
+    /// differing pixels), so the pixel-level count is 3 classes,
+    /// not 4. Root cause: the TS fixture instrument is NOT a
+    /// pixel hash — tests/face-table/face-fixtures.mjs defines
+    /// streamHash as the sha256 of the recorded 2D OP STREAM
+    /// ("the house pixel proxy: identical op stream => identical
+    /// figure"), and the hairCol cell distinguishes there
+    /// because the recorded strokeStyle value differs. In actual
+    /// pixels the colour pass (lw 11, centred inside the lw-17
+    /// ink pass) is fully occluded by the head disc + its lw-10
+    /// ink ring in BOTH painters: the strand centrelines lie
+    /// inside the disc (roots at 0.98/0.95 of the radii), and
+    /// every sub-segment that crosses the disc edge (the root
+    /// round-caps and the side strands' outer edges) lies within
+    /// the ring's +/-5 band around the ellipse. The Rust painter
+    /// DOES emit the distinguishing op: the gpupaint trace of
+    /// the hairCol cell carries StrokeQuad prims coloured
+    /// (16,16,16) vs the default's (107,74,58) — asserted in
+    /// gpupaint_states_earshair::tests (feature-gated), which is
+    /// the Rust op-stream equivalent of the TS fixture hash.
+    /// Painter geometry is unchanged by this finding: the port
+    /// mirrors the TS painter exactly, occlusion included.
     #[test]
-    fn hair_s10_four_classes_with_absent_eq_zeroes() {
+    fn hair_s10_pixel_classes_with_absent_eq_zeroes() {
         let mut lk = look("#E8734A");
         lk.hair = true;
         let absent = paint(&lk, &FullState::default()).0;
@@ -2472,9 +2498,13 @@ mod earshair_tests {
         lk_col.hair = true;
         lk_col.hair_col = Some("#101010".into());
         let col = paint(&lk_col, &FullState::default()).0;
-        println!("HAIRDEBUG absent={absent:016x} mixed={mixed:016x} three={three:016x} col={col:016x}");
-        let classes: HashSet<u64> = [absent, mixed, three, col].into_iter().collect();
-        assert_eq!(classes.len(), 4, "S10-hair must refine to 4 classes, got {}", classes.len());
+        // Pixel level (see this test's doc): col is pixel-EQUAL
+        // to absent (0 differing pixels — the colour pass is
+        // occluded in both painters); its distinction is at
+        // op-stream level, asserted in the gpupaint battery.
+        assert_eq!(col, absent, "hairCol cell is pixel-identical to absent (occluded colour pass; op-stream distinction asserted in gpupaint_states_earshair)");
+        let classes: HashSet<u64> = [absent, mixed, three].into_iter().collect();
+        assert_eq!(classes.len(), 3, "S10-hair pixel classes: absent/zeroes, mixed, three-strand (hairCol is the 4th TS class, at op-stream level only)");
     }
 
     /// Non-regression for the ports themselves: ears OFF and
