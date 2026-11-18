@@ -3106,9 +3106,13 @@ mod wing_tests {
 
         // Reference bird at rest (acceptance 4): the folded
         // two-panel wing (scalar fallback, wingA 0) —
-        // - the near wing protrudes past the body edge: the
-        //   point on panel 0 at the first joint is wing-coloured
-        //   in the winged paint and transparent in the wingless;
+        // - the near wing protrudes past the body edge: a point
+        //   on panel 0 at 85% of the segment (past the bean's
+        //   edge + its ink stroke at that height, and clear of
+        //   the joint line — which crosses AT the joint, so the
+        //   joint itself is shade-toned, not fill-coloured) is
+        //   wing-coloured in the winged paint and transparent
+        //   in the wingless;
         // - the far wing's shade crescent behind the opposite
         //   shoulder: at the bird's declared lens the crescent
         //   is only a few stage units wide (the TS acceptance
@@ -3121,8 +3125,8 @@ mod wing_tests {
         let rest = FullState::default();
         let (px, _, _, _, _) = paint_toon_full(&look2, &rest);
         assert!(count_col(&px, rgba("#7FB6D9")) > 500, "near wing panels must paint");
-        assert_eq!(sample_stage(&look2, &rest, 357.06, 444.28), rgba("#7FB6D9"), "folded wing must protrude past the body edge");
-        assert_eq!(sample_stage(&wingless, &rest, 357.06, 444.28), (0, 0, 0, 0), "no wing, no paint past the body edge");
+        assert_eq!(sample_stage(&look2, &rest, 348.8, 441.5), rgba("#7FB6D9"), "folded wing must protrude past the body edge");
+        assert_eq!(sample_stage(&wingless, &rest, 348.8, 441.5), (0, 0, 0, 0), "no wing, no paint past the body edge");
         let mut long_look = pip_look();
         long_look.wing_lens = vec![120.0, 100.0];
         let far_shade = shade_rgba("#7FB6D9", 0.72);
