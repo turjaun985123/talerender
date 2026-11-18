@@ -20,6 +20,14 @@ name: GOV-PAR bench (dispatch)
 
 on:
   workflow_dispatch:
+  # Branch-push trigger: workflow_dispatch requires the workflow
+  # to exist on the default branch; this programme lives on
+  # b3/govpar until integration, so a push touching THIS file on
+  # the branch runs it too (the gpufirst-perf.yml precedent).
+  push:
+    branches: [b3/govpar]
+    paths:
+      - '.github/workflows/govpar-bench.yml'
 
 env:
   CARGO_TERM_COLOR: always
