@@ -193,12 +193,21 @@ mod tests {
 
     /// The hairCol distinction at OP-STREAM level (the level
     /// the TS fixture hash measures): recording the two paints
-    /// through the gpupaint trace must yield StrokeQuad prims
+    /// through the gpupaint trace must yield stroke prims
     /// carrying the hair colours — (107, 74, 58) '#6B4A3A' for
     /// hair-absent, (16, 16, 16) '#101010' for hair-col-101010 —
     /// and the two display lists must differ. This is also the
     /// GPU-replay surface: the executor replays these recorded
     /// prims, so the distinction reaches the GPU path verbatim.
+    ///
+    /// Batch 3 integration fix (coordinator): the painter emits
+    /// strands via `Painter::stroke_quad`, which flattens to
+    /// `stroke_polyline` BEFORE tracing (scene.rs) — so in the
+    /// recorded list the strands are `Prim::StrokePolyline`,
+    /// never `Prim::StrokeQuad`. The original version of this
+    /// test filtered StrokeQuad only and found no colours at
+    /// all (first executed in the parity workflow's feature
+    /// test suite, run 44248054170). Filter both stroke prims.
     #[test]
     fn hair_col_distinguishes_in_recorded_op_stream() {
         use crate::gputrace::Prim;
@@ -214,6 +223,7 @@ mod tests {
                 .iter()
                 .filter_map(|p| match p {
                     Prim::StrokeQuad { col, .. } => Some(*col),
+                    Prim::StrokePolyline { col, .. } => Some(*col),
                     _ => None,
                 })
                 .collect()
