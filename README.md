@@ -69,6 +69,73 @@ no panics on bad input.
 Requirements: a Vulkan driver — hardware (RADV/ANV/…) or software
 (`mesa-vulkan-drivers` / lavapipe on Ubuntu). No display server is needed.
 
+## Resource governor
+
+Every run is governed by resource limits (src/resource.rs) so the
+renderer stays memory-safe on a modest shared-RAM machine and never
+hangs the PC: roughly **RAM ≤ 60%** and **GPU ≤ 60%** by default,
+with the caps user-configurable four ways, in precedence order
+**CLI flag > env var > config file > built-in default**:
+
+| Limit | Flag | Env var | Config key | Default |
+|---|---|---|---|---|
+| GPU cap % | `--max-gpu-pct` | `TALERENDER_MAX_GPU_PCT` | `max_gpu_pct` | 60 |
+| RAM cap % | `--max-ram-pct` | `TALERENDER_MAX_RAM_PCT` | `max_ram_pct` | 60 |
+| Thread cap | `--max-threads` | `TALERENDER_MAX_THREADS` | `max_threads` | half the logical cores (min 1) |
+
+The config file is the same hand-parsed `key = value`
+talerender.toml as the rest of the CLI: `--config <path>` when
+given, else `./talerender.toml`, else
+`~/.config/talerender/talerender.toml`. A missing file is never an
+error; an invalid value in any layer is (`error: …`, exit 2 — never
+a panic, never silently ignored). `TALERENDER_GOVERNOR=off`
+disables enforcement; the limits are still resolved and printed.
+A thread request above the core count is clamped to it, and the
+clamp is printed.
+
+The **effective** limits print on a greppable `governor:` line in
+every run (stderr at startup, and beside the mem-report block at
+render tails), naming each value, its source layer, the derived
+RAM budget in bytes, and any clamp. Example:
+
+```bash
+./target/release/talerender --max-ram-pct 25 --max-threads 3 --film film --out frames
+# governor: enabled=true gpu_cap_pct=60 gpu_source=default ram_cap_pct=25 ram_source=cli ram_budget_bytes=… …
+```
+
+What the caps do:
+
+- **RAM (directly enforced).** The RAM budget is the cap % of
+  total RAM read from `/proc/meminfo` (a documented 4 GiB
+  fallback if detection fails — never a hardcoded machine).
+  Shares of it bound the big consumers: the film paint cache
+  gets 50% (byte budget; the `TALERENDER_PAINT_CACHE` entry cap
+  still applies on top), the dyntex card-texture pool 10%
+  (accounted + logged; live slots are never evicted mid-frame),
+  the readback buffer pool 5%. Under pressure the paint cache
+  shrinks by LRU eviction to a one-entry floor — eviction only
+  ever costs a re-paint, never a pixel. On an integrated GPU
+  this one budget covers GPU allocations too: same shared pool.
+  Frame buffers on the film path are already streamed one frame
+  at a time (~8 MB per 1080×1920 frame) and sit inside the same
+  budget picture.
+- **GPU (approximation — labelled as such everywhere).** A GPU
+  utilisation % cannot be enforced from userspace: wgpu exposes
+  no utilisation knob. The cap instead drives submission pacing
+  (a minimum gap between queue submissions, scaled by the
+  headroom under the cap) and a derived max-in-flight figure
+  the serial submit sites structurally satisfy. This throttles
+  the GPU's duty cycle only roughly — it is **not** a hard
+  GPU-% guarantee, and no log line claims one.
+- **Threads (directly enforced by consumers).** The governor
+  resolves and reports the cap; parallel telemetry consumes
+  `governor().thread_cap()`.
+
+The governor changes speed and memory only — never pixels,
+never verdicts. Governor on at default caps and
+`TALERENDER_GOVERNOR=off` produce identical frame hashes by
+construction (budgets only evict/recompute; pacing only delays).
+
 ## Target hardware
 
 Ubuntu Linux first. Primary target: Ryzen 5 PRO 5650G with integrated

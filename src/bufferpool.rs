@@ -194,6 +194,33 @@ impl<H> BufferPool<H> {
         BufferPool::new(budget_bytes_from_env_value(raw.as_deref()))
     }
 
+    /// GOV-CORE (GPUFIRST Batch 3) production constructor:
+    /// the retained-bytes budget is the SMALLER of this
+    /// module's 64 MiB default and the resource governor's
+    /// buffer-pool share of the RAM budget (resource.rs
+    /// BUFFER_POOL_SHARE_PCT), so a low RAM cap shrinks what
+    /// the pool retains. An explicit TALERENDER_BUFFER_POOL_MB
+    /// still wins over both (the operator override this module
+    /// has always honoured). The pool's own enforcement —
+    /// LRU eviction of retained handles past the budget, with
+    /// the single-live-entry rule — is unchanged, so this
+    /// only ever costs a buffer re-creation, never a pixel.
+    /// NOTE: the pool has no production caller in the tree
+    /// today (gpucore's W84 §7.2 records why); this constructor
+    /// is the governor-wired entry point for the caller that
+    /// adopts it.
+    pub(crate) fn from_governor() -> BufferPool<H> {
+        if let Ok(raw) = std::env::var("TALERENDER_BUFFER_POOL_MB") {
+            return BufferPool::new(budget_bytes_from_env_value(Some(&raw)));
+        }
+        let gov = crate::resource::governor();
+        if gov.enabled() {
+            BufferPool::new(DEFAULT_BUDGET_BYTES.min(gov.buffer_pool_budget_bytes()))
+        } else {
+            BufferPool::new(DEFAULT_BUDGET_BYTES)
+        }
+    }
+
     /// Decide the buffer for a request of `size` bytes.
     ///
     /// If a retained buffer of the request's class exists, the
@@ -631,6 +658,17 @@ mod tests {
         assert_eq!(budget_bytes_from_env_value(Some("junk")), DEFAULT_BUDGET_BYTES);
         assert_eq!(budget_bytes_from_env_value(Some("")), DEFAULT_BUDGET_BYTES);
         assert_eq!(budget_bytes_from_env_value(Some("-5")), DEFAULT_BUDGET_BYTES);
+    }
+
+    #[test]
+    fn governor_constructor_never_exceeds_the_default_budget() {
+        // Machine-dependent below the cap (a tiny-RAM host's
+        // governor share can be smaller), so the portable
+        // claims are: bounded by the default, and positive
+        // (pooling stays on under the governor's defaults).
+        let pool: BufferPool<u32> = BufferPool::from_governor();
+        assert!(pool.budget_bytes() <= DEFAULT_BUDGET_BYTES);
+        assert!(pool.budget_bytes() > 0);
     }
 
     #[test]

@@ -514,14 +514,34 @@ pub(crate) struct DynTexturePool {
     planner: DynPlanner,
     gpu: Vec<Option<GpuSlot>>,
     stats: PoolStats,
+    /// GOV-CORE (GPUFIRST Batch 3): the governor's dyntex
+    /// share of the RAM budget (resource.rs DYNTEX_SHARE_PCT),
+    /// captured at construction; u64::MAX when the governor
+    /// is off. This pool's slots are LIVE textures for the
+    /// frame being rendered — they cannot be evicted
+    /// mid-frame without changing pixels — so the budget is
+    /// enforced as ACCOUNTING + VISIBILITY: growth past the
+    /// budget logs a `governor:` line (once per pool) instead
+    /// of failing or dropping a live slot. The number of
+    /// slots is bounded by the scene's concurrent characters,
+    /// not by time, so the pool cannot grow across a film.
+    gov_budget_bytes: u64,
+    gov_over_logged: bool,
 }
 
 impl DynTexturePool {
     pub(crate) fn new() -> DynTexturePool {
+        let gov = crate::resource::governor();
         DynTexturePool {
             planner: DynPlanner::new(),
             gpu: Vec::new(),
             stats: PoolStats::default(),
+            gov_budget_bytes: if gov.enabled() {
+                gov.dyntex_budget_bytes()
+            } else {
+                u64::MAX
+            },
+            gov_over_logged: false,
         }
     }
 
@@ -582,6 +602,23 @@ impl DynTexturePool {
         // dimensions must create before writing. Partial/Skip
         // plans only exist when the texture is live at (w, h).
         let needs_create = tex_w != w || tex_h != h;
+        if needs_create && self.gpu[slot].is_none() && !self.gov_over_logged {
+            // GOV-CORE accounting check (see the field doc):
+            // a genuinely NEW slot grows the pool's accounted
+            // bytes (the gpucore ledger class-E figure,
+            // `ledger_bytes`); replacements do not. Log once
+            // when growth crosses the governor budget — never
+            // fail, never evict a live slot.
+            let new_bytes = crate::gpucore::tex_bytes(w, h, CARD_FORMAT, 1);
+            let projected = self.ledger_bytes().saturating_add(new_bytes);
+            if projected > self.gov_budget_bytes {
+                eprintln!(
+                    "governor: dyntex pool over budget projected_bytes={} budget_bytes={} (live slots are not evicted mid-frame; accounting only)",
+                    projected, self.gov_budget_bytes,
+                );
+                self.gov_over_logged = true;
+            }
+        }
         if needs_create {
             if let Some(old) = self.gpu[slot].take() {
                 crate::gpucore::mem_free_texture(crate::gpucore::MemClass::E, old.bytes);
