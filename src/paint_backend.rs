@@ -23,9 +23,14 @@
 //! calls it ONCE per cache construction (`new_for_film`) and
 //! pins the result for the cache's lifetime, so a film run can
 //! never switch painters mid-film if the env were mutated.
-//! `PaintCache::new` (the telemetry path's constructor) never
-//! selects the GPU backend — film telemetry stays a CPU-only
-//! mode (W84 ruling D1) regardless of the env.
+//! `PaintCache::new` never selects the GPU backend. The
+//! telemetry leg has its own constructor, `new_for_telemetry`
+//! (Batch 3, seat TELEM), which DOES consult this contract:
+//! under the flag, check/telemetry paint comes from gpupaint
+//! with verdict semantics unchanged — the user's 2026-11-18
+//! scope note supersedes the W84 ruling D1 "telemetry stays
+//! CPU-only" posture for the flagged case. CPU remains the
+//! telemetry default in every unflagged configuration.
 //!
 //! This module is NOT feature-gated, so callers in any build
 //! can ask `paint_backend()` / `gpupaint_enabled()` without a

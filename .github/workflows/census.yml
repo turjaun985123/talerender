@@ -27,9 +27,12 @@ on:
         # characters via gpupaint (see src/paint_backend.rs for
         # the selection contract). Default false = today's
         # exact behaviour: default-features build, CPU painter,
-        # no env. The telemetry step is NEVER flagged — film
-        # telemetry is a CPU-only mode (W84 ruling D1) — in
-        # both modes. Dispatch twice with gpupaint=true for a
+        # no env. The baseline telemetry step is never flagged
+        # (it is the standing CPU verdict in both modes); a
+        # flagged dispatch ADDITIONALLY runs a flagged-telemetry
+        # step (Batch 3 coordinator integration, per the user's
+        # 2026-11-18 scope note superseding W84 D1 for the
+        # flagged case). Dispatch twice with gpupaint=true for a
         # flagged-vs-flagged determinism pair; dispatch once
         # true + once false for the flagged-vs-unflagged
         # parity diff. Frame hashes are in the job log either
@@ -82,6 +85,18 @@ jobs:
           set -e
           grep -E "^(FILM TELEMETRY|paint-cache)" telemetry.log || true
           echo "telemetry exit: $rc (0 = CHECK OK, 1 = CHECK FAILED, 3 = could not run)"
+          exit $rc
+      - name: Film telemetry FLAGGED (gpupaint dispatches only)
+        if: ${{ inputs.gpupaint }}
+        env:
+          TALERENDER_GPUPAINT: "1"
+        run: |
+          set +e
+          TALERENDER_PAINT_CACHE=24 ./target/release/talerender --film-telemetry film > telemetry-flagged.log 2>&1
+          rc=$?
+          set -e
+          grep -E "^(FILM TELEMETRY|paint-cache)" telemetry-flagged.log || true
+          echo "flagged telemetry exit: $rc (0 = CHECK OK, 1 = CHECK FAILED, 3 = could not run)"
           exit $rc
       - name: Full-film census (chunked renders, hashes to log, frames deleted)
         env:

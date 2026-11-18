@@ -69,6 +69,16 @@ jobs:
       - name: Build harness (feature gpupaint, release)
         run: cargo build --release --features gpupaint
 
+      # GPUFIRST Batch 3 (coordinator integration): the feature
+      # test suite. Several Batch 3 proofs live ONLY in
+      # feature-gated tests (TELEM verdict-equivalence, PORT-WING
+      # trace counts, PORT-EARS-HAIR op-stream distinction,
+      # PORT-FLIP-PITCH plate tests) and no other workflow ever
+      # runs `cargo test` with the feature on — this step is
+      # their execution. GPU halves engage on lavapipe here.
+      - name: Feature test suite (cargo test --features gpupaint)
+        run: cargo test --release --features gpupaint 2>&1 | tee parity/feature-tests.log
+
       - name: Record battery + states (CPU reference + display lists)
         run: |
           set -euo pipefail
