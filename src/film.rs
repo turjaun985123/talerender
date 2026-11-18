@@ -2441,6 +2441,35 @@ impl PaintCache {
         PaintCache::with_backend(backend)
     }
 
+    /// Telemetry-path constructor (GPUFIRST Batch 3, seat
+    /// TELEM): same ONE contract as `new_for_film` — the backend
+    /// is `crate::paint_backend::paint_backend()`, pinned once
+    /// for the cache's lifetime — used by `run_film_telemetry`
+    /// ONLY, so the legacy film-telemetry leg's character paints
+    /// (via `resolve_chars` -> `get_or_paint` -> `paint_miss`)
+    /// ride gpupaint under the flag, with the same loud failure
+    /// posture (`paint_miss` panics on GPU failure; no silent
+    /// CPU fallback). This deliberately supersedes, for THIS
+    /// constructor only, the W84 D1 "telemetry stays CPU-only"
+    /// posture that `new` above still honours and that
+    /// paint_backend.rs's header still states — the Batch 3
+    /// user scope note (2026-11-18: "check/telemetry paint rides
+    /// gpupaint under the flag") is the later ruling; the
+    /// coordinator should amend paint_backend.rs's header at
+    /// integration to match. Verdict semantics are unchanged:
+    /// same verdict lines, meanings and exit codes, flag on or
+    /// off. The evidence line goes to STDERR (telemetry progress
+    /// already lives there), so telemetry STDOUT — the verdict
+    /// surface check_mode.mjs scans — is byte-identical in
+    /// every configuration.
+    fn new_for_telemetry() -> PaintCache {
+        let backend = crate::paint_backend::paint_backend();
+        if backend == crate::paint_backend::PaintBackend::GpuPaint {
+            eprintln!("paint-backend: gpupaint (feature gpupaint, TALERENDER_GPUPAINT=1)");
+        }
+        PaintCache::with_backend(backend)
+    }
+
     fn with_backend(backend: crate::paint_backend::PaintBackend) -> PaintCache {
         // TALERENDER_PAINT_CACHE overrides the entry cap for
         // memory-tight runs (telemetry on a shared VM); the byte
@@ -4251,7 +4280,10 @@ pub(crate) fn run_film_telemetry(dir: &Path, tables: bool) -> Result<bool, Strin
     ];
     let shots_keep = shots.clone();
     let mut audit = Audit::new(shots);
-    let mut cache = PaintCache::new();
+    // B3 TELEM: telemetry-specific cache — backend pinned from
+    // the ONE contract (crate::paint_backend), so this leg's
+    // paints ride gpupaint under the flag (see new_for_telemetry).
+    let mut cache = PaintCache::new_for_telemetry();
     let mut presence: Vec<PresenceRow> = Vec::new();
     let mut t = 0.0f64;
     let mut sample_no = 0u32;
@@ -4382,6 +4414,27 @@ pub(crate) fn run_film_telemetry(dir: &Path, tables: bool) -> Result<bool, Strin
 #[cfg(test)]
 mod state_key_tests {
     use super::*;
+
+    /// B3 TELEM: the telemetry cache constructor pins the ONE
+    /// contracted selection (`crate::paint_backend`), exactly
+    /// like the film constructor — and in a build without the
+    /// gpupaint feature that selection is always Cpu, whatever
+    /// the ambient env says (the test does not mutate the env;
+    /// the feature half of the contract is what pins this).
+    /// `PaintCache::new` stays Cpu-always in every build.
+    #[test]
+    fn telemetry_cache_pins_the_contracted_backend() {
+        assert_eq!(
+            PaintCache::new_for_telemetry().backend,
+            crate::paint_backend::paint_backend()
+        );
+        assert_eq!(PaintCache::new().backend, crate::paint_backend::PaintBackend::Cpu);
+        #[cfg(not(feature = "gpupaint"))]
+        assert_eq!(
+            PaintCache::new_for_telemetry().backend,
+            crate::paint_backend::PaintBackend::Cpu
+        );
+    }
 
     /// Regression tests for the state_key sweat/tears defect
     /// (disclosed in V2-HANDOVER.md): the painter consumes
