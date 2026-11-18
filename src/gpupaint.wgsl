@@ -611,7 +611,13 @@ fn main_headshade(@builtin(global_invocation_id) gid: vec3<u32>) {
 // P.p0 = (hand.x, hand.y, plate.x0, plate.y0)
 // P.p1 = (sin(lean), cos(lean), anchor.x, anchor.y) — host Rust.
 // P.p2 = (plate.w as f32, plate.h as f32, RES, 0)
-// P.u0 = (plate.w, plate.h, 0, 0)
+// P.p3 = (sin(pitch), cos(pitch), hip.x, hip.y) — B3-CARRY-1.
+// P.u0 = (plate.w, plate.h, flip flag, pitched flag) — B3-CARRY-1:
+// the inverse map undoes anchor, then the flip mirror
+// (x -> 512 - x), then lean, then the bodyPitch rotation about
+// the hip pivot. Both added steps branch on their flags so a
+// default (unflipped, unpitched) list computes exactly the
+// pre-Batch-3 values.
 // ------------------------------------------------------------------
 
 fn plate_at(ix: u32, iy: u32) -> vec4<f32> {
@@ -631,12 +637,21 @@ fn main_plate(@builtin(global_invocation_id) gid: vec3<u32>) {
     let ph = P.p2.y;
     let s = P.p1.x;
     let c = P.p1.y;
-    let ux = f32(x) / res - 384.0 - P.p1.z;
+    var ux = f32(x) / res - 384.0 - P.p1.z;
     let uy = f32(y) / res - 256.0 - P.p1.w;
+    if (P.u0.z != 0u) {
+        ux = 512.0 - ux;
+    }
     let dx = ux - 256.0;
     let dy = uy - 1000.0;
-    let sx = 256.0 + dx * c + dy * s;
-    let sy = 1000.0 - dx * s + dy * c;
+    var sx = 256.0 + dx * c + dy * s;
+    var sy = 1000.0 - dx * s + dy * c;
+    if (P.u0.w != 0u) {
+        let pdx = sx - P.p3.z;
+        let pdy = sy - P.p3.w;
+        sx = P.p3.z + pdx * P.p3.y + pdy * P.p3.x;
+        sy = P.p3.w - pdx * P.p3.x + pdy * P.p3.y;
+    }
     let lx = (sx - P.p0.x - P.p0.z) * res;
     let ly = (sy - P.p0.y - P.p0.w) * res;
     if (lx < -0.5 || ly < -0.5 || lx > pw - 0.5 || ly > ph - 0.5) {
