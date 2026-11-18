@@ -51,6 +51,7 @@ mod observability;
 mod outputmgr;
 mod outwire;
 mod locomotion;
+mod paint_backend;
 mod paintbudget;
 mod rendergraph;
 mod runlog;
