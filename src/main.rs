@@ -47,6 +47,8 @@ mod gpupaint_states_strokes;
 mod gpupaint_states_flippitch;
 #[cfg(feature = "gpupaint")]
 mod gpupaint_states_wing;
+#[cfg(feature = "gpupaint")]
+mod gpupaint_sampled;
 mod gpupaint_time;
 mod lifetimes;
 mod math;
