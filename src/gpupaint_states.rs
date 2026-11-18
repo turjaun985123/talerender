@@ -600,6 +600,7 @@ pub(crate) fn state_spread() -> Vec<(String, FullLook, FullState)> {
     // above, which stays undisturbed, in seat order.
     v.extend(crate::gpupaint_states_flippitch::flippitch_spread());
     v.extend(crate::gpupaint_states_earshair::earshair_spread());
+    v.extend(crate::gpupaint_states_wing::wing_spread());
     v
 }
 
@@ -639,6 +640,7 @@ pub(crate) fn rollup_class(name: &str) -> &'static str {
         "stroke" => "strokes",
         "brow" => "brow-offsets",
         "ears" | "hair" => "ears+hair",
+        "wing" => "wing-panels",
         "mood" | "face" | "fx" => "mood-features",
         "legs" => "limbs",
         "plate" => "plates",

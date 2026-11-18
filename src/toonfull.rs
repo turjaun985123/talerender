@@ -7,7 +7,9 @@
 //! ears + hair strands behind the head disc (Spec §5b / §5c),
 //! blink /
 //! talk / look / sweat / tears, headTilt / headTurn / camPitch /
-//! squash, and held-prop plates — where scene::paint_toon (M4) is
+//! squash, the wing appendage channel (RUST-PARITY-SPECS Spec 1:
+//! evaluator + panel painter), and held-prop plates — where
+//! scene::paint_toon (M4) is
 //! the five-mood stand subset the §28 scene needs.
 //!
 //! The raster model is the M4 one (signed-distance coverage via
@@ -169,12 +171,11 @@ pub(crate) struct FullLook {
     // GPUFIRST Batch 2 CARRY plumbing (DESIGN-CARRY fields):
     // the wing / ears / hair look channels of RUST-PARITY-SPECS
     // Spec 1 / §5b / §5c. The FIELDS exist so no format break
-    // stands between here and the painter ports. Batch 3: the
-    // ears (§5b) and hair (§5c) painters now READ their fields;
-    // the wing fields are still plumbing only (the painter does
-    // NOT read them yet). Every pre-existing look carries the
-    // defaults below, so paints without these channels are
-    // byte-identical.
+    // stands between here and the painter ports. GPUFIRST
+    // Batch 3 landed all three painters (wing Spec 1, ears
+    // §5b, hair §5c), so these fields ARE read now. Every
+    // pre-existing look (all defaults below) paints
+    // byte-identically.
     pub wing: bool,              // look 'wing' (Spec 1: wing appendage declared)
     pub wing_col: Option<String>, // look 'wingCol' (Spec 1: wing palette)
     pub wing_lens: Vec<f32>,     // look 'wingLens' (Spec 1: per-segment lengths)
@@ -475,6 +476,497 @@ fn composite_plate(
     }
 }
 
+// ---------------------------------------------------------------------
+// Wing appendage (RUST-PARITY-SPECS Spec 1; GPUFIRST Batch 3,
+// seat PORT-WING): the evaluator (a port of secondary.ts
+// resolveWing / wingFlap / wingChain / wingPose and the spring
+// kernels it builds on), the shared chain geometry (toon.ts
+// wingChainGeom) and the panel painter (toon.ts paintWingChain).
+//
+// The evaluator runs in f64 end to end, mirroring the TS
+// doubles, so the Spec 1 acceptance values reproduce at TS
+// tolerances (±1e-12 on the chain/flap identities). The painter
+// consumes evaluated state (FullState.wing_segs / wing_a, f32)
+// exactly as it consumes every other evaluated channel — shot
+// code / staging runs the evaluator, the painter paints state.
+// ---------------------------------------------------------------------
+
+/// The house spring in secondary.ts form: (freq, decay) plus the
+/// derived oscillator constants (makeSpring's clamps applied).
+#[derive(Clone, Copy)]
+struct WingSpring {
+    freq: f64,
+    decay: f64,
+    omega_d: f64,
+    omega: f64,
+}
+
+/// secondary.ts makeSpring: freq clamped to [0.05, 15] Hz, decay
+/// to [0.3, 60] /s, then decay trimmed so zeta <= 0.98
+/// (d <= 4.924 * w, w = 2π·freq).
+fn wing_make_spring(freq: f64, decay: f64) -> WingSpring {
+    let f = freq.clamp(0.05, 15.0);
+    let w = std::f64::consts::TAU * f;
+    let d = decay.clamp(0.3, 60.0).min(4.924 * w);
+    WingSpring { freq: f, decay: d, omega_d: w, omega: (w * w + d * d).sqrt() }
+}
+
+/// secondary.ts springFromAppendage: an AppendageDef's
+/// (stiffness, damping) as house (freq, decay) — decay =
+/// damping/2, freq = sqrt(stiffness − damping²/4)/(2π), freq
+/// floored at 0.05 Hz (the overdamped-boundary clamp).
+fn wing_spring_from_appendage(stiffness: f64, damping: f64) -> (f64, f64) {
+    let decay = damping.max(0.0) / 2.0;
+    let wd2 = stiffness - decay * decay;
+    ((wd2.max(0.0).sqrt() / std::f64::consts::TAU).max(0.05), decay)
+}
+
+/// motion.ts springStep via secondary.ts springStepAt: the unit
+/// step response of the house spring, exactly 0 for tau <= 0.
+fn wing_spring_step_at(tau: f64, s: &WingSpring) -> f64 {
+    if tau <= 0.0 {
+        return 0.0;
+    }
+    let w = std::f64::consts::TAU * s.freq;
+    1.0 - (-s.decay * tau).exp() * ((w * tau).cos() + (s.decay / w) * (w * tau).sin())
+}
+
+/// secondary.ts springRampAt: the unit RAMP response (the
+/// integral of the step response), exactly 0 for tau <= 0.
+fn wing_spring_ramp_at(tau: f64, s: &WingSpring) -> f64 {
+    if tau <= 0.0 {
+        return 0.0;
+    }
+    let (d, w) = (s.decay, s.omega_d);
+    let dd = s.omega * s.omega;
+    let e = (-d * tau).exp();
+    tau - (2.0 * d - e * (2.0 * d * (w * tau).cos() + ((d * d - w * w) / w) * (w * tau).sin())) / dd
+}
+
+/// secondary.ts springTrack: the EXACT tracker response to a
+/// piecewise-linear target given as (t, v) keys — the signal
+/// holds the first key's value before it, runs linearly between
+/// keys, holds the last after it; duplicate key times are
+/// instantaneous jumps (step responses). Empty keys -> 0.
+fn wing_spring_track(keys_in: &[(f64, f64)], t: f64, s: &WingSpring) -> f64 {
+    if keys_in.is_empty() {
+        return 0.0;
+    }
+    let mut ks: Vec<(f64, f64)> = keys_in.to_vec();
+    ks.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap_or(std::cmp::Ordering::Equal));
+    let mut x = ks[0].1;
+    for i in 1..ks.len() {
+        let (t0, v0) = ks[i - 1];
+        let (t1, v1) = ks[i];
+        let dv = v1 - v0;
+        if dv == 0.0 {
+            continue;
+        }
+        let dt = t1 - t0;
+        if dt <= 0.0 {
+            x += dv * wing_spring_step_at(t - t1, s);
+        } else {
+            let m = dv / dt;
+            x += m * wing_spring_ramp_at(t - t0, s) - m * wing_spring_ramp_at(t - t1, s);
+        }
+    }
+    if x.is_finite() {
+        x
+    } else {
+        ks[0].1
+    }
+}
+
+/// secondary.ts springResponse: the tracker response to an
+/// arbitrary driver FUNCTION of t, history-free — the driver is
+/// sampled onto an absolute time grid (anchored at 0, so seeks
+/// agree bit-for-bit) over the finite-memory window
+/// [t − H, t], H = min(9/decay, 30) s, sampling step
+/// clamp(1/(16·freq), 0.008, 0.1) s, and the samples run through
+/// the exact springTrack. Non-finite samples read as 0.
+fn wing_spring_response(driver: &dyn Fn(f64) -> f64, t: f64, s: &WingSpring) -> f64 {
+    let h = (9.0 / s.decay).min(30.0);
+    let dt = (1.0 / (16.0 * s.freq)).clamp(0.008, 0.1);
+    let start = t - h;
+    let mut keys: Vec<(f64, f64)> = Vec::new();
+    let mut push = |keys: &mut Vec<(f64, f64)>, tt: f64| {
+        let v = driver(tt);
+        keys.push((tt, if v.is_finite() { v } else { 0.0 }));
+    };
+    push(&mut keys, start);
+    let k0 = (start / dt).ceil() as i64;
+    let k1 = (t / dt).floor() as i64;
+    for k in k0..=k1 {
+        let tt = k as f64 * dt;
+        if tt > start && tt < t {
+            push(&mut keys, tt);
+        }
+    }
+    if t > start {
+        push(&mut keys, t);
+    }
+    wing_spring_track(&keys, t, s)
+}
+
+/// secondary.ts shapeChain: progressive chain shaping — each
+/// segment's bend relative to its parent clamped to ±max_bend,
+/// the absolute angle to ±2.8 rad, non-finite raw angles read as
+/// 0. Clamping runs root→tip.
+fn wing_shape_chain(raw: &[f64], max_bend: f64) -> Vec<f64> {
+    let mut out: Vec<f64> = Vec::with_capacity(raw.len());
+    for &rv in raw {
+        let mut a = if rv.is_finite() { rv } else { 0.0 };
+        a = a.clamp(-2.8, 2.8);
+        if let Some(&prev) = out.last() {
+            a = a.clamp(prev - max_bend, prev + max_bend);
+        }
+        out.push(a);
+    }
+    out
+}
+
+/// A character's motion as pure functions of t — the driver
+/// bundle the wing evaluator consumes (secondary.ts
+/// AnchorMotion's speed / phase; a missing field is a still
+/// anchor for that channel).
+#[allow(dead_code)] // staging API: exercised by wing_tests; film staging adopts it with the evaluator wiring
+pub(crate) struct WingMotion<'a> {
+    /// Signed speed along facing (engine units/s).
+    pub speed: Option<&'a (dyn Fn(f64) -> f64 + 'a)>,
+    /// Gait / flap phase (radians).
+    pub phase: Option<&'a (dyn Fn(f64) -> f64 + 'a)>,
+}
+
+impl Default for WingMotion<'_> {
+    fn default() -> Self {
+        WingMotion { speed: None, phase: None }
+    }
+}
+
+/// The authored fold: a number taken as-is, or a function of t
+/// spring-tracked through the wing's spring (secondary.ts
+/// WingParams.fold).
+#[allow(dead_code)]
+pub(crate) enum WingFold<'a> {
+    Value(f64),
+    Func(&'a (dyn Fn(f64) -> f64 + 'a)),
+}
+
+/// secondary.ts WingParams — every field optional; the resolved
+/// defaults are fold 1, foldBase 1.25, spreadBase 1.5, foldBend
+/// 2.0, spreadBend 0.18, flapAmp 0.5, flapLag 0.6, speedRef 1.6,
+/// speedSpread 0.65, idleAmp 0.03, idleFreq 0.25, maxBend 2.2,
+/// spring = the def's (via springFromAppendage) else the house
+/// default (2.2 Hz, 3.5 /s).
+#[allow(dead_code)]
+pub(crate) struct WingParams<'a> {
+    /// The appendage's spring as (freq, decay); wins over `def`.
+    pub spring: Option<(f64, f64)>,
+    /// The AppendageDef's (stiffness, damping) — supplies the
+    /// spring via springFromAppendage when `spring` is absent.
+    pub def: Option<(f64, f64)>,
+    /// Authored fold amount 0..1 (1 = fully folded). Default 1.
+    pub fold: Option<WingFold<'a>>,
+    pub fold_base: Option<f64>,
+    pub spread_base: Option<f64>,
+    pub fold_bend: Option<f64>,
+    pub spread_bend: Option<f64>,
+    pub flap_amp: Option<f64>,
+    pub flap_lag: Option<f64>,
+    pub speed_ref: Option<f64>,
+    pub speed_spread: Option<f64>,
+    pub idle_amp: Option<f64>,
+    pub idle_freq: Option<f64>,
+    pub max_bend: Option<f64>,
+}
+
+impl Default for WingParams<'_> {
+    fn default() -> Self {
+        WingParams {
+            spring: None,
+            def: None,
+            fold: None,
+            fold_base: None,
+            spread_base: None,
+            fold_bend: None,
+            spread_bend: None,
+            flap_amp: None,
+            flap_lag: None,
+            speed_ref: None,
+            speed_spread: None,
+            idle_amp: None,
+            idle_freq: None,
+            max_bend: None,
+        }
+    }
+}
+
+/// secondary.ts WingPose: the evaluated wing at t.
+#[allow(dead_code)]
+pub(crate) struct WingPose {
+    /// Effective fold 0..1 (authored fold after the speed response).
+    pub fold: f64,
+    /// 1 − fold.
+    pub spread: f64,
+    /// Base-segment flap angle at t (wing_flap's value).
+    pub flap: f64,
+    /// Segment 0's absolute angle (= segs[0] when segments > 0).
+    pub base: f64,
+    /// The per-joint bend applied (rad, signed).
+    pub bend: f64,
+    /// Per-segment absolute angles, root first.
+    pub segs: Vec<f64>,
+}
+
+struct WingResolved {
+    fold_base: f64,
+    spread_base: f64,
+    fold_bend: f64,
+    spread_bend: f64,
+    flap_amp: f64,
+    flap_lag: f64,
+    idle_amp: f64,
+    idle_freq: f64,
+    max_bend: f64,
+    eff_fold: f64,
+    speed_resp: f64,
+}
+
+/// secondary.ts resolveWing + chainSpring: the spring is
+/// params.spring, else the def's via springFromAppendage, else
+/// the house default. Speed spreads the wing: effFold =
+/// clamp(fold · (1 − speedSpread · speedResp), 0, 1), where
+/// speedResp is the spring response of speed/speedRef.
+fn wing_resolve(motion: &WingMotion, params: &WingParams, t: f64) -> WingResolved {
+    let s = if let Some((f, d)) = params.spring {
+        wing_make_spring(f, d)
+    } else if let Some((k, c)) = params.def {
+        let (f, d) = wing_spring_from_appendage(k, c);
+        wing_make_spring(f, d)
+    } else {
+        wing_make_spring(2.2, 3.5)
+    };
+    let speed_ref = params.speed_ref.unwrap_or(1.6);
+    let speed_resp = match motion.speed {
+        Some(f) => wing_spring_response(&|tt: f64| f(tt) / speed_ref, t, &s).clamp(0.0, 1.0),
+        None => 0.0,
+    };
+    let authored = match &params.fold {
+        Some(WingFold::Func(f)) => wing_spring_response(f, t, &s),
+        Some(WingFold::Value(v)) => *v,
+        None => 1.0,
+    };
+    let speed_spread = params.speed_spread.unwrap_or(0.65);
+    let eff_fold = ((if authored.is_finite() { authored } else { 1.0 })
+        * (1.0 - speed_spread * speed_resp))
+        .clamp(0.0, 1.0);
+    WingResolved {
+        fold_base: params.fold_base.unwrap_or(1.25),
+        spread_base: params.spread_base.unwrap_or(1.5),
+        fold_bend: params.fold_bend.unwrap_or(2.0),
+        spread_bend: params.spread_bend.unwrap_or(0.18),
+        flap_amp: params.flap_amp.unwrap_or(0.5),
+        flap_lag: params.flap_lag.unwrap_or(0.6),
+        idle_amp: params.idle_amp.unwrap_or(0.03),
+        idle_freq: params.idle_freq.unwrap_or(0.25),
+        max_bend: params.max_bend.unwrap_or(2.2),
+        eff_fold,
+        speed_resp,
+    }
+}
+
+/// secondary.ts wingFlap: flapAmp · spread · sin(phase(t)) —
+/// exactly 0 with no phase driver, and exactly 0 at full fold
+/// for any phase.
+#[allow(dead_code)]
+pub(crate) fn wing_flap(motion: &WingMotion, params: &WingParams, t: f64) -> f64 {
+    let r = wing_resolve(motion, params, t);
+    let phase_fn = match motion.phase {
+        Some(f) => f,
+        None => return 0.0,
+    };
+    let v = r.flap_amp * (1.0 - r.eff_fold) * phase_fn(t).sin();
+    if v.is_finite() {
+        v
+    } else {
+        0.0
+    }
+}
+
+/// secondary.ts wingChain: the per-segment ABSOLUTE angles at t
+/// (chain convention: 0 = straight down, + toward +x; root
+/// first) for a chain of `segments` segments. Per segment k:
+///   a_k = base + bend·k
+///       + flapAmp · spread · sin(phase − k·flapLag)   (if phased)
+///       + idleAmp · sin(2π·idleFreq·t − k·flapLag) · (1 − speedResp)
+/// then shapeChain's bend/absolute clamps. At rest (fold 1, no
+/// drivers, idleAmp 0) the chain is exactly [1.25, −0.75, …].
+#[allow(dead_code)]
+pub(crate) fn wing_chain(motion: &WingMotion, segments: usize, params: &WingParams, t: f64) -> Vec<f64> {
+    let r = wing_resolve(motion, params, t);
+    let spread = 1.0 - r.eff_fold;
+    let base = r.fold_base + (r.spread_base - r.fold_base) * spread;
+    let bend = -r.fold_bend + (r.fold_bend + r.spread_bend) * spread;
+    let mut raw: Vec<f64> = Vec::with_capacity(segments);
+    for k in 0..segments {
+        let kf = k as f64;
+        let mut a = base + bend * kf;
+        if let Some(phase_fn) = motion.phase {
+            a += r.flap_amp * spread * (phase_fn(t) - kf * r.flap_lag).sin();
+        }
+        a += r.idle_amp * (std::f64::consts::TAU * r.idle_freq * t - kf * r.flap_lag).sin() * (1.0 - r.speed_resp);
+        raw.push(a);
+    }
+    wing_shape_chain(&raw, r.max_bend)
+}
+
+/// secondary.ts wingPose: the chain plus the fold/spread/flap
+/// summary.
+#[allow(dead_code)]
+pub(crate) fn wing_pose(motion: &WingMotion, segments: usize, params: &WingParams, t: f64) -> WingPose {
+    let r = wing_resolve(motion, params, t);
+    let spread = 1.0 - r.eff_fold;
+    let segs = wing_chain(motion, segments, params, t);
+    let bend = -r.fold_bend + (r.fold_bend + r.spread_bend) * spread;
+    let base = if segs.is_empty() {
+        r.fold_base + (r.spread_base - r.fold_base) * spread
+    } else {
+        segs[0]
+    };
+    WingPose { fold: r.eff_fold, spread, flap: wing_flap(motion, params, t), base, bend, segs }
+}
+
+/// toon.ts WingGeom: the shared wing chain geometry — pts are
+/// the root + one point per segment end (stage space), lens /
+/// widths per segment (far side scaled ×0.88).
+pub(crate) struct WingGeom {
+    pub pts: Vec<(f32, f32)>,
+    pub lens: Vec<f32>,
+    pub widths: Vec<f32>,
+}
+
+/// toon.ts wingChainGeom: ONE geometry source for the wing,
+/// shared by canvas_anchor's envelope and both wing painters.
+/// Segment count = wing_segs' length when the state carries it
+/// (any declared count — 1, 2, 3, 5 all honoured), else the
+/// scalar fallback family over 2 segments:
+/// [1.25 + wing_a, 1.25 + wing_a − 2.0]. wing_segs wins over
+/// wing_a when both are set. Segment lengths: look wing_lens[k],
+/// else the BIRD_RIG pattern 58, then −12 per segment, floor 24.
+/// Widths: 46, then −12 per segment, floor 20. Near root at
+/// (bx + 46, top + 96); far root at (bx − 38, top + 84); each
+/// joint advances by (sin a · len, cos a · len); the far chain
+/// mirrors the angles (a → −a).
+pub(crate) fn wing_chain_geom(look: &FullLook, st: &FullState, bx: f32, top: f32, far: bool) -> WingGeom {
+    let has_segs = !st.wing_segs.is_empty();
+    let n = if has_segs { st.wing_segs.len() } else { 2 };
+    let scale = if far { 0.88 } else { 1.0 };
+    let mut lens: Vec<f32> = Vec::with_capacity(n);
+    for k in 0..n {
+        let pat = if k == 0 { 58.0 } else { (58.0 - 12.0 * k as f32).max(24.0) };
+        lens.push(look.wing_lens.get(k).copied().unwrap_or(pat) * scale);
+    }
+    let mut widths: Vec<f32> = Vec::with_capacity(n);
+    for k in 0..n {
+        widths.push((46.0 - 12.0 * k as f32).max(20.0) * scale);
+    }
+    let (mut x, mut y) = (bx + if far { -38.0 } else { 46.0 }, top + if far { 84.0 } else { 96.0 });
+    let mut pts: Vec<(f32, f32)> = Vec::with_capacity(n + 1);
+    pts.push((x, y));
+    for k in 0..n {
+        let a0 = if has_segs {
+            st.wing_segs[k]
+        } else if k == 0 {
+            1.25 + st.wing_a
+        } else {
+            1.25 + st.wing_a - 2.0
+        };
+        let a = if far { -a0 } else { a0 };
+        x += a.sin() * lens[k];
+        y += a.cos() * lens[k];
+        pts.push((x, y));
+    }
+    WingGeom { pts, lens, widths }
+}
+
+/// toon.ts paintWingChain: one filled ellipse per segment,
+/// centred on the segment midpoint, long axis along the segment,
+/// radii (len/2 + 7, width/2), ink-stroked (lw 7 near / 6 far).
+/// Near fill = the wing colour; far fill = shadeOf(col, 0.72)
+/// (this painter's shade_rgba is its shadeOf mapping — the same
+/// mapping the bean shade / stripes / scarf ports use). Near
+/// side only: a shade feather line along each segment
+/// (shadeOf(col, 0.75), lw 4, quadratic through the offset
+/// midpoint) and a shade joint line across each internal joint
+/// (shadeOf(col, 0.7), lw 3). The far wing is shade-filled and
+/// featherless. `px` is paint_toon_full's stage→canvas map (lean
+/// + canvas anchor, host-side), so every prim below is recorded
+/// in device space like every other painter prim: panels trace
+/// as FillEllipse + the flattened StrokePolyline of
+/// stroke_ellipse, feather lines as the flattened
+/// StrokePolyline of stroke_quad, joint lines as
+/// StrokePolyline — the existing Prim kinds of
+/// GPUFIRST-B2-CARRY §2 (wing verdict: EXPRESSIBLE, no gap).
+fn paint_wing_chain(
+    p: &mut Painter,
+    geom: &WingGeom,
+    col: &str,
+    far: bool,
+    px: &dyn Fn(f32, f32) -> (f32, f32),
+) {
+    let ink = rgba(INK);
+    let n = geom.lens.len();
+    for k in 0..n {
+        let (x0, y0) = geom.pts[k];
+        let (x1, y1) = geom.pts[k + 1];
+        let (cx, cy) = px((x0 + x1) / 2.0, (y0 + y1) / 2.0);
+        let (ax, ay) = px(x0, y0);
+        let (bxp, byp) = px(x1, y1);
+        let rot = (byp - ay).atan2(bxp - ax);
+        let (rx, ry) = ((geom.lens[k] / 2.0 + 7.0) * RES, (geom.widths[k] / 2.0) * RES);
+        let fill = if far { shade_rgba(col, 0.72) } else { rgba(col) };
+        p.fill_ellipse(cx, cy, rx, ry, rot, fill);
+        p.stroke_ellipse(cx, cy, rx, ry, rot, if far { 6.0 * RES } else { 7.0 * RES }, ink);
+    }
+    if far {
+        return;
+    }
+    // Feather lines (near only).
+    let feather = shade_rgba(col, 0.75);
+    for k in 0..n {
+        let (x0, y0) = geom.pts[k];
+        let (x1, y1) = geom.pts[k + 1];
+        let (dx, dy) = (x1 - x0, y1 - y0);
+        let len = dx.hypot(dy);
+        let len = if len == 0.0 { 1.0 } else { len };
+        let (ux, uy) = (dx / len, dy / len);
+        let (ox, oy) = (uy * -geom.widths[k] * 0.18, ux * geom.widths[k] * 0.18);
+        p.stroke_quad(
+            px(x0 + ux * 8.0 + ox, y0 + uy * 8.0 + oy),
+            px((x0 + x1) / 2.0 + ox * 1.6, (y0 + y1) / 2.0 + oy * 1.6),
+            px(x1 - ux * 8.0 + ox, y1 - uy * 8.0 + oy),
+            4.0 * RES,
+            feather,
+        );
+    }
+    // Joint lines (near only).
+    let joint = shade_rgba(col, 0.7);
+    for k in 1..n {
+        let (x0, y0) = geom.pts[k - 1];
+        let (x1, y1) = geom.pts[k];
+        let (dx, dy) = (x1 - x0, y1 - y0);
+        let len = dx.hypot(dy);
+        let len = if len == 0.0 { 1.0 } else { len };
+        let (pxn, pyn) = (-dy / len, dx / len);
+        let hw = geom.widths[k] * 0.42;
+        p.stroke_polyline(
+            &[px(x1 - pxn * hw, y1 - pyn * hw), px(x1 + pxn * hw, y1 + pyn * hw)],
+            3.0 * RES,
+            joint,
+        );
+    }
+}
+
 /// Canvas re-anchor (B-1: the Rust port of the TS painter's
 /// `solveCanvasAnchor`, v7 P2 D4 — tall-tale template/src/core/
 /// toon.ts). The cut-out canvas is finite (stage 512x1024 placed
@@ -508,23 +1000,26 @@ fn composite_plate(
 /// bounded by the prop contract and they ride the hands, which
 /// are), exactly as in the TS original.
 ///
-/// CARRY note (GPUFIRST Batch 2, updated Batch 3): the wing
-/// envelope points the TS anchor models (Spec 1: both wing
-/// chains) are deliberately NOT added here — the wing painter
-/// does not exist yet and the anchor models painted geometry
-/// only; adding them remains the wing port's obligation. The
-/// EAR envelope (§5b: both ear triangles, tips included, radius
+/// CARRY note (GPUFIRST Batch 2, updated Batch 3): with all
+/// five CARRY painters landed, the anchor models what the
+/// painters paint. The WING envelope points (Spec 1: both wing
+/// chains, half-width + 3.5) ARE modelled below (seat
+/// PORT-WING, per the obligation in
+/// docs/integration/GPUFIRST-B2-CARRY.md §4), and the EAR
+/// envelope (§5b: both ear triangles, tips included, radius
 /// 3.5 = appendage width 7 / 2, exactly as the TS anchor at
-/// toon.ts 683–693) IS modelled below, because the ear painter
-/// now exists. Hair (§5c) is deliberately NOT modelled: the TS
-/// anchor does not envelope hair strands — mirror that, invent
-/// nothing.
+/// toon.ts 683–693) IS modelled below (seat PORT-EARS-HAIR).
+/// Hair (§5c) is deliberately NOT modelled: the TS anchor
+/// does not envelope hair strands — mirror that, invent
+/// nothing. Flip + bodyPitch are modelled by the mirror /
+/// hip-pivot transforms inside the point maps below (seat
+/// PORT-FLIP-PITCH).
 ///
 /// Port notes (where this painter's geometry differs from the
 /// TS painter's, the envelope follows THIS painter): the sit
 /// drop is the painter's own (426 - sitDrop)/0.98 with its fixed
 /// sit-leg polyline (no two-bone sit solve, no kneel, no
-/// tail/scarf-streamer/wing/fox-ear primitives exist here); the
+/// tail/scarf-streamer primitives exist here); the
 /// head envelope uses the painter's own squash factors
 /// (1 - 0.3*squash, 1 + squash) rather than the TS anchor's
 /// exact volume factors; hat extremes are this painter's drawn
@@ -788,6 +1283,27 @@ pub(crate) fn canvas_anchor(look: &FullLook, st: &FullState) -> (f32, f32) {
         }
         _ => {}
     }
+    // Wing chains (near + far) — Spec 1 port-time obligation
+    // (GPUFIRST-B2-CARRY §4): the shared wing_chain_geom points,
+    // radii = segment half-widths + the ink stroke (3.5), as the
+    // TS anchor models them (toon.ts solveCanvasAnchor wing
+    // block). The TS anchor pushes these as upper-assembly
+    // (pitched) points; this painter has no bodyPitch painter
+    // yet, so they ride the same lean-only `push!` as every
+    // other body point here.
+    if look.wing {
+        for far in [true, false] {
+            let geom = wing_chain_geom(look, st, bx, top, far);
+            for k in 0..geom.pts.len() {
+                let w = if k < geom.widths.len() {
+                    geom.widths[k]
+                } else {
+                    geom.widths.last().copied().unwrap_or(0.0)
+                };
+                push!(geom.pts[k].0, geom.pts[k].1, w / 2.0 + 3.5);
+            }
+        }
+    }
     // Arms — painter FK, quadratic samples + the hand ellipse
     // (radii 15 x 17; the envelope uses the 17 disc, as TS).
     for (side, (a, e)) in [(-1.0f32, st.arm_l), (1.0f32, st.arm_r)] {
@@ -999,6 +1515,22 @@ pub(crate) fn paint_toon_full(
         p.fill_ellipse(ex, ey, 20.0 * RES, 10.0 * RES, th_leg, ink);
     }
 
+    // ---- appendage: far wing (behind the body) — Spec 1. The
+    // same chain as the near wing, mirrored to the body's far
+    // side and shade-filled, painted BEFORE the body bean so the
+    // body occludes it (the TS paint site is inside the pitched
+    // body block just before the bean; this painter has no
+    // bodyPitch transform yet, so the wing rides the plain `px`
+    // map like every other body-space prim here). Colour:
+    // look wingCol, falling back to the body colour (TS:
+    // L.wingCol || L.body — an empty string is falsy in JS and
+    // falls back too).
+    if look.wing {
+        let col = look.wing_col.as_deref().filter(|s| !s.is_empty()).unwrap_or(&look.body);
+        let geom = wing_chain_geom(look, st, bx, top, true);
+        paint_wing_chain(&mut p, &geom, col, true, &px);
+    }
+
     // ---- body bean ----
     let mut bean: Vec<(f32, f32)> = Vec::new();
     let mut seg = |pts: Vec<(f32, f32)>| {
@@ -1159,6 +1691,17 @@ pub(crate) fn paint_toon_full(
             }
         }
         _ => {}
+    }
+
+    // ---- appendage: near wing (over the body, under the arms)
+    // — Spec 1: the chain of flat segment panels honouring the
+    // declared segment count (state wing_segs' length; 2 at the
+    // scalar wing_a fallback), painted after the body +
+    // neckwear and before the arms, as in TS.
+    if look.wing {
+        let col = look.wing_col.as_deref().filter(|s| !s.is_empty()).unwrap_or(&look.body);
+        let geom = wing_chain_geom(look, st, bx, top, false);
+        paint_wing_chain(&mut p, &geom, col, false, &px);
     }
 
     // ---- arms (+ held plates, then the hand) ----
@@ -3043,5 +3586,376 @@ mod earshair_tests {
             canvas_anchor(&plain, &s2),
             "hair must NOT change the canvas anchor (§5c: no hair envelope)"
         );
+    }
+}
+#[cfg(test)]
+mod wing_tests {
+    use super::*;
+    use std::collections::HashSet;
+
+    /// Full-frame FNV-1a 64 hash of a paint (the house test
+    /// instrument; no new dependency).
+    fn fnv(px: &[u8]) -> u64 {
+        let mut h: u64 = 0xcbf29ce484222325;
+        for &b in px {
+            h ^= b as u64;
+            h = h.wrapping_mul(0x100000001b3);
+        }
+        h
+    }
+
+    /// The reference bird's look as the bridge derives it from
+    /// the BIRD_RIG wing declaration (characters.ts: segments 2,
+    /// segLen 58, palette '#7FB6D9' -> wingCol '#7FB6D9',
+    /// wingLens [58, 46]) on the scene-format default body.
+    fn pip_look() -> FullLook {
+        FullLook {
+            body: "#E8734A".into(),
+            head: "#F7F7FA".into(),
+            shade: None,
+            pattern: "plain".into(),
+            pat_col: None,
+            hat: "none".into(),
+            hat_col: None,
+            band: None,
+            neck: "none".into(),
+            neck_col: None,
+            glasses: false,
+            mustache: false,
+            mustache_col: None,
+            kid: false,
+            blush: false,
+            freckles: false,
+            pencil: false,
+            monocle: false,
+            hair_col: None,
+            wing: true,
+            wing_col: Some("#7FB6D9".into()),
+            wing_lens: vec![58.0, 46.0],
+            ears: false,
+            hair: false,
+        }
+    }
+
+    fn paint_hash(look: &FullLook, st: &FullState) -> u64 {
+        let (px, w, h, _, _) = paint_toon_full(look, st);
+        assert_eq!((w, h), (2560, 2816));
+        fnv(&px)
+    }
+
+    fn count_col(px: &[u8], col: Rgba) -> usize {
+        px.chunks_exact(4)
+            .filter(|c| c[0] == col.0 && c[1] == col.1 && c[2] == col.2 && c[3] == col.3)
+            .count()
+    }
+
+    /// Sample the canvas pixel at a stage point. Only valid for
+    /// states whose canvas anchor is (0, 0) — asserted here, so a
+    /// sample can never silently read a re-anchored frame.
+    fn sample_stage(look: &FullLook, st: &FullState, sx: f32, sy: f32) -> Rgba {
+        assert_eq!(canvas_anchor(look, st), (0.0, 0.0), "sample state must not engage the anchor");
+        let (px, w, _, _, _) = paint_toon_full(look, st);
+        let cx = ((sx + 384.0) * RES) as usize;
+        let cy = ((sy + 256.0) * RES) as usize;
+        let k = (cy * w as usize + cx) * 4;
+        (px[k], px[k + 1], px[k + 2], px[k + 3])
+    }
+
+    // ---------------------------------------------------------
+    // Spec 1 acceptance 1 — evaluator unit values (the TS proof
+    // numbers of tests/14/wing.test.mjs, quoted in the spec).
+    // ---------------------------------------------------------
+
+    #[test]
+    fn wing_evaluator_rest_chain_matches_ts_proof() {
+        let motion = WingMotion::default();
+        let rest = WingParams { idle_amp: Some(0.0), ..Default::default() };
+        // At rest (fold 1, no drivers, idleAmp 0) the chain is
+        // exactly [1.25, -0.75, -2.75] (a_k = 1.25 - 2.0*k,
+        // before clamps; the clamps do not move these values).
+        let folded = wing_chain(&motion, 3, &rest, 3.7);
+        assert_eq!(folded, vec![1.25, -0.75, -2.75]);
+        // Spread rest: [spreadBase, spreadBase + spreadBend].
+        let spread_params = WingParams { idle_amp: Some(0.0), fold: Some(WingFold::Value(0.0)), ..Default::default() };
+        let spread = wing_chain(&motion, 2, &spread_params, 3.7);
+        assert!((spread[0] - 1.5).abs() <= 1e-12, "spread base {}", spread[0]);
+        assert!((spread[1] - 1.68).abs() <= 1e-12, "spread seg1 {}", spread[1]);
+        // Half-fold: base is the midpoint of the bases, bend the
+        // midpoint of the bends.
+        let mid_params = WingParams { idle_amp: Some(0.0), fold: Some(WingFold::Value(0.5)), ..Default::default() };
+        let mid = wing_chain(&motion, 2, &mid_params, 3.7);
+        assert!((mid[0] - 1.375).abs() <= 1e-12, "half-fold base {}", mid[0]);
+        assert!((mid[1] - mid[0] + 0.91).abs() <= 1e-12, "half-fold bend {}", mid[1] - mid[0]);
+        // Folded vs spread silhouettes differ structurally: with
+        // unit segment lengths, tip reach is 1.08 folded vs 1.99
+        // spread, and the per-joint bend differs by 2.18 rad.
+        let reach = |segs: &[f64]| -> f64 {
+            let (mut x, mut y) = (0.0f64, 0.0f64);
+            for &a in segs {
+                x += a.sin();
+                y += a.cos();
+            }
+            x.hypot(y)
+        };
+        let folded2 = wing_chain(&motion, 2, &rest, 3.7);
+        let (rf, rs) = (reach(&folded2), reach(&spread));
+        assert!((rf - 1.08).abs() < 0.01, "folded tip reach {rf} (TS proof: 1.08)");
+        assert!((rs - 1.99).abs() < 0.01, "spread tip reach {rs} (TS proof: 1.99)");
+        assert!(rf < 0.6 * rs, "folded reach must be < 60% of spread reach");
+        let bend_diff = ((folded2[1] - folded2[0]) - (spread[1] - spread[0])).abs();
+        assert!((bend_diff - 2.18).abs() <= 1e-12, "per-joint bend differs by {bend_diff} (TS proof: 2.18)");
+        // Any declared count is honoured.
+        for n in [1usize, 2, 3, 5] {
+            let p = WingParams { idle_amp: Some(0.0), fold: Some(WingFold::Value(0.4)), ..Default::default() };
+            let segs = wing_chain(&motion, n, &p, 2.0);
+            assert_eq!(segs.len(), n, "wing_chain must honour segments={n}");
+            assert!(segs.iter().all(|a| a.is_finite()));
+        }
+    }
+
+    #[test]
+    fn wing_evaluator_flap_matches_ts_proof() {
+        let phase = |tt: f64| tt * 4.0;
+        let motion = WingMotion { speed: None, phase: Some(&phase) };
+        // wingFlap at spread = flapAmp * sin(phase).
+        let p_spread = WingParams { fold: Some(WingFold::Value(0.0)), ..Default::default() };
+        let flap = wing_flap(&motion, &p_spread, 0.3);
+        assert!((flap - 0.5 * 1.2f64.sin()).abs() <= 1e-12, "flap {flap}");
+        // Exactly 0 at full fold, and exactly 0 with no phase driver.
+        let p_fold = WingParams { fold: Some(WingFold::Value(1.0)), ..Default::default() };
+        assert_eq!(wing_flap(&motion, &p_fold, 0.3), 0.0);
+        assert_eq!(wing_flap(&WingMotion::default(), &p_spread, 0.3), 0.0);
+        // wingPose.flap equals wingFlap to ±1e-12 (spec wording).
+        let pose = wing_pose(&motion, 2, &WingParams { fold: Some(WingFold::Value(0.0)), idle_amp: Some(0.0), ..Default::default() }, 0.3);
+        assert!((pose.flap - flap).abs() <= 1e-12, "pose.flap {} vs wingFlap {flap}", pose.flap);
+        assert!((pose.bend - 0.18).abs() <= 1e-12);
+        assert_eq!(pose.base, pose.segs[0]);
+        // Per-segment flap lag: seg0 carries the full flap, seg1
+        // trails by flapLag.
+        let segs = wing_chain(&motion, 2, &WingParams { fold: Some(WingFold::Value(0.0)), idle_amp: Some(0.0), ..Default::default() }, 0.3);
+        assert!((segs[0] - (1.5 + 0.5 * 1.2f64.sin())).abs() <= 1e-12, "seg0 {}", segs[0]);
+        assert!((segs[1] - (1.68 + 0.5 * 0.6f64.sin())).abs() <= 1e-12, "seg1 {}", segs[1]);
+    }
+
+    #[test]
+    fn wing_evaluator_speed_and_spring_fold_match_ts_proof() {
+        // Constant full speed settles the speed response to
+        // exactly 1, so an authored fold of 1 opens to exactly
+        // 0.35 at speed = speedRef (spec: ±1e-9).
+        let speed = |_tt: f64| 1.6;
+        let motion = WingMotion { speed: Some(&speed), phase: None };
+        let pose = wing_pose(&motion, 2, &WingParams { idle_amp: Some(0.0), ..Default::default() }, 30.0);
+        assert!((pose.fold - 0.35).abs() <= 1e-9, "effFold at speedRef {} (TS proof: 0.35)", pose.fold);
+        assert!((pose.spread - (1.0 - pose.fold)).abs() <= 1e-12);
+        // The AppendageDef spring (BIRD_RIG wing: stiffness 0.6,
+        // damping 0.35) settles to the same effFold.
+        let via_def = wing_pose(
+            &motion,
+            2,
+            &WingParams { idle_amp: Some(0.0), def: Some((0.6, 0.35)), ..Default::default() },
+            60.0,
+        );
+        assert!((via_def.fold - 0.35).abs() <= 1e-6, "def-spring effFold {}", via_def.fold);
+        // A fold FUNCTION is spring-tracked: a 1->0 step at t=1
+        // is mid-flight shortly after, settled long after.
+        let step = |tt: f64| if tt < 1.0 { 1.0 } else { 0.0 };
+        let p_step = WingParams { idle_amp: Some(0.0), fold: Some(WingFold::Func(&step)), ..Default::default() };
+        let mid = wing_pose(&WingMotion::default(), 2, &p_step, 1.1);
+        assert!(mid.fold > 0.05 && mid.fold < 0.95, "spring-tracked fold mid-flight: {}", mid.fold);
+        let settled = wing_pose(&WingMotion::default(), 2, &p_step, 30.0);
+        assert!(settled.fold.abs() <= 1e-6, "spring-tracked fold settled: {}", settled.fold);
+        // Bounded + deterministic under wild drivers (the TS
+        // boundedness proof): finite, |a| <= 2.8, and shuffled
+        // evaluation is bit-identical to in-order evaluation.
+        let wild_speed = |tt: f64| 40.0 * (tt * 1.7).sin();
+        let wild_phase = |tt: f64| tt * 5.1;
+        let wild = WingMotion { speed: Some(&wild_speed), phase: Some(&wild_phase) };
+        for tt in [-10.0, 0.0, 0.37, 5.0, 100.0, 10000.0] {
+            for a in wing_chain(&wild, 4, &WingParams::default(), tt) {
+                assert!(a.is_finite() && a.abs() <= 2.8, "wild chain angle {a} at t={tt}");
+            }
+            assert!(wing_flap(&wild, &WingParams::default(), tt).is_finite());
+        }
+        let det_speed = |tt: f64| if tt < 2.0 { 0.0 } else { 1.2 };
+        let det_phase = |tt: f64| tt * 3.3;
+        let det_fold = |tt: f64| if tt < 4.0 { 1.0 } else { 0.2 };
+        let det_motion = WingMotion { speed: Some(&det_speed), phase: Some(&det_phase) };
+        let det_params = WingParams { fold: Some(WingFold::Func(&det_fold)), ..Default::default() };
+        let times = [7.3, 0.2, 100.0, 3.3, 1.05];
+        let in_order: Vec<Vec<f64>> = times.iter().map(|&tt| wing_pose(&det_motion, 3, &det_params, tt).segs).collect();
+        let mut shuffled: Vec<Vec<f64>> = vec![Vec::new(); times.len()];
+        for i in [3usize, 0, 4, 1, 2] {
+            shuffled[i] = wing_pose(&det_motion, 3, &det_params, times[i]).segs;
+        }
+        assert_eq!(in_order, shuffled, "seek determinism: shuffled evaluation must be bit-identical");
+    }
+
+    // ---------------------------------------------------------
+    // Spec 1 — shared geometry (toon.ts wingChainGeom proofs).
+    // ---------------------------------------------------------
+
+    #[test]
+    fn wing_geom_matches_ts_proof() {
+        let look = pip_look();
+        let st = FullState::default();
+        // Fallback is the folded 2-segment family at BIRD
+        // lengths: root (bx+46, top+96) for bx=256, top=520.
+        let geom = wing_chain_geom(&look, &st, 256.0, 520.0, false);
+        assert_eq!(geom.pts.len(), 3);
+        assert_eq!(geom.pts[0], (302.0, 616.0));
+        assert_eq!(geom.lens, vec![58.0, 46.0]);
+        assert_eq!(geom.widths, vec![46.0, 34.0]);
+        // Far chain: root (bx-38, top+84), lengths/widths x0.88.
+        let far = wing_chain_geom(&look, &st, 256.0, 520.0, true);
+        assert_eq!(far.pts[0], (218.0, 604.0));
+        assert!((far.lens[0] - 58.0 * 0.88).abs() < 1e-3 && (far.lens[1] - 46.0 * 0.88).abs() < 1e-3);
+        assert!((far.widths[0] - 46.0 * 0.88).abs() < 1e-3 && (far.widths[1] - 34.0 * 0.88).abs() < 1e-3);
+        // Declared wingLens wins over the pattern, per segment.
+        let mut look3 = pip_look();
+        look3.wing_lens = vec![70.0, 55.5, 41.0];
+        let mut st3 = FullState::default();
+        st3.wing_segs = vec![1.5, 1.68, 1.86];
+        let geom3 = wing_chain_geom(&look3, &st3, 256.0, 520.0, false);
+        assert_eq!(geom3.lens, vec![70.0, 55.5, 41.0]);
+        assert_eq!(geom3.pts.len(), 4);
+        // wingSegs wins over wingA when both are set (geometry
+        // is identical for different wingA).
+        let mut sa = FullState::default();
+        sa.wing_segs = vec![0.7, -1.3];
+        sa.wing_a = 0.0;
+        let mut sb = FullState::default();
+        sb.wing_segs = vec![0.7, -1.3];
+        sb.wing_a = 0.9;
+        assert_eq!(
+            wing_chain_geom(&look, &sa, 256.0, 520.0, false).pts,
+            wing_chain_geom(&look, &sb, 256.0, 520.0, false).pts
+        );
+        // Declared counts 1, 2, 3, 5: pts = root + n per side.
+        for n in [1usize, 2, 3, 5] {
+            let mut s = FullState::default();
+            s.wing_segs = vec![1.5; n];
+            assert_eq!(wing_chain_geom(&look, &s, 256.0, 330.0, false).pts.len(), n + 1);
+            assert_eq!(wing_chain_geom(&look, &s, 256.0, 330.0, true).lens.len(), n);
+        }
+    }
+
+    // ---------------------------------------------------------
+    // Spec 1 acceptance 2 + 4 — the painter: panel counts per
+    // side (distinct paints per declared count), far wing behind
+    // the body in the 0.72 shade, the reference bird at rest.
+    // (Exact prim-level panel counts are asserted under the
+    // gpupaint feature in gpupaint_states_wing.rs, where the
+    // trace is available.)
+    // ---------------------------------------------------------
+
+    #[test]
+    fn wing_painter_counts_layering_and_reference_bird() {
+        // Distinct paints per declared count 1, 2, 3, 5 — each
+        // count paints that many panels per side, so no two
+        // counts can produce the same frame; all differ from
+        // the wingless frame.
+        let mut look = pip_look();
+        look.wing_lens = vec![58.0, 46.0, 34.0, 24.0, 24.0];
+        let chain = [1.5f32, 1.68, 1.86, 2.04, 2.22];
+        let mut hashes: HashSet<u64> = HashSet::new();
+        for n in [1usize, 2, 3, 5] {
+            let mut st = FullState::default();
+            st.wing_segs = chain[..n].to_vec();
+            assert!(hashes.insert(paint_hash(&look, &st)), "count {n} paint collides with another count");
+        }
+        let mut wingless = pip_look();
+        wingless.wing = false;
+        let wingless_hash = paint_hash(&wingless, &FullState::default());
+        assert!(!hashes.contains(&wingless_hash), "winged paints must differ from wingless");
+
+        // Non-regression gate (acceptance 3 at paint level): a
+        // look WITHOUT the wing flag paints byte-identically to
+        // the pre-port painter even when the state carries wing
+        // channels — the pinned neutral hash is the pre-port pin
+        // from brow_tests (gpufirst-phase0 f4b358d).
+        let mut st = FullState::default();
+        st.wing_segs = vec![1.5, 1.68];
+        st.wing_a = 0.8;
+        assert_eq!(paint_hash(&wingless, &st), 0xd413603252323a7c, "wing state without the look flag must not paint");
+
+        // wingSegs wins over wingA at paint level; the scalar
+        // fallback still rotates on wingA.
+        let look2 = pip_look();
+        let mut s0 = FullState::default();
+        s0.wing_segs = vec![0.7, -1.3];
+        let mut s1 = FullState::default();
+        s1.wing_segs = vec![0.7, -1.3];
+        s1.wing_a = 0.9;
+        assert_eq!(paint_hash(&look2, &s0), paint_hash(&look2, &s1), "wingSegs must win over wingA");
+        let mut f0 = FullState::default();
+        let mut f1 = FullState::default();
+        f1.wing_a = 0.8;
+        assert_ne!(paint_hash(&look2, &f0), paint_hash(&look2, &f1), "wingA fallback must move the wing");
+
+        // Layering, pose segs [-1.2, -1.0] (panels sweep to the
+        // figure's left, clear of both arms):
+        // - the NEAR panel 0 centre carries the wing colour
+        //   (near wing over the body);
+        // - the FAR panel 0 centre carries the BODY colour
+        //   (the far wing's own centre is occluded by the body:
+        //   it paints behind it).
+        let mut st = FullState::default();
+        st.wing_segs = vec![-1.2, -1.0];
+        assert_eq!(sample_stage(&look2, &st, 274.97, 436.5), rgba("#7FB6D9"), "near panel centre must be the wing colour");
+        assert_eq!(sample_stage(&look2, &st, 241.79, 423.24), rgba("#E8734A"), "far panel centre must be occluded by the body");
+
+        // Reference bird at rest (acceptance 4): the folded
+        // two-panel wing (scalar fallback, wingA 0) —
+        // - the near wing protrudes past the body edge: a point
+        //   on panel 0 at 85% of the segment (past the bean's
+        //   edge + its ink stroke at that height, and clear of
+        //   the joint line — which crosses AT the joint, so the
+        //   joint itself is shade-toned, not fill-coloured) is
+        //   wing-coloured in the winged paint and transparent
+        //   in the wingless;
+        // - the far wing's shade crescent behind the opposite
+        //   shoulder: at the bird's declared lens the crescent
+        //   is only a few stage units wide (the TS acceptance
+        //   wording is a visual read), so the exact-colour proof
+        //   uses a long-lens declared look (wingLens [120, 100],
+        //   same folded rest state), where the far panels reach
+        //   well past the body edge: shadeOf(wingCol, 0.72)
+        //   pixels appear in the winged paint and nowhere in
+        //   the wingless paint.
+        let rest = FullState::default();
+        let (px, _, _, _, _) = paint_toon_full(&look2, &rest);
+        assert!(count_col(&px, rgba("#7FB6D9")) > 500, "near wing panels must paint");
+        assert_eq!(sample_stage(&look2, &rest, 348.8, 441.5), rgba("#7FB6D9"), "folded wing must protrude past the body edge");
+        assert_eq!(sample_stage(&wingless, &rest, 348.8, 441.5), (0, 0, 0, 0), "no wing, no paint past the body edge");
+        let mut long_look = pip_look();
+        long_look.wing_lens = vec![120.0, 100.0];
+        let far_shade = shade_rgba("#7FB6D9", 0.72);
+        let (pxl, _, _, _, _) = paint_toon_full(&long_look, &rest);
+        assert!(count_col(&pxl, far_shade) > 100, "far wing shade crescent must paint");
+        let mut long_wingless = pip_look();
+        long_wingless.wing = false;
+        long_wingless.wing_lens = vec![120.0, 100.0];
+        let (pxlw, _, _, _, _) = paint_toon_full(&long_wingless, &rest);
+        assert_eq!(count_col(&pxlw, far_shade), 0, "wingless paint must have no far-shade pixels");
+    }
+
+    #[test]
+    fn wing_anchor_envelope_includes_both_chains() {
+        // An oversized declared wing (lens 400) reaches past
+        // the canvas side bound: with the wing flag the anchor
+        // must engage and pull the figure back; without it the
+        // same state fits and the anchor stays zero.
+        let mut look = pip_look();
+        look.wing_lens = vec![400.0, 400.0];
+        let mut st = FullState::default();
+        st.wing_segs = vec![1.5, 1.68];
+        let (ax, _) = canvas_anchor(&look, &st);
+        assert!(ax < 0.0, "oversized wing must engage the anchor, got ax={ax}");
+        let mut wingless = pip_look();
+        wingless.wing = false;
+        assert_eq!(canvas_anchor(&wingless, &st), (0.0, 0.0));
+        // Ordinary wing states fit: no anchor, byte-identical
+        // placement to a wingless figure.
+        assert_eq!(canvas_anchor(&pip_look(), &FullState::default()), (0.0, 0.0));
     }
 }
