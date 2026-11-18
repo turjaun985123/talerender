@@ -135,6 +135,46 @@ Dispatch commands (coordinator):
   budget ≈ 5% × total × 50%, pressure-shrink lines, peak-RSS
   lines, and frame hashes IDENTICAL to run (i)).
 
+## CI evidence (2026-11-18)
+
+- ci.yml on b3/govcore @ 04cdfcc: run **44249082360 GREEN**
+  (build + test + smoke render all ✓; the new resource /
+  paintbudget / bufferpool unit tests are inside the test
+  step). Tools CI run 44249082600 GREEN.
+- gpufirst-parity on b3/govcore: run 44249703083 — feature
+  build ✓, feature test suite 621 passed / 1 failed. The one
+  failure is `gpupaint_states_earshair::tests::
+  hair_col_distinguishes_in_recorded_op_stream`, IDENTICAL
+  at the base: gpufirst-phase0 @ e2099c4 run 44248054170
+  failed the same single test (608 passed / 1 failed; the
+  +13 passes here are this seat's new tests). Pre-existing
+  PORT-EARS-HAIR defect at the integration base — NOT a
+  governor regression; flagged for the coordinator.
+- Worked example (rider §8) — custom configuration proven in
+  a run: census dispatch 44249727616 with inputs
+  `max_ram_pct=25`, `max_threads=3` (→ env layer). The
+  telemetry step completed **FILM TELEMETRY: CHECK OK** under
+  those caps, printing (CI log, telemetry step):
+  - `governor: enabled=true gpu_cap_pct=60 gpu_source=default ram_cap_pct=25 ram_source=env ram_budget_bytes=4191346688 total_ram_bytes=16765386752 total_ram_detected=true threads=3 threads_source=env logical_cores=4 clamp=none config_file=none gpu_pacing=approximation max_in_flight=3 pace_gap_ms=4 paint_cache_budget_bytes=2095673344 …`
+    (ram_budget = exactly 25% of the runner's MemTotal.)
+  - `governor: paint-cache budget_bytes=692060160 share_pct=50 of ram_budget_bytes=4191346688 (entry cap 24 unchanged)`
+    — the effective budget is the SMALLER existing bound
+    (24 entries × canvas, from the step's
+    TALERENDER_PAINT_CACHE=24), per "byte budget wins when
+    smaller".
+  - 91 × `governor: paint-cache pressure shrink evicted=4 bytes_before=634388480 bytes_after=519045120 budget_bytes=692060160`
+    — the pressure shrink firing live under the cap, verdict
+    unchanged.
+  - `Maximum resident set size (kbytes): 775404` — the
+    /usr/bin/time -v RSS line, in the log as designed.
+  The run was cancelled by this seat after the telemetry
+  step completed (the full-film census gate is the
+  coordinator's run, commands above); its log is filed in
+  the evidence dir (see below).
+
+Evidence files: ~/workspace/talerender-evidence/gpufirst-b3/govcore/
+(record copy + census-44249727616 log + governor lines).
+
 ## Infeasible-as-specified notes
 
 - Hard GPU-% enforcement: infeasible from userspace on
