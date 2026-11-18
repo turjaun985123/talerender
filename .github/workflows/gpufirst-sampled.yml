@@ -1,0 +1,109 @@
+name: GPUFIRST Sampled (B3, dispatch + branch push)
+
+# GPUFIRST Batch 3 SAMPLED seat measurement run. Manual dispatch
+# plus pushes to b3/sampled (workflow_dispatch requires the
+# workflow on the default branch, which this programme is not).
+# Builds the featured harness and runs, on the CI lavapipe host:
+#   (1) --gpu-paint sampled-profile: staged vs per-frame-sampled
+#       workload (unique states, PaintCache simulation validated
+#       against the census, CPU paint wall times for segment
+#       s02, display lists for staged + sampled states);
+#   (2) --gpupaint-time: the Phase-0 per-state CPU paint vs GPU
+#       texture-replay-proxy table (existing harness);
+#   (3) --gpu-paint replay of every recorded sampled/staged
+#       list, with per-invocation process wall time measured by
+#       the shell so executor setup+readback overhead is visible
+#       separately from the executor's own gpu_wall_ms.
+# SOFTWARE RENDERING: every GPU number from this workflow is a
+# LAVAPIPE number. It does NOT predict RADV timings.
+on:
+  workflow_dispatch:
+  push:
+    branches: [b3/sampled]
+    paths:
+      - 'src/gpupaint_sampled.rs'
+      - 'src/gpupaint.rs'
+      - 'src/main.rs'
+      - '.github/workflows/gpufirst-sampled.yml'
+
+concurrency:
+  group: gpufirst-sampled-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+  RUSTFLAGS: "-C link-arg=-fuse-ld=mold"
+
+jobs:
+  sampled:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          cache-on-failure: true
+          key: ubuntu2204-gpufirst
+
+      - name: Install mold + software Vulkan (lavapipe)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mold mesa-vulkan-drivers vulkan-tools
+          vulkaninfo --summary || true
+
+      - name: Build (default features — production regression check)
+        run: cargo build --release
+
+      - name: Build measurement harness (feature gpupaint)
+        run: cargo build --release --features gpupaint
+
+      - name: Run SAMPLED profile measurement (CPU side)
+        run: |
+          ./target/release/talerender --gpu-paint sampled-profile sampled-lists 2>&1 | tee sampled.log
+          grep -c "SAMPLED-PROFILE" sampled.log
+          grep "SAMPLED-PROFILE VALIDATION" sampled.log
+
+      - name: Run PERF harness on lavapipe (per-state CPU vs GPU proxy)
+        run: |
+          ICD=$(ls /usr/share/vulkan/icd.d/lvp_icd*.json | head -n 1)
+          echo "lavapipe ICD: $ICD"
+          VK_ICD_FILENAMES="$ICD" ./target/release/talerender --gpupaint-time 2>&1 | tee gpufirst-perf.log
+          grep "GPUFIRST-TIME SUMMARY" gpufirst-perf.log
+          grep "GPUFIRST-TIME F-GPU" gpufirst-perf.log
+
+      - name: Replay staged + sampled lists on lavapipe (executor wall + process wall)
+        run: |
+          ICD=$(ls /usr/share/vulkan/icd.d/lvp_icd*.json | head -n 1)
+          mkdir -p replay-out
+          : > replay-walls.log
+          for f in sampled-lists/*.json; do
+            name=$(basename "$f" .json)
+            start=$(date +%s%N)
+            VK_ICD_FILENAMES="$ICD" ./target/release/talerender --gpu-paint replay "$f" "replay-out/$name.png" > "replay-out/$name.log" 2>&1 || echo "REPLAY FAILED: $name"
+            end=$(date +%s%N)
+            wall_ms=$(( (end - start) / 1000000 ))
+            gpu_line=$(grep "gpu_wall_ms" "replay-out/$name.log" || echo "gpu_wall_ms: MISSING")
+            prim_line=$(grep "^replay:" "replay-out/$name.log" || echo "replay: MISSING")
+            echo "REPLAY-WALL list=$name process_wall_ms=$wall_ms $gpu_line $prim_line" | tee -a replay-walls.log
+          done
+          cat replay-walls.log
+          # No rendered images leave this job: PNGs are deleted,
+          # only text logs + display-list JSON are uploaded.
+          rm -rf replay-out/*.png
+
+      - name: Upload measurement logs artifact (TEXT ONLY)
+        uses: actions/upload-artifact@v4
+        with:
+          name: gpufirst-sampled-logs
+          path: |
+            sampled.log
+            gpufirst-perf.log
+            replay-walls.log
+            replay-out/*.log
+            sampled-lists/*.json

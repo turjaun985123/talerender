@@ -41,6 +41,7 @@ usage: talerender --gpu-paint <SUBCOMMAND>
   record-battery <outdir>     record the stroke-battery cards (PNG + display-list JSON per card)
   record-states <outdir>      record the state spread (PNG + display-list JSON per state)
   replay <list.json> <out.png>  GPU-replay a display list (writes PNG; prints sha256 + dispatch counts + GPU wall time)
+  sampled-profile <outdir>    GPUFIRST B3 SAMPLED seat: staged vs per-frame-sampled workload measurement (writes display lists for replay into <outdir>)
   compare <a.png> <b.png>       [stub] byte/metric comparison of two PNGs
   time <list.json>              [stub] replay timing
 ";
@@ -158,6 +159,7 @@ pub(crate) fn run(args: &[String]) -> i32 {
         "record-battery" if args.len() == 2 => record_battery(&args[1]),
         "record-states" if args.len() == 2 => record_states(&args[1]),
         "replay" if args.len() == 3 => replay(&args[1], &args[2]),
+        "sampled-profile" if args.len() == 2 => crate::gpupaint_sampled::run(&args[1]),
         "compare" if args.len() == 3 => stub("compare"),
         "time" if args.len() == 2 => stub("time"),
         _ => {
